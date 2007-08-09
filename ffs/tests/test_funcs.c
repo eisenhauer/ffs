@@ -12,7 +12,6 @@
 #endif
 #include <string.h>
 #include "ffs.h"
-#include "unix_defs.h"
 
 #include "test_funcs.h"
 

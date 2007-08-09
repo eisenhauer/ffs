@@ -903,4 +903,8 @@ AC_SUBST([am__untar])
 
 m4_include([../config/cercs.m4])
 m4_include([../config/definitions.m4])
+m4_include([../config/libtool.m4])
+m4_include([../config/ltoptions.m4])
+m4_include([../config/ltsugar.m4])
+m4_include([../config/ltversion.m4])
 m4_include([acinclude.m4])

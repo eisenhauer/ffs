@@ -61,6 +61,7 @@ LIBS=""
 AC_CHECK_FUNCS(strtof strtod strtold)
 LIBS=$oldLibs
 
+LT_INIT
 
 # checks for header files
 AC_HEADER_STDC
