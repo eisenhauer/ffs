@@ -13,11 +13,11 @@
 /* Define with the name of the domain which the format server will service */
 #undef FORMAT_SERVICE_DOMAIN
 
+/* Define if you have dill.h */
+#undef HAVE_DILL_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
-
-/* Define if you have drisc.h */
-#undef HAVE_DRISC_H
 
 /* Define to 1 if you have the `fork' function. */
 #undef HAVE_FORK

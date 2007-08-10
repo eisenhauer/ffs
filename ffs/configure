@@ -1509,7 +1509,7 @@ Optional Packages:
   --with-local            Use only local copies of CERCS packages
   --with-fm=DIR	Where to find fm package
   --with-cercs_env=DIR	Where to find cercs_env package
-  --with-drisc=DIR	Where to find drisc package
+  --with-dill=DIR	Where to find dill package
   --with-gcrypt=DIR	Where to find gcrypt package
   --with-format-server=HOST    Which host will run the format server.
   --with-service-domain=DOMAINNAME	What domain the server will serve.
@@ -11365,22 +11365,22 @@ if test -z "$with_local_specified"; then
 
 
 
-# Check whether --with-drisc was given.
-if test "${with_drisc+set}" = set; then
-  withval=$with_drisc;
+# Check whether --with-dill was given.
+if test "${with_dill+set}" = set; then
+  withval=$with_dill;
 fi
 
 
-if test -n "$with_drisc"; then
-unset cercs_cv_drisc_include_arg
-unset cercs_cv_drisc_link_arg
-if test `echo $with_drisc | sed 's/\(.\).*/\1/g'` != "/"; then
-with_drisc=`pwd`/$with_drisc
+if test -n "$with_dill"; then
+unset cercs_cv_dill_include_arg
+unset cercs_cv_dill_link_arg
+if test `echo $with_dill | sed 's/\(.\).*/\1/g'` != "/"; then
+with_dill=`pwd`/$with_dill
 fi
 fi
-{ echo "$as_me:$LINENO: checking needed include args for drisc package" >&5
-echo $ECHO_N "checking needed include args for drisc package... $ECHO_C" >&6; }
-if test "${cercs_cv_drisc_include_arg+set}" = set; then
+{ echo "$as_me:$LINENO: checking needed include args for dill package" >&5
+echo $ECHO_N "checking needed include args for dill package... $ECHO_C" >&6; }
+if test "${cercs_cv_dill_include_arg+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
@@ -11388,43 +11388,43 @@ else
 
 
 cercs_tmp=""
-search_list="./drisc.h"
+search_list="./dill.h"
 CHAOS_HOMEDIR=""
 if test -n "$CSH"; then
 CHAOS_HOMEDIR=`echo "echo ~chaos" | csh -sf  2>/dev/null | sed 's%/$%%'` || CHAOS_HOMEDIR=""
 fi
-if test -n "$with_drisc"; then
-if test `echo $with_drisc | cut -c1` = "~"; then
-EXPANDED=`echo "echo $with_drisc" | csh -sf 2>/dev/null` || EXPANDED=""
+if test -n "$with_dill"; then
+if test `echo $with_dill | cut -c1` = "~"; then
+EXPANDED=`echo "echo $with_dill" | csh -sf 2>/dev/null` || EXPANDED=""
 else
-EXPANDED=$with_drisc
+EXPANDED=$with_dill
 fi
 
-search_list="$search_list $EXPANDED/drisc.h $EXPANDED/include/drisc.h $EXPANDED/share/drisc.h $EXPANDED/$cercs_cv_archive/drisc.h $EXPANDED/$cercs_cv_archive/include/drisc.h $EXPANDED/drisc/drisc.h $EXPANDED/drisc/$cercs_cv_archive/drisc.h $EXPANDED/drisc/include/drisc.h $EXPANDED/drisc/include/$cercs_cv_archive/drisc.h"
+search_list="$search_list $EXPANDED/dill.h $EXPANDED/include/dill.h $EXPANDED/share/dill.h $EXPANDED/$cercs_cv_archive/dill.h $EXPANDED/$cercs_cv_archive/include/dill.h $EXPANDED/dill/dill.h $EXPANDED/dill/$cercs_cv_archive/dill.h $EXPANDED/dill/include/dill.h $EXPANDED/dill/include/$cercs_cv_archive/dill.h"
 fi
 if test -z "$with_installed_specified"; then
-search_list="$search_list `pwd`/../drisc/drisc.h `pwd`/../include/drisc.h `pwd`/../share/drisc.h $HOME/drisc/drisc.h $HOME/$cercs_cv_archive/include/drisc.h $HOME/include/drisc.h"
+search_list="$search_list `pwd`/../dill/dill.h `pwd`/../include/dill.h `pwd`/../share/dill.h $HOME/dill/dill.h $HOME/$cercs_cv_archive/include/dill.h $HOME/include/dill.h"
 fi
 if test "$libdir" != '${exec_prefix}/lib'; then
 tmpdir=`echo ${libdir} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/drisc.h"
+search_list="$search_list $tmpdir/dill.h"
 fi
 if test "$exec_prefix" != "NONE"; then
 tmpdir=`echo ${exec_prefix} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/lib/drisc.h"
+search_list="$search_list $tmpdir/lib/dill.h"
 fi
 if test "$includedir" != '${prefix}/include'; then
 tmpdir=`echo ${includedir} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/drisc.h"
+search_list="$search_list $tmpdir/dill.h"
 fi
 if test "$prefix" != "NONE"; then
 tmpdir=`echo ${prefix} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/include/drisc.h"
+search_list="$search_list $tmpdir/include/dill.h"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/include/drisc.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/drisc.h $CHAOS_HOMEDIR/drisc/$cercs_cv_archive/include/drisc.h $CHAOS_HOMEDIR/drisc/include/drisc.h"
+search_list="$search_list $CHAOS_HOMEDIR/include/dill.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/dill.h $CHAOS_HOMEDIR/dill/$cercs_cv_archive/include/dill.h $CHAOS_HOMEDIR/dill/include/dill.h"
 fi
-search_list="$search_list /usr/include/drisc.h /usr/local/include/drisc.h /opt/drisc/include/drisc.h /opt/misc/include/drisc.h /opt/misc/include/$cercs_cv_archive/drisc.h"
+search_list="$search_list /usr/include/dill.h /usr/local/include/dill.h /opt/dill/include/dill.h /opt/misc/include/dill.h /opt/misc/include/$cercs_cv_archive/dill.h"
 tmp_search_results=""
 echo "configure:11429: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
@@ -11439,19 +11439,19 @@ if test -n "$tmp_search_results"; then
 cercs_tmp=$tmp_search_results
 fi
 
-if test -n "$cercs_tmp" -a "$cercs_tmp" != "/usr/include/drisc.h"; then
-cercs_cv_drisc_include_arg=-I`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s#.drisc.h##g"`
+if test -n "$cercs_tmp" -a "$cercs_tmp" != "/usr/include/dill.h"; then
+cercs_cv_dill_include_arg=-I`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s#.dill.h##g"`
 fi
 
 fi
 
-{ echo "$as_me:$LINENO: result: $cercs_cv_drisc_include_arg" >&5
-echo "${ECHO_T}$cercs_cv_drisc_include_arg" >&6; }
-if test -n "$cercs_cv_drisc_include_arg"; then
-arg="$cercs_cv_drisc_include_arg"
+{ echo "$as_me:$LINENO: result: $cercs_cv_dill_include_arg" >&5
+echo "${ECHO_T}$cercs_cv_dill_include_arg" >&6; }
+if test -n "$cercs_cv_dill_include_arg"; then
+arg="$cercs_cv_dill_include_arg"
 no_dash_arg=`echo $arg | sed 's/^-//g'`
 if test `echo $CPPFLAGS | grep -c "$no_dash_arg"` -eq 0; then
-if test `echo $arg | grep -c "drisc"` -eq 0; then
+if test `echo $arg | grep -c "dill"` -eq 0; then
 CPPFLAGS="$CPPFLAGS $arg";
 else
 CPPFLAGS="$arg $CPPFLAGS"
@@ -11459,9 +11459,9 @@ fi
 fi
 fi
 
-{ echo "$as_me:$LINENO: checking needed link args for drisc package" >&5
-echo $ECHO_N "checking needed link args for drisc package... $ECHO_C" >&6; }
-if test "${cercs_cv_drisc_link_dir+set}" = set; then
+{ echo "$as_me:$LINENO: checking needed link args for dill package" >&5
+echo $ECHO_N "checking needed link args for dill package... $ECHO_C" >&6; }
+if test "${cercs_cv_dill_link_dir+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
@@ -11469,43 +11469,43 @@ else
 
 
 cercs_tmp=""
-search_list="./libdrisc.la"
+search_list="./libdill.la"
 CHAOS_HOMEDIR=""
 if test -n "$CSH"; then
 CHAOS_HOMEDIR=`echo "echo ~chaos" | csh -sf  2>/dev/null | sed 's%/$%%'` || CHAOS_HOMEDIR=""
 fi
-if test -n "$with_drisc"; then
-if test `echo $with_drisc | cut -c1` = "~"; then
-EXPANDED=`echo "echo $with_drisc" | csh -sf 2>/dev/null` || EXPANDED=""
+if test -n "$with_dill"; then
+if test `echo $with_dill | cut -c1` = "~"; then
+EXPANDED=`echo "echo $with_dill" | csh -sf 2>/dev/null` || EXPANDED=""
 else
-EXPANDED=$with_drisc
+EXPANDED=$with_dill
 fi
 
-search_list="$search_list $EXPANDED/libdrisc.la $EXPANDED/lib/libdrisc.la $EXPANDED/share/libdrisc.la $EXPANDED/$cercs_cv_archive/libdrisc.la $EXPANDED/$cercs_cv_archive/lib/libdrisc.la $EXPANDED/drisc/libdrisc.la $EXPANDED/drisc/$cercs_cv_archive/libdrisc.la $EXPANDED/drisc/lib/libdrisc.la $EXPANDED/drisc/lib/$cercs_cv_archive/libdrisc.la"
+search_list="$search_list $EXPANDED/libdill.la $EXPANDED/lib/libdill.la $EXPANDED/share/libdill.la $EXPANDED/$cercs_cv_archive/libdill.la $EXPANDED/$cercs_cv_archive/lib/libdill.la $EXPANDED/dill/libdill.la $EXPANDED/dill/$cercs_cv_archive/libdill.la $EXPANDED/dill/lib/libdill.la $EXPANDED/dill/lib/$cercs_cv_archive/libdill.la"
 fi
 if test -z "$with_installed_specified"; then
-search_list="$search_list `pwd`/../drisc/libdrisc.la `pwd`/../lib/libdrisc.la `pwd`/../share/libdrisc.la $HOME/drisc/libdrisc.la $HOME/$cercs_cv_archive/lib/libdrisc.la $HOME/lib/libdrisc.la"
+search_list="$search_list `pwd`/../dill/libdill.la `pwd`/../lib/libdill.la `pwd`/../share/libdill.la $HOME/dill/libdill.la $HOME/$cercs_cv_archive/lib/libdill.la $HOME/lib/libdill.la"
 fi
 if test "$libdir" != '${exec_prefix}/lib'; then
 tmpdir=`echo ${libdir} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/libdrisc.la"
+search_list="$search_list $tmpdir/libdill.la"
 fi
 if test "$exec_prefix" != "NONE"; then
 tmpdir=`echo ${exec_prefix} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/lib/libdrisc.la"
+search_list="$search_list $tmpdir/lib/libdill.la"
 fi
 if test "$includedir" != '${prefix}/include'; then
 tmpdir=`echo ${includedir} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/libdrisc.la"
+search_list="$search_list $tmpdir/libdill.la"
 fi
 if test "$prefix" != "NONE"; then
 tmpdir=`echo ${prefix} |  sed 's%/$%%'`
-search_list="$search_list $tmpdir/lib/libdrisc.la"
+search_list="$search_list $tmpdir/lib/libdill.la"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/lib/libdrisc.la $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libdrisc.la $CHAOS_HOMEDIR/drisc/$cercs_cv_archive/lib/libdrisc.la $CHAOS_HOMEDIR/drisc/lib/libdrisc.la"
+search_list="$search_list $CHAOS_HOMEDIR/lib/libdill.la $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libdill.la $CHAOS_HOMEDIR/dill/$cercs_cv_archive/lib/libdill.la $CHAOS_HOMEDIR/dill/lib/libdill.la"
 fi
-search_list="$search_list /usr/lib/libdrisc.la /usr/local/lib/libdrisc.la /opt/drisc/lib/libdrisc.la /opt/misc/lib/libdrisc.la /opt/misc/lib/$cercs_cv_archive/libdrisc.la"
+search_list="$search_list /usr/lib/libdill.la /usr/local/lib/libdill.la /opt/dill/lib/libdill.la /opt/misc/lib/libdill.la /opt/misc/lib/$cercs_cv_archive/libdill.la"
 tmp_search_results=""
 echo "configure:11510: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
@@ -11520,30 +11520,30 @@ if test -n "$tmp_search_results"; then
 cercs_tmp=$tmp_search_results
 fi
 
-if test -n "$cercs_tmp" -a "$cercs_tmp" != "libdrisc.la"; then
-cercs_cv_drisc_link_dir=`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s/.libdrisc.la//g"`
+if test -n "$cercs_tmp" -a "$cercs_tmp" != "libdill.la"; then
+cercs_cv_dill_link_dir=`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s/.libdill.la//g"`
 else
-cercs_cv_drisc_link_dir=""
+cercs_cv_dill_link_dir=""
 fi
 
 fi
 
-{ echo "$as_me:$LINENO: result: $cercs_cv_drisc_link_dir" >&5
-echo "${ECHO_T}$cercs_cv_drisc_link_dir" >&6; }
+{ echo "$as_me:$LINENO: result: $cercs_cv_dill_link_dir" >&5
+echo "${ECHO_T}$cercs_cv_dill_link_dir" >&6; }
 ld_arg="-L"
 new_flags=$LDFLAGS
-cercs_cv_drisc_link_arg=`echo $cercs_cv_drisc_link_dir | sed "/./ s/^/$ld_arg/1"`
-if test -n "$cercs_cv_drisc_link_arg"; then
-arg=$cercs_cv_drisc_link_arg
+cercs_cv_dill_link_arg=`echo $cercs_cv_dill_link_dir | sed "/./ s/^/$ld_arg/1"`
+if test -n "$cercs_cv_dill_link_arg"; then
+arg=$cercs_cv_dill_link_arg
 no_dash_arg=`echo $arg | sed 's/^-//g'`
 if test `echo $new_flags | grep -c "$no_dash_arg"` -eq 0; then
-root=`echo libdrisc.la | sed 's/\..*//'`
-if test ! -r $cercs_cv_drisc_link_dir/$root.la; then
+root=`echo libdill.la | sed 's/\..*//'`
+if test ! -r $cercs_cv_dill_link_dir/$root.la; then
 if eval "test \"\${LIBTOOL+set}\" = set"; then
-arg="$cercs_cv_drisc_link_arg "`echo $cercs_cv_drisc_link_dir | sed "/./ s/^/-R/1"`
+arg="$cercs_cv_dill_link_arg "`echo $cercs_cv_dill_link_dir | sed "/./ s/^/-R/1"`
 fi
 fi
-if test `echo $arg | grep -c "drisc"` -eq 0; then
+if test `echo $arg | grep -c "dill"` -eq 0; then
 new_flags="$new_flags $arg"
 else
 new_flags="$arg $new_flags"
@@ -11558,39 +11558,39 @@ else
 
 
 
-# Check whether --with-drisc was given.
-if test "${with_drisc+set}" = set; then
-  withval=$with_drisc;
+# Check whether --with-dill was given.
+if test "${with_dill+set}" = set; then
+  withval=$with_dill;
 fi
 
 
-if test -n "$with_drisc"; then
-unset cercs_cv_drisc_include_arg
-unset cercs_cv_drisc_link_arg
-if test `echo $with_drisc | sed 's/\(.\).*/\1/g'` != "/"; then
-with_drisc=`pwd`/$with_drisc
+if test -n "$with_dill"; then
+unset cercs_cv_dill_include_arg
+unset cercs_cv_dill_link_arg
+if test `echo $with_dill | sed 's/\(.\).*/\1/g'` != "/"; then
+with_dill=`pwd`/$with_dill
 fi
 fi
-{ echo "$as_me:$LINENO: checking needed include args for drisc package" >&5
-echo $ECHO_N "checking needed include args for drisc package... $ECHO_C" >&6; }
-if test "${cercs_cv_drisc_include_arg+set}" = set; then
+{ echo "$as_me:$LINENO: checking needed include args for dill package" >&5
+echo $ECHO_N "checking needed include args for dill package... $ECHO_C" >&6; }
+if test "${cercs_cv_dill_include_arg+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-cercs_tmp=`pwd`/../drisc
-if test -n "$cercs_tmp" -a "$cercs_tmp" != "/usr/include/drisc.h"; then
-cercs_cv_drisc_include_arg=-I`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s#.drisc.h##g"`
+cercs_tmp=`pwd`/../dill
+if test -n "$cercs_tmp" -a "$cercs_tmp" != "/usr/include/dill.h"; then
+cercs_cv_dill_include_arg=-I`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s#.dill.h##g"`
 fi
 
 fi
 
-{ echo "$as_me:$LINENO: result: $cercs_cv_drisc_include_arg" >&5
-echo "${ECHO_T}$cercs_cv_drisc_include_arg" >&6; }
-if test -n "$cercs_cv_drisc_include_arg"; then
-arg="$cercs_cv_drisc_include_arg"
+{ echo "$as_me:$LINENO: result: $cercs_cv_dill_include_arg" >&5
+echo "${ECHO_T}$cercs_cv_dill_include_arg" >&6; }
+if test -n "$cercs_cv_dill_include_arg"; then
+arg="$cercs_cv_dill_include_arg"
 no_dash_arg=`echo $arg | sed 's/^-//g'`
 if test `echo $CPPFLAGS | grep -c "$no_dash_arg"` -eq 0; then
-if test `echo $arg | grep -c "drisc"` -eq 0; then
+if test `echo $arg | grep -c "dill"` -eq 0; then
 CPPFLAGS="$CPPFLAGS $arg";
 else
 CPPFLAGS="$arg $CPPFLAGS"
@@ -11598,37 +11598,37 @@ fi
 fi
 fi
 
-{ echo "$as_me:$LINENO: checking needed link args for drisc package" >&5
-echo $ECHO_N "checking needed link args for drisc package... $ECHO_C" >&6; }
-if test "${cercs_cv_drisc_link_dir+set}" = set; then
+{ echo "$as_me:$LINENO: checking needed link args for dill package" >&5
+echo $ECHO_N "checking needed link args for dill package... $ECHO_C" >&6; }
+if test "${cercs_cv_dill_link_dir+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-cercs_tmp=`pwd`/../drisc
-if test -n "$cercs_tmp" -a "$cercs_tmp" != "libdrisc.la"; then
-cercs_cv_drisc_link_dir=`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s/.libdrisc.la//g"`
+cercs_tmp=`pwd`/../dill
+if test -n "$cercs_tmp" -a "$cercs_tmp" != "libdill.la"; then
+cercs_cv_dill_link_dir=`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s/.libdill.la//g"`
 else
-cercs_cv_drisc_link_dir=""
+cercs_cv_dill_link_dir=""
 fi
 
 fi
 
-{ echo "$as_me:$LINENO: result: $cercs_cv_drisc_link_dir" >&5
-echo "${ECHO_T}$cercs_cv_drisc_link_dir" >&6; }
+{ echo "$as_me:$LINENO: result: $cercs_cv_dill_link_dir" >&5
+echo "${ECHO_T}$cercs_cv_dill_link_dir" >&6; }
 ld_arg="-L"
 new_flags=$LDFLAGS
-cercs_cv_drisc_link_arg=`echo $cercs_cv_drisc_link_dir | sed "/./ s/^/$ld_arg/1"`
-if test -n "$cercs_cv_drisc_link_arg"; then
-arg=$cercs_cv_drisc_link_arg
+cercs_cv_dill_link_arg=`echo $cercs_cv_dill_link_dir | sed "/./ s/^/$ld_arg/1"`
+if test -n "$cercs_cv_dill_link_arg"; then
+arg=$cercs_cv_dill_link_arg
 no_dash_arg=`echo $arg | sed 's/^-//g'`
 if test `echo $new_flags | grep -c "$no_dash_arg"` -eq 0; then
-root=`echo libdrisc.la | sed 's/\..*//'`
-if test ! -r $cercs_cv_drisc_link_dir/$root.la; then
+root=`echo libdill.la | sed 's/\..*//'`
+if test ! -r $cercs_cv_dill_link_dir/$root.la; then
 if eval "test \"\${LIBTOOL+set}\" = set"; then
-arg="$cercs_cv_drisc_link_arg "`echo $cercs_cv_drisc_link_dir | sed "/./ s/^/-R/1"`
+arg="$cercs_cv_dill_link_arg "`echo $cercs_cv_dill_link_dir | sed "/./ s/^/-R/1"`
 fi
 fi
-if test `echo $arg | grep -c "drisc"` -eq 0; then
+if test `echo $arg | grep -c "dill"` -eq 0; then
 new_flags="$new_flags $arg"
 else
 new_flags="$arg $new_flags"
@@ -11640,9 +11640,9 @@ fi
 
 fi
 
-if test -n "$cercs_cv_drisc_include_arg"; then
+if test -n "$cercs_cv_dill_include_arg"; then
 if test "$with_code_gen" = yes; then
-DCG_LALIB="$cercs_cv_drisc_link_dir/libdrisc.la"
+DCG_LALIB="$cercs_cv_dill_link_dir/libdill.la"
 FFS_CONVERSION_GENERATION_DEFAULT=1
 fi
 fi
@@ -12598,18 +12598,18 @@ done
 
 
 if test "$with_code_gen" = yes; then
-if test "${ac_cv_header_drisc_h+set}" = set; then
-  { echo "$as_me:$LINENO: checking for drisc.h" >&5
-echo $ECHO_N "checking for drisc.h... $ECHO_C" >&6; }
-if test "${ac_cv_header_drisc_h+set}" = set; then
+if test "${ac_cv_header_dill_h+set}" = set; then
+  { echo "$as_me:$LINENO: checking for dill.h" >&5
+echo $ECHO_N "checking for dill.h... $ECHO_C" >&6; }
+if test "${ac_cv_header_dill_h+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_header_drisc_h" >&5
-echo "${ECHO_T}$ac_cv_header_drisc_h" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_header_dill_h" >&5
+echo "${ECHO_T}$ac_cv_header_dill_h" >&6; }
 else
   # Is the header compilable?
-{ echo "$as_me:$LINENO: checking drisc.h usability" >&5
-echo $ECHO_N "checking drisc.h usability... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking dill.h usability" >&5
+echo $ECHO_N "checking dill.h usability... $ECHO_C" >&6; }
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -12617,7 +12617,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-#include <drisc.h>
+#include <dill.h>
 _ACEOF
 rm -f conftest.$ac_objext
 if { (ac_try="$ac_compile"
@@ -12649,15 +12649,15 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 echo "${ECHO_T}$ac_header_compiler" >&6; }
 
 # Is the header present?
-{ echo "$as_me:$LINENO: checking drisc.h presence" >&5
-echo $ECHO_N "checking drisc.h presence... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking dill.h presence" >&5
+echo $ECHO_N "checking dill.h presence... $ECHO_C" >&6; }
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-#include <drisc.h>
+#include <dill.h>
 _ACEOF
 if { (ac_try="$ac_cpp conftest.$ac_ext"
 case "(($ac_try" in
@@ -12690,25 +12690,25 @@ echo "${ECHO_T}$ac_header_preproc" >&6; }
 # So?  What about this header?
 case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
   yes:no: )
-    { echo "$as_me:$LINENO: WARNING: drisc.h: accepted by the compiler, rejected by the preprocessor!" >&5
-echo "$as_me: WARNING: drisc.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
-    { echo "$as_me:$LINENO: WARNING: drisc.h: proceeding with the compiler's result" >&5
-echo "$as_me: WARNING: drisc.h: proceeding with the compiler's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: dill.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: dill.h: proceeding with the compiler's result" >&2;}
     ac_header_preproc=yes
     ;;
   no:yes:* )
-    { echo "$as_me:$LINENO: WARNING: drisc.h: present but cannot be compiled" >&5
-echo "$as_me: WARNING: drisc.h: present but cannot be compiled" >&2;}
-    { echo "$as_me:$LINENO: WARNING: drisc.h:     check for missing prerequisite headers?" >&5
-echo "$as_me: WARNING: drisc.h:     check for missing prerequisite headers?" >&2;}
-    { echo "$as_me:$LINENO: WARNING: drisc.h: see the Autoconf documentation" >&5
-echo "$as_me: WARNING: drisc.h: see the Autoconf documentation" >&2;}
-    { echo "$as_me:$LINENO: WARNING: drisc.h:     section \"Present But Cannot Be Compiled\"" >&5
-echo "$as_me: WARNING: drisc.h:     section \"Present But Cannot Be Compiled\"" >&2;}
-    { echo "$as_me:$LINENO: WARNING: drisc.h: proceeding with the preprocessor's result" >&5
-echo "$as_me: WARNING: drisc.h: proceeding with the preprocessor's result" >&2;}
-    { echo "$as_me:$LINENO: WARNING: drisc.h: in the future, the compiler will take precedence" >&5
-echo "$as_me: WARNING: drisc.h: in the future, the compiler will take precedence" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h: present but cannot be compiled" >&5
+echo "$as_me: WARNING: dill.h: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: dill.h:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: dill.h: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: dill.h:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: dill.h: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: dill.h: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: dill.h: in the future, the compiler will take precedence" >&2;}
     ( cat <<\_ASBOX
 ## ---------------------------------- ##
 ## Report this to eisen@cc.gatech.edu ##
@@ -12717,21 +12717,21 @@ _ASBOX
      ) | sed "s/^/$as_me: WARNING:     /" >&2
     ;;
 esac
-{ echo "$as_me:$LINENO: checking for drisc.h" >&5
-echo $ECHO_N "checking for drisc.h... $ECHO_C" >&6; }
-if test "${ac_cv_header_drisc_h+set}" = set; then
+{ echo "$as_me:$LINENO: checking for dill.h" >&5
+echo $ECHO_N "checking for dill.h... $ECHO_C" >&6; }
+if test "${ac_cv_header_dill_h+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_cv_header_drisc_h=$ac_header_preproc
+  ac_cv_header_dill_h=$ac_header_preproc
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_header_drisc_h" >&5
-echo "${ECHO_T}$ac_cv_header_drisc_h" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_header_dill_h" >&5
+echo "${ECHO_T}$ac_cv_header_dill_h" >&6; }
 
 fi
-if test $ac_cv_header_drisc_h = yes; then
+if test $ac_cv_header_dill_h = yes; then
 
 cat >>confdefs.h <<\_ACEOF
-#define HAVE_DRISC_H 1
+#define HAVE_DILL_H 1
 _ACEOF
 
 			  FFS_GEN_O="ffs_gen.lo"

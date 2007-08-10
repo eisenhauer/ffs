@@ -39,10 +39,10 @@ dnl checks for libraries
 FFS_CONVERSION_GENERATION_DEFAULT=0
 CERCS_REQUIRE_PACKAGE(fm,fm.h,libfm.la)
 CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
-CERCS_REQUIRE_PACKAGE(drisc,drisc.h,libdrisc.la)
-if test -n "$cercs_cv_drisc_include_arg"; then
+CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
+if test -n "$cercs_cv_dill_include_arg"; then
 if test "$with_code_gen" = yes; then
-DCG_LALIB="$cercs_cv_drisc_link_dir/libdrisc.la"
+DCG_LALIB="$cercs_cv_dill_link_dir/libdill.la"
 FFS_CONVERSION_GENERATION_DEFAULT=1
 fi
 fi
@@ -83,7 +83,7 @@ AC_CHECK_HEADERS(string.h memory.h malloc.h sys/select.h sys/socket.h \
 		sys/time.h sys/times.h unistd.h windows.h)
 AC_SUBST(IO_FILE_NAME)
 if test "$with_code_gen" = yes; then
-AC_CHECK_HEADER(drisc.h, [AC_DEFINE(HAVE_DRISC_H,1,[Define if you have drisc.h]) 
+AC_CHECK_HEADER(dill.h, [AC_DEFINE(HAVE_DILL_H,1,[Define if you have dill.h]) 
 			  FFS_GEN_O="ffs_gen.lo"], FFS_GEN_O="")
 fi
 

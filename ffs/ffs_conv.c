@@ -1,6 +1,5 @@
 #include "config.h"
 
-#ifndef MODULE
 #include "assert.h"
 #include <stdio.h>
 #ifdef STDC_HEADERS
@@ -16,28 +15,22 @@
 #include <ctype.h>
 extern char *getenv(const char *name);
 
-#ifdef HAVE_DRISC_H
-#include "drisc.h"
+#ifdef HAVE_DILL_H
+#include "dill.h"
 #define static_ctx c 
-#define VCALL7V(subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6, arg7) dr_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-#define VCALL6V(subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6) dr_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6)
-#define VCALL5V(subr, argstr, arg1, arg2, arg3, arg4, arg5) dr_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4, arg5)
-#define VCALL4V(subr, argstr, arg1, arg2, arg3, arg4) dr_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4)
-#define VCALL4P(subr, argstr, arg1, arg2, arg3, arg4) dr_scallp(c, (void*)subr, argstr, arg1, arg2, arg3, arg4)
-#define VCALL3V(subr, argstr, arg1, arg2, arg3) dr_scallv(c, (void*)subr, argstr, arg1, arg2, arg3)
-#define VCALL2V(subr, argstr, arg1, arg2) dr_scallv(c, (void*)subr, argstr, arg1, arg2)
-#define TYPE_ALIGN(c, t) dr_type_align(c, t)
+#define VCALL7V(subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6, arg7) dill_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+#define VCALL6V(subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6) dill_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4, arg5, arg6)
+#define VCALL5V(subr, argstr, arg1, arg2, arg3, arg4, arg5) dill_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4, arg5)
+#define VCALL4V(subr, argstr, arg1, arg2, arg3, arg4) dill_scallv(c, (void*)subr, argstr, arg1, arg2, arg3, arg4)
+#define VCALL4P(subr, argstr, arg1, arg2, arg3, arg4) dill_scallp(c, (void*)subr, argstr, arg1, arg2, arg3, arg4)
+#define VCALL3V(subr, argstr, arg1, arg2, arg3) dill_scallv(c, (void*)subr, argstr, arg1, arg2, arg3)
+#define VCALL2V(subr, argstr, arg1, arg2) dill_scallv(c, (void*)subr, argstr, arg1, arg2)
+#define TYPE_ALIGN(c, t) dill_type_align(c, t)
 #define _vrr(x) x
-#endif
-#else
-/* kernel build */
-#include "kernel/pbio_kernel.h"
-#include "kernel/kpbio.h"
-#include "kernel/library.h"
 #endif
 #include "ffs.h"
 #include "ffs_internal.h"
-#if defined(HAVE_DRISC_H)
+#if defined(HAVE_DILL_H)
 #include "ffs_gen.h"
 #endif
 #include "assert.h"
@@ -1950,38 +1943,38 @@ min_align_type(typ, size)
 FMdata_type typ;
 int size;
 {
-#ifndef HAVE_DRISC_H
+#ifndef HAVE_DILL_H
     return min_align_size(size);
 #else
-    static drisc_ctx c = NULL;
-    if (c == NULL) c = dr_init();
+    static dill_stream s = NULL;
+    if (s == NULL) s = dill_create_raw_stream();
     switch (typ) {
     case float_type:
-	if (size == dr_type_size(c, DR_D)) return dr_type_align(c, DR_D);
-	if (size == dr_type_size(c, DR_F)) return dr_type_align(c, DR_F);
+	if (size == dill_type_size(s, DILL_D)) return dill_type_align(s, DILL_D);
+	if (size == dill_type_size(s, DILL_F)) return dill_type_align(s, DILL_F);
 	/* punt */
 	return min_align_size(size);
     case integer_type: case char_type: case string_type:
-	if (size == dr_type_size(c, DR_C)) return dr_type_align(c, DR_C);
-	if (size == dr_type_size(c, DR_S)) return dr_type_align(c, DR_S);
-	if (size == dr_type_size(c, DR_I)) return dr_type_align(c, DR_I);
-	if (size == dr_type_size(c, DR_L)) return dr_type_align(c, DR_L);
+	if (size == dill_type_size(s, DILL_C)) return dill_type_align(s, DILL_C);
+	if (size == dill_type_size(s, DILL_S)) return dill_type_align(s, DILL_S);
+	if (size == dill_type_size(s, DILL_I)) return dill_type_align(s, DILL_I);
+	if (size == dill_type_size(s, DILL_L)) return dill_type_align(s, DILL_L);
 	/* punt */
 	return min_align_size(size);
     case unsigned_type: case enumeration_type: case boolean_type:
-	if (size == dr_type_size(c, DR_UC)) return dr_type_align(c, DR_UC);
-	if (size == dr_type_size(c, DR_US)) return dr_type_align(c, DR_US);
-	if (size == dr_type_size(c, DR_U)) return dr_type_align(c, DR_U);
-	if (size == dr_type_size(c, DR_UL)) return dr_type_align(c, DR_UL);
+	if (size == dill_type_size(s, DILL_UC)) return dill_type_align(s, DILL_UC);
+	if (size == dill_type_size(s, DILL_US)) return dill_type_align(s, DILL_US);
+	if (size == dill_type_size(s, DILL_U)) return dill_type_align(s, DILL_U);
+	if (size == dill_type_size(s, DILL_UL)) return dill_type_align(s, DILL_UL);
 	/* punt */
-	return dr_type_align(c, DR_B);
+	return dill_type_align(s, DILL_B);
     default:
-	return dr_type_align(c, DR_B);
+	return dill_type_align(s, DILL_B);
     }
 #endif
 }
 
-#if !defined(HAVE_DRISC_H)
+#if !defined(HAVE_DILL_H)
 extern
  conv_routine
 generate_conversion(conv, alignment)
@@ -2004,38 +1997,38 @@ struct _IOgetFieldStruct *field;
     case unsigned_type:
 	switch(field->size) {
 	case 1:
-	    return DR_C;
+	    return DILL_C;
 	case 2:
-	    return DR_S;
+	    return DILL_S;
 	case 4:
-	    return DR_I;
+	    return DILL_I;
 	case 8:
-	    return DR_L;
+	    return DILL_L;
 	}
-	return DR_I;
+	return DILL_I;
     case float_type:
 	if (field->size == SIZEOF_DOUBLE) {
-	    return DR_D;
+	    return DILL_D;
 	} else if (field->size == SIZEOF_FLOAT) {
-	    return DR_F;
+	    return DILL_F;
 	} else {
-	    return DR_I;
+	    return DILL_I;
 	}
     case char_type:
-	return DR_C;
+	return DILL_C;
     case string_type:
-	return DR_P;
+	return DILL_P;
     case boolean_type:
     case enumeration_type:
-	return DR_I;
+	return DILL_I;
     default:
-	return DR_I;
+	return DILL_I;
     }
 }
 
 static int
 subfield_required_align(c, conv, i, offset)
-drisc_ctx c;
+dill_stream c;
 IOConversionPtr conv;
 int i;
 int offset;
@@ -2046,12 +2039,12 @@ int offset;
     int elements = get_static_array_element_count(conv->conversions[i].iovar);
     if (structure_align == -1) {
 	int j;
-	for (j=DR_C; j<= DR_D; j++) {
+	for (j=DILL_C; j<= DILL_D; j++) {
 	    structure_align = max(structure_align, TYPE_ALIGN(c, j));
 	}
     }
     if (elements == -1) {
-	field_required_align = TYPE_ALIGN(c, DR_P);
+	field_required_align = TYPE_ALIGN(c, DILL_P);
     } else if (conv->conversions[i].subconversion == NULL) {
 	int drisc_data_type = drisc_type(&conv->conversions[i].src_field);
 	field_required_align = TYPE_ALIGN(c, drisc_data_type);
@@ -2072,7 +2065,7 @@ int offset;
 
 static int
 conv_required_alignment(c, conv)
-drisc_ctx c;
+dill_stream c;
 IOConversionPtr conv;
 {
     int i;
@@ -2090,8 +2083,8 @@ IOConversionPtr conv;
 
 static
  conv_routine
- generate_conversion_code(drisc_ctx c,
-				IOConversionPtr conv, dr_reg_t * args,
+ generate_conversion_code(dill_stream c,
+				IOConversionPtr conv, dill_reg * args,
 				int assume_align, int register_args,
 				int extra_src_offset, 
 				int extra_dest_offset);
@@ -2107,10 +2100,10 @@ generate_conversion(conv, base_alignment)
 IOConversionPtr conv;
 int base_alignment;
 {
-    drisc_ctx c = NULL;
+    dill_stream c = NULL;
     void (*conversion_routine)();
-    dr_reg_t args[6];
-    dr_reg_t tmp_regs[10];
+    dill_reg args[6];
+    dill_reg tmp_regs[10];
     char *format_name = conv->ioformat->body->format_name;
     int count = 0, register_args = 1;
 
@@ -2167,13 +2160,13 @@ int base_alignment;
 	 *  false and args[2] and args[3] contain the stack offsets of the
 	 *  third and fourth arguments.
 	 */
-	c = dr_init();
+	c = dill_create_raw_stream();
 	count = 0;
 	for (; count < sizeof(tmp_regs)/sizeof(tmp_regs[0]); count++) 
 	    tmp_regs[count] = -1;
 	count = 0;
 	for (; count < sizeof(tmp_regs)/sizeof(tmp_regs[0]); count++) {
-	    if (dr_getreg(c, &tmp_regs[count], DR_I, DR_VAR) == 0) {
+	    if (dill_raw_getreg(c, &tmp_regs[count], DILL_I, DILL_VAR) == 0) {
 		break;
 	    }
 	}
@@ -2181,29 +2174,29 @@ int base_alignment;
 	    int i;
 	    register_args = 0;
 	    for (i= 2; i < count; i++) {  /* Make all but 2 unavail*/
-		dr_mk_unavail(c, DR_I, tmp_regs[i]);
+		dill_raw_unavailreg(c, DILL_I, tmp_regs[i]);
 	    }
 	}
     }
     if (register_args) {
 	/* Normal, lots of registers, case */
 
-	dr_proc_params(c, "convert", DR_I, "%p%p%p%p");
-	args[0] = dr_param(c, 0);
-	args[1] = dr_param(c, 1);
-	args[2] = dr_param(c, 2);
-	args[3] = dr_param(c, 3);
+	dill_start_proc(c, "convert", DILL_I, "%p%p%p%p");
+	args[0] = dill_param_reg(c, 0);
+	args[1] = dill_param_reg(c, 1);
+	args[2] = dill_param_reg(c, 2);
+	args[3] = dill_param_reg(c, 3);
 
     } else {
 	/* very few registers case */
 
-	drisc_parameter_type dr_params[4];	/* drisc param info */
+	dill_parameter_type dr_params[4];	/* drisc param info */
 	int i;
 	for (i=0; i < 4; i++) {
-	    dr_param_alloc(c, i, DR_P, (dr_reg_t*)&args[i]);
-	    dr_param_struct_alloc(c, i, DR_P, &(dr_params[i]));
+	    dill_param_alloc(c, i, DILL_P, (dill_reg*)&args[i]);
+	    dill_param_struct_alloc(c, i, DILL_P, &(dr_params[i]));
 	}
-	dr_proc(c, "convert", DR_I);
+	dill_start_simple_proc(c, "convert", DILL_I);
 
 	/* store argument stack offsets in args[2] and args[3] */
 	args[2] = dr_params[2].offset;
@@ -2211,44 +2204,44 @@ int base_alignment;
 	for (count=2; count<sizeof(tmp_regs)/sizeof(tmp_regs[0]); count++) {
 	    if (tmp_regs[count] != -1) {
 		/* make the other registers available again */
-		dr_mk_avail(c, DR_I, tmp_regs[count]);
+		dill_raw_availreg(c, DILL_I, tmp_regs[count]);
 	    }
 	}
     }
     if (debug_code_generation) {
 	if (register_args) {
-	    VCALL6V( printf, "%P%P%p%p%p%p",
+	    dill_scallv(c, printf, "printf", "%P%P%p%p%p%p",
 		     "convert for %s called with src= %lx, dest %lx, final_string =%lx, src_string =%lx\n",
 		     format_name, args[0], args[1], args[2], args[3]);
 	} else {
-#ifdef HAVE_DRISC_H	    
-	    dr_reg_t v_at;
-	    if (dr_getreg(c, &v_at, DR_I, DR_TEMP) == 0) {
+#ifdef HAVE_DILL_H	    
+	    dill_reg v_at;
+	    if (dill_raw_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
 		gen_fatal("Out of regs 1\n");
 	    }
 #endif
-	    VCALL4V(printf, "%P%P%p%p",
+	    dill_scallv(c, printf, "printf", "%P%P%p%p",
 		     "convert for %s called with src= %lx, dest %lx\n",
 		     format_name, args[0], args[1]);
-	    dr_ldpi(c, v_at, dr_lp(c), args[2]);
-	    VCALL2V(printf, "%P%p",
+	    dill_ldpi(c, v_at, dill_lp(c), args[2]);
+	    dill_scallv(c, printf, "printf", "%P%p",
 		     "               src_string_base %lx\n",
 		     v_at);
-	    dr_ldpi(c, v_at, dr_lp(c), args[3]);
-	    VCALL2V(printf, "%P%p",
+	    dill_ldpi(c, v_at, dill_lp(c), args[3]);
+	    dill_scallv(c, printf, "printf", "%P%p",
 		     "               final_string_base %lx\n",
 		     v_at);
-#ifdef HAVE_DRISC_H	    
-	    dr_putreg(c, v_at, DR_I);
+#ifdef HAVE_DILL_H	    
+	    dill_raw_putreg(c, v_at, DILL_I);
 #endif
 	}
     }
     conv->required_alignment = conv_required_alignment(c, conv);
     if (register_args) {
-	dr_reg_t tmp;
+	dill_reg tmp;
 	int mask;
-	int zero_target = dr_genlabel(c);
-	if (dr_getreg(c, &tmp, DR_I, DR_VAR) == 0) {
+	int zero_target = dill_alloc_label(c);
+	if (dill_raw_getreg(c, &tmp, DILL_I, DILL_VAR) == 0) {
 	    printf("out of regs for mod\n");
 	}
 	switch(conv->required_alignment) {
@@ -2265,36 +2258,36 @@ int base_alignment;
 	    mask = 0;
 	}
 	if (mask != 0) {
-	    dr_anduli(c, tmp, args[0], mask);
-	    dr_beqli(c, tmp, 0, zero_target);
-	    VCALL4V(printf, "%P%P%p%I",
+	    dill_anduli(c, tmp, args[0], mask);
+	    dill_beqli(c, tmp, 0, zero_target);
+	    dill_scallv(c, printf, "printf", "%P%P%p%I",
 		    "convert for %s called with bad align src= %lx, align is %d\n",
 		    format_name, args[0], conv->required_alignment);
-	    dr_label(c, zero_target);
+	    dill_mark_label(c, zero_target);
 	}
     }
     generate_conversion_code(c, conv, args, base_alignment, register_args, 0, 0);
-    dr_retp(c, args[2]);
-    conversion_routine = (void(*)())dr_end(c);
+    dill_retp(c, args[2]);
+    conversion_routine = (void(*)())dill_finalize(c);
     if (generation_verbose) {
-	dr_dump(c);
+	dill_dump(c);
     }
     conv->free_data = c;
-    conv->free_func = (void(*)(void*))&dr_free_context;
+    conv->free_func = (void(*)(void*))&dill_free_stream;
     return (conv_routine) conversion_routine;
 }
 /* #define REG_DEBUG(x) printf x ; */
 #define REG_DEBUG(x)
 
 static void
-gen_var_part_conv(drisc_ctx c, IOConversionPtr conv, int i, int control_base,
-			int assume_align, dr_reg_t src_addr, dr_reg_t dest_addr,
-			dr_reg_t src_string_base, dr_reg_t final_string_base,
+gen_var_part_conv(dill_stream c, IOConversionPtr conv, int i, int control_base,
+			int assume_align, dill_reg src_addr, dill_reg dest_addr,
+			dill_reg src_string_base, dill_reg final_string_base,
 			int register_args);
 
 
 static void
-gen_mem_float_conv(drisc_ctx c, struct _IOgetFieldStruct src, int src_addr, 
+gen_mem_float_conv(dill_stream c, struct _IOgetFieldStruct src, int src_addr, 
 		   int src_offset, int assume_align,
 		   int dest_reg, int dest_offset,
 		   int dest_size, int dst_aligned)
@@ -2304,23 +2297,23 @@ gen_mem_float_conv(drisc_ctx c, struct _IOgetFieldStruct src, int src_addr,
     int src_drisc_type = drisc_type(&src);
 
     if (src_format == dst_format) {
-	dr_reg_t tmp;
+	dill_reg tmp;
 	switch (src_drisc_type) {
-	case DR_D:
-	    if (assume_align >= TYPE_ALIGN(c, DR_D)) {
-		dr_getreg(c, &tmp, DR_D, DR_TEMP);
-		dr_lddi(c, tmp, src_addr, src_offset);
-		dr_stdi(c, tmp, dest_reg, dest_offset);
-		dr_putreg(c, tmp, DR_D);
+	case DILL_D:
+	    if (assume_align >= TYPE_ALIGN(c, DILL_D)) {
+		dill_raw_getreg(c, &tmp, DILL_D, DILL_TEMP);
+		dill_lddi(c, tmp, src_addr, src_offset);
+		dill_stdi(c, tmp, dest_reg, dest_offset);
+		dill_raw_putreg(c, tmp, DILL_D);
 		return;
 	    }
 	    break;
-	case DR_F:
-	    if (assume_align >= TYPE_ALIGN(c, DR_D)) {
-		dr_getreg(c, &tmp, DR_F, DR_TEMP);
-		dr_ldfi(c, tmp, src_addr, src_offset);
-		dr_stfi(c, tmp, dest_reg, dest_offset);
-		dr_putreg(c, tmp, DR_F);
+	case DILL_F:
+	    if (assume_align >= TYPE_ALIGN(c, DILL_D)) {
+		dill_raw_getreg(c, &tmp, DILL_F, DILL_TEMP);
+		dill_ldfi(c, tmp, src_addr, src_offset);
+		dill_stfi(c, tmp, dest_reg, dest_offset);
+		dill_raw_putreg(c, tmp, DILL_F);
 		return;
 	    }
 	    break;
@@ -2332,64 +2325,64 @@ gen_mem_float_conv(drisc_ctx c, struct _IOgetFieldStruct src, int src_addr,
     if (src_format == ffs_reverse_float_formats[dst_format]) {
 	switch(dest_size) {
 	case sizeof(short): {
-	    dr_reg_t tmp;
-	    dr_getreg(c, &tmp, DR_S, DR_TEMP);
-	    dr_ldbssi(c, tmp, src_addr, src_offset);
-	    dr_stsi(c, tmp, dest_reg, dest_offset);
-	    dr_putreg(c, tmp, DR_S);
+	    dill_reg tmp;
+	    dill_raw_getreg(c, &tmp, DILL_S, DILL_TEMP);
+	    dill_ldbssi(c, tmp, src_addr, src_offset);
+	    dill_stsi(c, tmp, dest_reg, dest_offset);
+	    dill_raw_putreg(c, tmp, DILL_S);
 	    break;
 	}
 	case sizeof(int): {
-	    dr_reg_t tmp;
-	    dr_getreg(c, &tmp, DR_I, DR_TEMP);
-	    dr_ldbsii(c, tmp, src_addr, src_offset);
-	    dr_stii(c, tmp, dest_reg, dest_offset);
-	    dr_putreg(c, tmp, DR_I);
+	    dill_reg tmp;
+	    dill_raw_getreg(c, &tmp, DILL_I, DILL_TEMP);
+	    dill_ldbsii(c, tmp, src_addr, src_offset);
+	    dill_stii(c, tmp, dest_reg, dest_offset);
+	    dill_raw_putreg(c, tmp, DILL_I);
 	    break;
 	}
 #if SIZEOF_LONG == 8
 	case sizeof(long): 
 	    if (((src_offset & 0x7) == 0) && (assume_align >= sizeof(long))) {
-		dr_reg_t tmp;
-		dr_getreg(c, &tmp, DR_L, DR_TEMP);
-		dr_ldbsli(c, tmp, src_addr, src_offset);
-		dr_stli(c, tmp, dest_reg, dest_offset);
-		dr_putreg(c, tmp, DR_L);
+		dill_reg tmp;
+		dill_raw_getreg(c, &tmp, DILL_L, DILL_TEMP);
+		dill_ldbsli(c, tmp, src_addr, src_offset);
+		dill_stli(c, tmp, dest_reg, dest_offset);
+		dill_raw_putreg(c, tmp, DILL_L);
 		break;
 	    } else {
-		dr_reg_t tmp, tmp2;
+		dill_reg tmp, tmp2;
 		int i;
-		dr_getreg(c, &tmp, DR_I, DR_TEMP);
-		dr_getreg(c, &tmp2, DR_I, DR_TEMP);
+		dill_raw_getreg(c, &tmp, DILL_I, DILL_TEMP);
+		dill_raw_getreg(c, &tmp2, DILL_I, DILL_TEMP);
 		for (i = 0; i < (dest_size >> 1); i += sizeof(int)) {
 		    int near_offset = i*sizeof(int);
 		    int far_offset = dest_size - (i+1)*sizeof(int);
-		    dr_ldbsii(c, tmp, src_addr, src_offset + near_offset);
-		    dr_ldbsii(c, tmp2, src_addr, src_offset + far_offset);
-		    dr_stii(c, tmp, dest_reg, dest_offset + far_offset);
-		    dr_stii(c, tmp2, dest_reg, dest_offset + near_offset);
+		    dill_ldbsii(c, tmp, src_addr, src_offset + near_offset);
+		    dill_ldbsii(c, tmp2, src_addr, src_offset + far_offset);
+		    dill_stii(c, tmp, dest_reg, dest_offset + far_offset);
+		    dill_stii(c, tmp2, dest_reg, dest_offset + near_offset);
 		}
-		dr_putreg(c, tmp, DR_I);
-		dr_putreg(c, tmp2, DR_I);
+		dill_raw_putreg(c, tmp, DILL_I);
+		dill_raw_putreg(c, tmp2, DILL_I);
 		break;
 	    }
 #endif
 	default: 
 	{
-	    dr_reg_t tmp, tmp2;
+	    dill_reg tmp, tmp2;
 	    int i;
-	    dr_getreg(c, &tmp, DR_L, DR_TEMP);
-	    dr_getreg(c, &tmp2, DR_L, DR_TEMP);
+	    dill_raw_getreg(c, &tmp, DILL_L, DILL_TEMP);
+	    dill_raw_getreg(c, &tmp2, DILL_L, DILL_TEMP);
 	    for (i = 0; i < (dest_size >> 1); i += sizeof(long)) {
 		int near_offset = i*sizeof(int);
 		int far_offset = dest_size - (i+1)*sizeof(int);
-		dr_ldbsli(c, tmp, src_addr, src_offset + near_offset);
-		dr_ldbsli(c, tmp2, src_addr, src_offset + far_offset);
-		dr_stli(c, tmp, dest_reg, dest_offset + far_offset);
-		dr_stli(c, tmp2, dest_reg, dest_offset + near_offset);
+		dill_ldbsli(c, tmp, src_addr, src_offset + near_offset);
+		dill_ldbsli(c, tmp2, src_addr, src_offset + far_offset);
+		dill_stli(c, tmp, dest_reg, dest_offset + far_offset);
+		dill_stli(c, tmp2, dest_reg, dest_offset + near_offset);
 	    }
-	    dr_putreg(c, tmp, DR_L);
-	    dr_putreg(c, tmp2, DR_L);
+	    dill_raw_putreg(c, tmp, DILL_L);
+	    dill_raw_putreg(c, tmp2, DILL_L);
 	}
 	}
 	return;
@@ -2399,34 +2392,34 @@ gen_mem_float_conv(drisc_ctx c, struct _IOgetFieldStruct src, int src_addr,
     case CONV(Format_IEEE_754_mixedendian, Format_IEEE_754_bigendian):
 	{
 	    /* byte swap in place */
-	    dr_reg_t tmp;
+	    dill_reg tmp;
 	    int i;
-	    dr_getreg(c, &tmp, DR_I, DR_TEMP);
+	    dill_raw_getreg(c, &tmp, DILL_I, DILL_TEMP);
 	    for (i = 0; i < dest_size; i += sizeof(int)) {
-		dr_ldbsii(c, tmp, src_addr, src_offset + i);
-		dr_stii(c, tmp, dest_reg, dest_offset + i);
+		dill_ldbsii(c, tmp, src_addr, src_offset + i);
+		dill_stii(c, tmp, dest_reg, dest_offset + i);
 	    }
-	    dr_putreg(c, tmp, DR_I);
+	    dill_raw_putreg(c, tmp, DILL_I);
 	}
 	break;
     case CONV(Format_IEEE_754_littleendian, Format_IEEE_754_mixedendian):
     case CONV(Format_IEEE_754_mixedendian, Format_IEEE_754_littleendian):
 	{
 	    /* swap words, no byteswapping */
-	    dr_reg_t tmp, tmp2;
+	    dill_reg tmp, tmp2;
 	    int i;
-	    dr_getreg(c, &tmp, DR_I, DR_TEMP);
-	    dr_getreg(c, &tmp2, DR_I, DR_TEMP);
+	    dill_raw_getreg(c, &tmp, DILL_I, DILL_TEMP);
+	    dill_raw_getreg(c, &tmp2, DILL_I, DILL_TEMP);
 	    for (i = 0; i < (dest_size >> 1); i += sizeof(int)) {
 		int near_offset = i;
 		int far_offset = dest_size - (i+sizeof(int));
-		dr_ldii(c, tmp, src_addr, src_offset + near_offset);
-		dr_ldii(c, tmp2, src_addr, src_offset + far_offset);
-		dr_stii(c, tmp, dest_reg, dest_offset + far_offset);
-		dr_stii(c, tmp2, dest_reg, dest_offset + near_offset);
+		dill_ldii(c, tmp, src_addr, src_offset + near_offset);
+		dill_ldii(c, tmp2, src_addr, src_offset + far_offset);
+		dill_stii(c, tmp, dest_reg, dest_offset + far_offset);
+		dill_stii(c, tmp2, dest_reg, dest_offset + near_offset);
 	    }
-	    dr_putreg(c, tmp, DR_I);
-	    dr_putreg(c, tmp2, DR_I);
+	    dill_raw_putreg(c, tmp, DILL_I);
+	    dill_raw_putreg(c, tmp2, DILL_I);
 	}
 	break;
     default:
@@ -2439,17 +2432,17 @@ gen_simple_field_conv(c, tmp_spec, assume_align, src_addr, src_offset,
 		      dest_size, dest_type, dest_addr, dest_offset,
 		      string_offset_size, final_string_base, base_size_delta,
 		      converted_strings)
-drisc_ctx c;
+dill_stream c;
 struct _IOgetFieldStruct tmp_spec;
 int assume_align;
-dr_reg_t src_addr;
+dill_reg src_addr;
 int src_offset;
 int dest_size;
 FMdata_type dest_type;
-dr_reg_t dest_addr;
+dill_reg dest_addr;
 int dest_offset;
 int string_offset_size;
-dr_reg_t final_string_base;
+dill_reg final_string_base;
 int base_size_delta;
 int converted_strings;
 {
@@ -2511,26 +2504,26 @@ int converted_strings;
 			       dst_is_aligned);
 	    return;
 	}
-	if ((dst_drisc_type != DR_I) && (src_drisc_type != DR_I)) {
+	if ((dst_drisc_type != DILL_I) && (src_drisc_type != DILL_I)) {
 	    /* both float sizes supported */
-	    int float_conv_offset = dr_local(c, dst_drisc_type);
-	    dr_reg_t float_reg;
+	    int float_conv_offset = dill_local(c, dst_drisc_type);
+	    dill_reg float_reg;
 	    gen_mem_float_conv(c, tmp_spec, src_addr, src_offset, assume_align,
-			       dr_lp(c), float_conv_offset, dest_size, 1);
-	    dr_getreg(c, &float_reg, DR_D, DR_TEMP);
+			       dill_lp(c), float_conv_offset, dest_size, 1);
+	    dill_raw_getreg(c, &float_reg, DILL_D, DILL_TEMP);
 	    switch(dst_drisc_type) {
-	    case DR_D:
-		dr_lddi(c, float_reg, dr_lp(c), float_conv_offset);
-		dr_cvd2f(c, float_reg, float_reg);
-		dr_stfi(c, float_reg, dest_addr, dest_offset);
+	    case DILL_D:
+		dill_lddi(c, float_reg, dill_lp(c), float_conv_offset);
+		dill_cvd2f(c, float_reg, float_reg);
+		dill_stfi(c, float_reg, dest_addr, dest_offset);
 		break;
-	    case DR_F:
-		dr_ldfi(c, float_reg, dr_lp(c), float_conv_offset);
-		dr_cvf2d(c, float_reg, float_reg);
-		dr_stdi(c, float_reg, dest_addr, dest_offset);
+	    case DILL_F:
+		dill_ldfi(c, float_reg, dill_lp(c), float_conv_offset);
+		dill_cvf2d(c, float_reg, float_reg);
+		dill_stdi(c, float_reg, dest_addr, dest_offset);
 		break;	    
 	    }
-	    dr_putreg(c, float_reg, DR_D);
+	    dill_raw_putreg(c, float_reg, DILL_D);
 	    return;
 	}
 	printf("must do call to conversion subroutine\n");
@@ -2538,32 +2531,32 @@ int converted_strings;
 }
 
 static void
-gen_addr_field_conv(c, tmp_spec, assume_align, src_addr, src_offset,
+gen_addill_field_conv(c, tmp_spec, assume_align, src_addr, src_offset,
 		    dest_size, dest_addr, dest_offset, string_offset_size,
   final_string_base, src_string_base, base_size_delta, converted_strings,
 		    string_src_reg, string_dest_reg, register_args)
-drisc_ctx c;
+dill_stream c;
 struct _IOgetFieldStruct tmp_spec;
 int assume_align;
-dr_reg_t src_addr;
+dill_reg src_addr;
 int src_offset;
 int dest_size;
-dr_reg_t dest_addr;
+dill_reg dest_addr;
 int dest_offset;
 int string_offset_size;
-dr_reg_t final_string_base;
-dr_reg_t src_string_base;
+dill_reg final_string_base;
+dill_reg src_string_base;
 int base_size_delta;
 int converted_strings;
-dr_reg_t *string_src_reg;
-dr_reg_t *string_dest_reg;
+dill_reg *string_src_reg;
+dill_reg *string_dest_reg;
 int register_args;
 {
     iogen_oprnd src_oprnd;
     int src_drisc_type;
     int src_required_align;
     int src_is_aligned = 1;
-    int null_target = dr_genlabel(c);
+    int null_target = dill_alloc_label(c);
 
 
     src_drisc_type = drisc_type(&tmp_spec);
@@ -2590,38 +2583,38 @@ int register_args;
 	    src_oprnd = tmp_oprnd;
 	}
 	/* generate : if it's zero, leave it zero  branch away */
-	dr_beqli(c, src_oprnd.vc_reg, 0, null_target);
+	dill_beqli(c, src_oprnd.vc_reg, 0, null_target);
 
 	/* else, sub the string_offset_size */
-	dr_subli(c, src_oprnd.vc_reg, src_oprnd.vc_reg,
+	dill_subli(c, src_oprnd.vc_reg, src_oprnd.vc_reg,
 		string_offset_size);
  
 	/* Moving to here to more effiecntly use registers */   
-	if (!dr_getreg(c, string_src_reg, DR_P, DR_VAR))
+	if (!dill_raw_getreg(c, string_src_reg, DILL_P, DILL_VAR))
 	  gen_fatal("gen field convert out of registers C\n");
-	if (!dr_getreg(c, string_dest_reg, DR_P, DR_VAR))
+	if (!dill_raw_getreg(c, string_dest_reg, DILL_P, DILL_VAR))
 	  gen_fatal("gen field convert out of registers D\n");
 	REG_DEBUG(("Getting reg %d for string src reg\n", *string_src_reg));
 	REG_DEBUG(("Getting reg %d for string dest reg\n", *string_dest_reg));
 
 	/* calculate the address of this in the source */
 	if (register_args) {
-	    dr_addl(c, *string_src_reg, src_oprnd.vc_reg, src_string_base);
+	    dill_addl(c, *string_src_reg, src_oprnd.vc_reg, src_string_base);
 	} else {
-	    dr_ldpi(c, *string_src_reg, dr_lp(c), src_string_base);
-	    dr_addl(c, *string_src_reg, src_oprnd.vc_reg, *string_src_reg);
+	    dill_ldpi(c, *string_src_reg, dill_lp(c), src_string_base);
+	    dill_addl(c, *string_src_reg, src_oprnd.vc_reg, *string_src_reg);
 	}
 	    
 	/* and the address in the destination */
 	if (register_args) {
-	    dr_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, final_string_base);
+	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, final_string_base);
 	} else {
-	    dr_ldpi(c, *string_dest_reg, dr_lp(c), final_string_base);
-	    dr_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, *string_dest_reg);
+	    dill_ldpi(c, *string_dest_reg, dill_lp(c), final_string_base);
+	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, *string_dest_reg);
 	}
-	dr_label(c, null_target);
+	dill_mark_label(c, null_target);
 
-	dr_movp(c, *string_dest_reg, src_oprnd.vc_reg);
+	dill_movp(c, *string_dest_reg, src_oprnd.vc_reg);
 
 	if (dest_size > sizeof(char *)) {
 	    iogen_oprnd tmp_oprnd;
@@ -2640,20 +2633,20 @@ static void
 gen_subfield_conv(c, conv, i, tmp_spec, dest_type, assume_align, src_addr,
 	     src_offset, dest_size, dest_addr, dest_offset, control_base,
 		  final_string_base, src_string_base, register_args)
-drisc_ctx c;
+dill_stream c;
 IOConversionPtr conv;
 int i;
 struct _IOgetFieldStruct tmp_spec;
 FMdata_type dest_type;
 int assume_align;
-dr_reg_t src_addr;
+dill_reg src_addr;
 int src_offset;
 int dest_size;
-dr_reg_t dest_addr;
+dill_reg dest_addr;
 int dest_offset;
 int control_base;
-dr_reg_t final_string_base;
-dr_reg_t src_string_base;
+dill_reg final_string_base;
+dill_reg src_string_base;
 int register_args;
 {
     int elements = get_static_array_element_count(conv->conversions[i].iovar);
@@ -2669,9 +2662,9 @@ int register_args;
 				  conv->base_size_delta,
 				  conv->converted_strings);
 	} else {
-	    dr_reg_t string_src_reg;
-	    dr_reg_t string_dest_reg;
-	    gen_addr_field_conv(c, tmp_spec, assume_align,
+	    dill_reg string_src_reg;
+	    dill_reg string_dest_reg;
+	    gen_addill_field_conv(c, tmp_spec, assume_align,
 				src_addr, src_offset,
 				dest_size, dest_addr,
 				dest_offset,
@@ -2695,25 +2688,25 @@ int register_args;
 				      final_string_base,
 				      register_args);
 		    /* store final string value */
-		    dr_stpi(c, string_dest_reg, dest_addr, dest_offset);
+		    dill_stpi(c, string_dest_reg, dest_addr, dest_offset);
 
 		    REG_DEBUG(("Putting reg %d for string src reg\n", string_src_reg));
 		    REG_DEBUG(("Putting reg %d for string dest reg\n", string_dest_reg));
-		    dr_putreg(c, string_src_reg, DR_P);
-		    dr_putreg(c, string_dest_reg, DR_P);
+		    dill_raw_putreg(c, string_src_reg, DILL_P);
+		    dill_raw_putreg(c, string_dest_reg, DILL_P);
 		} else {
 		    /*         limited register case  :
 		     * save old src and dest values so we can reuse those
 		     * registers for the conversion of the variable part
 		     */
-		    int src_storage = dr_local(c, DR_P);
-		    int dest_storage = dr_local(c, DR_P);
-		    dr_stpi(c, src_addr, dr_lp(c), src_storage);
-		    dr_stpi(c, dest_addr, dr_lp(c), dest_storage);
-		    dr_movp(c, src_addr, string_src_reg);
-		    dr_movp(c, dest_addr, string_dest_reg);
-		    dr_putreg(c, string_src_reg, DR_P);
-		    dr_putreg(c, string_dest_reg, DR_P);
+		    int src_storage = dill_local(c, DILL_P);
+		    int dest_storage = dill_local(c, DILL_P);
+		    dill_stpi(c, src_addr, dill_lp(c), src_storage);
+		    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
+		    dill_movp(c, src_addr, string_src_reg);
+		    dill_movp(c, dest_addr, string_dest_reg);
+		    dill_raw_putreg(c, string_src_reg, DILL_P);
+		    dill_raw_putreg(c, string_dest_reg, DILL_P);
 		    REG_DEBUG(("Putting reg %d for string src reg\n", string_src_reg));
 		    REG_DEBUG(("Putting reg %d for string dest reg\n", string_src_reg));
 		    gen_var_part_conv(c, conv, i, control_base,
@@ -2725,24 +2718,24 @@ int register_args;
 				      register_args);
 
 		    /* save the final string address in the src reg */
-		    dr_movp(c, src_addr, dest_addr);
+		    dill_movp(c, src_addr, dest_addr);
 
 		    /* restore the original dest addr */
-		    dr_ldpi(c, dest_addr, dr_lp(c), dest_storage);
+		    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 
 		    /* store final string value */
-		    dr_stpi(c, src_addr, dest_addr, dest_offset);
+		    dill_stpi(c, src_addr, dest_addr, dest_offset);
 
 		    /* restore value of src_addr */
-		    dr_ldpi(c, src_addr, dr_lp(c), src_storage);
+		    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
 		}
 	    } else {
 		REG_DEBUG(("Putting reg %d for string src reg\n", string_src_reg));
 		REG_DEBUG(("Putting reg %d for string dest reg\n", string_dest_reg));
 		/* store final string value */
-		dr_stpi(c, string_dest_reg, dest_addr, dest_offset);
-		dr_putreg(c, string_src_reg, DR_P);
-		dr_putreg(c, string_dest_reg, DR_P);
+		dill_stpi(c, string_dest_reg, dest_addr, dest_offset);
+		dill_raw_putreg(c, string_src_reg, DILL_P);
+		dill_raw_putreg(c, string_dest_reg, DILL_P);
 	    }
 	}
     } else {
@@ -2754,54 +2747,54 @@ int register_args;
 	     ((src_offset % subconv->required_alignment) == 0))) {
 	    if (register_args) {
 		/* many register case */
-		dr_reg_t new_src, new_dest, ret;
-		if (!dr_getreg(c, &new_src, DR_P, DR_TEMP) ||
-		    !dr_getreg(c, &new_dest, DR_P, DR_TEMP))
+		dill_reg new_src, new_dest, ret;
+		if (!dill_raw_getreg(c, &new_src, DILL_P, DILL_TEMP) ||
+		    !dill_raw_getreg(c, &new_dest, DILL_P, DILL_TEMP))
 		    gen_fatal("temp vals in subcall\n");
 		REG_DEBUG(("Getting %d and %d for new src & dest\n", 
 			   new_src, new_dest));
-		dr_addpi(c, new_src, src_addr, src_offset);
-		dr_addpi(c, new_dest, dest_addr, dest_offset);
-		ret = VCALL4P(subconv->conv_func, "%p%p%p%p", new_src,
+		dill_addpi(c, new_src, src_addr, src_offset);
+		dill_addpi(c, new_dest, dest_addr, dest_offset);
+		ret = dill_scallp(c, subconv->conv_func, "%p%p%p%p", "anon", new_src,
 			 new_dest, final_string_base, src_string_base);
-		dr_movp(c, final_string_base, ret);
+		dill_movp(c, final_string_base, ret);
 		REG_DEBUG(("Putting %d and %d for new src & dest\n", 
 			   new_src, new_dest));
 		if (debug_code_generation) {
-		    VCALL2V(printf, "%P%p",
+		    dill_scallv(c, printf, "printf", "%P%p",
 			    "After subroutine call, new src_string_base is %lx\n", src_string_base);
 		}
-		dr_putreg(c, new_src, DR_P);
-		dr_putreg(c, new_dest, DR_P);
+		dill_raw_putreg(c, new_src, DILL_P);
+		dill_raw_putreg(c, new_dest, DILL_P);
 	    } else {
-		int src_storage = dr_local(c, DR_P);
-		int dest_storage = dr_local(c, DR_P);
-		dr_reg_t reg_src_string_base, reg_final_string_base;
+		int src_storage = dill_local(c, DILL_P);
+		int dest_storage = dill_local(c, DILL_P);
+		dill_reg reg_src_string_base, reg_final_string_base;
 
 		/* save values of src_addr and dest_addr */
-		dr_stpi(c, src_addr, dr_lp(c), src_storage);
-		dr_stpi(c, dest_addr, dr_lp(c), dest_storage);
+		dill_stpi(c, src_addr, dill_lp(c), src_storage);
+		dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
 
-		if (!dr_getreg(c, &reg_src_string_base, DR_P, DR_TEMP) ||
-		    !dr_getreg(c, &reg_final_string_base, DR_P, DR_TEMP))
+		if (!dill_raw_getreg(c, &reg_src_string_base, DILL_P, DILL_TEMP) ||
+		    !dill_raw_getreg(c, &reg_final_string_base, DILL_P, DILL_TEMP))
 		    gen_fatal("temp string vals in subcall\n");
 		REG_DEBUG(("Getting %d and %d for reg src base & reg dest base\n", reg_src_string_base, reg_final_string_base));
-		dr_addpi(c, src_addr, src_addr, src_offset);
-		dr_addpi(c, dest_addr, dest_addr, dest_offset);
-		dr_ldpi(c, reg_final_string_base, dr_lp(c), final_string_base);
-		dr_ldpi(c, reg_src_string_base, dr_lp(c), src_string_base);
-		VCALL4V(subconv->conv_func, "%p%p%p%p", src_addr,
+		dill_addpi(c, src_addr, src_addr, src_offset);
+		dill_addpi(c, dest_addr, dest_addr, dest_offset);
+		dill_ldpi(c, reg_final_string_base, dill_lp(c), final_string_base);
+		dill_ldpi(c, reg_src_string_base, dill_lp(c), src_string_base);
+		dill_scallv(c, subconv->conv_func, "anon", "%p%p%p%p", src_addr,
 			 dest_addr, reg_final_string_base, reg_src_string_base);
 		REG_DEBUG(("Putting %d and %d for reg src base & reg dest base\n", reg_src_string_base, reg_final_string_base));
-		dr_putreg(c, reg_src_string_base, DR_P);
-		dr_putreg(c, reg_final_string_base, DR_P);
+		dill_raw_putreg(c, reg_src_string_base, DILL_P);
+		dill_raw_putreg(c, reg_final_string_base, DILL_P);
 		/* restore values of src_addr and dest_addr */
-		dr_ldpi(c, src_addr, dr_lp(c), src_storage);
-		dr_ldpi(c, dest_addr, dr_lp(c), dest_storage);
+		dill_ldpi(c, src_addr, dill_lp(c), src_storage);
+		dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 	    }
 	} else {
 	    /* misaligned substructure, can't call subconversion */
-	    dr_reg_t args[4];
+	    dill_reg args[4];
 	    args[0] = src_addr;
 	    args[1] = dest_addr;
 	    args[2] = final_string_base;
@@ -2816,19 +2809,19 @@ extern
  conv_routine
 generate_conversion_code(c, conv, args, assume_align, register_args, 
 			 extra_src_offset, extra_dest_offset)
-drisc_ctx c;
+dill_stream c;
 IOConversionPtr conv;
-dr_reg_t *args;
+dill_reg *args;
 int assume_align;
 int register_args;
 int extra_src_offset;
 int extra_dest_offset;
 {
     int i;
-    dr_reg_t src_addr = args[0];
-    dr_reg_t dest_addr = args[1];
-    dr_reg_t final_string_base = args[2];
-    dr_reg_t src_string_base = args[3];
+    dill_reg src_addr = args[0];
+    dill_reg dest_addr = args[1];
+    dill_reg final_string_base = args[2];
+    dill_reg src_string_base = args[3];
     int control_base = -1;
 
     for (i = 0; i < conv->conv_count; i++) {
@@ -2842,7 +2835,7 @@ int extra_dest_offset;
 	    int dimen_count = conv->conversions[i].iovar->dimen_count;
 	    FMDimen *dimens = conv->conversions[i].iovar->dimens;
 	    if (control_base == -1) {
-		control_base = dr_localb(c, sizeof(int) * conv->conv_count);
+		control_base = dill_localb(c, sizeof(int) * conv->conv_count);
 	    }
 	    for (j=0; j< dimen_count; j++) {
 		struct _IOgetFieldStruct control_field;
@@ -2868,10 +2861,10 @@ int extra_dest_offset;
 			 *    we've got something in a register, 
 			 *    *and* we're tight on registers 
 			 */
-			dr_stii(c, count_oprnd.vc_reg, dr_lp(c), count_storage);
+			dill_stii(c, count_oprnd.vc_reg, dill_lp(c), count_storage);
 			REG_DEBUG(("Putting %d as count\n", 
 				   _vrr(count_oprnd.vc_reg)));
-			dr_putreg(c, count_oprnd.vc_reg, DR_I);
+			dill_raw_putreg(c, count_oprnd.vc_reg, DILL_I);
 		    }
 			
 		    src_oprnd = gen_fetch(c, src_addr, 
@@ -2890,9 +2883,9 @@ int extra_dest_offset;
 			 *    we've got something in a register, 
 			 *    *and* we're tight on registers 
 			 */
-			dr_getreg(c, &count_oprnd.vc_reg, DR_I, DR_TEMP);
+			dill_raw_getreg(c, &count_oprnd.vc_reg, DILL_I, DILL_TEMP);
 			REG_DEBUG(("Getting %d as count\n", _vrr(count_oprnd.vc_reg)));
-			dr_ldii(c, count_oprnd.vc_reg, dr_lp(c), count_storage);
+			dill_ldii(c, count_oprnd.vc_reg, dill_lp(c), count_storage);
 		    }
 		} else {
 		    src_oprnd.address = 0;
@@ -2901,22 +2894,22 @@ int extra_dest_offset;
 		    src_oprnd.offset = 0;
 		    src_oprnd.aligned = 0;
 		    src_oprnd.byte_swap = 0;
-		    if (!dr_getreg(c, &src_oprnd.vc_reg, DR_I, DR_TEMP))
+		    if (!dill_raw_getreg(c, &src_oprnd.vc_reg, DILL_I, DILL_TEMP))
 			gen_fatal("gen const out of registers\n");
 		    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(src_oprnd.vc_reg)));
-		    dr_seti(c, src_oprnd.vc_reg, dimens[j].static_size);
+		    dill_seti(c, src_oprnd.vc_reg, dimens[j].static_size);
 		}
 		if (first_assign) {
-		    count_storage = dr_local(c, DR_I);
+		    count_storage = dill_local(c, DILL_I);
 		    count_oprnd = src_oprnd;
 		    first_assign = 0;
 		} else {
-		    dr_muli(c, count_oprnd.vc_reg, count_oprnd.vc_reg, 
+		    dill_muli(c, count_oprnd.vc_reg, count_oprnd.vc_reg, 
 			    src_oprnd.vc_reg);
 		    free_oprnd(c, src_oprnd);
 		}
 	    }
-	    gen_store(c, count_oprnd, dr_lp(c), control_base + i * sizeof(int),
+	    gen_store(c, count_oprnd, dill_lp(c), control_base + i * sizeof(int),
 		      sizeof(int), integer_type, TRUE /* aligned */ );
 	    free_oprnd(c, count_oprnd);
 	}
@@ -2971,7 +2964,7 @@ int extra_dest_offset;
 	    }
 	} else if ((conv->conversions[i].rc_swap == no_row_column_swap) ||
 		   (elements == -1) /* var array */ ){
-	    dr_reg_t loop_var;
+	    dill_reg loop_var;
 	    int loop;
 
 	    int dest_offset = conv->conversions[i].dest_offset + extra_dest_offset;
@@ -2998,32 +2991,32 @@ int extra_dest_offset;
 				  final_string_base, src_string_base,
 				  register_args);
 	    } else {
-		int src_storage = dr_local(c, DR_P);
-		int dest_storage = dr_local(c, DR_P);
+		int src_storage = dill_local(c, DILL_P);
+		int dest_storage = dill_local(c, DILL_P);
 		int loop_storage = 0;
 		int src_align_offset = src_offset %
 		    subfield_required_align(c, conv, i, 0);
 		int loop_var_type;
 
 		/* save values of src_addr and dest_addr */
-		dr_stpi(c, src_addr, dr_lp(c), src_storage);
-		dr_stpi(c, dest_addr, dr_lp(c), dest_storage);
+		dill_stpi(c, src_addr, dill_lp(c), src_storage);
+		dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
 
 		if (((elements == -1) ||
 		    (conv->conversions[i].subconversion == NULL)) &&
 		    !debug_code_generation) {
-		    if (!dr_getreg(c, &loop_var, DR_I, DR_TEMP))
+		    if (!dill_raw_getreg(c, &loop_var, DILL_I, DILL_TEMP))
 			gen_fatal("gen field convert out of registers BB \n");
-		    loop_var_type = DR_TEMP;
+		    loop_var_type = DILL_TEMP;
 		} else {
 		    /* may call a subconversion in here, use VARs */
-		    if (!dr_getreg(c, &loop_var, DR_I, DR_VAR))
+		    if (!dill_raw_getreg(c, &loop_var, DILL_I, DILL_VAR))
 			gen_fatal("gen field convert out of registers CC\n");
-		    loop_var_type = DR_VAR;
+		    loop_var_type = DILL_VAR;
 		}
 		REG_DEBUG(("Getting %d as loop_var\n", _vrr(loop_var)));
-		dr_addpi(c, src_addr, src_addr, src_offset - src_align_offset);
-		dr_addpi(c, dest_addr, dest_addr, dest_offset);
+		dill_addpi(c, src_addr, src_addr, src_offset - src_align_offset);
+		dill_addpi(c, dest_addr, dest_addr, dest_offset);
 
 		if (elements == -1) {
 		    /* 
@@ -3033,15 +3026,15 @@ int extra_dest_offset;
 		    tmp_spec.size = conv->ioformat->body->pointer_size;
 		}
 		/* gen conversion loop */
-		loop = dr_genlabel(c);
-		dr_seti(c, loop_var, elements);
-		dr_label(c, loop);
+		loop = dill_alloc_label(c);
+		dill_seti(c, loop_var, elements);
+		dill_mark_label(c, loop);
 		if (!register_args) {
 		    /* store away loop var and free the reg */
-		    loop_storage = dr_local(c, DR_I);
-		    dr_stii(c, loop_var, dr_lp(c), loop_storage);
+		    loop_storage = dill_local(c, DILL_I);
+		    dill_stii(c, loop_var, dill_lp(c), loop_storage);
 		    REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
-		    dr_putreg(c, loop_var, DR_I);
+		    dill_raw_putreg(c, loop_var, DILL_I);
 		}
 		gen_subfield_conv(c, conv, i, tmp_spec, dest_type, assume_align,
 				  src_addr, src_align_offset,
@@ -3053,26 +3046,26 @@ int extra_dest_offset;
 		/* generate end of loop */
 		if (!register_args) {
 		    /* store away loop var and free the reg */
-		    dr_getreg(c, &loop_var, DR_I, loop_var_type);
+		    dill_raw_getreg(c, &loop_var, DILL_I, loop_var_type);
 		    REG_DEBUG(("Getting %d as loop_var\n", _vrr(loop_var)));
-		    dr_ldii(c, loop_var, dr_lp(c), loop_storage);
+		    dill_ldii(c, loop_var, dill_lp(c), loop_storage);
 		}
-		dr_subli(c, loop_var, loop_var, 1);
-		dr_addpi(c, src_addr, src_addr, tmp_spec.size);
-		dr_addpi(c, dest_addr, dest_addr,
+		dill_subli(c, loop_var, loop_var, 1);
+		dill_addpi(c, src_addr, src_addr, tmp_spec.size);
+		dill_addpi(c, dest_addr, dest_addr,
 			conv->conversions[i].dest_size);
 		if (debug_code_generation) {
-		    VCALL4V(printf, "%P%p%p%p",
+		    dill_scallv(c, printf, "printf", "%P%p%p%p",
 			     "loopvar = %x, src %x, dest %x\n", loop_var,
 			     src_addr, dest_addr);
 		}
-		dr_bgtli(c, loop_var, 0, loop);
-		dr_putreg(c, loop_var, DR_I);
+		dill_bgtli(c, loop_var, 0, loop);
+		dill_raw_putreg(c, loop_var, DILL_I);
 		REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
 
 		/* restore values of src_addr and dest_addr */
-		dr_ldpi(c, src_addr, dr_lp(c), src_storage);
-		dr_ldpi(c, dest_addr, dr_lp(c), dest_storage);
+		dill_ldpi(c, src_addr, dill_lp(c), src_storage);
+		dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 	    }
 	} else {   
 	    /* 
@@ -3081,19 +3074,19 @@ int extra_dest_offset;
 	     * some possible conversion
 	     */
 	    int dimen_count = conv->conversions[i].iovar->dimen_count;
-	    int src_storage = dr_local(c, DR_P);
-	    int dest_storage = dr_local(c, DR_P);
+	    int src_storage = dill_local(c, DILL_P);
+	    int dest_storage = dill_local(c, DILL_P);
 	    
 	    /* save values of src_addr and dest_addr */
-	    dr_stpi(c, src_addr, dr_lp(c), src_storage);
-	    dr_stpi(c, dest_addr, dr_lp(c), dest_storage);
+	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
+	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
 	    
 	    
 /*	    generate_transpose(
-	    VCALL1V(transpose, );*/
+	    dill_scallv(c, transpose, "transpose");*/
 	    /* restore values of src_addr and dest_addr */
-	    dr_ldpi(c, src_addr, dr_lp(c), src_storage);
-	    dr_ldpi(c, dest_addr, dr_lp(c), dest_storage);
+	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
+	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 	    
 	}
     }
@@ -3104,13 +3097,13 @@ static void
 gen_var_part_conv(c, conv, i, control_base, assume_align, dest_addr,
 		  src_addr, src_string_base, final_string_base, 
 		  register_args)
-drisc_ctx c;
+dill_stream c;
 IOConversionPtr conv;
 int i;
 int control_base;
 int assume_align;
-dr_reg_t src_addr, dest_addr;
-dr_reg_t src_string_base, final_string_base;
+dill_reg src_addr, dest_addr;
+dill_reg src_string_base, final_string_base;
 int register_args;
 {
     const char *field_name;
@@ -3130,41 +3123,41 @@ int register_args;
 /** handle copying or conversion */
     if (debug_code_generation) {
 	if (register_args) {
-	    VCALL7V(printf, "%P%P%I%p%p%p%p",
+	    dill_scallv(c, printf, "printf", "%P%P%I%p%p%p%p",
 		     "varconvpart conversion \"%s\" %d src %lx, dest %lx, src_string_base %lx, final_string_base %lx\n",
 		     field_name,
 		     i, src_addr, dest_addr, 
 		     src_string_base, final_string_base);
 	} else {
-#ifdef HAVE_DRISC_H	    
-	    dr_reg_t v_at;
-	    if (dr_getreg(c, &v_at, DR_I, DR_TEMP) == 0) {
+#ifdef HAVE_DILL_H	    
+	    dill_reg v_at;
+	    if (dill_raw_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
 		gen_fatal("Out of regs 1\n");
 	    }
 #endif
-	    VCALL5V(printf, "%P%P%I%p%p",
+	    dill_scallv(c, printf, "printf", "%P%P%I%p%p",
 		     "varconvpart conversion \"%s\" %d src %lx, dest %lx\n",
 		     field_name,
 		     i, src_addr, dest_addr);
-	    dr_ldpi(c, v_at, dr_lp(c), src_string_base);
-	    VCALL2V(printf, "%P%p",
+	    dill_ldpi(c, v_at, dill_lp(c), src_string_base);
+	    dill_scallv(c, printf, "printf", "%P%p",
 		     "                       src_string_base %lx\n",
 		     v_at);
-	    dr_ldpi(c, v_at, dr_lp(c), final_string_base);
-	    VCALL2V(printf, "%P%p",
+	    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
+	    dill_scallv(c, printf, "printf", "%P%p",
 		     "                       final_string_base %lx\n",
 		     v_at);
-#ifdef HAVE_DRISC_H	    
-	    dr_putreg(c, v_at, DR_I);
+#ifdef HAVE_DILL_H	    
+	    dill_raw_putreg(c, v_at, DILL_I);
 #endif
 	}
     }
     if (elements != -1) {
 	/* generate a call to strcpy to do the move */
-	int end = dr_genlabel(c);
-	dr_beqpi(c, dest_addr, 0, end);
-	VCALL2V(strcpy, "%p%p", dest_addr, src_addr);
-	dr_label(c, end);
+	int end = dill_alloc_label(c);
+	dill_beqpi(c, dest_addr, 0, end);
+	dill_scallv(c, strcpy, "strcpy", "%p%p", dest_addr, src_addr);
+	dill_mark_label(c, end);
 	return;
     }
     {
@@ -3181,54 +3174,54 @@ int register_args;
 	    required_alignment = conv->conversions[i].dest_size;
 	}
 	if (required_alignment > 1) {
-#ifdef HAVE_DRISC_H	    
-	    dr_reg_t tmp;
-	    if (dr_getreg(c, &tmp, DR_I, DR_TEMP) == 0) {
+#ifdef HAVE_DILL_H	    
+	    dill_reg tmp;
+	    if (dill_raw_getreg(c, &tmp, DILL_I, DILL_TEMP) == 0) {
 		gen_fatal("Out of regs 1\n");
 	    }
 #endif
-	    dr_negl(c, tmp, dest_addr);
-	    dr_andli(c, tmp, tmp, required_alignment -1);
+	    dill_negl(c, tmp, dest_addr);
+	    dill_andli(c, tmp, tmp, required_alignment -1);
 	    if (register_args) {
-		dr_addl(c, final_string_base, final_string_base, tmp);
+		dill_addl(c, final_string_base, final_string_base, tmp);
 	    } else {
-#ifdef HAVE_DRISC_H	    
-		dr_reg_t v_at;
-		if (dr_getreg(c, &v_at, DR_I, DR_TEMP) == 0) {
+#ifdef HAVE_DILL_H	    
+		dill_reg v_at;
+		if (dill_raw_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
 		    gen_fatal("Out of regs 1\n");
 		}
 #endif
-		dr_ldpi(c, v_at, dr_lp(c), final_string_base);
+		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
 		if (debug_code_generation) {
-		    dr_savel(c, tmp);
-		    dr_savel(c, v_at);
-		    VCALL2V(printf, "%P%p",
+		    dill_savel(c, tmp);
+		    dill_savel(c, v_at);
+		    dill_scallv(c, printf, "printf", "%P%p",
 			    "before adjustment    final_string_base %lx\n",
 			    v_at);
-		    dr_restorel(c, v_at);
-		    dr_restorel(c, tmp);
+		    dill_restorel(c, v_at);
+		    dill_restorel(c, tmp);
 		}
-		dr_ldpi(c, v_at, dr_lp(c), final_string_base);
-		dr_addl(c, v_at, v_at, tmp);
-		dr_stpi(c, v_at, dr_lp(c), final_string_base);
-		dr_ldpi(c, v_at, dr_lp(c), final_string_base);
-		dr_savel(c, tmp);
+		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
+		dill_addl(c, v_at, v_at, tmp);
+		dill_stpi(c, v_at, dill_lp(c), final_string_base);
+		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
+		dill_savel(c, tmp);
 		if (debug_code_generation) {
-		    VCALL2V(printf, "%P%p",
+		    dill_scallv(c, printf, "printf", "%P%p",
 			    "after adjustment    final_string_base %lx\n",
 			    v_at);
 		}
-		dr_restorel(c, tmp);
-#ifdef HAVE_DRISC_H	    
-		dr_putreg(c, v_at, DR_I);
+		dill_restorel(c, tmp);
+#ifdef HAVE_DILL_H	    
+		dill_raw_putreg(c, v_at, DILL_I);
 #endif
 	    }
-	    dr_addp(c, dest_addr, dest_addr, tmp);
+	    dill_addp(c, dest_addr, dest_addr, tmp);
 	    if (debug_code_generation) {
-		VCALL3V(printf, "%P%p%p", "	after dynarray alignment adjustment, dest_addr = %lx, final_string base = %lx\n", dest_addr, final_string_base);
+		dill_scallv(c, printf, "printf", "%P%p%p", "	after dynarray alignment adjustment, dest_addr = %lx, final_string base = %lx\n", dest_addr, final_string_base);
 	    }
-#ifdef HAVE_DRISC_H	    
-	    dr_putreg(c, tmp, DR_I);
+#ifdef HAVE_DILL_H	    
+	    dill_raw_putreg(c, tmp, DILL_I);
 #endif
 	}
 
@@ -3241,18 +3234,18 @@ int register_args;
 
 	    /* data movement is all that is required */
 	    if (conv->conversion_type == copy_dynamic_portion) {
-		dr_reg_t size_reg;
-		if (!dr_getreg(c, &size_reg, DR_I, DR_TEMP))
+		dill_reg size_reg;
+		if (!dill_raw_getreg(c, &size_reg, DILL_I, DILL_TEMP))
 		    gen_fatal("gen var convert size out of registers BB \n");
 		REG_DEBUG(("Getting %d as size_reg\n", _vrr(size_reg)));
 		/* load control (array size) value */
-		dr_ldii(c, size_reg, dr_lp(c), control_base + i * sizeof(int));
+		dill_ldii(c, size_reg, dill_lp(c), control_base + i * sizeof(int));
 		/* scale it by destination size */
-		dr_mulii(c, size_reg, (dr_reg_t)size_reg,
+		dill_mulii(c, size_reg, (dill_reg)size_reg,
 			conv->conversions[i].dest_size);
 		/* generate a memcpy */
 		gen_memcpy(c, src_addr, 0, dest_addr, 0, size_reg, 0);
-		dr_putreg(c, size_reg, DR_I);
+		dill_raw_putreg(c, size_reg, DILL_I);
 		REG_DEBUG(("Putting %d as size_reg\n", _vrr(size_reg)));
 	    } else {
 		/* 
@@ -3262,96 +3255,96 @@ int register_args;
 	    }
 	} else {
 	    /* must do conversions one by one */
-	    int src_storage = dr_local(c, DR_P);
-	    int dest_storage = dr_local(c, DR_P);
-	    int local_loop_storage = dr_local(c, DR_I);
-	    int local_src_storage = dr_local(c, DR_P);
-	    int local_dest_storage = dr_local(c, DR_P);
-	    dr_reg_t loop_var;
+	    int src_storage = dill_local(c, DILL_P);
+	    int dest_storage = dill_local(c, DILL_P);
+	    int local_loop_storage = dill_local(c, DILL_I);
+	    int local_src_storage = dill_local(c, DILL_P);
+	    int local_dest_storage = dill_local(c, DILL_P);
+	    dill_reg loop_var;
 	    int dest_size = conv->conversions[i].dest_size;
-	    int loop = dr_genlabel(c);
-	    int end = dr_genlabel(c);
+	    int loop = dill_alloc_label(c);
+	    int end = dill_alloc_label(c);
 	    FMdata_type dest_type = src_spec->data_type;
 
 	    /* save values of src_addr and dest_addr */
-	    dr_stpi(c, src_addr, dr_lp(c), src_storage);
-	    dr_stpi(c, dest_addr, dr_lp(c), dest_storage);
+	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
+	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
 
 	    if (((elements == -1) ||
 		 (conv->conversions[i].subconversion == NULL)) &&
 		!debug_code_generation) {
-		if (!dr_getreg(c, &loop_var, DR_I, DR_VAR))
+		if (!dill_raw_getreg(c, &loop_var, DILL_I, DILL_VAR))
 		    gen_fatal("gen var convert loop out of registers CC\n");
 	    } else {
 		/* may call a subconversion in here, use VARs */
-		if (!dr_getreg(c, &loop_var, DR_I, DR_VAR))
+		if (!dill_raw_getreg(c, &loop_var, DILL_I, DILL_VAR))
 		    gen_fatal("gen var convert loop out of registers DD\n");
 	    }
 	    REG_DEBUG(("Getting %d as var_loop_var\n", _vrr(loop_var)));
-	    dr_ldii(c, loop_var, dr_lp(c), control_base + i * sizeof(int));
+	    dill_ldii(c, loop_var, dill_lp(c), control_base + i * sizeof(int));
 
 	    if ((dest_size - src_spec->size) != 0) {
-		dr_reg_t tmp;
-		if (!dr_getreg(c, &tmp, DR_I, DR_TEMP)) {
+		dill_reg tmp;
+		if (!dill_raw_getreg(c, &tmp, DILL_I, DILL_TEMP)) {
 		    gen_fatal("in var loop EE");
 		}
 		REG_DEBUG(("Getting %d as tmp str adjust\n", tmp));
-		dr_mulii(c, tmp, loop_var, (dest_size - src_spec->size));
+		dill_mulii(c, tmp, loop_var, (dest_size - src_spec->size));
 
 		/* adjust string base !!!!  non-local variation */
 		/* this is because new variant part may change size */
 		if (register_args) {
-		    dr_addl(c, final_string_base, final_string_base, tmp);
+		    dill_addl(c, final_string_base, final_string_base, tmp);
 		} else {
-#ifdef HAVE_DRISC_H	    
-		    dr_reg_t v_at;
-		    if (dr_getreg(c, &v_at, DR_I, DR_TEMP) == 0) {
+#ifdef HAVE_DILL_H
+		    dill_reg v_at;
+		    if (dill_raw_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
 			gen_fatal("Out of regs 1\n");
 		    }
 #endif
-		    dr_ldpi(c, v_at, dr_lp(c), final_string_base);
+		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
 		    if (debug_code_generation) {
-			dr_savel(c, tmp);
-			dr_savel(c, v_at);
-			VCALL2V(printf, "%P%p",
+			dill_savel(c, tmp);
+			dill_savel(c, v_at);
+			dill_scallv(c, printf, "printf", "%P%p",
 				 "before adjustment    final_string_base %lx\n",
 				 v_at);
-			dr_restorel(c, v_at);
-			dr_restorel(c, tmp);
+			dill_restorel(c, v_at);
+			dill_restorel(c, tmp);
 		    }
-		    dr_ldpi(c, v_at, dr_lp(c), final_string_base);
-		    dr_addl(c, v_at, v_at, tmp);
-		    dr_stpi(c, v_at, dr_lp(c), final_string_base);
-		    dr_ldpi(c, v_at, dr_lp(c), final_string_base);
+		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
+		    dill_addl(c, v_at, v_at, tmp);
+		    dill_stpi(c, v_at, dill_lp(c), final_string_base);
+		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
 		    if (debug_code_generation) {
-			VCALL2V(printf, "%P%p",
+			dill_scallv(c, printf, "printf", "%P%p",
 				 "after adjustment    final_string_base %lx\n",
 				 v_at);
 		    }
-#ifdef HAVE_DRISC_H	    
-		    dr_putreg(c, v_at, DR_I);
+#ifdef HAVE_DILL_H	    
+		    dill_raw_putreg(c, v_at, DILL_I);
 #endif
 		}
-		dr_putreg(c, tmp, DR_I);
+		dill_raw_putreg(c, tmp, DILL_I);
 		REG_DEBUG(("Putting %d as tmp str adjust\n", tmp));
 	    }
-	    dr_label(c, loop);
-	    dr_beqli(c, loop_var, 0, end);
+	    dill_mark_label(c, loop);
+	    dill_beqli(c, loop_var, 0, end);
 	    if (debug_code_generation) {
-		VCALL5V(printf, "%P%P%i%p%p",
+		dill_scallv(c, printf, "printf", "%P%P%i%p%p",
 			"top varloopvar = %s[%x], src %lx, dest %lx\n",
 			field_name, loop_var, src_addr, dest_addr);
 	    }
 	    if (!register_args) {
 		/* store away loop var and free the reg */
-		dr_stii(c, loop_var, dr_lp(c), local_loop_storage);
-		dr_putreg(c, loop_var, DR_I);
+		dill_stii(c, loop_var, dill_lp(c), local_loop_storage);
+		dill_raw_putreg(c, loop_var, DILL_I);
 		REG_DEBUG(("Putting %d as loop_var\n", loop_var));
 	    } else {
-		dr_savep(c, loop_var);
+		dill_savep(c, loop_var);
 	    }
-	    dr_stpi(c, src_addr, dr_lp(c), local_src_storage);
-	    dr_stpi(c, dest_addr, dr_lp(c), local_dest_storage);
+	    dill_stpi(c, src_addr, dill_lp(c), local_src_storage);
+	    dill_stpi(c, dest_addr, dill_lp(c), local_dest_storage);
 
 	    if (dest_type != string_type) {
 		int subelement_align = 1;
@@ -3376,32 +3369,32 @@ int register_args;
 				  control_base, final_string_base,
 				  src_string_base, register_args);
 	    }
-	    dr_ldpi(c, dest_addr, dr_lp(c), local_dest_storage);
-	    dr_ldpi(c, src_addr, dr_lp(c), local_src_storage);
+	    dill_ldpi(c, dest_addr, dill_lp(c), local_dest_storage);
+	    dill_ldpi(c, src_addr, dill_lp(c), local_src_storage);
 	    if (!register_args) {
 		/* store away loop var and free the reg */
-		dr_getreg(c, &loop_var, DR_I, DR_VAR);
+		dill_raw_getreg(c, &loop_var, DILL_I, DILL_VAR);
 		REG_DEBUG(("Getting %d as lop_var FF\n", loop_var));
-		dr_ldii(c, loop_var, dr_lp(c), local_loop_storage);
+		dill_ldii(c, loop_var, dill_lp(c), local_loop_storage);
 	    } else {
-		dr_restorep(c, loop_var);
+		dill_restorep(c, loop_var);
 	    }
 	    if (debug_code_generation) {
-		VCALL5V(printf, "%P%P%i%p%p",
+		dill_scallv(c, printf, "printf", "%P%P%i%p%p",
 			"bottom varloopvar = %s[%x], src %lx, dest %lx\n",
 			field_name, loop_var, src_addr, dest_addr);
 	    }
-	    dr_subli(c, loop_var, loop_var, 1);
-	    dr_addpi(c, src_addr, src_addr, src_spec->size);
-	    dr_addpi(c, dest_addr, dest_addr,
+	    dill_subli(c, loop_var, loop_var, 1);
+	    dill_addpi(c, src_addr, src_addr, src_spec->size);
+	    dill_addpi(c, dest_addr, dest_addr,
 		    conv->conversions[i].dest_size);
-	    dr_jv(c, loop);
-	    dr_putreg(c, loop_var, DR_I);
+	    dill_jv(c, loop);
+	    dill_raw_putreg(c, loop_var, DILL_I);
 	    REG_DEBUG(("Putting %d as lop_var\n", loop_var));
-	    dr_label(c, end);
+	    dill_mark_label(c, end);
 	    /* restore values of src_addr and dest_addr */
-	    dr_ldpi(c, src_addr, dr_lp(c), src_storage);
-	    dr_ldpi(c, dest_addr, dr_lp(c), dest_storage);
+	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
+	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 	}
     }
 }
