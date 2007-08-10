@@ -207,7 +207,8 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
     state.saved_offset_difference = header_size;
 
     if (fmformat->variant || state.copy_all) {
-	base_offset = copy_data_to_tmp(&state, b, data, fmformat->record_length, 1);
+	base_offset = copy_data_to_tmp(&state, b, data, 
+				       fmformat->record_length, 1);
     }
 
     if (!fmformat->variant) {
@@ -235,12 +236,62 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
     return b->tmp_buffer;
 }
 
-static int
-field_is_address(FMFormat f, int field)
+#ifdef NOT_DEF
+FFSEncodeVector
+FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
 {
-    return ((f->var_list[field].string == TRUE) ||
-	    (f->var_list[field].var_array == TRUE));
+    internal_iovec stack_iov_array[STACK_ARRAY_SIZE];
+    addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
+    struct encode_state state;
+    init_encode_state(&state);
+    int base_offset = 0;
+    int header_size;
+
+    state.iovec_is_stack = 1;
+    state.iovec = stack_iov_array;
+    state.addr_list_is_stack = 1;
+    state.addr_list = stack_addr_list;
+    state.copy_all = 1;
+    state.saved_offset_difference = 0;
+
+    make_tmp_buffer(b, 0);
+
+    /* setup header information */
+    setup_header(b, fmformat, &state);
+
+    header_size = state.output_len;
+    state.saved_offset_difference = header_size;
+
+    if (fmformat->variant || state.copy_all) {
+	base_offset = copy_data_to_tmp(&state, b, data, 
+				       fmformat->record_length, 1);
+    }
+
+    if (!fmformat->variant) {
+	*buf_size = state.output_len;
+	return b->tmp_buffer;
+    }
+
+    if (fmformat->recursive) {
+	state.addr_list[state.addr_list_cnt].addr = data;
+	state.addr_list[state.addr_list_cnt].offset = base_offset;
+	state.addr_list_cnt++;
+    }
+
+    copy_data_to_tmp(&state, b, NULL, 0, 8);   /* force 64-bit align for var */
+    handle_subfields(b, fmformat, &state, base_offset);
+    {
+	/* fill in actual length of data marshalled after header */
+	char *tmp_data = b->tmp_buffer;
+	int record_len = state.output_len - header_size;
+	int len_align_pad = (4 - fmformat->server_ID.length) & 3;
+	tmp_data += fmformat->server_ID.length + len_align_pad;
+	memcpy(tmp_data, &record_len, 4);
+    }
+    *buf_size = state.output_len;
+    return b->tmp_buffer;
 }
+#endif
 
 static void
 handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent_offset, FMTypeDesc *t);
@@ -417,7 +468,14 @@ extern
 void
 free_FFSTypeHandle(FFSTypeHandle f)
 {
+    int i = 0;
     FFSfree_conversion(f->conversion);
+    while(f->subformats && f->subformats[i]) {
+	free_FFSTypeHandle(f->subformats[i]);
+	f->subformats[i] = NULL;
+    }
+    free(f->subformats);
+    free(f->field_subformats);
     free(f);
 }
 
@@ -459,6 +517,7 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 		handle->subformats[i]->conversion = NULL;
 		handle->subformats[i]->warned_about_null_conversion = 0;
 		handle->subformats[i]->body = fmf->subformats[i];
+		handle->subformats[i]->subformats = NULL;
 	    }
 	    handle->field_subformats = 
 		malloc(fmf->field_count * sizeof(FFSTypeHandle));
@@ -472,6 +531,8 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 			    handle->field_subformats[i] = handle->subformats[j];
 			}
 		    }
+		} else {
+		    handle->field_subformats[i] = NULL;
 		}
 	    }
 	    for (k = 0; k < subformat_count ; k++) {
@@ -540,6 +601,7 @@ free_FFSContext(FFSContext c)
 	if (c->handle_list[i]) free_FFSTypeHandle(c->handle_list[i]);
     }
     free(c->handle_list);
+    free_FMcontext(c->fmc);
     free(c);
 }
 

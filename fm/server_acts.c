@@ -507,26 +507,8 @@ create_FMcontext()
     FMContext iofile;
 
     if (establish_server_connection_ptr == NULL) {
-	/* fill in function pointer used in io_formats.c */
-	char *addr_str;
-	char var_str[60];
-
+	/* fill in function pointer used in fm_formats.c */
 	establish_server_connection_ptr = establish_server_connection;
-	sprintf(var_str, "Server_conn_func_addr_%lx", (long) getpid());
-	if ((addr_str = getenv(var_str)) == NULL) {
-	    char addr_tmp[64];
-#ifdef MODULE
-            sprintf(addr_tmp, "%lx",  
-		    (long)establish_server_connection);
-	    addr_str = strdup(addr_tmp);
-	    setenv(var_str, addr_str, 1);
-#else
-	    sprintf(addr_tmp, "%s=%lx", var_str, 
-		    (long)establish_server_connection);
-	    addr_str = strdup(addr_tmp);
-	    putenv(addr_str);
-#endif
-	}
     }
     iofile = new_FMContext();
     return iofile;

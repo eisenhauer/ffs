@@ -181,6 +181,11 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, fifth_rec_ioformat, &emb_array, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
     write_buffer(xfer_buffer, buf_size);
+    free(emb_array.earray[0].string);
+    free(emb_array.earray[1].string);
+    free(emb_array.earray[2].string);
+    free(emb_array.earray[3].string);
+
     memset((char *) &rec2, 0, sizeof(rec2));
     rec2.integer_field = 14;
     rec2.short_field = 27;
@@ -461,7 +466,11 @@ char **argv;
 
 	for (j = 0; j < var_var.vec_length; j++) {
 	    free(var_var.eventv[j].iov_base);
+	    free(str_array.array[j]);
 	}
+	if (str_array.base_string) free(str_array.base_string);
+	free(var_var.eventv);
+	free(str_array.array);
     }
     str_list[0].format_name = "Channel Derive";
     str_list[0].field_list = derive_msg_field_list;
@@ -536,11 +545,12 @@ char **argv;
     write_buffer(xfer_buffer, buf_size);
     
     free_FMcontext(src_context);
+    free_FFSBuffer(encode_buffer);
     src_context = NULL;
     test_all_receive(NULL, 0, 1);
     write_buffer(NULL, 0);
     free_written_data();
-/*    if (rcv_context != NULL) free_FFScontext(rcv_context);*/
+    if (rcv_context != NULL) free_FFSContext(rcv_context);
     if (fail) exit(1);
     return 0;
 }
