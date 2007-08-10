@@ -164,6 +164,9 @@ set_format_server(char *hostname, int port)
 
 
 extern int
+server_write_header(FMContext fmc, int enc_len, unsigned char *enc_buffer);
+
+extern int
 establish_server_connection(iofile, do_fallback)
 FMContext iofile;
 int do_fallback;

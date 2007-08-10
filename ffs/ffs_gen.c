@@ -610,14 +610,14 @@ int const_size;
     }
     if (const_size != 0) {
 #ifdef HAVE_DILL_H
-	dill_scalli(c, (void*) memcpy, "%p%p%I", final_dest, final_src, 
-		  const_size);
+	dill_scalli(c, (void*) memcpy, "memcpy", "%p%p%I", final_dest, final_src, 
+		    const_size);
 #else
 	v_scalli((v_iptr) memcpy, "%p%p%I", final_dest, final_src, const_size);
 #endif
     } else {
 #ifdef HAVE_DILL_H
-	dill_scalli(c, (void*) memcpy, "%p%p%i", final_dest, final_src, size);
+	dill_scalli(c, (void*) memcpy, "memcpy", "%p%p%i", final_dest, final_src, size);
 #else
 	v_scalli((v_iptr) memcpy, "%p%p%i", final_dest, final_src, size);
 #endif

@@ -110,6 +110,7 @@ extern int select(int width, fd_set * readfds, fd_set * writefds,
 #endif
 extern time_t time();
 extern pid_t getpid();
+extern int getdomainname(char *name, size_t len);
 
 #ifndef PATH_MAX
 #define PATH_MAX _MAX_PATH

@@ -65,6 +65,9 @@ static int get_host_IP_format_ID(void *format_ID);
 static int is_self_server(FMContext fmc);
 static void expand_FMContext(FMContext fmc);
 static void IOfree_var_rec_elements(FMContext fmc, FMFormat ioformat, void *data);
+static int IOget_array_size_dimen(const char *str, FMFieldList fields,
+				  int dimen, int *control_field);
+static int field_type_eq(const char *str1, const char *str2);
 
 /* 
  * this reference to establish_server_connection is a function pointer 
@@ -1401,7 +1404,6 @@ FMFormat ioformat;
     return 1;
 }
 
-extern
 int
 count_FMfield(list)
 FMFieldList list;
@@ -1492,7 +1494,7 @@ FMFieldList list1, list2;
 	if ((strcmp(list1[i].field_name, list2[i].field_name) != 0) ||
 	    (list1[i].field_size != list2[i].field_size) ||
 	    (list1[i].field_offset != list2[i].field_offset) ||
-	    !IO_field_type_eq(list1[i].field_type, list2[i].field_type)) {
+	    !field_type_eq(list1[i].field_type, list2[i].field_type)) {
 	    return 1;
 	}
 	i++;
@@ -1557,7 +1559,7 @@ FMFieldList list1, list2;
 	    max_field_count++;
 	} else {
 	    /* field list in both.  Check types and take max size */
-	    if (!IO_field_type_eq(list1[i].field_type, tlist2[j].field_type)) {
+	    if (!field_type_eq(list1[i].field_type, tlist2[j].field_type)) {
 		/* Yikes!  Types are bad!  Serious problem */
 		free(tlist2);
 		free(max_field_list);
@@ -1703,7 +1705,7 @@ FMFormat format2;
 	if ((name_cmp = strcmp(field_list1[i].field_name,
 			       field_list2[j].field_name)) == 0) {
 	    /* fields have same name */
-	    if (!IO_field_type_eq(field_list1[i].field_type,
+	    if (!field_type_eq(field_list1[i].field_type,
 				  field_list2[j].field_type)) {
 		return Format_Incompatible;
 	    }
@@ -1871,7 +1873,7 @@ long *element_count_ptr;
 }
 
 extern int
-IO_field_type_eq(str1, str2)
+field_type_eq(str1, str2)
 const char *str1;
 const char *str2;
 {

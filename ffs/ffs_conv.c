@@ -2210,7 +2210,7 @@ int base_alignment;
     }
     if (debug_code_generation) {
 	if (register_args) {
-	    dill_scallv(c, printf, "printf", "%P%P%p%p%p%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%p%p%p",
 		     "convert for %s called with src= %lx, dest %lx, final_string =%lx, src_string =%lx\n",
 		     format_name, args[0], args[1], args[2], args[3]);
 	} else {
@@ -2220,15 +2220,15 @@ int base_alignment;
 		gen_fatal("Out of regs 1\n");
 	    }
 #endif
-	    dill_scallv(c, printf, "printf", "%P%P%p%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%p",
 		     "convert for %s called with src= %lx, dest %lx\n",
 		     format_name, args[0], args[1]);
 	    dill_ldpi(c, v_at, dill_lp(c), args[2]);
-	    dill_scallv(c, printf, "printf", "%P%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%p",
 		     "               src_string_base %lx\n",
 		     v_at);
 	    dill_ldpi(c, v_at, dill_lp(c), args[3]);
-	    dill_scallv(c, printf, "printf", "%P%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%p",
 		     "               final_string_base %lx\n",
 		     v_at);
 #ifdef HAVE_DILL_H	    
@@ -2260,7 +2260,7 @@ int base_alignment;
 	if (mask != 0) {
 	    dill_anduli(c, tmp, args[0], mask);
 	    dill_beqli(c, tmp, 0, zero_target);
-	    dill_scallv(c, printf, "printf", "%P%P%p%I",
+	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%I",
 		    "convert for %s called with bad align src= %lx, align is %d\n",
 		    format_name, args[0], conv->required_alignment);
 	    dill_mark_label(c, zero_target);
@@ -2755,13 +2755,13 @@ int register_args;
 			   new_src, new_dest));
 		dill_addpi(c, new_src, src_addr, src_offset);
 		dill_addpi(c, new_dest, dest_addr, dest_offset);
-		ret = dill_scallp(c, subconv->conv_func, "%p%p%p%p", "anon", new_src,
+		ret = dill_scallp(c, (void*)subconv->conv_func, "%p%p%p%p", "anon", new_src,
 			 new_dest, final_string_base, src_string_base);
 		dill_movp(c, final_string_base, ret);
 		REG_DEBUG(("Putting %d and %d for new src & dest\n", 
 			   new_src, new_dest));
 		if (debug_code_generation) {
-		    dill_scallv(c, printf, "printf", "%P%p",
+		    dill_scallv(c, (void*)printf, "printf", "%P%p",
 			    "After subroutine call, new src_string_base is %lx\n", src_string_base);
 		}
 		dill_raw_putreg(c, new_src, DILL_P);
@@ -2783,7 +2783,7 @@ int register_args;
 		dill_addpi(c, dest_addr, dest_addr, dest_offset);
 		dill_ldpi(c, reg_final_string_base, dill_lp(c), final_string_base);
 		dill_ldpi(c, reg_src_string_base, dill_lp(c), src_string_base);
-		dill_scallv(c, subconv->conv_func, "anon", "%p%p%p%p", src_addr,
+		dill_scallv(c, (void*)subconv->conv_func, "anon", "%p%p%p%p", src_addr,
 			 dest_addr, reg_final_string_base, reg_src_string_base);
 		REG_DEBUG(("Putting %d and %d for reg src base & reg dest base\n", reg_src_string_base, reg_final_string_base));
 		dill_raw_putreg(c, reg_src_string_base, DILL_P);
@@ -3055,7 +3055,7 @@ int extra_dest_offset;
 		dill_addpi(c, dest_addr, dest_addr,
 			conv->conversions[i].dest_size);
 		if (debug_code_generation) {
-		    dill_scallv(c, printf, "printf", "%P%p%p%p",
+		    dill_scallv(c, (void*)printf, "printf", "%P%p%p%p",
 			     "loopvar = %x, src %x, dest %x\n", loop_var,
 			     src_addr, dest_addr);
 		}
@@ -3123,7 +3123,7 @@ int register_args;
 /** handle copying or conversion */
     if (debug_code_generation) {
 	if (register_args) {
-	    dill_scallv(c, printf, "printf", "%P%P%I%p%p%p%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%P%I%p%p%p%p",
 		     "varconvpart conversion \"%s\" %d src %lx, dest %lx, src_string_base %lx, final_string_base %lx\n",
 		     field_name,
 		     i, src_addr, dest_addr, 
@@ -3135,16 +3135,16 @@ int register_args;
 		gen_fatal("Out of regs 1\n");
 	    }
 #endif
-	    dill_scallv(c, printf, "printf", "%P%P%I%p%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%P%I%p%p",
 		     "varconvpart conversion \"%s\" %d src %lx, dest %lx\n",
 		     field_name,
 		     i, src_addr, dest_addr);
 	    dill_ldpi(c, v_at, dill_lp(c), src_string_base);
-	    dill_scallv(c, printf, "printf", "%P%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%p",
 		     "                       src_string_base %lx\n",
 		     v_at);
 	    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-	    dill_scallv(c, printf, "printf", "%P%p",
+	    dill_scallv(c, (void*)printf, "printf", "%P%p",
 		     "                       final_string_base %lx\n",
 		     v_at);
 #ifdef HAVE_DILL_H	    
@@ -3156,7 +3156,7 @@ int register_args;
 	/* generate a call to strcpy to do the move */
 	int end = dill_alloc_label(c);
 	dill_beqpi(c, dest_addr, 0, end);
-	dill_scallv(c, strcpy, "strcpy", "%p%p", dest_addr, src_addr);
+	dill_scallv(c, (void*)strcpy, "strcpy", "%p%p", dest_addr, src_addr);
 	dill_mark_label(c, end);
 	return;
     }
@@ -3195,7 +3195,7 @@ int register_args;
 		if (debug_code_generation) {
 		    dill_savel(c, tmp);
 		    dill_savel(c, v_at);
-		    dill_scallv(c, printf, "printf", "%P%p",
+		    dill_scallv(c, (void*)printf, "printf", "%P%p",
 			    "before adjustment    final_string_base %lx\n",
 			    v_at);
 		    dill_restorel(c, v_at);
@@ -3207,7 +3207,7 @@ int register_args;
 		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
 		dill_savel(c, tmp);
 		if (debug_code_generation) {
-		    dill_scallv(c, printf, "printf", "%P%p",
+		    dill_scallv(c, (void*)printf, "printf", "%P%p",
 			    "after adjustment    final_string_base %lx\n",
 			    v_at);
 		}
@@ -3218,7 +3218,7 @@ int register_args;
 	    }
 	    dill_addp(c, dest_addr, dest_addr, tmp);
 	    if (debug_code_generation) {
-		dill_scallv(c, printf, "printf", "%P%p%p", "	after dynarray alignment adjustment, dest_addr = %lx, final_string base = %lx\n", dest_addr, final_string_base);
+		dill_scallv(c, (void*)printf, "printf", "%P%p%p", "	after dynarray alignment adjustment, dest_addr = %lx, final_string base = %lx\n", dest_addr, final_string_base);
 	    }
 #ifdef HAVE_DILL_H	    
 	    dill_raw_putreg(c, tmp, DILL_I);
@@ -3306,7 +3306,7 @@ int register_args;
 		    if (debug_code_generation) {
 			dill_savel(c, tmp);
 			dill_savel(c, v_at);
-			dill_scallv(c, printf, "printf", "%P%p",
+			dill_scallv(c, (void*)printf, "printf", "%P%p",
 				 "before adjustment    final_string_base %lx\n",
 				 v_at);
 			dill_restorel(c, v_at);
@@ -3317,7 +3317,7 @@ int register_args;
 		    dill_stpi(c, v_at, dill_lp(c), final_string_base);
 		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
 		    if (debug_code_generation) {
-			dill_scallv(c, printf, "printf", "%P%p",
+			dill_scallv(c, (void*)printf, "printf", "%P%p",
 				 "after adjustment    final_string_base %lx\n",
 				 v_at);
 		    }
@@ -3331,7 +3331,7 @@ int register_args;
 	    dill_mark_label(c, loop);
 	    dill_beqli(c, loop_var, 0, end);
 	    if (debug_code_generation) {
-		dill_scallv(c, printf, "printf", "%P%P%i%p%p",
+		dill_scallv(c, (void*)printf, "printf", "%P%P%i%p%p",
 			"top varloopvar = %s[%x], src %lx, dest %lx\n",
 			field_name, loop_var, src_addr, dest_addr);
 	    }
@@ -3380,7 +3380,7 @@ int register_args;
 		dill_restorep(c, loop_var);
 	    }
 	    if (debug_code_generation) {
-		dill_scallv(c, printf, "printf", "%P%P%i%p%p",
+		dill_scallv(c, (void*)printf, "printf", "%P%P%i%p%p",
 			"bottom varloopvar = %s[%x], src %lx, dest %lx\n",
 			field_name, loop_var, src_addr, dest_addr);
 	    }

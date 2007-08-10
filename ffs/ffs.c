@@ -61,7 +61,7 @@ setup_header(FFSBuffer buf, FMFormat f, estate s)
     memcpy((char *) buf->tmp_buffer + tmp_data, f->server_ID.value,
 	   f->server_ID.length);
 
-    memset(buf->tmp_buffer + tmp_data + f->server_ID.length,
+    memset((char*)buf->tmp_buffer + tmp_data + f->server_ID.length,
 	   0, header_size - f->server_ID.length);
 
     /* fill in an IOV field for the header */
@@ -119,7 +119,7 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
     if (pad != 0) {
 	if (s->iovec[s->iovcnt-1].iov_base == NULL) {
 	    /* last was tmp too */
-	    memset(buf->tmp_buffer + tmp_data, 0, pad);	/* zero pad */
+	    memset((char*)buf->tmp_buffer + tmp_data, 0, pad);	/* zero pad */
 	    tmp_data += pad;
 	    s->iovec[s->iovcnt-1].iov_len += pad;
 	} else {
@@ -130,7 +130,7 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
 	}
     }
     if (length != 0) {
-	memcpy(buf->tmp_buffer + tmp_data, data, length);
+	memcpy((char*)buf->tmp_buffer + tmp_data, data, length);
 	s->iovec[s->iovcnt].iov_len = length + pad;
 	s->iovec[s->iovcnt].iov_offset = tmp_data;
 	s->iovec[s->iovcnt].iov_base = NULL;
@@ -319,7 +319,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	char *ptr_value;
 	memset(&src_spec, 0, sizeof(src_spec));
 	src_spec.size = f->pointer_size;
-	ptr_value = quick_get_pointer(&src_spec, buf->tmp_buffer + data_offset);
+	ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
 	if (ptr_value == NULL) return;
 	size = determine_size(f, buf, parent_offset, t->next);
 	if (!s->copy_all && field_is_flat(f, t->next)) {
@@ -329,7 +329,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8);
 	}
 	quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
-			buf->tmp_buffer + data_offset);
+			(char*)buf->tmp_buffer + data_offset);
 	if (field_is_flat(f, t->next)) return;
 	handle_subfield(buf, f, s, new_offset, parent_offset, t->next);
 	break;
@@ -341,7 +341,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	int size, str_offset;
 	memset(&src_spec, 0, sizeof(src_spec));
 	src_spec.size = f->pointer_size;
-	ptr_value = quick_get_pointer(&src_spec, buf->tmp_buffer + data_offset);
+	ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
 	if (ptr_value == NULL) return;
 	size = strlen(ptr_value) + 1;
 	if (!s->copy_all) {
@@ -351,7 +351,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    str_offset = copy_data_to_tmp(s, buf, ptr_value, size, 1);
 	}
 	quick_put_ulong(&src_spec, str_offset - s->saved_offset_difference,
-			buf->tmp_buffer + data_offset);
+			(char*)buf->tmp_buffer + data_offset);
 	break;
     }
     case FMType_array:
@@ -367,7 +367,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		memset(&src_spec, 0, sizeof(src_spec));
 		src_spec.size = f->field_list[field].field_size;
 		src_spec.offset = f->field_list[field].field_offset;
-		int tmp = quick_get_ulong(&src_spec, buf->tmp_buffer + parent_offset);
+		int tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
 		elements = elements * tmp;
 		var_array = 1;
 	    } else {
@@ -382,7 +382,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    int new_offset, size = element_size * elements;
 	    memset(&src_spec, 0, sizeof(src_spec));
 	    src_spec.size = f->pointer_size;
-	    ptr_value = quick_get_pointer(&src_spec, buf->tmp_buffer + data_offset);
+	    ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
 	    if (ptr_value == NULL) return;
 	    if (!s->copy_all && field_is_flat(f, t->next)) {
 		/* leave data where it sits */
@@ -391,7 +391,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8);
 	    }
 	    quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
-			    buf->tmp_buffer + data_offset);
+			    (char*)buf->tmp_buffer + data_offset);
 	    data_offset = new_offset;
 	}
 	if (field_is_flat(f, next)) return;

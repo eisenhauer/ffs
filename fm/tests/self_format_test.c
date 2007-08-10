@@ -5,6 +5,7 @@
 #include "config.h"
 #include <string.h>
 #include "fm.h"
+#include "fm_internal.h"
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #define sleep(x) Sleep(1000*x)

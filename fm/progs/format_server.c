@@ -64,6 +64,8 @@ int sig;
     exit(1);
 }
 
+extern int serverAtomicWrite(void *fd, const void *buffer, int length);
+
 int
 main(argc, argv)
 int argc;

@@ -9,6 +9,7 @@ typedef struct _FMContextStruct *FMContext;
 extern
 FMContext create_FMcontext();
 FMContext create_local_FMcontext();
+extern void free_FMcontext();
 
 #define FMOffset(p_type,field) \
 	((int) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
@@ -162,6 +163,12 @@ FMformat_order FMformat_cmp(FMFormat format1, FMFormat format2);
 
 extern char *
 name_of_FMformat(FMFormat format);
+
+extern FMFieldList
+copy_field_list(FMFieldList list);
+
+extern int 
+count_FMfield(FMFieldList list);
 
 extern void print_server_ID(unsigned char *ID);
 extern void print_format_ID(FMFormat ioformat);

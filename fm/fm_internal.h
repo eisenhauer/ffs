@@ -185,3 +185,19 @@ extern IOinterface_open os_file_open_func;
 extern IOinterface_func os_server_read_func;
 extern IOinterface_func os_server_write_func;
 extern IOinterface_init os_sockets_init_func;
+
+extern int version_of_format_ID(void *server_ID);
+extern int FFS_gen_authentication (unsigned char *outbuf);
+extern int serverAtomicRead(void *fd, void *buffer, int length);
+extern void stringify_server_ID(unsigned char *ID, char *buffer, int len);
+extern void 
+generate_format2_server_ID(server_ID_type *server_ID,
+			   struct _format_wire_format_0 *server_format_rep);
+extern void server_read_header(FSClient fsc);
+extern void
+add_format_to_iofile(FMContext fmc, FMFormat ioformat, int id_size, 
+		     void *id_buffer, int index);
+extern int establish_server_connection(FMContext iofile, int do_fallback);
+extern void general_format_server(int port, int do_restart, int verbose);
+extern void dump_FMFormat(FMFormat ioformat);
+extern int format_server_restarted(FMContext context);
