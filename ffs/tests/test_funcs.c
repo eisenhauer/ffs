@@ -4,6 +4,7 @@
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #endif
+#include <stdio.h>
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

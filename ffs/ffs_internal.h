@@ -134,6 +134,13 @@ extern FMdata_type array_str_to_data_type(const char *str,
 						long *element_count_ptr);
 extern const char *data_type_to_str(FMdata_type data_type);
 extern int field_offset_compar(const void *a, const void *b);
+extern void
+FFSconvert_record(IOConversionPtr conv, void *src, void *dest, 
+		  void *final_string_base, void *src_string_base);
+
+extern void
+str_to_val(char *val_str, const IOField * io_field, void **default_value);
+
 #ifdef NOT_DEF
 extern int AtomicRead(void *fd, void *buffer, int length, IOFile iofile);
 extern int AtomicWrite(void *fd, void *buffer, int length, IOFile iofile);

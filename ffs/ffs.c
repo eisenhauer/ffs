@@ -649,21 +649,6 @@ is_conversion_generation_set()
 {
     char *gen_string = cercs_getenv("FFS_CONVERSION_GENERATION");
     int ffs_conversion_generation = FFS_CONVERSION_GENERATION_DEFAULT;
-    if (gen_string != NULL) {
-#ifdef MODULE
-	ffs_conversion_generation = strtol(gen_string, NULL, 10);
-	if ((ffs_conversion_generation == LONG_MIN) || 
-	    (ffs_conversion_generation == LONG_MAX) || 
-	    (ffs_conversion_generation == 0)) {
-#else
-	if (sscanf(gen_string, "%d", &ffs_conversion_generation) != 1) {
-#endif
-	    if (*gen_string == 0)
-		ffs_conversion_generation = 1;
-	    else
-		printf("Unable to parse FFS_CONVERSION_GENERATION environment variable \"%s\".\n", gen_string);
-	}
-    }
     return ffs_conversion_generation;
 }
 
@@ -3939,7 +3924,7 @@ extern int
 FFSdecode_to_buffer(iocontext, src, dest)
 FFSContext iocontext;
 char *src;			/* incoming data to be decoded */
-char *dest;			/* area to hold decoded data */
+void *dest;			/* area to hold decoded data */
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
