@@ -2755,7 +2755,7 @@ int register_args;
 			   new_src, new_dest));
 		dill_addpi(c, new_src, src_addr, src_offset);
 		dill_addpi(c, new_dest, dest_addr, dest_offset);
-		ret = dill_scallp(c, (void*)subconv->conv_func, "%p%p%p%p", "anon", new_src,
+		ret = dill_scallp(c, (void*)subconv->conv_func, "anon", "%p%p%p%p", new_src,
 			 new_dest, final_string_base, src_string_base);
 		dill_movp(c, final_string_base, ret);
 		REG_DEBUG(("Putting %d and %d for new src & dest\n", 

@@ -1,5 +1,5 @@
-#ifndef __I_O__
-#define __I_O__
+#ifndef __FFS_H__
+#define __FFS_H__
 
 #include "fm.h"
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -66,6 +66,25 @@ extern FFSTypeHandle FFSTypeHandle_from_encode(FFSContext c, char *b);
 extern FFSTypeHandle FFSTypeHandle_by_index(FFSContext c, int index);
 
 extern char * FFSTypeHandle_name(FFSTypeHandle f);
+
+extern void
+establish_conversion(FFSContext c, FFSTypeHandle f,
+			   FMStructDescList struct_list);
+
+extern int
+FFS_est_decode_length(FFSContext context, char *encoded, int record_length);
+
+extern int
+FFSdecode_in_place(FFSContext context, char *encode, void **dest_ptr);
+
+extern int
+FFSdecode_to_buffer(FFSContext context, char *encode, void *dest);
+
+extern int
+FFSdecode(FFSContext context, char *encode, char *dest);
+
+extern void
+free_FFSContext(FFSContext c);
 
 #ifdef NOT_DEF
 extern char *
@@ -205,10 +224,6 @@ register_simple_data_format(IOContext iofile, char *struct_name,
 				  IOFieldList struct_field_list,
 				  int struct_size,
 				  IOOptInfo *optinfo);
-
-extern void
-establish_conversion(IOContext iofile, IOFormatHandle format,
-			   IOStructDescList struct_list);
 
 extern void *
 get_optinfo_IOFormat(IOFormat ioformat, int info_type, int *len_p);

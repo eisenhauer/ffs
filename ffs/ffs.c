@@ -464,6 +464,9 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     }
 }
 
+void
+FFSfree_conversion(IOConversionPtr conv);
+
 extern
 void
 free_FFSTypeHandle(FFSTypeHandle f)
@@ -473,6 +476,7 @@ free_FFSTypeHandle(FFSTypeHandle f)
     while(f->subformats && f->subformats[i]) {
 	free_FFSTypeHandle(f->subformats[i]);
 	f->subformats[i] = NULL;
+	i++;
     }
     free(f->subformats);
     free(f->field_subformats);
@@ -519,6 +523,7 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 		handle->subformats[i]->body = fmf->subformats[i];
 		handle->subformats[i]->subformats = NULL;
 	    }
+	    handle->subformats[subformat_count] = NULL;
 	    handle->field_subformats = 
 		malloc(fmf->field_count * sizeof(FFSTypeHandle));
 	    memset(handle->field_subformats, 0, 
@@ -3897,7 +3902,7 @@ extern int
 FFSdecode(iocontext, src, dest)
 FFSContext iocontext;
 char *src;			/* incoming data to be decoded */
-void *dest;			/* area to hold decoded data */
+char *dest;			/* area to hold decoded data */
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
@@ -3934,7 +3939,7 @@ extern int
 FFSdecode_to_buffer(iocontext, src, dest)
 FFSContext iocontext;
 char *src;			/* incoming data to be decoded */
-void *dest;			/* area to hold decoded data */
+char *dest;			/* area to hold decoded data */
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
@@ -4089,10 +4094,13 @@ void *data;
     switch (iofield->size) {
     case 1:
 	u.tmp = (unsigned long) (*((unsigned char *) data));
+	break;
     case 2:
 	u.tmp = (unsigned long) (*((unsigned short *) data));
+	break;
     case 4:
 	u.tmp = (unsigned long) (*((unsigned int *) data));
+	break;
     case 8:
 #if SIZEOF_LONG == 8
 	if ((((long) data) & 0x0f) == 0) {
@@ -4111,6 +4119,7 @@ void *data;
 	u.tmp = (*((unsigned long *) data));
 #endif
 #endif
+	break;
     }
     return u.p;
 }

@@ -238,6 +238,13 @@ FMFormat body;
     }
     free(body->field_list);
     free(body->var_list);
+    i = 0;
+    while (body->subformats && body->subformats[i]) {
+	body->subformats[i]->subformats = NULL;
+	free_FMformat(body->subformats[i++]);
+    }
+    free(body->subformats);
+    free(body->field_subformats);
     if (body->server_format_rep != NULL)
 	free(body->server_format_rep);
     if (body->server_ID.value != NULL)
@@ -1183,7 +1190,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     int i, field;
     int struct_count = 0;
     int field_count = 0;
-    FMFormat *formats;
+    FMFormat *formats, ret;
 
     for (struct_count = 0; struct_list[struct_count].format_name != NULL; 
 	 struct_count++) /* set struct_count */;
@@ -1330,7 +1337,14 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    }
 	}
     }
-    return formats[0];
+    if (context->reg_format_count == context->format_list_size) {
+	expand_FMContext(context);
+    }
+    formats[0]->format_index = context->reg_format_count++;
+    context->format_list[formats[0]->format_index] = formats[0];
+    ret = formats[0];
+    free(formats);
+    return ret;
 }
 
 INT4 FFS_self_server_IP_addr = 0;
@@ -3762,9 +3776,11 @@ int index;
 	ioformat->subformats[subformat_count]->subformats = ioformat->subformats;
 	subformat_count++;
     }
-    ioformat->server_ID.length = id_size;
-    ioformat->server_ID.value = malloc(id_size);
-    memcpy(ioformat->server_ID.value, id_buffer, id_size);
+    if (id_size) {
+	ioformat->server_ID.length = id_size;
+	ioformat->server_ID.value = malloc(id_size);
+	memcpy(ioformat->server_ID.value, id_buffer, id_size);
+    }
 
     fill_derived_format_values(fmc, ioformat);
     for (i=0; i < subformat_count; i++) {
