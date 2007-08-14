@@ -139,7 +139,7 @@ FFSconvert_record(IOConversionPtr conv, void *src, void *dest,
 		  void *final_string_base, void *src_string_base);
 
 extern void
-str_to_val(char *val_str, const IOField * io_field, void **default_value);
+str_to_val(char *val_str, FMdata_type dtype, int size, void **default_value);
 
 #ifdef NOT_DEF
 extern int AtomicRead(void *fd, void *buffer, int length, IOFile iofile);

@@ -825,6 +825,10 @@ FMFormat *formats;
 		}
 		j++;
 	    }
+	    if (strcmp(base_type, ioformat->format_name) == 0) {
+		subformat = ioformat;
+		ioformat->recursive = 1;
+	    }
 	    if (subformat == NULL) {
 		(void) fprintf(stderr, "Field \"%s\" base type \"%s\" is not a simple type or registered format name.\n",
 			       ioformat->field_list[field].field_name,
@@ -838,6 +842,7 @@ FMFormat *formats;
 	    free(base_type);
 	    if (subformat != NULL) {
 		ioformat->variant |= subformat->variant;
+		ioformat->recursive |= subformat->recursive;
 	    }
 	    ioformat->field_subformats[field] = subformat;
 	}
@@ -1108,11 +1113,15 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 	int field_size = 0;
 	if (strchr(field_list[field].field_type, '[') == NULL) {
 	    /* not an array */
-	    field_size = field_list[field].field_size;
+	    if (index(field_list[field].field_type, '*') == NULL) {
+		field_size = field_list[field].field_size;
+	    } else {
+		field_size = ioformat->pointer_size;
+	    }
 	} else {
 	    int ret = is_var_array_field(field_list, field);
 	    if (ret == -1) return NULL;   /* rejected */
-	    if (ret == 1) {
+	    if ((ret == 1) || (index(field_list[field].field_type, '*'))) {
 		/* variant array, real_field_size is
 		 * fmc->pointer_size */
 		field_size = ioformat->pointer_size;
@@ -1124,6 +1133,7 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 	    } else {
 		long elements;
 		FMdata_type base_type;
+		
 		base_type = array_str_to_data_type(field_list[field].field_type,
 						   &elements);
 		if ((base_type != unknown_type) &&
@@ -1293,7 +1303,10 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    if (ioformat->var_list[field].var_array) {
 		last_field_end = field_list[field].field_offset +
 		    ioformat->pointer_size;
-	    }
+	    } else if (ioformat->var_list[field].type_desc.type == FMType_pointer) {
+		last_field_end = field_list[field].field_offset +
+		    ioformat->pointer_size;
+	    }		
 	}
     }
 
@@ -1936,7 +1949,11 @@ extern char *
 base_data_type(str)
 const char *str;
 {
-    char *typ = strdup(str);
+    char *typ;
+    while (isspace((int)*str) || (*str == '*') || (*str == '(')) {	/* skip preceeding space */
+	str++;
+    }
+    typ = strdup(str);
     if (strchr(typ, '[') != NULL) {	/* truncate at array stuff */
 	*strchr(typ, '[') = 0;
     }

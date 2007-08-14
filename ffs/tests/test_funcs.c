@@ -1713,3 +1713,30 @@ FMField xml_format_list_flds[] =
     {(char *) 0, (char *) 0, 0, 0}
 };
 
+FMField node_field_list[] = 
+{
+    {"node_num", "integer", sizeof(int), FMOffset(node_ptr, node_num)},
+    {"link1", "*node", sizeof(struct node), FMOffset(node_ptr, link1)},
+    {"link2", "*node", sizeof(struct node), FMOffset(node_ptr, link2)},
+    {(char *) 0, (char *) 0, 0, 0}
+};
+
+static int
+already_visited(visit_table v, node_ptr n)
+{
+    int i;
+    for (i=0; i < v->node_count; i++) {
+	if (v->nodes[i] == n) return 1;
+    }
+    v->nodes[v->node_count] = n;
+    v->node_count++;
+    return 0;
+}
+
+extern int calc_signature(node_ptr n, visit_table v)
+{
+    if (n == NULL) return 0;
+    if (already_visited(v, n)) return 5 * n->node_num;
+    return 3 * calc_signature(n->link1, v) + 7 * calc_signature(n->link1, v) 
+	+ n->node_num;
+}

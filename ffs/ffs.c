@@ -509,7 +509,7 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 	handle->conversion = NULL;
 	handle->warned_about_null_conversion = 0;
 	handle->body = FMformat_by_index(c->fmc, index);
-	if (fmf->subformats && (fmf->subformats[0] != NULL)) {
+	if ((fmf->subformats && (fmf->subformats[0] != NULL)) || fmf->recursive) {
 	    int i, k, subformat_count = 0;
 	    while (fmf->subformats[subformat_count] != NULL) subformat_count++;
 	    handle->subformats = 
@@ -535,6 +535,10 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 			if (fmf->field_subformats[i] == handle->subformats[j]->body) {
 			    handle->field_subformats[i] = handle->subformats[j];
 			}
+		    }
+		    if (fmf->field_subformats[i] == fmf) {
+			/* recursive */
+			handle->field_subformats[i] = handle;
 		    }
 		} else {
 		    handle->field_subformats[i] = NULL;

@@ -211,6 +211,19 @@ typedef struct {
     msg_format_list_element *out_formats;
 } add_rec, *add_rec_ptr;
 
+typedef struct node {
+    int node_num;
+    struct node *link1;
+    struct node *link2;
+} *node_ptr;
+
+typedef struct visit_table {
+    int node_count;
+    void *nodes[100];
+} *visit_table;
+
+extern int calc_signature(node_ptr n, visit_table v);
+
 extern FMField field_list[];
 extern FMField newer_field_list[];
 extern FMField field_list2[];
@@ -234,6 +247,7 @@ extern FMField compressed_mesh[];
 extern FMField triangle_field[];
 extern FMField xml_format_list_flds[];
 extern FMField add_field_list[];
+extern FMField node_field_list[];
 
 extern void init_written_data();
 extern void free_written_data();

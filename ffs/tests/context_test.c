@@ -60,8 +60,11 @@ char **argv;
     ninth_rec var_var;
     string_array_rec str_array;
     int i, j;
+    struct node nodes[10];
+    struct visit_table v;
     FMFormat sixth_rec_ioformat, ninth_rec_ioformat, string_array_ioformat;
     FMFormat derive_ioformat, multi_array_ioformat, add_action_ioformat;
+    FMFormat node_ioformat;
 
     init_written_data();
 
@@ -545,6 +548,62 @@ char **argv;
     test_all_receive(xfer_buffer, buf_size, 0);
     write_buffer(xfer_buffer, buf_size);
     
+
+    str_list[0].format_name = "node";
+    str_list[0].field_list = node_field_list;
+    str_list[0].struct_size = sizeof(struct node);
+    str_list[0].opt_info = NULL;
+    str_list[1].format_name = NULL;
+    node_ioformat = register_data_format(src_context, str_list);
+
+    for (i = 0; i < sizeof(nodes)/sizeof(nodes[0]); i++) {
+	nodes[i].node_num = i;
+	nodes[i].link1 = nodes[i].link2 = NULL;
+    }
+
+    for (i=0; i <  sizeof(nodes)/sizeof(nodes[0]) - 1; i++) {
+	nodes[i].link1 = &nodes[i+1];
+    }
+    nodes[0].link2 = &nodes[sizeof(nodes)/sizeof(nodes[0])-1];
+    v.node_count = 0;
+    nodes[0].node_num = calc_signature(&nodes[0], &v);
+    xfer_buffer = FFSencode(encode_buffer, node_ioformat,
+					  &nodes[0], &buf_size);
+    test_all_receive(xfer_buffer, buf_size, 0);
+    write_buffer(xfer_buffer, buf_size);
+
+    nodes[0].link2 = NULL;
+    nodes[sizeof(nodes)/sizeof(nodes[0]) - 1].link1 = &nodes[2];
+    v.node_count = 0;
+    nodes[0].node_num = 0;
+    nodes[0].node_num = calc_signature(&nodes[0], &v);
+    xfer_buffer = FFSencode(encode_buffer, node_ioformat,
+					  &nodes[0], &buf_size);
+    test_all_receive(xfer_buffer, buf_size, 0);
+    write_buffer(xfer_buffer, buf_size);
+
+    for (i=0; i <  sizeof(nodes)/sizeof(nodes[0]) - 1; i++) {
+	nodes[i].link1 = nodes[i].link2 = NULL;
+    }
+    nodes[0].link1 = &nodes[1];
+    nodes[0].link2 = &nodes[2];
+    nodes[1].link1 = &nodes[3];
+    nodes[1].link2 = &nodes[4];
+    nodes[2].link1 = &nodes[5];
+    nodes[2].link2 = &nodes[6];
+    nodes[3].link1 = &nodes[7];
+    nodes[3].link2 = &nodes[8];
+    nodes[4].link1 = &nodes[9];
+
+    v.node_count = 0;
+    nodes[0].node_num = 0;
+    nodes[0].node_num = calc_signature(&nodes[0], &v);
+    xfer_buffer = FFSencode(encode_buffer, node_ioformat,
+					  &nodes[0], &buf_size);
+    test_all_receive(xfer_buffer, buf_size, 0);
+    write_buffer(xfer_buffer, buf_size);
+
+    
     free_FMcontext(src_context);
     free_FFSBuffer(encode_buffer);
     src_context = NULL;
@@ -634,6 +693,7 @@ static FFSTypeHandle fourth_rec_ioformat, later_rec_ioformat, nested_rec_ioforma
 static FFSTypeHandle embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
 static FFSTypeHandle ninth_rec_ioformat, string_array_ioformat, derive_ioformat;
 static FFSTypeHandle multi_array_ioformat, triangle_ioformat, add_action_ioformat;
+static FFSTypeHandle node_ioformat;
 
 static void
 set_conversion(context, format)
@@ -778,6 +838,13 @@ FFSTypeHandle format;
 	str_list[2].field_list = field_list_flds;
 	str_list[2].struct_size = sizeof(FMField);
 	str_list[3].format_name = NULL;
+	establish_conversion(context, format, str_list);
+    } else if (strcmp(format_name, "node") == 0) {
+	node_ioformat = format;
+	str_list[0].format_name = "node";
+	str_list[0].field_list = node_field_list;
+	str_list[0].struct_size = sizeof(struct node);
+	str_list[1].format_name = NULL;
 	establish_conversion(context, format, str_list);
     } else {
 	printf("Got unexpected format %s\n", format_name);
@@ -1121,6 +1188,25 @@ int test_level;
 		printf("decode failed, decode msg format\n");
 	    if (!add_rec_eq(read_data, &add_action_record)) {
 		printf("add rec failure\n");
+		fail++;
+	    }
+	    check_mem(size, (char*)read_data);
+	    free(read_data);
+	} else if (((test_only == NULL) || (strcmp(test_only, "node") == 0)) &&
+		   (buffer_format == node_ioformat)) {
+	    int size = size_func(rcv_context, buffer, buf_size, 
+				 sizeof(add_rec));
+	    node_ptr read_data = get_mem(size);
+	    struct visit_table v;
+	    int signature;
+	    memset(read_data, 0, size);
+	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
+		printf("decode failed, decode msg format\n");
+	    signature = read_data->node_num;
+	    read_data->node_num = 0;
+	    v.node_count = 0;
+	    if (signature != calc_signature(read_data, &v)) {
+		printf("Node sig not right\n");
 		fail++;
 	    }
 	    check_mem(size, (char*)read_data);

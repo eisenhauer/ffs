@@ -540,7 +540,8 @@ int converted_strings;
 				      string_offset_size,
 				      converted_strings);
 		conv_ptr->conversions[conv_index].subconversion = subconv;
-	    } else {
+	    } else if (format != src_ioformat) {
+		
 		fprintf(stderr, "Unknown field type for field %s ->\"%s\", format %lx\n",
 			input_field.field_name,
 			src_ioformat->body->field_list[input_index].field_type,
