@@ -15,6 +15,6 @@ endif
 
 LDADD = libfm.la
 
-lib_LTLIBRARIES = libfm.la
+noinst_LTLIBRARIES = libfm.la
 include_HEADERS = fm.h
 

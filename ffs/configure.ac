@@ -37,7 +37,6 @@ dnl
 dnl checks for libraries
 
 FFS_CONVERSION_GENERATION_DEFAULT=0
-CERCS_REQUIRE_PACKAGE(fm,fm.h,libfm.la)
 CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
 CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
 if test -n "$cercs_cv_dill_include_arg"; then
