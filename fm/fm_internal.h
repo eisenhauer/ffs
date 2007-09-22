@@ -153,7 +153,6 @@ typedef struct _IOgetFieldStruct {
 
 #define MAX_UNSIGNED_TYPE unsigned MAX_INTEGER_TYPE
 
-extern FMfloat_format ffs_my_float_format;
 extern FMfloat_format ffs_reverse_float_formats[];
 extern char *base_data_type(const char *str);
 extern char *get_FMstring_base(IOFieldPtr iofield, void *data, void *string_base);

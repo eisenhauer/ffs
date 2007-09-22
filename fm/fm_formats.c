@@ -78,12 +78,12 @@ static int field_type_eq(const char *str1, const char *str2);
  */
 int (*establish_server_connection_ptr)(FMContext fmc, int do_fallback);
 
-FMfloat_format ffs_my_float_format = Format_Unknown;
+static FMfloat_format ffs_my_float_format = Format_Unknown;
 /* 
- * ffs_reverse_float_formats identifies for each format what, 
+ * fm_reverse_float_formats identifies for each format what, 
  * if any, format is its byte-swapped reverse.
 */
-FMfloat_format ffs_reverse_float_formats[] = {
+static FMfloat_format fm_reverse_float_formats[] = {
     Format_Unknown, /* no format complements unknown */
     Format_IEEE_754_littleendian, /* littleendian complements bigendian */
     Format_IEEE_754_bigendian, /* bigendian complements littleendian */
@@ -944,6 +944,7 @@ int *super_rep_size;
 	struct _opt_info_wire_format tmp_base;
 
 	/* fill in opt info fields */
+	cur_offset = (cur_offset + 3) & -4;  /* round up by even 4 */
 	rep->f.f0.opt_info_offset = cur_offset;
 	if (byte_reversal) byte_swap((char*) &rep->f.f0.opt_info_offset, 2);
 	info_base = cur_offset +string_base;
@@ -3574,7 +3575,7 @@ int byte_reversal;
 	goto fail;
 
     ioformat->float_format = byte_reversal ?
-	ffs_my_float_format : ffs_reverse_float_formats[ffs_my_float_format];
+	ffs_my_float_format : fm_reverse_float_formats[ffs_my_float_format];
     ioformat->column_major_arrays = 0; /* GSE default to C */
     ioformat->format_name = malloc(name_length + 1);
     ioformat->field_count = field_count;
