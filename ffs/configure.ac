@@ -132,6 +132,8 @@ AC_LANG_POP([C])
 dnl checks for typedefs, structures and compiler characteristics
 AC_C_CONST
 AC_C_BIGENDIAN_CROSS($bigendian_default)
+AC_TYPE_SIZE_T
+AC_COMPILE_CHECK_SIZEOF(size_t)
 AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
 AC_COMPILE_CHECK_SIZEOF(long long)
@@ -139,6 +141,12 @@ AC_COMPILE_CHECK_SIZEOF(long double)
 AC_COMPILE_CHECK_SIZEOF(float)
 AC_COMPILE_CHECK_SIZEOF(double)
 
+if test $ac_cv_sizeof_size_t -eq $ac_cv_sizeof_int ; then
+   UIO_SIZE_T_TYPE="unsigned int"
+elif test $ac_cv_sizeof_size_t -eq $ac_cv_sizeof_long; then
+   UIO_SIZE_T_TYPE="unsigned long";
+fi
+AC_SUBST(UIO_SIZE_T_TYPE)
 LIBS="$LIBS -lcercs_env"
 
 AC_SUBST(SPECIAL_TEST_TARGET)
