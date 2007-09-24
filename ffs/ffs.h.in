@@ -47,6 +47,8 @@ extern "C" {
 
 typedef struct FFSBuffer *FFSBuffer;
 
+typedef struct FFSFile *FFSFile;
+
 typedef struct _IOContextStruct *FFSContext;
 
 typedef struct _FFSTypeHandle *FFSTypeHandle;
@@ -58,6 +60,14 @@ extern void free_FFSBuffer(FFSBuffer buf);
 
 extern char *
 FFSencode(FFSBuffer b, FMFormat ioformat, void *data, int *buf_size);
+
+typedef struct FFSEncodeVec {
+    const void *iov_base;
+    UIO_SIZE_T_TYPE iov_len;
+} *FFSEncodeVector;
+
+extern FFSEncodeVector
+FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data);
 
 extern int decode_in_place_possible(FFSTypeHandle);
 
@@ -89,6 +99,16 @@ FFSdecode(FFSContext context, char *encode, char *dest);
 extern void
 free_FFSContext(FFSContext c);
 
+extern FFSFile
+open_FFSfile(const char *path, const char *flags);
+
+extern void
+close_FFSfile(FFSFile file);
+
+extern int
+write_FFSfile(FFSFile f, FMFormat format, void *data);
+
+    
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

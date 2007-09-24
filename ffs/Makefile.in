@@ -66,7 +66,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-am_libffs_la_OBJECTS = ffs.lo ffs_conv.lo ffs_gen.lo
+am_libffs_la_OBJECTS = ffs.lo ffs_conv.lo ffs_gen.lo ffs_file.lo \
+	unix_io.lo
 libffs_la_OBJECTS = $(am_libffs_la_OBJECTS)
 libffs_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -188,6 +189,7 @@ SOLIBS = @SOLIBS@
 SPECIAL_TEST_DIR = @SPECIAL_TEST_DIR@
 SPECIAL_TEST_TARGET = @SPECIAL_TEST_TARGET@
 STRIP = @STRIP@
+UIO_SIZEOF_T_TYPE = @UIO_SIZEOF_T_TYPE@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -244,13 +246,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 SUBDIRS = . tests
 noinst_HEADERS = assert.h config.h ffs_gen.h ffs_internal.h 
-libffs_la_SOURCES = ffs.c ffs_conv.c ffs_gen.c
+libffs_la_SOURCES = ffs.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c
+lib_LTLIBRARIES = libffs.la
 EXTRA_libffs_la_SOURCES = ffs_malloc.c unix_io.c nt_io.c ffs_gen.c
 libffs_la_DEPENDENCIES = ../fm/libfm.la
 libffs_la_LIBADD = ../fm/libfm.la
 libffs_la_LDFLAGS = -no-undefined @DCG_LALIB@
 LDADD = libffs.la
-lib_LTLIBRARIES = libffs.la
 include_HEADERS = ffs.h io_interface.h
 MOSTLYCLEANFILES = dcg/*
 all: config.h
@@ -767,6 +769,8 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	pdf pdf-am ps ps-am tags tags-recursive uninstall uninstall-am \
 	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
+ffs.h: ffs.h.in
+	$(SED) 's/UIO_SIZE_T_TYPE/@UIO_SIZE_T_TYPE@/g' < ffs.h.in > ffs.h
 all-local:
 install-exec-local:
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
