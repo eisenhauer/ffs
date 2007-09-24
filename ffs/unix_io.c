@@ -22,15 +22,11 @@
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
+#include <stdio.h>
 #include "assert.h"
 #include "ffs.h"
 #include "ffs_internal.h"
-#include "unix_defs.h"
-
-#ifndef SELECT_DEFINED
-extern int select ARGS((int width, fd_set *readfds, fd_set *writefds, 
-			fd_set *exceptfds, struct timeval *timeout));
-#endif
+#include "io_interface.h"
 
 static int
 unix_read_func(conn, buffer, length, errno_p, result_p)
@@ -47,18 +43,18 @@ char **result_p;
     iget = read(fd, (char *) buffer, length);
     if (iget == 0) {
 	*result_p = "End of file";
-	*errno_p = 0;
+	if (errno_p) *errno_p = 0;
 	return 0;		/* end of file */
     } else if (iget == -1) {
 	int lerrno = errno;
-	*errno_p = lerrno;
+	if (errno_p) *errno_p = lerrno;
 	if ((lerrno != EWOULDBLOCK) &&
 	    (lerrno != EAGAIN) &&
 	    (lerrno != EINTR)) {
 	    /* serious error */
 	    return -1;
 	} else {
-	    *errno_p = 0;
+	    if (errno_p) *errno_p = 0;
 	    iget = 0;
 	}
     }
@@ -67,18 +63,18 @@ char **result_p;
 	iget = read(fd, (char *) buffer + length - left, left);
 	if (iget == 0) {
 	    *result_p = "End of file";
-	    *errno_p = 0;
+	    if (errno_p) *errno_p = 0;
 	    return length - left;	/* end of file */
 	} else if (iget == -1) {
 	    int lerrno = errno;
-	    *errno_p = errno;
+	    if (errno_p) *errno_p = errno;
 	    if ((lerrno != EWOULDBLOCK) &&
 		(lerrno != EAGAIN) &&
 		(lerrno != EINTR)) {
 		/* serious error */
 		return (length - left);
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -103,17 +99,17 @@ char **result_p;
 	iget = readv(fd, (struct iovec *) iov, icount);
 	if (iget == 0) {
 	    *result_p = "End of file";
-	    *errno_p = 0;
+	    if (errno_p) *errno_p = 0;
 	    return 0;		/* end of file */
 	} else if (iget == -1) {
-	    *errno_p = errno;
-	    if ((*errno_p != EWOULDBLOCK) &&
-		(*errno_p != EAGAIN) &&
-		(*errno_p != EINTR)) {
+	    if (errno_p) *errno_p = errno;
+	    if ((errno != EWOULDBLOCK) &&
+		(errno != EAGAIN) &&
+		(errno != EINTR)) {
 		/* serious error */
 		return -1;
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -148,14 +144,14 @@ char **result_p;
 	iget = write(fd, (char *) buffer + length - left, left);
 	if (iget == -1) {
 	    int lerrno = errno;
-	    *errno_p = errno;
+	    if (errno_p) *errno_p = errno;
 	    if ((lerrno != EWOULDBLOCK) &&
 		(lerrno != EAGAIN) &&
 		(lerrno != EINTR)) {
 		/* serious error */
 		return (length - left);
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -187,7 +183,7 @@ char **result_p;
 	if (iget == -1) {
 	    if ((errno != EWOULDBLOCK) && (errno != EAGAIN)) {
 		/* serious error */
-		*errno_p = errno;
+		if (errno_p) *errno_p = errno;
 		return (iovcnt - iovleft);
 	    } else {
 		iget = 0;
@@ -268,21 +264,7 @@ int *output;
     }
 }
     
-static int
-unix_poll_func(conn)
-void *conn;
-{
-    int fd = (int) (long) conn;
-    struct timeval time;
-    fd_set read_fds;
-    int ret_val;
 
-    time.tv_sec = time.tv_usec = 0;
-    FD_ZERO(&read_fds);
-    FD_SET(fd, &read_fds);
-    ret_val = select(FD_SETSIZE, &read_fds, NULL, NULL, &time);
-    return (ret_val > 0);
-}
 
 IOinterface_func os_file_read_func = unix_read_func;
 IOinterface_func os_file_write_func = unix_write_func;
@@ -298,7 +280,6 @@ IOinterface_funcv os_writev_func = unix_writev_func;
 #endif
 int os_max_iov = IOV_MAX;
 IOinterface_close os_close_func = unix_close_func;
-IOinterface_poll  os_poll_func = unix_poll_func;
 IOinterface_open os_file_open_func = unix_file_open_func;
 IOinterface_func os_server_read_func = unix_read_func;
 IOinterface_func os_server_write_func = unix_write_func;

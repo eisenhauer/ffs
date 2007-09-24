@@ -108,7 +108,7 @@ int size;
 }
 
 static FMfloat_format
-infer_float_format(char *float_magic, int object_len)
+FFSinfer_float_format(char *float_magic, int object_len)
 {
     switch (object_len) {
     case 4:
@@ -146,7 +146,7 @@ init_float_formats()
     static int done = 0;
     if (!done) {
 	double d = MAGIC_FLOAT;
-	ffs_my_float_format = infer_float_format((char*)&d, sizeof(d));
+	ffs_my_float_format = FFSinfer_float_format((char*)&d, sizeof(d));
 	switch (ffs_my_float_format) {
 	case Format_IEEE_754_bigendian:
 	case Format_IEEE_754_littleendian:

@@ -19,6 +19,14 @@ struct	iovec {
 #endif
 #endif
 
+#ifndef HAVE_IOVEC_DEFINE
+#define HAVE_IOVEC_DEFINE
+struct	iovec {
+    const void *iov_base;
+    size_t	iov_len;
+};
+#endif
+
 typedef int (*IOinterface_func) ARGS((void *conn, void *buffer, int length,
 				      int *errno_p, char **result_p));
 
@@ -30,33 +38,42 @@ typedef int (*IOinterface_close) ARGS((void *conn));
 
 typedef int (*IOinterface_poll) ARGS((void *conn));
 
-typedef void *(*IOinterface_open) ARGS((const char *path,
+typedef void *(*IOinterface_open)(const char *path,
 					const char *flag_str, 
-					int *input, int *output));
-typedef void (*IOinterface_init) ARGS((void ));
+					int *input, int *output);
+typedef void (*IOinterface_init)(void );
 
-extern IOFile
-create_IOfile();
+extern IOinterface_func os_file_read_func;
+extern IOinterface_func os_file_write_func;
+extern IOinterface_funcv os_file_readv_func;
+extern IOinterface_funcv os_file_writev_func;
+
+extern IOinterface_func os_read_func;
+extern IOinterface_func os_write_func;
+extern IOinterface_funcv os_readv_func;
+extern IOinterface_funcv os_writev_func;
+extern int os_max_iov;
+extern IOinterface_close os_close_func;
+extern IOinterface_open os_file_open_func;
 
 extern void
-set_interface_IOfile ARGS((IOFile iofile, IOinterface_func write_func, 
-			   IOinterface_func read_func, 
-			   IOinterface_funcv writev_func,
-			   IOinterface_funcv readv_func, int max_iov,
-			   IOinterface_close close_func,
-			   IOinterface_poll poll_func));
+set_interface_FFSFile(FFSFile f, IOinterface_func write_func, 
+		      IOinterface_func read_func, 
+		      IOinterface_funcv writev_func,
+		      IOinterface_funcv readv_func, int max_iov,
+		      IOinterface_close close_func);
 extern void *
-get_conn_IOfile ARGS((IOFile iofile));
+get_conn_FFSFile(FFSFile f);
 
 extern void
-set_conn_IOfile ARGS((IOFile iofile, void *conn));
+set_conn_FFSFile(FFSFile f, void *conn);
 
-extern IOFile
-open_created_IOfile ARGS((IOFile iofile, char *flags));
-
-extern void
-set_socket_interface_IOfile ARGS((IOFile iofile));
+extern FFSFile
+open_created_FFSFile(FFSFile f, char *flags);
 
 extern void
-set_file_interface_IOfile ARGS((IOFile iofile));
+set_socket_interface_FFSFile(FFSFile f);
+
+extern void
+set_file_interface_FFSFile(FFSFile f);
 

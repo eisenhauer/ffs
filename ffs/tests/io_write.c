@@ -12,20 +12,19 @@
 #endif
 #include <string.h>
 #include "ffs.h"
-#include "unix_defs.h"
 
 #include "test_funcs.h"
 
 int
 main()
 {
-    IOFile iofile = open_IOfile("test_output", "w");
-    IOFormat first_rec_ioformat, second_rec_ioformat, third_rec_ioformat;
-    IOFormat fourth_rec_ioformat, later_ioformat, nested_ioformat;
-    IOFormat embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
-    IOFormat ninth_rec_ioformat;
-    IOFormat string_array_ioformat;
-    struct _ffsvec vector[5];
+    FMContext src_context;
+    FFSFile ffsfile = open_FFSfile("test_output", "w");
+    FMFormat first_rec_ioformat, second_rec_ioformat, third_rec_ioformat;
+    FMFormat fourth_rec_ioformat, later_ioformat, nested_ioformat;
+    FMFormat embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
+    FMFormat ninth_rec_ioformat;
+    FMFormat string_array_ioformat;
     first_rec rec1;
     second_rec rec2;
     third_rec rec3;
@@ -38,58 +37,96 @@ main()
     ninth_rec var_var;
     string_array_rec str_array;
     int i, j;
-    IOOptInfo opt_info[2];
+    FMStructDescRec str_list[5];
+    FMOptInfo opt_info[2], opt_info2[2];
 
-    first_rec array1[10];
+    src_context = create_FMcontext();
 
     opt_info[0].info_type = 0x584D4C20;   /* XML */
     opt_info[1].info_type = 0;
     opt_info[1].info_len = 0;
     opt_info[1].info_block = NULL;
+    str_list[0].format_name = "first format";
+    str_list[0].field_list = field_list;
+    str_list[0].struct_size = sizeof(first_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
 
     opt_info[0].info_len = strlen(first_xml) +1;
     opt_info[0].info_block = first_xml;
-    first_rec_ioformat = register_opt_format("first format",
-					     field_list, opt_info,
-					     (IOContext) iofile);
+    first_rec_ioformat = register_data_format(src_context, str_list)
+;
+    str_list[0].format_name = "string format";
+    str_list[0].field_list = field_list2;
+    str_list[0].struct_size = sizeof(second_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(string_xml) +1;
     opt_info[0].info_block = string_xml;
-    second_rec_ioformat = register_opt_format("string format",
-					      field_list2, opt_info, 
-					      (IOContext) iofile);
+    second_rec_ioformat = register_data_format(src_context, str_list);
+
+    str_list[0].format_name = "two string format";
+    str_list[0].field_list = field_list3;
+    str_list[0].struct_size = sizeof(third_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(third_xml) +1;
     opt_info[0].info_block = third_xml;
-    third_rec_ioformat = register_opt_format("two string format",
-					     field_list3, opt_info, 
-					     (IOContext) iofile);
+    third_rec_ioformat = register_data_format(src_context, str_list);
+
+    str_list[0].format_name = "internal array format";
+    str_list[0].field_list = field_list4;
+    str_list[0].struct_size = sizeof(fourth_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(fourth_xml) +1;
     opt_info[0].info_block = fourth_xml;
-    fourth_rec_ioformat = register_opt_format("internal array format",
-					      field_list4, opt_info,
-					      (IOContext) iofile);
+    fourth_rec_ioformat = register_data_format(src_context, str_list);
+
+    str_list[0].format_name = "embedded";
+    str_list[0].field_list = embedded_field_list;
+    str_list[0].struct_size = sizeof(embedded_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(embedded_xml) +1;
     opt_info[0].info_block = embedded_xml;
-    embedded_rec_ioformat = register_opt_format("embedded",
-						embedded_field_list, opt_info,
-						(IOContext) iofile);
-    (void)embedded_rec_ioformat;
+    embedded_rec_ioformat = register_data_format(src_context, str_list);
+
+
+    str_list[0].format_name = "embedded";
+    str_list[0].field_list = embedded_field_list;
+    str_list[0].struct_size = sizeof(embedded_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(struct_array_xml) +1;
     opt_info[0].info_block = struct_array_xml;
-    fifth_rec_ioformat = register_opt_format("structured array format",
-					     field_list5, opt_info, 
-					     (IOContext) iofile);
+    fifth_rec_ioformat = register_data_format(src_context, str_list);
+
+    str_list[0].format_name = "variant array format";
+    str_list[0].field_list = field_list6;
+    str_list[0].struct_size = sizeof(sixth_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = "string format";
+    str_list[1].field_list = field_list2;
+    str_list[1].struct_size = sizeof(second_rec);
+    str_list[1].opt_info = &opt_info2[0];
+    str_list[2].format_name = NULL;
     opt_info[0].info_len = strlen(var_array_xml) +1;
     opt_info[0].info_block = var_array_xml;
-    sixth_rec_ioformat = register_opt_format("variant array format",
-					     field_list6, opt_info,
-					     (IOContext) iofile);
-    write_comment_IOfile(iofile, "this is a comment in the file");
+    opt_info2[0].info_type = 0x584D4C20;   /* XML */
+    opt_info2[0].info_len = strlen(string_xml) +1;
+    opt_info2[0].info_block = string_xml;
+    opt_info2[1].info_type = 0;
+    opt_info2[1].info_len = 0;
+    opt_info2[1].info_block = NULL;
+    sixth_rec_ioformat = register_data_format(src_context, str_list);
+
     memset((char *) &rec1, 0, sizeof(rec1));
     rec1.integer_field = 14;
     rec1.double_field = 2.717;
     rec1.char_field = 'A';
-    if (!write_IOfile(iofile, first_rec_ioformat, &rec1))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, first_rec_ioformat, &rec1))
+	printf("write failed\n");
     memset((char *) &emb_array, 0, sizeof(emb_array));
     memset((char *) &var_array, 0, sizeof(var_array));
     emb_array.earray[0].dfield = 4.0;
@@ -108,9 +145,12 @@ main()
     emb_array.earray[3].ifield = 1;
     emb_array.earray[3].string = (char *) malloc(10);
     sprintf(emb_array.earray[3].string, "string%d", emb_array.earray[3].ifield * 5);
-    if (!write_IOfile(iofile, fifth_rec_ioformat, &emb_array))
-	IOperror(iofile, "write failed\n");
-    IOfree_var_rec_elements(iofile, fifth_rec_ioformat, &emb_array);
+    if (!write_FFSfile(ffsfile, fifth_rec_ioformat, &emb_array))
+	printf("write failed\n");
+    free(emb_array.earray[0].string);
+    free(emb_array.earray[1].string);
+    free(emb_array.earray[2].string);
+    free(emb_array.earray[3].string);
 
     memset((char *) &rec2, 0, sizeof(rec2));
     rec2.integer_field = 14;
@@ -119,33 +159,33 @@ main()
     rec2.string = "testing";
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_IOfile(iofile, second_rec_ioformat, &rec2))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+	printf("write failed\n");
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
     rec2.string = NULL;
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_IOfile(iofile, second_rec_ioformat, &rec2))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+	printf("write failed\n");
     rec1.integer_field = 17;
     rec1.double_field *= 3.0;
     rec1.char_field = 'B';
-    write_IOfile(iofile, first_rec_ioformat, &rec1);
+    write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
     rec2.string = NULL;
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_IOfile(iofile, second_rec_ioformat, &rec2))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+	printf("write failed\n");
     rec1.integer_field *= 2;
     rec1.double_field *= 2.717;
     rec1.char_field = 'C';
-    write_comment_IOfile(iofile, "this is another comment in the file");
-    write_IOfile(iofile, first_rec_ioformat, &rec1);
+    write_comment_FFSfile(ffsfile, "this is another comment in the file");
+    write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
     memset((char *) &rec3, 0, sizeof(rec3));
     rec3.integer_field = 14;
     rec3.long_field = 987234;
@@ -160,18 +200,31 @@ main()
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Red_Stripe;
-    if (!write_IOfile(iofile, third_rec_ioformat, &rec3))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+	printf("write failed\n");
+
+    str_list[0].format_name = "later format";
+    str_list[0].field_list = later_field_list;
+    str_list[0].struct_size = sizeof(later_rec);
+    str_list[0].opt_info = NULL;
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(later_xml) +1;
     opt_info[0].info_block = later_xml;
-    later_ioformat = register_opt_format("later format",
-					 later_field_list, opt_info, 
-					 (IOContext) iofile);
+    later_ioformat = register_data_format(src_context, str_list);
+
+    str_list[0].format_name = "nested format";
+    str_list[0].field_list = nested_field_list;
+    str_list[0].struct_size = sizeof(nested_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = "string format";
+    str_list[1].field_list = field_list2;
+    str_list[1].struct_size = sizeof(second_rec);
+    str_list[1].opt_info = &opt_info2[0];
+    str_list[2].format_name = NULL;
     opt_info[0].info_len = strlen(nested_xml) +1;
     opt_info[0].info_block = nested_xml;
-    nested_ioformat = register_opt_format("nested format",
-					  nested_field_list, opt_info, 
-					  (IOContext) iofile);
+    nested_ioformat = register_data_format(src_context, str_list);
+
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = NULL;
@@ -179,8 +232,8 @@ main()
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Paulaner;
-    if (!write_IOfile(iofile, third_rec_ioformat, &rec3))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+	printf("write failed\n");
     memset((char *) &rec7, 0, sizeof(rec7));
     rec7.integer_field = 47;
     rec7.nested_rec.integer_field = 14;
@@ -190,8 +243,8 @@ main()
     rec7.nested_rec.double_field = 2.717;
     rec7.nested_rec.char_field = 'A';
     rec7.string = "Yet another string";
-    if (!write_IOfile(iofile, nested_ioformat, &rec7))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, nested_ioformat, &rec7))
+	printf("write failed\n");
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = "testing";
@@ -199,8 +252,8 @@ main()
     rec3.string2 = NULL;
     rec3.char_field = 'A';
     rec3.enum_field = Pilsner;
-    if (!write_IOfile(iofile, third_rec_ioformat, &rec3))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+	printf("write failed\n");
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = NULL;
@@ -208,14 +261,14 @@ main()
     rec3.string2 = NULL;
     rec3.char_field = 'A';
     rec3.enum_field = Red_Stripe;
-    if (!write_IOfile(iofile, third_rec_ioformat, &rec3))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+	printf("write failed\n");
     memset((char *) &rec5, 0, sizeof(rec5));
     rec5.integer_field = 9872346;
     rec5.string = "ABCD";
     rec5.double_field = 3.14159265358797323;
-    vector[0].data = &rec5;
-    vector[0].format = later_ioformat;
+    if (!write_FFSfile(ffsfile, later_ioformat, &rec5))
+	printf("write failed\n");
 
     rec3.integer_field = 14;
     rec3.long_field = 987234;
@@ -224,8 +277,8 @@ main()
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Pilsner;
-    vector[1].data = &rec3;
-    vector[1].format = third_rec_ioformat;
+    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+	printf("write failed\n");
 
     rec2.integer_field = 14;
     rec2.short_field = 27;
@@ -233,24 +286,18 @@ main()
     rec2.string = "the end";
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    vector[2].data = &rec2;
-    vector[2].format = second_rec_ioformat;
-    if (!writev_IOfile(iofile, &(vector[0]), 3))
-	IOperror(iofile, "writev failed\n");
-    for (i = 0; i < 10; i++) {
-	memset((char *) &array1[i], 0, sizeof(array1[i]));
-	array1[i].integer_field = 2 * i * i;
-	array1[i].double_field = 2.717 * (i * i);
-	array1[i].char_field = 'D' + i;
-    }
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+	printf("writev failed\n");
+
+    str_list[0].format_name = "later format";
+    str_list[0].field_list = later_field_list2;
+    str_list[0].struct_size = sizeof(later_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = NULL;
     opt_info[0].info_len = strlen(later2_xml) +1;
     opt_info[0].info_block = later2_xml;
-    later_ioformat = register_opt_format("later format",
-					 later_field_list2, opt_info,
-					 (IOContext) iofile);
-    if (!write_array_IOfile(iofile, first_rec_ioformat, &array1[0],
-			    10, sizeof(array1[0])))
-	IOperror(iofile, "write failed\n");
+
+    later_ioformat = register_data_format(src_context, str_list);
 
     memset((char *) &rec4, 0, sizeof(rec4));
     for (i = 0; i < ARRAY_SIZE; i++) {
@@ -261,23 +308,22 @@ main()
     rec4.double_array[1][0] = 3.0;
     rec4.double_array[1][1] = 4.0;
     rec4.ifield = -rec4.int_array[ARRAY_SIZE - 1];
-    vector[0].data = &rec4;
-    vector[0].format = fourth_rec_ioformat;
+    if (!write_FFSfile(ffsfile, fourth_rec_ioformat, &rec4))
+	printf("writev failed\n");
 
     memset((char *) &rec6, 0, sizeof(rec6));
     rec6.integer_field = 23462346;
     rec6.string = "Efghij";
     rec6.double_field = 3.14159265358797323 * 2.0;
-    vector[1].data = &rec6;
-    vector[1].format = later_ioformat;
-    if (!writev_IOfile(iofile, &(vector[0]), 2))
-	IOperror(iofile, "writev failed\n");
+    if (!write_FFSfile(ffsfile, later_ioformat, &rec6))
+	printf("writev failed\n");
+
     rec6.integer_field = 2346987;
     rec6.string = "Klmn";
     rec6.double_field = 3.14159265358797323 * 3.0;
     
-    if (!write_IOfile(iofile, later_ioformat, &rec6))
-	IOperror(iofile, "write failed\n");
+    if (!write_FFSfile(ffsfile, later_ioformat, &rec6))
+	printf("write failed\n");
 
     for (i = 1; i < 20; i += 5) {
         memset((char *) &var_array, 0, sizeof(var_array));
@@ -301,24 +347,40 @@ main()
 	    var_array.var_string_array[j].double_field = 3.1415 * j;
 	    var_array.var_string_array[j].char_field = 'a' + 2 * j;
 	}
-	if (!write_IOfile(iofile, sixth_rec_ioformat, &var_array))
-	    IOperror(iofile, "write failed");
-	IOfree_var_rec_elements(iofile, sixth_rec_ioformat, &var_array);
+	if (!write_FFSfile(ffsfile, sixth_rec_ioformat, &var_array))
+	    printf("write failed");
+	free(var_array.string);
+	free(var_array.var_int_array);
+	free(var_array.var_double_array);
+	for (j = 0; j < var_array.icount; j++) {
+	    free(var_array.var_string_array[j].string);
+	}
+	free(var_array.var_string_array);
     }
 
+    str_list[0].format_name = "EventV";
+    str_list[0].field_list = field_list9;
+    str_list[0].struct_size = sizeof(ninth_rec);
+    str_list[0].opt_info = &opt_info[0];
+    str_list[1].format_name = "EventVecElem";
+    str_list[1].field_list = event_vec_elem_fields;
+    str_list[1].struct_size = sizeof(struct _io_encode_vec);
+    str_list[1].opt_info = &opt_info2[0];
+    str_list[2].format_name = NULL;
     opt_info[0].info_len = strlen(event_xml) +1;
     opt_info[0].info_block = event_xml;
-    register_opt_format("EventVecElem", event_vec_elem_fields, opt_info,
-			(IOContext) iofile);
 
-    opt_info[0].info_len = strlen(event_vec_xml) +1;
-    opt_info[0].info_block = event_vec_xml;
-    ninth_rec_ioformat = register_opt_format("EventV",
-					     field_list9, opt_info,
-					     (IOContext) iofile);
-    string_array_ioformat = register_IOrecord_format("string_array",
-						string_array_field_list,
-						iofile);
+    opt_info2[0].info_len = strlen(event_vec_xml) +1;
+    opt_info2[0].info_block = event_vec_xml;
+    ninth_rec_ioformat = register_data_format(src_context, str_list);
+
+    str_list[0].format_name = "string_array";
+    str_list[0].field_list = string_array_field_list;
+    str_list[0].struct_size = sizeof(string_array_rec);
+    str_list[0].opt_info = NULL;
+    str_list[1].format_name = NULL;
+    string_array_ioformat = register_data_format(src_context, str_list);
+
     for (i = 1; i < 10; i += 2) {
         memset((char *) &var_var, 0, sizeof(var_var));
 	memset((char *) &str_array, 0, sizeof(str_array));
@@ -344,15 +406,19 @@ main()
 	} else {
 	    str_array.base_string = strdup("Whoa there!");
 	}
-	if (!write_IOfile(iofile, ninth_rec_ioformat, &var_var))
-	    IOperror(iofile, "write failed");
-	if (!write_IOfile(iofile, string_array_ioformat, &str_array))
-	    IOperror(iofile, "write failed");
-	IOfree_var_rec_elements(iofile, string_array_ioformat, &str_array);
-	IOfree_var_rec_elements(iofile, ninth_rec_ioformat, &var_var);
+	if (!write_FFSfile(ffsfile, ninth_rec_ioformat, &var_var))
+	    printf("write failed");
+	if (!write_FFSfile(ffsfile, string_array_ioformat, &str_array))
+	    printf("write failed");
+	for (j = 0; j < var_var.vec_length; j++) {
+	    free(var_var.eventv[j].iov_base);
+	    free(str_array.array[j]);
+	}
+	free(var_var.eventv);
+	free(str_array.array);
     }
 
-    close_IOfile(iofile);
-    free_IOfile(iofile);
+    close_FFSfile(ffsfile);
+    free_FFSfile(ffsfile);
     return 0;
 }
