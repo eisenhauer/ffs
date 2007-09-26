@@ -189,7 +189,7 @@ SOLIBS = @SOLIBS@
 SPECIAL_TEST_DIR = @SPECIAL_TEST_DIR@
 SPECIAL_TEST_TARGET = @SPECIAL_TEST_TARGET@
 STRIP = @STRIP@
-UIO_SIZEOF_T_TYPE = @UIO_SIZEOF_T_TYPE@
+UIO_SIZE_T_TYPE = @UIO_SIZE_T_TYPE@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -771,6 +771,9 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 ffs.h: ffs.h.in
 	$(SED) 's/UIO_SIZE_T_TYPE/@UIO_SIZE_T_TYPE@/g' < ffs.h.in > ffs.h
+
+$(libffs_la_SOURCES) : ffs.h
+
 all-local:
 install-exec-local:
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
