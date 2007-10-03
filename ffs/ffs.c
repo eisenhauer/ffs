@@ -646,6 +646,12 @@ free_FFSContext(FFSContext c)
     free(c);
 }
 
+extern FFSTypeHandle
+FFSset_fixed_target(FFSContext c, FMStructDescList struct_list)
+{
+    
+}
+
 #ifdef NOT_DEF
 /* 
  * this field is for informational purposes only.  No formatting decisions
