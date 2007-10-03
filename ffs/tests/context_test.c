@@ -696,159 +696,26 @@ static FFSTypeHandle multi_array_ioformat, triangle_ioformat, add_action_ioforma
 static FFSTypeHandle node_ioformat;
 
 static void
-set_conversion(context, format)
+set_targets(context)
 FFSContext context;
-FFSTypeHandle format;
 {
     char *format_name;
     FMStructDescRec str_list[5];
-    format_name = FFSTypeHandle_name(format);
-    if (strcmp(format_name, "first format") == 0) {
-	first_rec_ioformat = format;
-	str_list[0].format_name = "first format";
-	str_list[0].field_list = field_list;
-	str_list[0].struct_size = sizeof(first_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "string format") == 0) {
-	second_rec_ioformat = format;
-	str_list[0].format_name = "string format";
-	str_list[0].field_list = field_list2;
-	str_list[0].struct_size = sizeof(second_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "two string format") == 0) {
-	third_rec_ioformat = format;
-	str_list[0].format_name = "two string format";
-	str_list[0].field_list = field_list3;
-	str_list[0].struct_size = sizeof(third_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "internal array format") == 0) {
-	fourth_rec_ioformat = format;
-	str_list[0].format_name = "internal array format";
-	str_list[0].field_list = field_list4;
-	str_list[0].struct_size = sizeof(fourth_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "embedded") == 0) {
-	embedded_rec_ioformat = format;
-	str_list[0].format_name = "embedded";
-	str_list[0].field_list = embedded_field_list;
-	str_list[0].struct_size = sizeof(embedded_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "structured array format") == 0) {
-	fifth_rec_ioformat = format;
-	str_list[0].format_name = "structured array format";
-	str_list[0].field_list = field_list5;
-	str_list[0].struct_size = sizeof(fifth_rec);
-	str_list[1].format_name = "embedded";
-	str_list[1].field_list = embedded_field_list;
-	str_list[1].struct_size = sizeof(embedded_rec);
-	str_list[2].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "variant array format") == 0) {
-	sixth_rec_ioformat = format;
-	str_list[0].format_name = "variant array format";
-	str_list[0].field_list = field_list6;
-	str_list[0].struct_size = sizeof(sixth_rec);
-	str_list[1].format_name = "string format";
-	str_list[1].field_list = field_list2;
-	str_list[1].struct_size = sizeof(second_rec);
-	str_list[2].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "later format") == 0) {
-	later_rec_ioformat = format;
-	str_list[0].format_name = "later format";
-	str_list[0].field_list = later_field_list;
-	str_list[0].struct_size = sizeof(later_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "nested format") == 0) {
-	nested_rec_ioformat = format;
-	str_list[0].format_name = "nested format";
-	str_list[0].field_list = nested_field_list;
-	str_list[0].struct_size = sizeof(nested_rec);
-	str_list[1].format_name = "string format";
-	str_list[1].field_list = field_list2;
-	str_list[1].struct_size = sizeof(second_rec);
-	str_list[2].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "EventV") == 0) {
-	ninth_rec_ioformat = format;
-	str_list[0].format_name = "EventV";
-	str_list[0].field_list = field_list9;
-	str_list[0].struct_size = sizeof(ninth_rec);
-	str_list[1].format_name = "EventVecElem";
-	str_list[1].field_list = event_vec_elem_fields;
-	str_list[1].struct_size = sizeof(struct _io_encode_vec);
-	str_list[2].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "string_array") == 0) {
-	string_array_ioformat = format;
-	str_list[0].format_name = "string_array";
-	str_list[0].field_list = string_array_field_list;
-	str_list[0].struct_size = sizeof(string_array_rec);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "Channel Derive") == 0) {
-	derive_ioformat = format;
-	str_list[0].format_name = "Channel Derive";
-	str_list[0].field_list = derive_msg_field_list;
-	str_list[0].struct_size = sizeof(DeriveMsg);
-	str_list[1].format_name = "IOfield_list";
-	str_list[1].field_list = field_list_flds;
-	str_list[1].struct_size = sizeof(FMField);
-	str_list[2].format_name = "DEFormatList";
-	str_list[2].field_list = format_list_field_list;
-	str_list[2].struct_size = sizeof(format_list_element);
-	str_list[3].format_name = "channel_ID";
-	str_list[3].field_list = channel_id_flds;
-	str_list[3].struct_size = sizeof(channel_ID_struct);
-	
-	str_list[4].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "multi_array") == 0) {
-	multi_array_ioformat = format;
-	str_list[0].format_name = "multi_array";
-	str_list[0].field_list = multi_array_flds;
-	str_list[0].struct_size = sizeof(multi_array);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "triangle_param") == 0) {
-	triangle_ioformat = format;
-	str_list[0].format_name = "triangle_param";
-	str_list[0].field_list = triangle_field;
-	str_list[0].struct_size = sizeof(triangle);
-	str_list[1].format_name = "compressed_mesh_param";
-	str_list[1].field_list = compressed_mesh;
-	str_list[1].struct_size = sizeof(compressed_mesh_param);
-	str_list[2].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "add_action") == 0) {
-	add_action_ioformat = format;
-	str_list[0].format_name = "add_action";
-	str_list[0].field_list = add_field_list;
-	str_list[0].struct_size = sizeof(add_action_record);
-	str_list[1].format_name = "XMLFormatList";
-	str_list[1].field_list = xml_format_list_flds;
-	str_list[1].struct_size = sizeof(msg_format_list_element);
-	str_list[2].format_name = "IOfield_list";
-	str_list[2].field_list = field_list_flds;
-	str_list[2].struct_size = sizeof(FMField);
-	str_list[3].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else if (strcmp(format_name, "node") == 0) {
-	node_ioformat = format;
-	str_list[0].format_name = "node";
-	str_list[0].field_list = node_field_list;
-	str_list[0].struct_size = sizeof(struct node);
-	str_list[1].format_name = NULL;
-	establish_conversion(context, format, str_list);
-    } else {
-	printf("Got unexpected format %s\n", format_name);
-    }
+    first_rec_ioformat = FFSset_fixed_target(context, first_format_list);
+    second_rec_ioformat = FFSset_fixed_target(context, string_format_list);
+    third_rec_ioformat = FFSset_fixed_target(context, two_string_format_list);
+    fourth_rec_ioformat = FFSset_fixed_target(context, fourth_format_list);
+    fifth_rec_ioformat = FFSset_fixed_target(context, structured_format_list);
+    sixth_rec_ioformat = FFSset_fixed_target(context, variant_format_list);
+    later_rec_ioformat = FFSset_fixed_target(context, later_format_list);
+    nested_rec_ioformat = FFSset_fixed_target(context, nested_format_list);
+    ninth_rec_ioformat = FFSset_fixed_target(context, ninth_format_list);
+    string_array_ioformat = FFSset_fixed_target(context, string_array_format_list);
+    derive_ioformat = FFSset_fixed_target(context, derive_format_list);
+    multi_array_ioformat = FFSset_fixed_target(context, multi_array_format_list);
+    triangle_ioformat = FFSset_fixed_target(context, triangle_format_list);
+    add_action_ioformat = FFSset_fixed_target(context, add_action_format_list);
+    node_ioformat = FFSset_fixed_target(context, node_format_list);
 }
 
 int base_size_func(FFSContext context, char *src, int rec_len,
@@ -980,7 +847,7 @@ int test_level;
 	    exit(1);
 	}
 	if (!FFShas_conversion(buffer_format)) {
-	    set_conversion(rcv_context, buffer_format);
+	    set_targets(rcv_context);
 	}
 	if (((test_only == NULL) || (strcmp(test_only, "first_rec") == 0)) &&
 	    (buffer_format == first_rec_ioformat)) {
