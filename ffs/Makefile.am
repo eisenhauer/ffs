@@ -6,6 +6,8 @@ SUBDIRS = . tests
 
 noinst_HEADERS = assert.h config.h ffs_gen.h ffs_internal.h 
 
+INCLUDES = -I../fm
+
 libffs_la_SOURCES = ffs.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c
 
 lib_LTLIBRARIES = libffs.la
