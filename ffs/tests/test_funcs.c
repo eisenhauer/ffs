@@ -1425,6 +1425,10 @@ FMField field_list[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec first_format_list [] = {
+    {"first format", field_list, sizeof(first_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 FMField newer_field_list[] = {
     {"ganzzahlfeld", "integer", 
        sizeof(int), FMOffset(newer_rec_ptr, ganzzahl)},
@@ -1451,6 +1455,10 @@ FMField field_list2[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec string_format_list[] = {
+    {"string format", field_list2, sizeof(second_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 FMField field_list3[] = {
     {"integer field", "integer", 
        sizeof(int), FMOffset(third_rec_ptr, integer_field)},
@@ -1473,6 +1481,10 @@ FMField field_list3[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec two_string_format_list[] = {
+    {"two string format", field_list2, sizeof(third_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 FMField field_list4[] = {
     {"ifield", "integer", 
        sizeof(long), FMOffset(fourth_rec_ptr, ifield)},
@@ -1480,6 +1492,11 @@ FMField field_list4[] = {
        sizeof(int), FMOffset(fourth_rec_ptr, int_array[0])},
     {"double field", "float[2][2]",
        sizeof(double), FMOffset(fourth_rec_ptr, double_array[0][0])},
+    { NULL, NULL, 0, 0}
+};
+
+FMStructDescRec fourth_format_list[] = {
+    {"internal array format", field_list4, sizeof(fourth_rec), NULL},
     { NULL, NULL, 0, 0}
 };
 
@@ -1499,6 +1516,12 @@ FMField field_list5[] = {
     {NULL, NULL, 0, 0}
 };
 
+FMStructDescRec structured_format_list[] = {
+    {"structured array format", field_list5, sizeof(fifth_rec), NULL},
+    {"embedded", embedded_field_list, sizeof(embedded_rec), NULL},
+    { NULL, NULL, 0, NULL}
+};
+
 FMField later_field_list[] = {
     {"integer field", "integer", 
        sizeof(((later_rec_ptr)0)->integer_field), FMOffset(later_rec_ptr, integer_field)},
@@ -1508,6 +1531,12 @@ FMField later_field_list[] = {
        sizeof(double), FMOffset(later_rec_ptr, double_field)},
     { NULL, NULL, 0, 0}
 };
+
+FMStructDescRec later_format_list[] = {
+    {"later format", later_field_list, sizeof(later_rec), NULL},
+    { NULL, NULL, 0, NULL}
+};
+
 
 FMField later_field_list2[] = {
     {"integer field", "integer", 
@@ -1531,6 +1560,17 @@ FMField nested_field_list[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec nested_format_list[] = {
+    {"nested format", nested_field_list, sizeof(nested_rec), NULL},
+    {"string format", field_list2, sizeof(second_rec), NULL},
+    { NULL, NULL, 0, 0}
+};
+
+FMStructDescRec embedded_format_list[] = {
+    {"embedded", embedded_field_list, sizeof(embedded_rec), NULL},
+    { NULL, NULL, 0, 0}
+};
+
 FMField field_list6[] = {
     {"string field", "string",
        sizeof(char *), FMOffset(sixth_rec_ptr, string)},
@@ -1544,6 +1584,12 @@ FMField field_list6[] = {
        sizeof(double), FMOffset(sixth_rec_ptr, dfield)},
     {"var_double_array", "float[icount]",
        sizeof(double), FMOffset(sixth_rec_ptr, var_double_array)},
+    { NULL, NULL, 0, 0}
+};
+
+FMStructDescRec variant_format_list[] = {
+    {"variant array format", field_list6, sizeof(sixth_rec), NULL},
+    {"string format", field_list2, sizeof(second_rec), NULL},
     { NULL, NULL, 0, 0}
 };
 
@@ -1564,6 +1610,14 @@ FMField field_list9[] =
     {(char *) 0, (char *) 0, 0, 0}
 };
 
+FMStructDescRec ninth_format_list[] = 
+{
+    {"EventV", field_list9, sizeof(ninth_rec), NULL},
+    {"EventVecElem", event_vec_elem_fields, sizeof(struct _io_encode_vec), NULL},
+    {NULL, NULL, 0, NULL}
+};
+
+
 FMField string_array_field_list[] =
 {
     {"array_len", "integer", sizeof(int),
@@ -1574,6 +1628,12 @@ FMField string_array_field_list[] =
      FMOffset(string_array_rec_ptr, array)},
     {(char *) 0, (char *) 0, 0, 0}
 
+};
+
+FMStructDescRec string_array_format_list[] = 
+{
+    {"string_array", string_array_field_list, sizeof(string_array_rec), NULL},
+    {NULL, NULL, 0, NULL}
 };
 
 FMField channel_id_flds[] = {
@@ -1633,6 +1693,15 @@ FMField derive_msg_field_list[] = {
     {(char *) 0, (char *) 0, 0, 0}
 };
 
+FMStructDescRec derive_format_list[] = {
+    {"Channel Derive", derive_msg_field_list, sizeof(DeriveMsg), NULL},
+    {"IOfield_list", field_list_flds, sizeof(FMField), NULL},
+    {"DEFormatList", format_list_field_list, sizeof(format_list_element), NULL},
+    {"channel_ID", channel_id_flds, sizeof(channel_ID_struct), NULL},
+    {NULL, NULL, 0, NULL}
+};
+	
+
 FMField multi_array_flds[] = {
     {"ifield", "integer", sizeof(long), FMOffset(multi_array_rec_ptr, ifield)},
     {"double_array", "float[2][2][2][2]", sizeof(double),
@@ -1644,6 +1713,11 @@ FMField multi_array_flds[] = {
     {"int_array3", "integer[ifield][ifield][ifield]", sizeof(int),
     FMOffset(multi_array_rec_ptr, int_array3)},
     {(char *) 0, (char *) 0, 0, 0}
+};
+
+FMStructDescRec multi_array_format_list[] = {
+    {"multi_array", multi_array_flds, sizeof(multi_array), NULL},
+    {NULL, NULL, 0, NULL}
 };
 
 FMField compressed_mesh[] = {
@@ -1685,6 +1759,12 @@ FMField triangle_field[] = {
   {NULL, NULL, 0 , 0}
 };
     
+FMStructDescRec triangle_format_list[] = {
+    {"triangle_param", triangle_field, sizeof(triangle), NULL},
+    {"compressed_mesh_param", compressed_mesh, sizeof(compressed_mesh_param), NULL},
+    {NULL, NULL, 0, NULL}
+};
+
 FMField add_field_list[] =
 {
     {"action_type", "integer",
@@ -1698,6 +1778,13 @@ FMField add_field_list[] =
     {"func_str", "string",
      sizeof(char*), FMOffset(add_rec_ptr, func_str)},
     {NULL, NULL, 0, 0}
+};
+
+FMStructDescRec add_action_format_list[] = 
+{
+    {"add_action", add_field_list, sizeof(add_action_record), NULL},
+    {"XMLFormatList", xml_format_list_flds, sizeof(msg_format_list_element), NULL},
+    {"IOfield_list", field_list_flds, sizeof(FMField), NULL}
 };
 
 FMField xml_format_list_flds[] =
@@ -1719,6 +1806,11 @@ FMField node_field_list[] =
     {"link1", "*node", sizeof(struct node), FMOffset(node_ptr, link1)},
     {"link2", "*node", sizeof(struct node), FMOffset(node_ptr, link2)},
     {(char *) 0, (char *) 0, 0, 0}
+};
+
+FMStructDescRec node_format_list [] = {
+    {"node", node_field_list, sizeof(struct node), NULL},
+    {NULL, NULL, 0, NULL}
 };
 
 static int

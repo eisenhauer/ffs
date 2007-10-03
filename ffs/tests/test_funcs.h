@@ -249,6 +249,23 @@ extern FMField xml_format_list_flds[];
 extern FMField add_field_list[];
 extern FMField node_field_list[];
 
+extern FMStructDescRec first_format_list[];
+extern FMStructDescRec string_format_list[];
+extern FMStructDescRec structured_format_list[];
+extern FMStructDescRec two_string_format_list[];
+extern FMStructDescRec fourth_format_list[];
+extern FMStructDescRec later_format_list[];
+extern FMStructDescRec nested_format_list[];
+extern FMStructDescRec embedded_format_list[];
+extern FMStructDescRec variant_format_list[];
+extern FMStructDescRec ninth_format_list[];
+extern FMStructDescRec string_array_format_list[];
+extern FMStructDescRec derive_format_list[];
+extern FMStructDescRec multi_array_format_list[];
+extern FMStructDescRec triangle_format_list[];
+extern FMStructDescRec add_action_format_list[];
+extern FMStructDescRec node_format_list [];
+
 extern void init_written_data();
 extern void free_written_data();
 
