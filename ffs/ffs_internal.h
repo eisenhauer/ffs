@@ -1,5 +1,5 @@
 #ifndef FFS_INTERNAL_H
-#include "fm.h"
+#include "../fm/fm.h"
 
 #define MAGIC_NUMBER 0x4356ffa9	/* random magic */
 #define REVERSE_MAGIC_NUMBER 0xa9ff5643		/* byte reversed random
