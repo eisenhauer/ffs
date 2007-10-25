@@ -1482,7 +1482,7 @@ FMField field_list3[] = {
 };
 
 FMStructDescRec two_string_format_list[] = {
-    {"two string format", field_list2, sizeof(third_rec), NULL},
+    {"two string format", field_list3, sizeof(third_rec), NULL},
     {NULL, NULL, 0, NULL}};
 
 FMField field_list4[] = {

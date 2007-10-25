@@ -837,17 +837,15 @@ int test_level;
     if (c == NULL) {
 	c = create_FFSContext();
 	rcv_context = c;
+	set_targets(rcv_context);
     }
     if (!finished) {
 /*	char *comment;*/
-	FFSTypeHandle buffer_format = FFSTypeHandle_from_encode(rcv_context, buffer);
+	FFSTypeHandle buffer_format = FFS_target_from_encode(rcv_context, buffer);
 
 	if (buffer_format == NULL) {
 	    printf("No format!\n");
 	    exit(1);
-	}
-	if (!FFShas_conversion(buffer_format)) {
-	    set_targets(rcv_context);
 	}
 	if (((test_only == NULL) || (strcmp(test_only, "first_rec") == 0)) &&
 	    (buffer_format == first_rec_ioformat)) {
