@@ -161,6 +161,14 @@ typedef enum {Format_Less, Format_Greater, Format_Equal,
 
 FMformat_order FMformat_cmp(FMFormat format1, FMFormat format2);
 
+typedef struct compat_formats {
+    FMFormat prior_format;
+    char *xform_code;
+} *FMcompat_formats;
+
+extern FMcompat_formats
+FMget_compat_formats(FMFormat ioformat);
+
 extern char *
 name_of_FMformat(FMFormat format);
 
