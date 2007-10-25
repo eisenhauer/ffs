@@ -14,27 +14,139 @@
 #define COMPAT_THRESH	0.8
 
 
+static FMStructDescList
+build_struct_list(FMFormat format)
+{
+    FMStructDescList ret;
+    int count = 0;
+    while (format->subformats[count] != NULL) count++;
+    count+=2;
+    ret = malloc(count * sizeof(ret[0]));
+    ret[0].format_name = format->format_name;
+    ret[0].field_list = format->field_list;
+    ret[0].struct_size = format->record_length;
+    ret[0].opt_info = NULL;
+    count = 0;
+    while(format->subformats[count] != NULL) {
+	FMFormat subformat = format->subformats[count];
+	ret[count+1].format_name = subformat->format_name;
+	ret[count+1].field_list = subformat->field_list;
+	ret[count+1].struct_size = subformat->record_length;
+	ret[count+1].opt_info = NULL;
+	count++;
+    }
+    ret[count+1].format_name = NULL;
+    ret[count+1].field_list = NULL;
+    ret[count+1].struct_size = 0;
+    ret[count+1].opt_info = NULL;
+    return ret;
+}
+
+extern void
+FFS_determine_conversion(c, format)
+FFSContext c;
+FFSTypeHandle format;
+{
+    int i;
+    char *format_name = name_of_FMformat(format->body);
+    FMFieldList native_field_list;
+    FMStructDescList struct_list;
+
+    int nearest_format = -1, j;
+    FMcompat_formats older_format = NULL;
+    FMFormat *formatList;
+
+    formatList =
+	(FMFormat *) malloc(c->handle_list_size * sizeof(FMFormat));
+
+    j = 0;
+    for (i = 0; i < c->handle_list_size; i++) {
+	if (c->handle_list[i]->is_fixed_target)
+	    formatList[j++] = c->handle_list[i]->body;
+    }
+    nearest_format = FMformat_compat_cmp(format->body, formatList,
+					 j, &older_format);
+
+    if (nearest_format == -1) {
+	free(formatList);
+	return NULL;
+    }
+    struct_list = build_struct_list(formatList[nearest_format]);
+    establish_conversion(c, format, struct_list);
+    format->conversion_target = FFSTypeHandle_by_index(c, formatList[nearest_format]->format_index);
+    format->status = conversion_set;
+    return format->conversion_target;
+}
+
+static int
+IO_field_type_eq(str1, str2)
+const char *str1;
+const char *str2;
+{
+    FMdata_type t1, t2;
+    long t1_count, t2_count;
+
+    t1 = array_str_to_data_type(str1, &t1_count);
+    t2 = array_str_to_data_type(str2, &t2_count);
+
+    if ((t1_count == -1) && (t2_count == -1)) {
+	/* variant array */
+	char *tmp_str1 = base_data_type(str1);
+	char *tmp_str2 = base_data_type(str2);
+	
+	char *colon1 = strchr(tmp_str1, ':');
+	char *colon2 = strchr(tmp_str2, ':');
+	char *lparen1 = strchr(str1, '[');
+	char *lparen2 = strchr(str2, '[');
+	int count1 = 0;
+	int count2 = 0;
+
+	if (colon1 != NULL) {
+	    count1 = colon1 - tmp_str1;
+	} else {
+	    count1 = strlen(tmp_str1);
+	}
+	if (colon2 != NULL) {
+	    count2 = colon2 - tmp_str2;
+	} else {
+	    count2 = strlen(tmp_str2);
+	}
+	/*compare base type */
+	if (strncmp(tmp_str1, tmp_str2,(count1>count2)?count1:count2) != 0) {
+	    /* base types differ */
+	    return 0;
+	}
+	free(tmp_str1);
+	free(tmp_str2);
+	if ((lparen1 == NULL) || (lparen2 == NULL)) return -1;
+	return (strcmp(lparen1, lparen2) == 0);
+    }
+    return ((t1 == t2) && (t1_count == t2_count));
+}
+
+
 /* 
  * Compares the two formats.
- * Returns IOformat_order
+ * Returns FFSformat_order
  * */
-static IOformat_order
-IOformat_cmp_diff(format1, format2, diff1, diff2)
-IOFormat format1;
-IOFormat format2;
+static FMformat_order
+FMformat_cmp_diff(format1, format2, diff1, diff2)
+FMFormat format1;
+FMFormat format2;
 int *diff1;			/* Number of fields present in format1 and 
 				 * not in format2 */
 int *diff2;			/* Number of fields present in format2 and 
 				 * not in format1 */
 {
-    IOformat_order tmp_result = Format_Equal;
-    IOFieldList orig_field_list1 = field_list_of_IOformat(format1);
-    IOFieldList orig_field_list2 = field_list_of_IOformat(format2);
-    IOFieldList field_list1, field_list2;
-    IOFormat *subformats1 = NULL, *subformats2 = NULL, *tmp_subformats =
-	NULL;
+    FMformat_order tmp_result = Format_Equal;
+    FMFieldList orig_field_list1 = format1->field_list;
+    FMFieldList orig_field_list2 = format2->field_list;
+    FMFieldList field_list1, field_list2;
+    FMFormat *subformats1 = NULL, *subformats2 = NULL;
     int field_count1, field_count2;
     int i, j, limit;
+
+    if (format1 == format2) return Format_Equal;
 
     /* count fields */
     for (field_count1 = 0; orig_field_list1[field_count1].field_name != NULL;
@@ -51,8 +163,8 @@ int *diff2;			/* Number of fields present in format2 and
     memcpy(field_list2, orig_field_list2, 
 	   sizeof(field_list2[0]) * (field_count2 + 1));
 
-    qsort(field_list1, field_count1, sizeof(IOField), field_name_compar);
-    qsort(field_list2, field_count2, sizeof(IOField), field_name_compar);
+    qsort(field_list1, field_count1, sizeof(FMField), field_name_compar);
+    qsort(field_list2, field_count2, sizeof(FMField), field_name_compar);
 
     limit = field_count1;
     if (field_count2 < limit)
@@ -83,12 +195,12 @@ int *diff2;			/* Number of fields present in format2 and
     (*diff2) += (field_count2 - j);
 
     /* go through subformats */
-    tmp_subformats = subformats1 = get_subformats_IOformat(format1);
-    subformats2 = get_subformats_IOformat(format2);
+    subformats1 = format1->subformats;
+    subformats2 = format2->subformats;
 /* TODO: Fix for unmatched subformats 
  * -sandip */
     while (*subformats1 != NULL) {
-	char *sub1_name = name_of_IOformat(*subformats1);
+	char *sub1_name = name_of_FMformat(*subformats1);
 	int i = 0;
 	if (*subformats1 == format1) {
 	    /* self appears in subformat list, skip it */
@@ -96,9 +208,9 @@ int *diff2;			/* Number of fields present in format2 and
 	    continue;
 	}
 	while (subformats2[i] != NULL) {
-	    if (strcmp(sub1_name, name_of_IOformat(subformats2[i])) == 0) {
+	    if (strcmp(sub1_name, name_of_FMformat(subformats2[i])) == 0) {
 		/* same name, compare */
-		IOformat_cmp_diff(*subformats1, subformats2[i], diff1,
+		FMformat_cmp_diff(*subformats1, subformats2[i], diff1,
 				  diff2);
 		break;
 	    }
@@ -109,10 +221,6 @@ int *diff2;			/* Number of fields present in format2 and
 
     free(field_list1);
     free(field_list2);
-    if (tmp_subformats)
-	free(tmp_subformats);
-    if (subformats2)
-	free(subformats2);
     if (*diff1 == 0) {
 	if (*diff2 == 0)
 	    tmp_result = Format_Equal;
@@ -131,7 +239,7 @@ int *diff2;			/* Number of fields present in format2 and
  * Not used anywhere yet. But may be useful later.
  * */
 static int
-count_total_IOfield_list(IOFieldList list, IOFormatList format_list)
+count_total_IOfield_list(FMFieldList list, FMFormatList format_list)
 {
     int count = 0, i = 0;
     while (list[i].field_name != NULL) {
@@ -158,13 +266,13 @@ count_total_IOfield_list(IOFieldList list, IOFormatList format_list)
  * Basically counts the total number of nodes in a data structure tree
  * */
 static int
-count_total_IOfield(IOFormat format)
+count_total_IOfield(FMFormat format)
 {
     int count = 0;
     if (format) {
 	int i;
-	count = format->body->field_count;
-	for (i = 0; i < format->body->field_count; i++)
+	count = format->field_count;
+	for (i = 0; i < format->field_count; i++)
 	    if (format->field_subformats[i] != NULL)
 		count += count_total_IOfield(format->field_subformats[i]);
     }
@@ -179,7 +287,7 @@ count_total_IOfield(IOFormat format)
  * There is scope of smarter algorithm here.
  * */
 static int
-check_compat_thresh(IOFormat_Comp_result * comp_result, IOFormat format)
+check_compat_thresh(FMFormat_Comp_result * comp_result, FMFormat format)
 {
     float curr_thresh;
     int field_count = count_total_IOfield(format);
@@ -196,25 +304,22 @@ check_compat_thresh(IOFormat_Comp_result * comp_result, IOFormat format)
  * comp_result is modified accordingly to indicate the current match purity
  * */
 static int
-IOformat_list_cmp(IOFormat format, IOFormat *formatList, int listSize,
-		  IOFormat_Comp_result * comp_result)
+IOformat_list_cmp(FMFormat format, FMFormat *formatList, int listSize,
+		  FMFormat_Comp_result * comp_result)
 {
     int i, diff1, diff2, nearest_format = -1;
-    IOformat_order result = Format_Incompatible;
+    FMformat_order result = Format_Incompatible;
 
     for (i = 0; i < listSize; i++) {
 	int order;
 	if (formatList[i] == NULL)
 	    continue;
 	order =
-	    strcmp(name_of_IOformat(format),
-		   name_of_IOformat(formatList[i]));
-	if (order < 0)
-	    break;
-	else if (order > 0)
-	    continue;
+	    strcmp(name_of_FMformat(format),
+		   name_of_FMformat(formatList[i]));
+	if (order != 0) continue;
 	diff1 = diff2 = 0;
-	result = IOformat_cmp_diff(format, formatList[i], &diff1, &diff2);
+	result = FMformat_cmp_diff(format, formatList[i], &diff1, &diff2);
 	if (result == Format_Equal) {
 	    comp_result->diff1 = comp_result->diff2 = 0;
 	    nearest_format = i;
@@ -231,17 +336,17 @@ IOformat_list_cmp(IOFormat format, IOFormat *formatList, int listSize,
 }
 
 static int
-IOformat_list_cmp2(IOFormat format, IOFormat *formatList, int listSize,
-		  IOFormat_Comp_result * comp_result)
+IOformat_list_cmp2(FMFormat format, FMFormat *formatList, int listSize,
+		  FMFormat_Comp_result * comp_result)
 {
     int i, diff1, diff2, nearest_format = -1;
-    IOformat_order result = Format_Incompatible;
+    FMformat_order result = Format_Incompatible;
 
     for (i = 0; i < listSize; i++) {
 	if (formatList[i] == NULL)
 	    continue;
 	diff1 = diff2 = 0;
-	result = IOformat_cmp_diff(format, formatList[i], &diff1, &diff2);
+	result = FMformat_cmp_diff(format, formatList[i], &diff1, &diff2);
 	if (result == Format_Equal) {
 	    comp_result->diff1 = comp_result->diff2 = 0;
 	    nearest_format = i;
@@ -265,13 +370,13 @@ IOformat_list_cmp2(IOFormat format, IOFormat *formatList, int listSize,
  * -1 if no better comparison (as specified by comp_result) found.
  * */
 extern int
-IOformat_compat_cmp(IOFormat format, IOFormat *formatList,
-		    int listSize, IOcompat_formats * older_format)
+FMformat_compat_cmp(FMFormat format, FMFormat *formatList,
+		    int listSize, FMcompat_formats * older_format)
 {
-    IOFormat prior_format;
+    FMFormat prior_format;
     int i = 0, nearest_format = -1;
-    IOcompat_formats compats;
-    IOFormat_Comp_result comp_result = { MAX_DIFF, MAX_DIFF };
+    FMcompat_formats compats;
+    FMFormat_Comp_result comp_result = { MAX_DIFF, MAX_DIFF };
 
     *older_format = NULL;
     nearest_format =
@@ -279,7 +384,7 @@ IOformat_compat_cmp(IOFormat format, IOFormat *formatList,
     if (nearest_format != -1 && !comp_result.diff1 && !comp_result.diff2)
 	return nearest_format;
 
-    compats = get_compat_formats(format);
+    compats = FMget_compat_formats(format);
     if (compats == NULL)
 	return -1;
     while ((prior_format = compats[i].prior_format)) {
@@ -309,13 +414,13 @@ IOformat_compat_cmp(IOFormat format, IOFormat *formatList,
  * -1 if no better comparison (as specified by comp_result) found.
  * */
 extern int
-IOformat_compat_cmp2(IOFormat format, IOFormat *formatList,
-		    int listSize, IOcompat_formats * older_format)
+FMformat_compat_cmp2(FMFormat format, FMFormat *formatList,
+		    int listSize, FMcompat_formats * older_format)
 {
-    IOFormat prior_format;
+    FMFormat prior_format;
     int i = 0, nearest_format = -1;
-    IOcompat_formats compats;
-    IOFormat_Comp_result saved_comp_result = { MAX_DIFF, MAX_DIFF };
+    FMcompat_formats compats;
+    FMFormat_Comp_result saved_comp_result = { MAX_DIFF, MAX_DIFF };
 
     *older_format = NULL;
     nearest_format =
@@ -326,7 +431,7 @@ IOformat_compat_cmp2(IOFormat format, IOFormat *formatList,
 	return nearest_format;
     }
 
-    compats = get_compat_formats(format);
+    compats = FMget_compat_formats(format);
     if (compats == NULL) {
 	if (!saved_comp_result.diff2) {
 	    return nearest_format;
@@ -334,7 +439,7 @@ IOformat_compat_cmp2(IOFormat format, IOFormat *formatList,
 	return -1;
     }
     while ((prior_format = compats[i].prior_format)) {
-	IOFormat_Comp_result comp_result={MAX_DIFF, MAX_DIFF};
+	FMFormat_Comp_result comp_result={MAX_DIFF, MAX_DIFF};
 
 	int tmp = IOformat_list_cmp2(prior_format, formatList, listSize,
 				    &comp_result);
@@ -357,23 +462,23 @@ IOformat_compat_cmp2(IOFormat format, IOFormat *formatList,
     return nearest_format;
 }
 
+#ifdef NOT_DEF
 /**
  * Localize the "format" and set the conversion context to convert the wire
  * format to this localized format.
  * Return the localized format list
  */
-extern IOFormatList
-IOlocalize_conv(IOContext context, IOFormat format)
+extern FMFormatList
+IOlocalize_conv(FFSContext context, FMFormat format)
 {
-    IOFormatList local_format_list = NULL;
-    IOFormat *wire_subformats = get_subformats_IOformat(format);
+    FMFormatList local_format_list = NULL;
+    FMFormat *wire_subformats = format->subformats;
     int i = 0;
 
     while (wire_subformats[i] != NULL) {
 	int local_struct_size;
-	IOFieldList wire_field_list =
-	    field_list_of_IOformat(wire_subformats[i]);
-	IOFieldList local_field_list = copy_field_list(wire_field_list);
+	FMFieldList wire_field_list = wire_subformats[i]->field_list;
+	FMFieldList local_field_list = copy_field_list(wire_field_list);
 
 	/* 
 	 * determine an appropriate native layout for this structure
@@ -388,7 +493,7 @@ IOlocalize_conv(IOContext context, IOFormat format)
 	    realloc(local_format_list,
 		    sizeof(local_format_list[0]) * (i + 2));
 	local_format_list[i].format_name =
-	    strdup(name_of_IOformat(wire_subformats[i]));
+	    strdup(name_of_FMformat(wire_subformats[i]));
 
 	local_format_list[i].field_list = local_field_list;
 	i++;
@@ -405,15 +510,15 @@ IOlocalize_conv(IOContext context, IOFormat format)
  * format as specified by native_field_list and native_subformat_list.
  * Return the localized format list.
  */
-extern IOFormatList
-IOlocalize_register_conv(IOContext context, IOFormat format,
-			 IOFieldList native_field_list,
-			 IOFormatList native_subformat_list,
-			 IOFormat *local_prior_format,
+extern FMFormatList
+IOlocalize_register_conv(FMContext context, FMFormat format,
+			 FMFieldList native_field_list,
+			 FMFormatList native_subformat_list,
+			 FMFormat *local_prior_format,
 			 int *local_struct_size_out)
 {
-    IOFormatList local_f1_formats = NULL;
-    IOFormat *wire_subformats = get_subformats_IOformat(format);
+    FMFormatList local_f1_formats = NULL;
+    FMFormat *wire_subformats = format->subformats;
     int i = 0, native_struct_size;
 
     native_struct_size = struct_size_field_list(native_field_list,
@@ -422,9 +527,9 @@ IOlocalize_register_conv(IOContext context, IOFormat format,
 #ifdef NOTDEF
     while (wire_subformats[i] != NULL) {
 	int local_struct_size;
-	IOFieldList wire_field_list =
+	FMFieldList wire_field_list =
 	    field_list_of_IOformat(wire_subformats[i]);
-	IOFieldList local_field_list = copy_field_list(wire_field_list);
+	FMFieldList local_field_list = copy_field_list(wire_field_list);
 	char *subformat_name = name_of_IOformat(wire_subformats[i]);
 	int j = 0;
 
@@ -437,7 +542,7 @@ IOlocalize_register_conv(IOContext context, IOFormat format,
 	    struct_size_field_list(local_field_list, sizeof(char *));
 
 	/* We don't need the subformats. The last one will be the top
-	 * level IOFormat */
+	 * level FMFormat */
 
 	*local_prior_format =
 	    register_IOcontext_format(subformat_name, local_field_list,
@@ -447,7 +552,7 @@ IOlocalize_register_conv(IOContext context, IOFormat format,
 	    if (strcmp
 		(native_subformat_list[j].format_name,
 		 subformat_name) == 0) {
-		IOFieldList sub_field_list;
+		FMFieldList sub_field_list;
 		int sub_struct_size;
 		sub_field_list = native_subformat_list[j].field_list;
 		sub_struct_size = struct_size_field_list(sub_field_list,
@@ -478,3 +583,4 @@ IOlocalize_register_conv(IOContext context, IOFormat format,
     free(wire_subformats);
     return local_f1_formats;
 }
+#endif

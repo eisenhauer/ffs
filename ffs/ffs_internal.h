@@ -51,14 +51,20 @@ struct _IOConversionStruct;
 
 typedef struct _IOConversionStruct *IOConversionPtr;
 
+typedef enum {
+    not_checked, conversion_set, none_available
+} Conversion_status;
+
 struct _FFSTypeHandle {
     FFSContext context;
     int format_id;
-    IOConversionPtr conversion;
-    int warned_about_null_conversion;
     FFSTypeHandle *subformats;
     FFSTypeHandle *field_subformats;
+    IOConversionPtr conversion;
+    Conversion_status status;
+    FFSTypeHandle conversion_target;
     FMFormat body;
+    int is_fixed_target;
 };
 
 struct _IOgetFieldStruct {
@@ -114,10 +120,10 @@ typedef struct _IOConversionStruct {
     IOconvFieldStruct conversions[1];
 } IOConversionStruct;
 
-typedef struct _IOFormat_Comp_result{
+typedef struct _FMFormat_Comp_result{
 	int diff1;
 	int diff2;
-} IOFormat_Comp_result;
+} FMFormat_Comp_result;
 
 #if SIZEOF_INT == 4
 #define FILE_INT int

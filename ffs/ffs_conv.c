@@ -2102,6 +2102,7 @@ IOConversionPtr conv;
 int base_alignment;
 {
     dill_stream c = NULL;
+    dill_exec_handle conversion_handle;
     void (*conversion_routine)();
     dill_reg args[6];
     dill_reg tmp_regs[10];
@@ -2269,12 +2270,13 @@ int base_alignment;
     }
     generate_conversion_code(c, conv, args, base_alignment, register_args, 0, 0);
     dill_retp(c, args[2]);
-    conversion_routine = (void(*)())dill_finalize(c);
+    conversion_handle = dill_finalize(c);
+    conversion_routine = (void(*)()) dill_get_fp(conversion_handle);
     if (generation_verbose) {
 	dill_dump(c);
     }
-    conv->free_data = c;
-    conv->free_func = (void(*)(void*))&dill_free_stream;
+    conv->free_data = conversion_handle;
+    conv->free_func = (void(*)(void*))&dill_free_handle;
     return (conv_routine) conversion_routine;
 }
 /* #define REG_DEBUG(x) printf x ; */

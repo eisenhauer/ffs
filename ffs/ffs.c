@@ -504,7 +504,7 @@ void
 free_FFSTypeHandle(FFSTypeHandle f)
 {
     int i = 0;
-    FFSfree_conversion(f->conversion);
+    if (f->conversion) FFSfree_conversion(f->conversion);
     while(f->subformats && f->subformats[i]) {
 	free_FFSTypeHandle(f->subformats[i]);
 	f->subformats[i] = NULL;
@@ -539,7 +539,7 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 	handle->context = c;
 	handle->format_id = index;
 	handle->conversion = NULL;
-	handle->warned_about_null_conversion = 0;
+	handle->status = not_checked;
 	handle->body = FMformat_by_index(c->fmc, index);
 	if ((fmf->subformats && (fmf->subformats[0] != NULL)) || fmf->recursive) {
 	    int i, k, subformat_count = 0;
@@ -551,7 +551,7 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 		handle->subformats[i]->context = c;
 		handle->subformats[i]->format_id = -1;
 		handle->subformats[i]->conversion = NULL;
-		handle->subformats[i]->warned_about_null_conversion = 0;
+		handle->subformats[i]->status = not_checked;
 		handle->subformats[i]->body = fmf->subformats[i];
 		handle->subformats[i]->subformats = NULL;
 	    }
@@ -649,7 +649,13 @@ free_FFSContext(FFSContext c)
 extern FFSTypeHandle
 FFSset_fixed_target(FFSContext c, FMStructDescList struct_list)
 {
-    
+    FMFormat fmf = register_data_format(c->fmc, struct_list);
+    int index;
+    FFSTypeHandle handle;
+    index = fmf->format_index;
+    handle = FFSTypeHandle_by_index(c, index);
+    handle->is_fixed_target = 1;
+    return handle;
 }
 
 #ifdef NOT_DEF
@@ -3915,10 +3921,10 @@ check_conversion(ioformat)
 FFSTypeHandle ioformat;
 {
     if (ioformat->conversion == NULL) {
-	if (ioformat->warned_about_null_conversion == 0) {
+	if (ioformat->status == not_checked) {
 	    fprintf(stderr, "FFS Warning:  Attempting to decode when no conversion has been set.  \n  Record is of type \"%s\", ioformat 0x%lx.\n  No data returned.\n",
 		    ioformat->body->format_name, (long) ioformat);
-	    ioformat->warned_about_null_conversion = 1;
+	    ioformat->status = none_available;
 	}
 	return 0;
     }
@@ -3974,6 +3980,23 @@ void *dest;			/* area to hold decoded data */
 	return 0;
     }
     return FFSinternal_decode(ioformat, src, dest, 1);
+}
+
+extern FFSTypeHandle
+FFS_target_from_encode(c, data)
+FFSContext c;
+char *data;			/* incoming data to be decoded */
+{
+    FFSTypeHandle f;
+    int index;
+    /* first element in encoded buffer is format ID */
+    f = FFSTypeHandle_from_encode(c, data);
+    if (f->status == not_checked) {
+	FFS_determine_conversion(c, f);
+    }
+    if (f->status == none_available) return NULL;
+    if (f->status == conversion_set) return f->conversion_target;
+    
 }
 
 static void
