@@ -1784,7 +1784,8 @@ FMStructDescRec add_action_format_list[] =
 {
     {"add_action", add_field_list, sizeof(add_action_record), NULL},
     {"XMLFormatList", xml_format_list_flds, sizeof(msg_format_list_element), NULL},
-    {"IOfield_list", field_list_flds, sizeof(FMField), NULL}
+    {"IOfield_list", field_list_flds, sizeof(FMField), NULL},
+    {NULL, NULL, 0, 0}
 };
 
 FMField xml_format_list_flds[] =
