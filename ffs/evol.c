@@ -42,6 +42,10 @@ build_struct_list(FMFormat format)
     return ret;
 }
 
+extern int
+FMformat_compat_cmp(FMFormat format, FMFormat *formatList,
+		    int listSize, FMcompat_formats * older_format);
+
 extern void
 FFS_determine_conversion(c, format)
 FFSContext c;
@@ -69,13 +73,13 @@ FFSTypeHandle format;
 
     if (nearest_format == -1) {
 	free(formatList);
-	return NULL;
+	return;
     }
     struct_list = build_struct_list(formatList[nearest_format]);
     establish_conversion(c, format, struct_list);
     format->conversion_target = FFSTypeHandle_by_index(c, formatList[nearest_format]->format_index);
     format->status = conversion_set;
-    return format->conversion_target;
+    return;
 }
 
 static int
