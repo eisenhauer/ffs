@@ -2806,7 +2806,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/include/cercs_env.h"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/include/cercs_env.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/cercs_env.h $CHAOS_HOMEDIR/cercs_env/$cercs_cv_archive/include/cercs_env.h $CHAOS_HOMEDIR/cercs_env/include/cercs_env.h"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/cercs_env/include/cercs_env.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/cercs_env.h $CHAOS_HOMEDIR/cercs_env/$cercs_cv_archive/include/cercs_env.h $CHAOS_HOMEDIR/cercs_env/include/cercs_env.h $CHAOS_HOMEDIR/include/cercs_env.h"
 fi
 search_list="$search_list /usr/include/cercs_env.h /usr/local/include/cercs_env.h /opt/cercs_env/include/cercs_env.h /opt/misc/include/cercs_env.h /opt/misc/include/$cercs_cv_archive/cercs_env.h"
 tmp_search_results=""
@@ -2887,7 +2887,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/lib/libcercs_env.la"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/lib/libcercs_env.la $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libcercs_env.la $CHAOS_HOMEDIR/cercs_env/$cercs_cv_archive/lib/libcercs_env.la $CHAOS_HOMEDIR/cercs_env/lib/libcercs_env.la"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/cercs_env/lib/libcercs_env.la $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libcercs_env.la $CHAOS_HOMEDIR/cercs_env/$cercs_cv_archive/lib/libcercs_env.la $CHAOS_HOMEDIR/cercs_env/lib/libcercs_env.la $CHAOS_HOMEDIR/lib/libcercs_env.la"
 fi
 search_list="$search_list /usr/lib/libcercs_env.la /usr/local/lib/libcercs_env.la /opt/cercs_env/lib/libcercs_env.la /opt/misc/lib/libcercs_env.la /opt/misc/lib/$cercs_cv_archive/libcercs_env.la"
 tmp_search_results=""
@@ -3089,7 +3089,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/include/drisc.h"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/include/drisc.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/drisc.h $CHAOS_HOMEDIR/drisc/$cercs_cv_archive/include/drisc.h $CHAOS_HOMEDIR/drisc/include/drisc.h"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/drisc/include/drisc.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/drisc.h $CHAOS_HOMEDIR/drisc/$cercs_cv_archive/include/drisc.h $CHAOS_HOMEDIR/drisc/include/drisc.h $CHAOS_HOMEDIR/include/drisc.h"
 fi
 search_list="$search_list /usr/include/drisc.h /usr/local/include/drisc.h /opt/drisc/include/drisc.h /opt/misc/include/drisc.h /opt/misc/include/$cercs_cv_archive/drisc.h"
 tmp_search_results=""
@@ -3170,7 +3170,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/lib/libdrisc.la"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/lib/libdrisc.la $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libdrisc.la $CHAOS_HOMEDIR/drisc/$cercs_cv_archive/lib/libdrisc.la $CHAOS_HOMEDIR/drisc/lib/libdrisc.la"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/drisc/lib/libdrisc.la $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libdrisc.la $CHAOS_HOMEDIR/drisc/$cercs_cv_archive/lib/libdrisc.la $CHAOS_HOMEDIR/drisc/lib/libdrisc.la $CHAOS_HOMEDIR/lib/libdrisc.la"
 fi
 search_list="$search_list /usr/lib/libdrisc.la /usr/local/lib/libdrisc.la /opt/drisc/lib/libdrisc.la /opt/misc/lib/libdrisc.la /opt/misc/lib/$cercs_cv_archive/libdrisc.la"
 tmp_search_results=""
@@ -12195,7 +12195,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/include/gcrypt.h"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/include/gcrypt.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/gcrypt.h $CHAOS_HOMEDIR/gcrypt/$cercs_cv_archive/include/gcrypt.h $CHAOS_HOMEDIR/gcrypt/include/gcrypt.h"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/gcrypt/include/gcrypt.h $CHAOS_HOMEDIR/$cercs_cv_archive/include/gcrypt.h $CHAOS_HOMEDIR/gcrypt/$cercs_cv_archive/include/gcrypt.h $CHAOS_HOMEDIR/gcrypt/include/gcrypt.h $CHAOS_HOMEDIR/include/gcrypt.h"
 fi
 search_list="$search_list /usr/include/gcrypt.h /usr/local/include/gcrypt.h /opt/gcrypt/include/gcrypt.h /opt/misc/include/gcrypt.h /opt/misc/include/$cercs_cv_archive/gcrypt.h"
 tmp_search_results=""
@@ -12276,7 +12276,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/lib/libgcrypt.a"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/lib/libgcrypt.a $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libgcrypt.a $CHAOS_HOMEDIR/gcrypt/$cercs_cv_archive/lib/libgcrypt.a $CHAOS_HOMEDIR/gcrypt/lib/libgcrypt.a"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/gcrypt/lib/libgcrypt.a $CHAOS_HOMEDIR/$cercs_cv_archive/lib/libgcrypt.a $CHAOS_HOMEDIR/gcrypt/$cercs_cv_archive/lib/libgcrypt.a $CHAOS_HOMEDIR/gcrypt/lib/libgcrypt.a $CHAOS_HOMEDIR/lib/libgcrypt.a"
 fi
 search_list="$search_list /usr/lib/libgcrypt.a /usr/local/lib/libgcrypt.a /opt/gcrypt/lib/libgcrypt.a /opt/misc/lib/libgcrypt.a /opt/misc/lib/$cercs_cv_archive/libgcrypt.a"
 tmp_search_results=""

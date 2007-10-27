@@ -153,7 +153,7 @@ tmpdir=`echo ${prefix} |  sed 's%/$%%'`
 search_list="$search_list $tmpdir/$5/$2"
 fi
 if test -n "$CHAOS_HOMEDIR" -a -n "$cercs_cv_archive"; then
-search_list="$search_list $CHAOS_HOMEDIR/$5/$2 $CHAOS_HOMEDIR/$cercs_cv_archive/$5/$2 $CHAOS_HOMEDIR/$1/$cercs_cv_archive/$5/$2 $CHAOS_HOMEDIR/$1/$5/$2"
+search_list="$search_list $CHAOS_HOMEDIR/$cercs_cv_archive/$1/$5/$2 $CHAOS_HOMEDIR/$cercs_cv_archive/$5/$2 $CHAOS_HOMEDIR/$1/$cercs_cv_archive/$5/$2 $CHAOS_HOMEDIR/$1/$5/$2 $CHAOS_HOMEDIR/$5/$2"
 fi
 search_list="$search_list /usr/$5/$2 /usr/local/$5/$2 /opt/$1/$5/$2 /opt/misc/$5/$2 /opt/misc/$5/$cercs_cv_archive/$2"
 CERCS_SEARCH($search_list)
