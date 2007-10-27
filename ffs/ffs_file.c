@@ -209,7 +209,6 @@ write_comment_FFSfile(FFSFile f, const char *comment)
 extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data)
 {
-    FFSTypeHandle handle = NULL;
     int byte_size;
     int index = format->format_index;
     int vec_count;

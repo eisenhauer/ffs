@@ -352,8 +352,6 @@ static void
 handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset)
 {
     int i;
-    int elements = 1;
-    int j = 0;
     /* if base is not variant (I.E. doesn't contain addresses), return;*/
     if (!f->variant) return;
 
@@ -388,6 +386,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
     case FMType_simple:
 	return f->field_list[t->field_index].field_size;
     }
+    return -1;
 }
 
 static void
@@ -3988,7 +3987,6 @@ FFSContext c;
 char *data;			/* incoming data to be decoded */
 {
     FFSTypeHandle f;
-    int index;
     /* first element in encoded buffer is format ID */
     f = FFSTypeHandle_from_encode(c, data);
     if (f->status == not_checked) {
@@ -3996,7 +3994,8 @@ char *data;			/* incoming data to be decoded */
     }
     if (f->status == none_available) return NULL;
     if (f->status == conversion_set) return f->conversion_target;
-    
+    assert(0);
+    return NULL;
 }
 
 static void

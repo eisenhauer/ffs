@@ -52,8 +52,6 @@ FFSContext c;
 FFSTypeHandle format;
 {
     int i;
-    char *format_name = name_of_FMformat(format->body);
-    FMFieldList native_field_list;
     FMStructDescList struct_list;
 
     int nearest_format = -1, j;

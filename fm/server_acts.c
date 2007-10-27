@@ -177,7 +177,6 @@ int do_fallback;
     int conn_is_dead = 0;
 #ifndef MODULE
     int delay_value = 1;
-    struct sockaddr peer;
 #else
     struct socket *socket;	
 #endif

@@ -45,7 +45,6 @@
 
 int IOdumpVerbose = 0;
 
-static int write_IOreformat_cue(FMContext fmc, int format_id);
 static int server_register_format(FMContext fmc, FMFormat ioformat);
 static int self_server_register_format(FMContext fmc,
 					     FMFormat ioformat);
@@ -64,7 +63,6 @@ static int get_host_port_format_ID(void *format_ID);
 static int get_host_IP_format_ID(void *format_ID);
 static int is_self_server(FMContext fmc);
 static void expand_FMContext(FMContext fmc);
-static void IOfree_var_rec_elements(FMContext fmc, FMFormat ioformat, void *data);
 static int IOget_array_size_dimen(const char *str, FMFieldList fields,
 				  int dimen, int *control_field);
 static int field_type_eq(const char *str1, const char *str2);
@@ -202,6 +200,7 @@ create_local_FMcontext()
 {
     FMContext fmc = new_FMContext();
     fmc->self_server = 1;
+    return fmc;
 }
 
 static void
@@ -1264,7 +1263,6 @@ topo_order_subformats(super_format, format_count)
 FMFormat super_format;
 int format_count;
 {
-    int field;
     FMFormat tmp[100]; /* surely large enough */
     assert(format_count < 100);
     FMFormat *format_list = super_format->subformats;
@@ -1304,7 +1302,6 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 {
     int i, field;
     int struct_count = 0;
-    int field_count = 0;
     FMFormat *formats, ret;
 
     for (struct_count = 0; struct_list[struct_count].format_name != NULL; 
@@ -1507,7 +1504,6 @@ self_server_register_format(fmc, ioformat)
 FMContext fmc;
 FMFormat ioformat;
 {
-    FMFormat new_format = ioformat;
     format_rep server_format_rep;
     if (format_server_verbose == -1) {
 	if (getenv("FORMAT_SERVER_VERBOSE") == NULL) {
@@ -3641,109 +3637,6 @@ format_rep rep;
 }
     
     
-static FMFormat
-read_format_from_fd(fd, byte_reversal)
-void *fd;
-int byte_reversal;
-{
-    FILE_INT name_length = 0;
-    FILE_INT field_count;
-    FILE_INT record_length;
-    FMFormat ioformat = new_FMFormat();
-    FMVarInfoList new_var_list;
-    int field;
-    int record_byte_order;
-    int pointer_size;
-    int IOversion;
-
-    if (format_server_verbose == -1) {
-	if (getenv("FORMAT_SERVER_VERBOSE") == NULL) {
-	    format_server_verbose = 0;
-	} else {
-	    format_server_verbose = 1;
-	}
-    }
-    if (get_serverAtomicInt(fd, &name_length, byte_reversal) != 1)
-	goto fail;
-    if (name_length == 0)
-	goto fail;
-    if (get_serverAtomicInt(fd, &field_count, byte_reversal) != 1)
-	goto fail;
-    if (get_serverAtomicInt(fd, &record_length, byte_reversal) != 1)
-	goto fail;
-    if (get_serverAtomicInt(fd, &record_byte_order, byte_reversal) != 1)
-	goto fail;
-    if (get_serverAtomicInt(fd, &pointer_size, byte_reversal) != 1)
-	goto fail;
-    if (get_serverAtomicInt(fd, &IOversion, byte_reversal) != 1)
-	goto fail;
-
-    ioformat->float_format = byte_reversal ?
-	ffs_my_float_format : fm_reverse_float_formats[ffs_my_float_format];
-    ioformat->column_major_arrays = 0; /* GSE default to C */
-    ioformat->format_name = malloc(name_length + 1);
-    ioformat->field_count = field_count;
-    ioformat->variant = 0;
-    ioformat->recursive = 0;
-    ioformat->record_length = record_length;
-    ioformat->byte_reversal = (record_byte_order != OUR_BYTE_ORDER);
-    ioformat->pointer_size = pointer_size;
-    ioformat->IOversion = IOversion;
-    if (serverAtomicRead(fd, ioformat->format_name, name_length + 1) != name_length + 1)
-	goto fail;
-    ioformat->field_list = (FMFieldList) malloc(sizeof(FMField) *
-				      (ioformat->field_count + 1));
-    new_var_list = (FMVarInfoList)
-	malloc((size_t) sizeof(FMVarInfoStruct) * field_count);
-    ioformat->var_list = new_var_list;
-    ioformat->field_subformats = malloc(sizeof(FMFormat) * field_count);
-
-    for (field = 0; field < ioformat->field_count; field++) {
-	FILE_INT field_name_len;
-	FILE_INT field_type_len;
-	FILE_INT field_size;
-	FILE_INT field_offset;
-	long junk;
-	FMField *iofield = &(ioformat->field_list[field]);
-	ioformat->var_list[field].dimens = NULL;
-	ioformat->var_list[field].dimen_count = 0;
-	ioformat->field_subformats[field] = NULL;
-	if (get_serverAtomicInt(fd, &field_name_len, byte_reversal) != 1)
-	    goto fail;
-	if (get_serverAtomicInt(fd, &field_type_len, byte_reversal) != 1)
-	    goto fail;
-	if (get_serverAtomicInt(fd, &field_size, byte_reversal) != 1)
-	    goto fail;
-	if (get_serverAtomicInt(fd, &field_offset, byte_reversal) != 1)
-	    goto fail;
-
-	iofield->field_size = field_size;
-	iofield->field_offset = field_offset;
-	iofield->field_name = malloc(field_name_len + 1);
-	iofield->field_type = malloc(field_type_len + 1);
-	if (serverAtomicRead(fd, (void*)iofield->field_name, 
-			     field_name_len + 1) != field_name_len + 1)
-	    goto fail;
-	if (serverAtomicRead(fd, (void*)iofield->field_type, 
-			     field_type_len + 1) != field_type_len + 1)
-	    goto fail;
-	new_var_list[field].data_type =
-	    array_str_to_data_type(iofield->field_type,
-				   &junk);
-
-    }
-    ioformat->field_list[field_count].field_size = 0;
-    ioformat->field_list[field_count].field_offset = 0;
-    ioformat->field_list[field_count].field_name = NULL;
-    ioformat->field_list[field_count].field_type = NULL;
-
-    ioformat->server_format_rep = build_server_format_rep(ioformat);
-    return ioformat;
-  fail:
-    free(ioformat);
-    return NULL;
-}
-
 static void
 fill_derived_format_values(FMContext fmc, FMFormat ioformat)
 {

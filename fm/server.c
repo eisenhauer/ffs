@@ -351,7 +351,6 @@ int size;
 static void
 dump_formats_to_file(format_server fs)
 {
-    int i;
     long fd = open(FS_restart_file, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 
     if (fd == -1) {
@@ -550,18 +549,6 @@ int requested_id_version;
     }
 }
 
-static void
-server_write_id(fsc, ioformat)
-FSClient fsc;
-IOFormatRep ioformat;
-{
-    int junk_errno;
-    char *junk_str;
-    assert(ioformat->server_ID.length == 8);
-    os_server_write_func(fsc->fd, ioformat->server_ID.value, 8, &junk_errno,
-			 &junk_str);
-}
-
 /* 
  * Close an on-line connection.
  */
@@ -622,7 +609,6 @@ format_server_handle_data(fs, fsc)
 format_server fs;
 FSClient fsc;
 {
-    IOFormatRep ioformat;
     char next_action;
     LOG(fs, "    handle data, fd %d - %s", fsc->fd, fsc->hostname);
     select_handle_count++;
@@ -641,6 +627,7 @@ FSClient fsc;
 	FSClient_close(fsc);
 	break;
     case 'f': {
+	    IOFormatRep ioformat;
 	    char block_version;
 	    UINT2 length;
 
@@ -767,7 +754,7 @@ FSClient fsc;
 
 	    if (fs->stdout_verbose) {
 		printf("Returning -> ");
-		print_server_ID( (unsigned char *) ioformat->server_ID.value);
+		print_server_ID( (unsigned char *) format_ID);
 		printf("\n");
 	    }
 	    {
@@ -777,14 +764,14 @@ FSClient fsc;
 		} else {
 		    ret[0] = 'I';
 		}
-		ret[1] = ioformat->server_ID.length;
+		ret[1] = format_ID_len;
 		if (os_server_write_func(fsc->fd, &ret[0], 2, NULL, NULL) != 2) {
 		    FSClient_close(fsc);
 		    return;
 		}
-		if (os_server_write_func(fsc->fd, ioformat->server_ID.value,
-				  ioformat->server_ID.length, NULL,
-			     NULL) != ioformat->server_ID.length) {
+		if (os_server_write_func(fsc->fd, format_ID,
+				  format_ID_len, NULL,
+			     NULL) != format_ID_len) {
 		    FSClient_close(fsc);
 		    return;
 		}
@@ -794,6 +781,7 @@ FSClient fsc;
 	    break;
 	}
     case 'g': {
+	    IOFormatRep ioformat;
 	    char format_id_length;
 	    struct {
 		char reg[2];
@@ -1124,7 +1112,7 @@ get_qual_hostname(char *buf, int len)
 static format_server
 format_server_create()
 {
-    int i, j;
+    int j;
     struct hostent *host;
     char buf[MAXHOSTNAMELEN];
     format_server fs = (format_server) malloc(sizeof(*fs));

@@ -852,28 +852,6 @@ xml_format_list_eq(msg_format_list_element *f1, msg_format_list_element *f2)
     return 1;
 }
 
-void
-add_rec_dump(add_rec_ptr r)
-{
-    int i;
-    printf("in_format_name %d \"%s\"\n", (char*)r->in_format_name - (char*)r,
-	   r->in_format_name);
-    printf("func_str %d \"%s\"\n", (char*)r->func_str - (char*)r, r->func_str);
-    printf("out_formats %d \n", (char*)r->out_formats - (char*)r);
-    for (i = 0; i < r->format_count; i++) {
-	int j;
-	printf("out[%d].format_name %d \"%s\"\n", i, (char*)r->out_formats[i].format_name - (char*)r, r->out_formats[i].format_name);
-	if (r->out_formats[i].xml_markup != NULL)
-	    printf("out[%d].xml_markup %d \"%s\"\n", i, (char*)r->out_formats[i].xml_markup - (char*)r, r->out_formats[i].xml_markup);
-	printf("out[%d].field_list %d \n", i, (char*)r->out_formats[i].field_list - (char*)r);
-	for (j = 0; j < r->out_formats[i].field_list_len; j++) {
-	    printf("out[%d].field_list[%d].field_name %d \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_name - (char*)r, r->out_formats[i].field_list[j].field_name);
-	    printf("out[%d].field_list[%d].field_type %d \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_type - (char*)r, r->out_formats[i].field_list[j].field_type);
-	}
-    }
-}
-	
-
 int
 add_rec_eq(add_rec_ptr r1, add_rec_ptr r2)
 {
@@ -893,7 +871,8 @@ add_rec_eq(add_rec_ptr r1, add_rec_ptr r2)
     if ((r1->func_str != NULL) || (r2->func_str != NULL)) {
 	if ((r1->func_str != NULL) && (r2->func_str != NULL)) {
 	    if (strcmp(r1->func_str, r2->func_str) != 0) {
-		printf("func_strs differ, \"%s\", \"%s\"\n");
+		printf("func_strs differ, \"%s\", \"%s\"\n", r1->func_str, 
+		       r2->func_str);
 		return 0;
 	    }
 	} else {

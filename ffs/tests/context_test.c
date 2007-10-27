@@ -699,8 +699,6 @@ static void
 set_targets(context)
 FFSContext context;
 {
-    char *format_name;
-    FMStructDescRec str_list[5];
     first_rec_ioformat = FFSset_fixed_target(context, first_format_list);
     second_rec_ioformat = FFSset_fixed_target(context, string_format_list);
     third_rec_ioformat = FFSset_fixed_target(context, two_string_format_list);
