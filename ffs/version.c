@@ -16,7 +16,7 @@
 #include "unix_defs.h"
 #endif
 
-static char *PBIO_version = "PBIO Version 4.0.36 -- Sat Oct 27 09:27:17 EDT 2007\n";
+static char *PBIO_version = "PBIO Version 4.0.37 -- Sat Oct 27 09:30:28 EDT 2007\n";
 
 void
 IOprint_version()
