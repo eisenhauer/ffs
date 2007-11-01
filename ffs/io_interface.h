@@ -43,18 +43,18 @@ typedef void *(*IOinterface_open)(const char *path,
 					int *input, int *output);
 typedef void (*IOinterface_init)(void );
 
-extern IOinterface_func os_file_read_func;
-extern IOinterface_func os_file_write_func;
-extern IOinterface_funcv os_file_readv_func;
-extern IOinterface_funcv os_file_writev_func;
+extern IOinterface_func ffs_file_read_func;
+extern IOinterface_func ffs_file_write_func;
+extern IOinterface_funcv ffs_file_readv_func;
+extern IOinterface_funcv ffs_file_writev_func;
 
-extern IOinterface_func os_read_func;
-extern IOinterface_func os_write_func;
-extern IOinterface_funcv os_readv_func;
-extern IOinterface_funcv os_writev_func;
-extern int os_max_iov;
-extern IOinterface_close os_close_func;
-extern IOinterface_open os_file_open_func;
+extern IOinterface_func ffs_read_func;
+extern IOinterface_func ffs_write_func;
+extern IOinterface_funcv ffs_readv_func;
+extern IOinterface_funcv ffs_writev_func;
+extern int ffs_max_iov;
+extern IOinterface_close ffs_close_func;
+extern IOinterface_open ffs_file_open_func;
 
 extern void
 set_interface_FFSFile(FFSFile f, IOinterface_func write_func, 

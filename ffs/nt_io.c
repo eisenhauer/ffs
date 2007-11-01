@@ -339,22 +339,22 @@ void *conn;
     return (ret_val > 0);
 }
 
-IOinterface_func os_file_read_func = (IOinterface_func)nt_file_read_func;
-IOinterface_func os_file_write_func = (IOinterface_func)nt_file_write_func;
-IOinterface_funcv os_file_readv_func = (IOinterface_funcv)null_file_readv_func;
-IOinterface_funcv os_file_writev_func = NULL;
+IOinterface_func ffs_file_read_func = (IOinterface_func)nt_file_read_func;
+IOinterface_func ffs_file_write_func = (IOinterface_func)nt_file_write_func;
+IOinterface_funcv ffs_file_readv_func = (IOinterface_funcv)null_file_readv_func;
+IOinterface_funcv ffs_file_writev_func = NULL;
 
 
-IOinterface_func os_read_func = (IOinterface_func)nt_socket_read_func;
-IOinterface_func os_write_func = (IOinterface_func)nt_socket_write_func;
-IOinterface_funcv os_readv_func = (IOinterface_funcv)nt_socket_readv_func;
-IOinterface_funcv os_writev_func = NULL;
-int os_max_iov = 1;
+IOinterface_func ffs_read_func = (IOinterface_func)nt_socket_read_func;
+IOinterface_func ffs_write_func = (IOinterface_func)nt_socket_write_func;
+IOinterface_funcv ffs_readv_func = (IOinterface_funcv)nt_socket_readv_func;
+IOinterface_funcv ffs_writev_func = NULL;
+int ffs_max_iov = 1;
 
 
-IOinterface_open os_file_open_func = (IOinterface_open)nt_file_open_func;
-IOinterface_close os_close_func = (IOinterface_close) nt_close_func;
-IOinterface_poll  os_poll_func = (IOinterface_poll)nt_poll_func;
-IOinterface_func os_server_read_func = (IOinterface_func)nt_socket_read_func;
-IOinterface_func os_server_write_func = (IOinterface_func)nt_socket_write_func;
-IOinterface_init os_sockets_init_func = (IOinterface_init)nt_socket_init_func;
+IOinterface_open ffs_file_open_func = (IOinterface_open)nt_file_open_func;
+IOinterface_close ffs_close_func = (IOinterface_close) nt_close_func;
+IOinterface_poll  ffs_poll_func = (IOinterface_poll)nt_poll_func;
+IOinterface_func ffs_server_read_func = (IOinterface_func)nt_socket_read_func;
+IOinterface_func ffs_server_write_func = (IOinterface_func)nt_socket_write_func;
+IOinterface_init ffs_sockets_init_func = (IOinterface_init)nt_socket_init_func;

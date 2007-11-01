@@ -59,7 +59,7 @@ open_FFSfile(const char *path, const char *flags)
     FFSFile f;
     int allow_input = 0, allow_output = 0;
 
-    file = os_file_open_func(path, flags, &allow_input, &allow_output);
+    file = ffs_file_open_func(path, flags, &allow_input, &allow_output);
 
     if (file == NULL) {
 	char msg[128];
@@ -71,9 +71,9 @@ open_FFSfile(const char *path, const char *flags)
     memset(f, 0, sizeof(*f));
     f->file_id = file;
     f->buf = create_FFSBuffer();
-    set_interface_FFSFile(f, os_file_write_func, os_file_read_func,
-			 os_file_writev_func, os_file_readv_func, os_max_iov,
-			 os_close_func);
+    set_interface_FFSFile(f, ffs_file_write_func, ffs_file_read_func,
+			 ffs_file_writev_func, ffs_file_readv_func, ffs_max_iov,
+			 ffs_close_func);
 
     f->status = OpenNoHeader;
     if (allow_input) {
