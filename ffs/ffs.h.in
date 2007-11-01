@@ -56,6 +56,7 @@ typedef struct _FFSTypeHandle *FFSTypeHandle;
 extern FFSContext create_FFSContext();
 
 extern FFSBuffer create_FFSBuffer();
+extern FFSBuffer create_fixed_FFSBuffer(char *buffer, int size);
 extern void free_FFSBuffer(FFSBuffer buf);
 
 extern char *
