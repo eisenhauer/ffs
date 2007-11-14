@@ -36,9 +36,9 @@ extern char *getenv(const char *name);
 #include "assert.h"
 #include "cercs_env.h"
 
-static MAX_INTEGER_TYPE get_big_int(IOFieldPtr iofield, void *data);
-static MAX_FLOAT_TYPE get_big_float(IOFieldPtr iofield, void *data);
-static MAX_UNSIGNED_TYPE get_big_unsigned(IOFieldPtr iofield, void *data);
+static MAX_INTEGER_TYPE get_big_int(FMFieldPtr iofield, void *data);
+static MAX_FLOAT_TYPE get_big_float(FMFieldPtr iofield, void *data);
+static MAX_UNSIGNED_TYPE get_big_unsigned(FMFieldPtr iofield, void *data);
 static void byte_swap(char *data, int size);
 
 static int get_double_warn = 0;
@@ -689,7 +689,7 @@ convert_addr_field(iofile, src_spec, src, dest_size, dest, string_offset_size,
 		   string_base_p, size_delta, converted_strings, src_offset_p,
 		   dest_p, required_alignment)
 FFSContext iofile;
-IOFieldPtr src_spec;
+FMFieldPtr src_spec;
 void *src;
 int dest_size;
 void *dest;
@@ -703,7 +703,7 @@ int required_alignment;
 {
     int align_tmp;
     if ((dest_size == sizeof(char *)) && (*string_base_p != NULL)) {
-	struct _IOgetFieldStruct tmp_src_field;  /* OK */
+	struct _FMgetFieldStruct tmp_src_field;  /* OK */
 	MAX_INTEGER_TYPE tmp_int;
 	char **dest_field = (char **) dest;
 	tmp_src_field = *src_spec;
@@ -727,7 +727,7 @@ int required_alignment;
 	*dest_p = *dest_field;
     } else if ((dest_size > sizeof(char *)) && (*string_base_p != NULL)) {
 	/* native field is bigger than char*, store it */
-	struct _IOgetFieldStruct tmp_src_field;  /* OK */
+	struct _FMgetFieldStruct tmp_src_field;  /* OK */
 	MAX_UNSIGNED_TYPE tmp_int;
 	tmp_src_field = *src_spec;
 
@@ -758,7 +758,7 @@ int required_alignment;
 				    dest, 0, *string_base_p, 0, FALSE);
     } else {
 	/* not a native field struct.  Keep the pointer as an offset. */
-	struct _IOgetFieldStruct tmp_src_field;  /* OK */
+	struct _FMgetFieldStruct tmp_src_field;  /* OK */
 	MAX_INTEGER_TYPE tmp_int;
 	tmp_src_field = *src_spec;
 
@@ -793,7 +793,7 @@ extern void
 ffs_internal_convert_field(iofile, src_spec, src, dest_type, dest_size, dest,
 	  string_offset_size, string_base, size_delta, converted_strings)
 FFSContext iofile;
-IOFieldPtr src_spec;
+FMFieldPtr src_spec;
 void *src;
 FMdata_type dest_type;
 int dest_size;
@@ -938,33 +938,6 @@ int converted_strings;
 }
 
 extern long
-get_array_element_count(FMFormat f, FMVarInfoList var, char *data, int encode)
-{
-    int i;
-    long count = 1;
-    long tmp;
-    for (i = 0; i < var->dimen_count; i++) {
-	if (var->dimens[i].static_size != 0) {
-	    count = count * var->dimens[i].static_size;
-	} else {
-	    int field = var->dimens[i].control_field_index;
-	    struct _IOgetFieldStruct tmp_src_spec;
-	    memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
-	    tmp_src_spec.size = f->field_list[field].field_size;
-	    tmp_src_spec.offset = f->field_list[field].field_offset;
-	    tmp_src_spec.data_type = integer_type;
-	    if (!encode) {
-		tmp_src_spec.byte_swap = 0;
-		tmp_src_spec.src_float_format = tmp_src_spec.target_float_format;
-	    }
-	    tmp = get_big_int(&tmp_src_spec, data);
-	    count = count * tmp;
-	}
-    }
-    return count;
-}
-
-extern long
 get_static_array_element_count(FMVarInfoList var)
 {
     int i;
@@ -1036,7 +1009,7 @@ int indent;
     printf("  There are %d conversions registered:\n", conv_ptr->conv_count);
     for (i = 0; i < conv_ptr->conv_count; i++) {
 	FMVarInfoStruct *iovar = conv_ptr->conversions[i].iovar;
-	IOFieldPtr src_field = &conv_ptr->conversions[i].src_field;
+	FMFieldPtr src_field = &conv_ptr->conversions[i].src_field;
 	for (ind = 0; ind < indent; ind++)
 	    printf("    ");
 	printf("  Conversion %d:\n", i);
@@ -1148,7 +1121,7 @@ int indent;
     for (ind = 0; ind < indent; ind++)
 	printf("    ");
     for (i = 0; i < conv_ptr->conv_count; i++) {
-	IOFieldPtr src_field = &conv_ptr->conversions[i].src_field;
+	FMFieldPtr src_field = &conv_ptr->conversions[i].src_field;
 	FMVarInfoStruct *iovar = conv_ptr->conversions[i].iovar;
 
 	for (ind = 0; ind < indent; ind++)
@@ -1279,7 +1252,7 @@ void *src_string_base;
 void
 transpose_array(int *dimens, char *src, char *dest, int source_column_major,
 		FMdata_type dest_type, int dest_size, IOConversionPtr conv,
-		void *dest_base, IOFieldPtr src_spec, 
+		void *dest_base, FMFieldPtr src_spec, 
 		void **final_string_base_p)
 {
     int dimen_count = 0;
@@ -1288,7 +1261,7 @@ transpose_array(int *dimens, char *src, char *dest, int source_column_major,
     int jump = 1;
 
     while (dimens[dimen_count] != 0) dimen_count++;
-    struct _IOgetFieldStruct tmp_spec = *src_spec;
+    struct _FMgetFieldStruct tmp_spec = *src_spec;
 
     if (dimen_count <= 1) return;
     index = malloc(sizeof(int) * dimen_count);
@@ -1391,12 +1364,12 @@ void *src_string_base;
 			control_value[j] = 0;
 		}
 		control_value[i] = 
-		    get_array_element_count(conv->ioformat->body, conv->conversions[i].iovar, src, 1);
+		    FMget_array_element_count(conv->ioformat->body, conv->conversions[i].iovar, src, 1);
 	    }
 	}
     }
     for (i = 0; i < conv->conv_count; i++) {
-	IOFieldPtr src_spec = &conv->conversions[i].src_field;
+	FMFieldPtr src_spec = &conv->conversions[i].src_field;
 	int elements = get_static_array_element_count(conv->conversions[i].iovar);
 	int byte_swap = conv->conversions[i].src_field.byte_swap;
 
@@ -1430,7 +1403,7 @@ void *src_string_base;
 	    int j;
 	    void *dest_field = (void *) (conv->conversions[i].dest_offset +
 					 (char *) dest);
-	    struct _IOgetFieldStruct tmp_spec;  /* OK */
+	    struct _FMgetFieldStruct tmp_spec;  /* OK */
 	    FMdata_type dest_type = src_spec->data_type;
 	    int dest_size = conv->conversions[i].dest_size;
 	    int iter_count;
@@ -1524,7 +1497,7 @@ void *src_string_base;
 		} else {
 		    FMFormat f = conv->ioformat->body;
 		    int field = conv->conversions[i].iovar->dimens[j].control_field_index;
-		    struct _IOgetFieldStruct tmp_src_spec;
+		    struct _FMgetFieldStruct tmp_src_spec;
 		    memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
 		    tmp_src_spec.size = f->field_list[field].field_size;
 		    tmp_src_spec.offset = f->field_list[field].field_offset;
@@ -1558,7 +1531,7 @@ void **final_string_base_p;
 void *orig_src;
 {
     int copy_length = 0;
-    IOFieldPtr src_spec = &(conv_field->src_field);
+    FMFieldPtr src_spec = &(conv_field->src_field);
     int elements = get_static_array_element_count(conv_field->iovar);
 
     /* handle copying or conversion */
@@ -1592,7 +1565,7 @@ void *orig_src;
 	    int length = control_value;
 	    int j;
 	    void *dest_field = final_area;
-	    struct _IOgetFieldStruct tmp_spec;  /* OK */
+	    struct _FMgetFieldStruct tmp_spec;  /* OK */
 	    FMdata_type dest_type = src_spec->data_type;
 	    int dest_size = conv_field->dest_size;
 
@@ -1662,7 +1635,7 @@ void *orig_src;
 		} else {
 		    FMFormat f = conv->ioformat->body;
 		    int field =conv_field->iovar->dimens[j].control_field_index;
-		    struct _IOgetFieldStruct tmp_src_spec;
+		    struct _FMgetFieldStruct tmp_src_spec;
 		    memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
 		    tmp_src_spec.size = f->field_list[field].field_size;
 		    tmp_src_spec.offset = f->field_list[field].field_offset;
@@ -1683,7 +1656,7 @@ void *orig_src;
 
 static MAX_INTEGER_TYPE
 get_big_int(iofield, data)
-IOFieldPtr iofield;
+FMFieldPtr iofield;
 void *data;
 {
     if (iofield->data_type == integer_type) {
@@ -1752,7 +1725,7 @@ void *data;
 
 static MAX_UNSIGNED_TYPE
 get_big_unsigned(iofield, data)
-IOFieldPtr iofield;
+FMFieldPtr iofield;
 void *data;
 {
     if ((iofield->data_type == unsigned_type) || 
@@ -1851,7 +1824,7 @@ float_conversion(unsigned char*value, int size, FMfloat_format src_format,
 
 static MAX_FLOAT_TYPE
 get_big_float(iofield, data)
-IOFieldPtr iofield;
+FMFieldPtr iofield;
 void *data;
 {
     if (iofield->data_type == float_type) {
@@ -1991,7 +1964,7 @@ int alignment;
 
 static int
 drisc_type(field)
-struct _IOgetFieldStruct *field;
+struct _FMgetFieldStruct *field;
 {
     switch(field->data_type) {
     case integer_type:
@@ -2290,7 +2263,7 @@ gen_var_part_conv(dill_stream c, IOConversionPtr conv, int i, int control_base,
 
 
 static void
-gen_mem_float_conv(dill_stream c, struct _IOgetFieldStruct src, int src_addr, 
+gen_mem_float_conv(dill_stream c, struct _FMgetFieldStruct src, int src_addr, 
 		   int src_offset, int assume_align,
 		   int dest_reg, int dest_offset,
 		   int dest_size, int dst_aligned)
@@ -2436,7 +2409,7 @@ gen_simple_field_conv(c, tmp_spec, assume_align, src_addr, src_offset,
 		      string_offset_size, final_string_base, base_size_delta,
 		      converted_strings)
 dill_stream c;
-struct _IOgetFieldStruct tmp_spec;
+struct _FMgetFieldStruct tmp_spec;
 int assume_align;
 dill_reg src_addr;
 int src_offset;
@@ -2451,7 +2424,7 @@ int converted_strings;
 {
     /* simple conversion */
     iogen_oprnd src_oprnd;
-    struct _IOgetFieldStruct dest_spec;
+    struct _FMgetFieldStruct dest_spec;
     int src_drisc_type;
     int dst_drisc_type;
     int src_required_align;
@@ -2539,7 +2512,7 @@ gen_addill_field_conv(c, tmp_spec, assume_align, src_addr, src_offset,
   final_string_base, src_string_base, base_size_delta, converted_strings,
 		    string_src_reg, string_dest_reg, register_args)
 dill_stream c;
-struct _IOgetFieldStruct tmp_spec;
+struct _FMgetFieldStruct tmp_spec;
 int assume_align;
 dill_reg src_addr;
 int src_offset;
@@ -2639,7 +2612,7 @@ gen_subfield_conv(c, conv, i, tmp_spec, dest_type, assume_align, src_addr,
 dill_stream c;
 IOConversionPtr conv;
 int i;
-struct _IOgetFieldStruct tmp_spec;
+struct _FMgetFieldStruct tmp_spec;
 FMdata_type dest_type;
 int assume_align;
 dill_reg src_addr;
@@ -2841,7 +2814,7 @@ int extra_dest_offset;
 		control_base = dill_localb(c, sizeof(int) * conv->conv_count);
 	    }
 	    for (j=0; j< dimen_count; j++) {
-		struct _IOgetFieldStruct control_field;
+		struct _FMgetFieldStruct control_field;
 		int field = dimens[j].control_field_index;
 		iogen_oprnd src_oprnd;
 		if (dimens[j].static_size == 0) {
@@ -2918,7 +2891,7 @@ int extra_dest_offset;
 	}
     }
     for (i = 0; i < conv->conv_count; i++) {
-	IOFieldPtr src_spec = &conv->conversions[i].src_field;
+	FMFieldPtr src_spec = &conv->conversions[i].src_field;
 	int byte_swap = conv->conversions[i].src_field.byte_swap;
 	int elements = 
 	    get_static_array_element_count(conv->conversions[i].iovar);
@@ -2974,7 +2947,7 @@ int extra_dest_offset;
 	    int src_offset = src_spec->offset + extra_src_offset;
 	    FMdata_type dest_type = src_spec->data_type;
 	    int dest_size = conv->conversions[i].dest_size;
-	    struct _IOgetFieldStruct tmp_spec;  /* OK */
+	    struct _FMgetFieldStruct tmp_spec;  /* OK */
 	    tmp_spec = *src_spec;
 	    tmp_spec.offset = 0;
 
@@ -3164,7 +3137,7 @@ int register_args;
 	return;
     }
     {
-	IOFieldPtr src_spec = &conv->conversions[i].src_field;
+	FMFieldPtr src_spec = &conv->conversions[i].src_field;
 	/* variant array */
 	int byte_swap = conv->conversions[i].src_field.byte_swap;
 	int required_alignment = 1;

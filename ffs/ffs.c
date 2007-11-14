@@ -12,11 +12,11 @@
 static char *
 make_tmp_buffer(FFSBuffer buf, int size);
 static void *
-quick_get_pointer(IOFieldPtr iofield, void *data);
+quick_get_pointer(FMFieldPtr iofield, void *data);
 static unsigned long
-quick_get_ulong(IOFieldPtr iofield, void *data);
+quick_get_ulong(FMFieldPtr iofield, void *data);
 void
-quick_put_ulong(IOFieldPtr iofield, unsigned long value, void *data);
+quick_put_ulong(FMFieldPtr iofield, unsigned long value, void *data);
 
 static int add_to_tmp_buffer(FFSBuffer buf, int size);
 static int
@@ -406,7 +406,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     switch (t->type) {
     case FMType_pointer:
     {
-	struct _IOgetFieldStruct src_spec;
+	struct _FMgetFieldStruct src_spec;
 	int size, new_offset, tmp_data_loc;
 	char *ptr_value;
 	memset(&src_spec, 0, sizeof(src_spec));
@@ -429,7 +429,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     }
     case FMType_string:
     {
-	struct _IOgetFieldStruct src_spec;
+	struct _FMgetFieldStruct src_spec;
 	char *ptr_value;
 	int size, str_offset;
 	memset(&src_spec, 0, sizeof(src_spec));
@@ -457,7 +457,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	int array_data_offset = data_offset;
 	while (next->type == FMType_array) {
 	    if (next->static_size == 0) {
-		struct _IOgetFieldStruct src_spec;
+		struct _FMgetFieldStruct src_spec;
 		int field = next->control_field_index;
 		memset(&src_spec, 0, sizeof(src_spec));
 		src_spec.size = f->field_list[field].field_size;
@@ -472,7 +472,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	}
 	element_size = determine_size(f, buf, parent_offset, next);
 	if (var_array) {
-	    struct _IOgetFieldStruct src_spec;
+	    struct _FMgetFieldStruct src_spec;
 	    char *ptr_value;
 	    int new_offset, size = element_size * elements;
 	    memset(&src_spec, 0, sizeof(src_spec));
@@ -507,6 +507,75 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	assert(0);
     }
     return 1;
+}
+
+extern FFSEncodeVector
+copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec) {
+    int vec_offset = (char *) vec - (char *)buf->tmp_buffer;
+
+    if (((char*)vec < (char*)buf->tmp_buffer)
+        || ((char*)vec >= (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
+        int i;
+        for (i = 0; vec[i].iov_base; ++i);
+        vec_offset = add_to_tmp_buffer(buf, (i + 1) * sizeof(*vec));
+        memcpy((char *) buf->tmp_buffer + vec_offset, vec, (i + 1) * sizeof(*vec));
+    }
+
+    return (FFSEncodeVector) ((char *) buf->tmp_buffer + vec_offset);
+}
+
+extern FFSEncodeVector
+copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
+{
+    int i = 0;
+    int vec_offset = (long) vec - (long)buf->tmp_buffer;
+    /* 
+     * vec and some of the buffers may be in the memory managed by the
+     * FFSBuffer.  The goal here to is put *everything* into the FFSBuffer.
+     */
+    assert(((unsigned long)vec >= (unsigned long)buf->tmp_buffer) && 
+	   ((unsigned long)vec < (unsigned long)buf->tmp_buffer + buf->tmp_buffer_size));
+    while (vec[i].iov_base != NULL) {
+	if (((char*)vec[i].iov_base >= (char*)buf->tmp_buffer) &&
+	    ((char*)vec[i].iov_base < (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
+	    /* 
+	     * remap pointers into temp so that they're offsets (must do
+	     * this before we realloc the temp
+	     */ 
+	    vec[i].iov_base = (void*)((char *)vec[i].iov_base - (char *)buf->tmp_buffer + 1);
+	}
+	i++;
+    }
+
+    i = 0;
+    while (((FFSEncodeVector)((long)buf->tmp_buffer + vec_offset))[i].iov_base !=
+	   NULL) {
+	FFSEncodeVector v = (void*)((long) buf->tmp_buffer + vec_offset);
+	if ((unsigned long)v[i].iov_base > buf->tmp_buffer_size) {
+	    /* if this is an external buffer, copy it */
+	    int offset = add_to_tmp_buffer(buf, v[i].iov_len);
+	    char * data = (char *) buf->tmp_buffer + offset;
+	    /* add_to_tmp_buffer() might have remapped vector */
+	    v = (void*)((char *) buf->tmp_buffer + vec_offset);
+	    memcpy(data, v[i].iov_base, v[i].iov_len);
+	    v[i].iov_base = (void*)(long)(offset + 1);
+	}
+	i++;
+    }
+    /* reallocation done now */
+    vec = (void*)((long)buf->tmp_buffer + vec_offset);
+    i = 0;
+    while (vec[i].iov_base != NULL) {
+	if (((long)vec[i].iov_base > 0) &&
+	    ((long)vec[i].iov_base <= buf->tmp_buffer_size)) {
+	    /* 
+	     * remap pointers into temp so that they're addresses
+	     */ 
+	    vec[i].iov_base = (void*)((long)vec[i].iov_base + (char *)buf->tmp_buffer - 1);
+	}
+	i++;
+    }
+    return vec;
 }
 
 void
@@ -644,6 +713,18 @@ create_FFSContext()
     c->tmp.tmp_buffer_in_use_size = 0;
 
     return c;
+}
+
+extern FMContext
+FMContext_from_FFS(FFSContext c)
+{
+    return c->fmc;
+}
+
+extern FMFormat
+FMFormat_of_original(FFSTypeHandle h)
+{
+    return h->body;
 }
 
 extern void
@@ -1254,7 +1335,7 @@ int size;
 
 static unsigned long
 quick_get_ulong(iofield, data)
-IOFieldPtr iofield;
+FMFieldPtr iofield;
 void *data;
 {
     data = (void *) ((char *) data + iofield->offset);
@@ -1294,7 +1375,7 @@ void *data;
 
 static void *
 quick_get_pointer(iofield, data)
-IOFieldPtr iofield;
+FMFieldPtr iofield;
 void *data;
 {
     union {
@@ -1339,7 +1420,7 @@ void *data;
 
 void
 quick_put_ulong(iofield, value, data)
-IOFieldPtr iofield;
+FMFieldPtr iofield;
 unsigned long value;
 void *data;
 {

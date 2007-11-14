@@ -82,7 +82,7 @@ void IOSaxStartElement(void *userData, const char *name, const char **atts)
 		    void *containing_base = 
 			info->struct_stack[info->cur_depth-1].base;
 		    long array_dimen = 
-			get_array_element_count(var, containing_base, 0);
+			FMget_array_element_count(f, var, containing_base, 0);
 		    IOgetFieldStruct descr;
 		    void *pointer;
 		    descr.offset = fl->field_offset;

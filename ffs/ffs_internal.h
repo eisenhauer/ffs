@@ -85,7 +85,7 @@ typedef enum {
 } row_column_swap_type;
 
 typedef struct _IOconvFieldStruct {
-    struct _IOgetFieldStruct src_field;
+    struct _FMgetFieldStruct src_field;
     FMVarInfoStruct *iovar;
     int dest_offset;
     int dest_size;
@@ -166,8 +166,8 @@ extern int sdump_value(char *str, const char*field_type, int field_size,
 			     int float_format, int encode);
 extern int field_name_compar(const void *a, const void *b);
 extern int count_FMfield(FMFieldList field_list);
-extern char *get_IOstring_base(IOFieldPtr iofield, void *data, void *string_base);
-extern void *get_IOaddr(IOFieldPtr iofield, void *data, void *string_base, int encode);
+extern char *get_IOstring_base(FMFieldPtr iofield, void *data, void *string_base);
+extern void *get_IOaddr(FMFieldPtr iofield, void *data, void *string_base, int encode);
 extern char *base_data_type(const char *data_type);
 extern void dump_IOConversion(IOConversionPtr conv_ptr);
 extern void dump_IOConversion_as_XML(IOConversionPtr conv_ptr);
@@ -178,7 +178,7 @@ extern void init_float_formats();
 extern conv_routine generate_conversion(IOConversionPtr conv, 
 					      int base_alignment);
 extern void ffs_internal_convert_field(FFSContext iofile, 
-					      IOFieldPtr src_spec, void *src,
+					      FMFieldPtr src_spec, void *src,
 					      FMdata_type dest_type, 
 					      int dest_size, void *dest, 
 					      int string_offset_size,
