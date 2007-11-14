@@ -122,6 +122,7 @@ typedef struct _FMFormatBody {
     int variant;
     int recursive;
     int column_major_arrays;
+    FMFormat superformat;
     FMFormat *subformats;
     FMFieldList field_list;
     FMVarInfoList var_list;
@@ -181,11 +182,41 @@ count_FMfield(FMFieldList list);
 extern void print_server_ID(unsigned char *ID);
 extern void print_format_ID(FMFormat ioformat);
 
+extern int
+FMdump_data(FMFormat format, void *data, int character_limit);
+
+extern int
+FMdump_encoded_data(FMFormat format, void *data, int character_limit);
+extern int
+FMdump_XML(FMFormat format, void *data, int character_limit);
+
+extern int
+FMdump_encoded_XML(FMFormat format, void *data, int character_limit);
+
+extern char*
+FMunencoded_to_XML_string(FMContext fmcontext, FMFormat format, void *data);
+
+extern void
+FMfree_var_rec_elements(FMContext c, FMFormat format, void *data);
+
+extern long
+FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data, 
+			  int encode);
+
+typedef struct _FMgetFieldStruct {
+    int offset;
+    int size;
+    FMdata_type data_type;
+    unsigned char byte_swap;
+    unsigned char src_float_format;
+    unsigned char target_float_format;
+} FMgetFieldStruct;
+
 #define XML_OPT_INFO 0x584D4C20
 #define COMPAT_OPT_INFO 0x45564F4C
 #define COMPAT_OPT_INFO_FMFILE 0x45564F4D
 
-typedef struct _IOgetFieldStruct *IOFieldPtr;
+typedef struct _FMgetFieldStruct *FMFieldPtr;
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

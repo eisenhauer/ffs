@@ -130,20 +130,11 @@ typedef struct {
 
 #define DEFAULT_FS_PORT 5347
 
-typedef struct _IOgetFieldStruct {
-    int offset;
-    int size;
-    FMdata_type data_type;
-    unsigned char byte_swap;
-    unsigned char src_float_format;
-    unsigned char target_float_format;
-} IOgetFieldStruct;
-
 #if SIZEOF_LONG_DOUBLE != 0 && SIZEOF_LONG_DOUBLE != SIZEOF_DOUBLE
 #define MAX_FLOAT_TYPE long double
 #else
 #define MAX_FLOAT_TYPE double
-#define MAX_FLOAT_GET get_IOdouble
+#define MAX_FLOAT_GET get_FMdouble
 #endif
 #if SIZEOF_LONG_LONG != 0
 #define MAX_INTEGER_TYPE long long
@@ -155,9 +146,9 @@ typedef struct _IOgetFieldStruct {
 
 extern FMfloat_format ffs_reverse_float_formats[];
 extern char *base_data_type(const char *str);
-extern char *get_FMstring_base(IOFieldPtr iofield, void *data, void *string_base);
-extern void *get_FMaddr (IOFieldPtr iofield, void *data, void *string_base, int encode);
-extern IOFieldPtr get_IOfieldPtrFromList(FMFieldList field_list, 
+extern char *get_FMstring_base(FMFieldPtr iofield, void *data, void *string_base);
+extern void *get_FMaddr (FMFieldPtr iofield, void *data, void *string_base, int encode);
+extern FMFieldPtr get_FMfieldPtrFromList(FMFieldList field_list, 
 					 const char *fieldname);
 
 typedef int (*IOinterface_func)(void *conn, void *buffer, int length,
