@@ -1275,6 +1275,7 @@ int format_count;
 	for (i=0; i < format_count; i++) {
 	    if (try_add(format_list[i], tmp, formats)) {
 		tmp[formats] = format_list[i];
+		break;
 	    }
 	}
 	if (tmp[formats] == NULL) {
@@ -1293,7 +1294,7 @@ int format_count;
 	    }
 	}
     }
-    for (formats = 0; formats < format_count -1; formats++) {
+    for (formats = 0; formats < format_count; formats++) {
 	format_list[formats] = tmp[format_count - formats - 1];
 	format_list[formats]->superformat = super_format;
     }
