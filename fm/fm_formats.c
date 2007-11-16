@@ -2749,6 +2749,7 @@ int char_limit;
 	    if (0 == strcmp(name, typ)) {
 		format = top_format->subformats[i];
 	    }
+	    i++;
 	}
 	if (format != NULL) {
 	    int index;
