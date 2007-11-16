@@ -63,7 +63,7 @@ FFSTypeHandle format;
 
     j = 0;
     for (i = 0; i < c->handle_list_size; i++) {
-	if (c->handle_list[i]->is_fixed_target)
+	if (c->handle_list[i] && c->handle_list[i]->is_fixed_target)
 	    formatList[j++] = c->handle_list[i]->body;
     }
     nearest_format = FMformat_compat_cmp(format->body, formatList,
@@ -71,6 +71,7 @@ FFSTypeHandle format;
 
     if (nearest_format == -1) {
 	free(formatList);
+	format->status = none_available;
 	return;
     }
     struct_list = build_struct_list(formatList[nearest_format]);
