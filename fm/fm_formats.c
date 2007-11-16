@@ -975,9 +975,12 @@ int *super_rep_size;
     {
 	char *info_base;
 	struct _opt_info_wire_format tmp_base;
+	int pad;
 
 	/* fill in opt info fields */
-	cur_offset = (cur_offset + 3) & -4;  /* round up by even 4 */
+	while ((cur_offset & 0x3) != 0) {
+	    *(string_base + cur_offset++) = 0;
+	}
 	rep->f.f0.opt_info_offset = cur_offset;
 	if (byte_reversal) byte_swap((char*) &rep->f.f0.opt_info_offset, 2);
 	info_base = cur_offset +string_base;
@@ -1003,7 +1006,9 @@ int *super_rep_size;
 		   ioformat->opt_info[i].info_block,
 		   ioformat->opt_info[i].info_len);
 	    cur_offset += tmp_base.info_len;
-	    cur_offset = (cur_offset + 3) & -4;  /* round up by even 4 */
+	    while ((cur_offset & 0x3) != 0) {
+		*(string_base + cur_offset++) = 0;
+	    }
 	}
     }
 
