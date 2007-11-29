@@ -875,7 +875,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-ac_subdirs_all='fm ffs'
+ac_subdirs_all='fm cod ffs'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -2406,7 +2406,7 @@ fi
   MAINT=$MAINTAINER_MODE_TRUE
 
 
-subdirs="$subdirs fm ffs"
+subdirs="$subdirs fm cod ffs"
 
 
 

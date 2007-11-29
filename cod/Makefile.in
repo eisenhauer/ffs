@@ -13,6 +13,8 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -31,13 +33,18 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+EXTRA_PROGRAMS = t1$(EXEEXT) t2$(EXEEXT) t3$(EXEEXT) t4$(EXEEXT) \
+	t5$(EXEEXT) t6$(EXEEXT)
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(top_srcdir)/configure \
+DIST_COMMON = $(am__configure_deps) $(am__include_HEADERS_DIST) \
+	$(noinst_HEADERS) $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/config.h.in $(top_srcdir)/configure \
 	config/config.guess config/config.sub config/install-sh \
-	config/ltmain.sh config/missing config/mkinstalldirs
+	config/ltmain.sh config/missing mkinstalldirs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/config/cercs.m4 \
+	$(top_srcdir)/config/definitions.m4 \
+	$(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 $(top_srcdir)/configure.ac
@@ -45,12 +52,65 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
-mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+mkinstalldirs = $(install_sh) -d
+CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
+libLTLIBRARIES_INSTALL = $(INSTALL)
+LTLIBRARIES = $(lib_LTLIBRARIES)
+am__DEPENDENCIES_1 =
+am_libcod_la_OBJECTS = cod.lo cod_node.lo cg.lo standard.lo
+libcod_la_OBJECTS = $(am_libcod_la_OBJECTS)
+libcod_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libcod_la_LDFLAGS) $(LDFLAGS) -o $@
+@KERNEL_FALSE@am_libcod_la_rpath = -rpath $(libdir)
+t1_SOURCES = t1.c
+t1_OBJECTS = t1.$(OBJEXT)
+t1_LDADD = $(LDADD)
+t1_DEPENDENCIES = libcod.la
+t2_SOURCES = t2.c
+t2_OBJECTS = t2.$(OBJEXT)
+t2_LDADD = $(LDADD)
+t2_DEPENDENCIES = libcod.la
+t3_SOURCES = t3.c
+t3_OBJECTS = t3.$(OBJEXT)
+t3_LDADD = $(LDADD)
+t3_DEPENDENCIES = libcod.la
+t4_SOURCES = t4.c
+t4_OBJECTS = t4.$(OBJEXT)
+t4_LDADD = $(LDADD)
+t4_DEPENDENCIES = libcod.la
+t5_SOURCES = t5.c
+t5_OBJECTS = t5.$(OBJEXT)
+t5_LDADD = $(LDADD)
+t5_DEPENDENCIES = libcod.la
+t6_SOURCES = t6.c
+t6_OBJECTS = t6.$(OBJEXT)
+t6_LDADD = $(LDADD)
+t6_DEPENDENCIES = libcod.la
+DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp =
 am__depfiles_maybe =
-SOURCES =
-DIST_SOURCES =
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+SOURCES = $(libcod_la_SOURCES) $(EXTRA_libcod_la_SOURCES) t1.c t2.c \
+	t3.c t4.c t5.c t6.c
+DIST_SOURCES = $(libcod_la_SOURCES) $(EXTRA_libcod_la_SOURCES) t1.c \
+	t2.c t3.c t4.c t5.c t6.c
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -58,6 +118,9 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-pdf-recursive install-ps-recursive install-recursive \
 	installcheck-recursive installdirs-recursive pdf-recursive \
 	ps-recursive uninstall-recursive
+am__include_HEADERS_DIST = cod.h
+includeHEADERS_INSTALL = $(INSTALL_HEADER)
+HEADERS = $(include_HEADERS) $(noinst_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 ETAGS = etags
@@ -77,16 +140,20 @@ distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
+ARCH = @ARCH@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
+CDBG_FLAGS = @CDBG_FLAGS@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CSH = @CSH@
 CYGPATH_W = @CYGPATH_W@
+DCG_LIBS = @DCG_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DUMPBIN = @DUMPBIN@
@@ -96,14 +163,21 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+GENERAL_TEST = @GENERAL_TEST@
 GREP = @GREP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+KERNEL_VERSION = @KERNEL_VERSION@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LDPOSTFLAGS = @LDPOSTFLAGS@
+LEX = @LEX@
+LEXLIB = @LEXLIB@
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
+LIBEXT = @LIBEXT@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -111,6 +185,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MATH_LIB = @MATH_LIB@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 OBJEXT = @OBJEXT@
@@ -120,13 +195,19 @@ PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PATHPROG = @PATHPROG@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERL = @PERL@
+PRELIB = @PRELIB@
 RANLIB = @RANLIB@
+RM = @RM@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+YACC = @YACC@
+YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -174,16 +255,30 @@ psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
-subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+test_sub = @test_sub@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
-SUBDIRS = fm cod ffs
-all: all-recursive
+SUBDIRS = . tests
+@KERNEL_FALSE@include_HEADERS = cod.h
+@KERNEL_FALSE@lib_LTLIBRARIES = libcod.la
+@KERNEL_TRUE@MOSTLYCLEANFILES = cod_module.o
+@KERNEL_TRUE@SPECIAL_LEX_ARGS = -Skernel/kflex.skl 
+@KERNEL_TRUE@KERNEL_OBJS = kcod.lo
+noinst_HEADERS = assert.h config.h cod.tab.h cod_internal.h structs.h
+libcod_la_SOURCES = cod.c cod_node.c cg.c standard.c
+libcod_la_LIBADD = $(DCG_LIBS) $(KERNEL_OBJS) 
+libcod_la_DEPENDENCIES = $(KERNEL_OBJS)
+libcod_la_LDFLAGS = 
+EXTRA_libcod_la_SOURCES = kcod.c
+LDADD = libcod.la
+all: config.h
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
+.SUFFIXES: .c .lo .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -218,6 +313,85 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 
+config.h: stamp-h1
+	@if test ! -f $@; then \
+	  rm -f stamp-h1; \
+	  $(MAKE) $(AM_MAKEFLAGS) stamp-h1; \
+	else :; fi
+
+stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
+	@rm -f stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status config.h
+$(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
+	cd $(top_srcdir) && $(AUTOHEADER)
+	rm -f stamp-h1
+	touch $@
+
+distclean-hdr:
+	-rm -f config.h stamp-h1
+install-libLTLIBRARIES: $(lib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    f=$(am__strip_dir) \
+	    echo " $(LIBTOOL) --mode=install $(libLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) '$$p' '$(DESTDIR)$(libdir)/$$f'"; \
+	    $(LIBTOOL) --mode=install $(libLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) "$$p" "$(DESTDIR)$(libdir)/$$f"; \
+	  else :; fi; \
+	done
+
+uninstall-libLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  p=$(am__strip_dir) \
+	  echo " $(LIBTOOL) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$p'"; \
+	  $(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$p"; \
+	done
+
+clean-libLTLIBRARIES:
+	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libcod.la: $(libcod_la_OBJECTS) $(libcod_la_DEPENDENCIES) 
+	$(libcod_la_LINK) $(am_libcod_la_rpath) $(libcod_la_OBJECTS) $(libcod_la_LIBADD) $(LIBS)
+t1$(EXEEXT): $(t1_OBJECTS) $(t1_DEPENDENCIES) 
+	@rm -f t1$(EXEEXT)
+	$(LINK) $(t1_OBJECTS) $(t1_LDADD) $(LIBS)
+t2$(EXEEXT): $(t2_OBJECTS) $(t2_DEPENDENCIES) 
+	@rm -f t2$(EXEEXT)
+	$(LINK) $(t2_OBJECTS) $(t2_LDADD) $(LIBS)
+t3$(EXEEXT): $(t3_OBJECTS) $(t3_DEPENDENCIES) 
+	@rm -f t3$(EXEEXT)
+	$(LINK) $(t3_OBJECTS) $(t3_LDADD) $(LIBS)
+t4$(EXEEXT): $(t4_OBJECTS) $(t4_DEPENDENCIES) 
+	@rm -f t4$(EXEEXT)
+	$(LINK) $(t4_OBJECTS) $(t4_LDADD) $(LIBS)
+t5$(EXEEXT): $(t5_OBJECTS) $(t5_DEPENDENCIES) 
+	@rm -f t5$(EXEEXT)
+	$(LINK) $(t5_OBJECTS) $(t5_LDADD) $(LIBS)
+t6$(EXEEXT): $(t6_OBJECTS) $(t6_DEPENDENCIES) 
+	@rm -f t6$(EXEEXT)
+	$(LINK) $(t6_OBJECTS) $(t6_LDADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT)
+
+distclean-compile:
+	-rm -f *.tab.c
+
+.c.o:
+	$(COMPILE) -c $<
+
+.c.obj:
+	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+.c.lo:
+	$(LTCOMPILE) -c -o $@ $<
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -226,6 +400,23 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool
+install-includeHEADERS: $(include_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(includedir)" || $(MKDIR_P) "$(DESTDIR)$(includedir)"
+	@list='$(include_HEADERS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " cmp -s '$$d$$p' '$(DESTDIR)$(includedir)/$$f' || $(includeHEADERS_INSTALL) '$$d$$p' '$(DESTDIR)$(includedir)/$$f'"; \
+	   cmp -s "$$d$$p" "$(DESTDIR)$(includedir)/$$f" || $(includeHEADERS_INSTALL) "$$d$$p" "$(DESTDIR)$(includedir)/$$f"; \
+	done
+
+uninstall-includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(include_HEADERS)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(includedir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(includedir)/$$f"; \
+	done
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -307,7 +498,7 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	mkid -fID $$unique
 tags: TAGS
 
-TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS: tags-recursive $(HEADERS) $(SOURCES) config.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
@@ -324,7 +515,7 @@ TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	      tags="$$tags $$include_option=$$here/$$subdir/TAGS"; \
 	  fi; \
 	done; \
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) config.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -336,11 +527,11 @@ TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	    $$tags $$unique; \
 	fi
 ctags: CTAGS
-CTAGS: ctags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+CTAGS: ctags-recursive $(HEADERS) $(SOURCES) config.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) config.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -501,10 +692,14 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) check-local
 check: check-recursive
-all-am: Makefile
+all-am: Makefile $(LTLIBRARIES) $(HEADERS) config.h all-local
 installdirs: installdirs-recursive
 installdirs-am:
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -520,6 +715,7 @@ install-strip:
 	  `test -z '$(STRIP)' || \
 	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
+	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 
 clean-generic:
 
@@ -531,13 +727,14 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libLTLIBRARIES clean-libtool clean-local \
+	mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-libtool \
-	distclean-tags
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-hdr distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -549,11 +746,11 @@ info: info-recursive
 
 info-am:
 
-install-data-am:
+install-data-am: install-includeHEADERS
 
 install-dvi: install-dvi-recursive
 
-install-exec-am:
+install-exec-am: install-exec-local install-libLTLIBRARIES
 
 install-html: install-html-recursive
 
@@ -575,7 +772,8 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-recursive
 
@@ -585,27 +783,85 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) install-am \
 	install-strip
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
-	all all-am am--refresh check check-am clean clean-generic \
-	clean-libtool ctags ctags-recursive dist dist-all dist-bzip2 \
+	all all-am all-local am--refresh check check-am check-local \
+	clean clean-generic clean-libLTLIBRARIES clean-libtool \
+	clean-local ctags ctags-recursive dist dist-all dist-bzip2 \
 	dist-gzip dist-shar dist-tarZ dist-zip distcheck distclean \
-	distclean-generic distclean-libtool distclean-tags \
-	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-libtool distclean-tags distcleancheck distdir \
+	distuninstallcheck dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-local \
+	install-html install-html-am install-includeHEADERS \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
+@KERNEL_FALSE@all-local:
+@KERNEL_FALSE@check-local:
+@KERNEL_FALSE@install-exec-local:
+
+@KERNEL_TRUE@all-local: cod_module.o
+@KERNEL_TRUE@check-local: kernel_check_target
+@KERNEL_TRUE@install-exec-local: cod_module.o
+@KERNEL_TRUE@		install -d /lib/modules/@KERNEL_VERSION@/kernel/misc
+@KERNEL_TRUE@		install -c cod_module.o /lib/modules/@KERNEL_VERSION@/kernel/misc
+
+lex.yy.c: cod.l
+	@LEX@ $(SPECIAL_LEX_ARGS) cod.l
+
+cod.tab.h cod.c: cod.y
+	$(YACC) -d cod.y
+	mv y.tab.h cod.tab.h
+	mv y.tab.c cod.c
+
+structs.h : struct.pl cod.structs
+	@PERL@ struct.pl < cod.structs
+
+cod_node.c : struct.pl cod.structs
+
+cod.lo: structs.h lex.yy.c
+cod_node.lo: structs.h
+
+clean-local:
+	rm -f lex.yy.c cod.c cod_node.c structs.h
+
+depend:
+	makedepend -- $(CPPFLAGS) -- *.c
+	etags cg.c cod.y cod_node.c
+
+#
+# Below this point are targets used for linux kernel build.
+#
+kernel_check_target: cod_module.o kernel/undefined_syms
+	nm cod_module.o | grep U > /tmp/cur_undefined_syms
+	cmp /tmp/cur_undefined_syms kernel/undefined_syms
+	rm /tmp/cur_undefined_syms
+
+cod_module.o:	libcod.la
+	rm -fr /tmp/cod_build
+	mkdir /tmp/cod_build
+	cp .libs/libcod.a /tmp/cod_build
+	cd /tmp/cod_build ; ar x libcod.a
+	cd /tmp/cod_build ; rm libcod.a
+	cd /tmp/cod_build ; ld -r *.o -o $@
+	cp /tmp/cod_build/cod_module.o .
+	rm -fr /tmp/cod_build 
+
+kcod.c:
+	rm -f kcod.c
+	$(LN_S) kernel/kcod.c kcod.c
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

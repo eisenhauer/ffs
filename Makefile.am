@@ -2,5 +2,5 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-SUBDIRS= fm ffs
+SUBDIRS= fm cod ffs
 
