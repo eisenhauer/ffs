@@ -42,7 +42,7 @@ char **result_p;
 
     iget = read(fd, (char *) buffer, length);
     if (iget == 0) {
-	*result_p = "End of file";
+	if (result_p) *result_p = "End of file";
 	if (errno_p) *errno_p = 0;
 	return 0;		/* end of file */
     } else if (iget == -1) {
@@ -62,7 +62,7 @@ char **result_p;
     while (left > 0) {
 	iget = read(fd, (char *) buffer + length - left, left);
 	if (iget == 0) {
-	    *result_p = "End of file";
+	    if (result_p) *result_p = "End of file";
 	    if (errno_p) *errno_p = 0;
 	    return length - left;	/* end of file */
 	} else if (iget == -1) {
@@ -98,7 +98,7 @@ char **result_p;
     while (icount > 0) {
 	iget = readv(fd, (struct iovec *) iov, icount);
 	if (iget == 0) {
-	    *result_p = "End of file";
+	    if (result_p) *result_p = "End of file";
 	    if (errno_p) *errno_p = 0;
 	    return 0;		/* end of file */
 	} else if (iget == -1) {

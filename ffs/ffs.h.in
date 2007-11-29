@@ -54,6 +54,7 @@ typedef struct _IOContextStruct *FFSContext;
 typedef struct _FFSTypeHandle *FFSTypeHandle;
 
 extern FFSContext create_FFSContext();
+extern FFSContext create_FFSContext_FM(FMContext fmc);
 
 extern FFSBuffer create_FFSBuffer();
 extern FFSBuffer create_fixed_FFSBuffer(char *buffer, int size);
@@ -63,7 +64,7 @@ extern char *
 FFSencode(FFSBuffer b, FMFormat ioformat, void *data, int *buf_size);
 
 typedef struct FFSEncodeVec {
-    const void *iov_base;
+    void *iov_base;
     UIO_SIZE_T_TYPE iov_len;
 } *FFSEncodeVector;
 
@@ -97,8 +98,16 @@ FFSdecode_to_buffer(FFSContext context, char *encode, void *dest);
 extern int
 FFSdecode(FFSContext context, char *encode, char *dest);
 
+extern FFSTypeHandle
+FFSset_fixed_target(FFSContext c, FMStructDescList struct_list);
+
+extern FFSTypeHandle
+FFS_target_from_encode(FFSContext c, char *data);
+
 extern void
 free_FFSContext(FFSContext c);
+
+/*  file interface follows*/
 
 extern FFSFile
 open_FFSfile(const char *path, const char *flags);
@@ -109,7 +118,25 @@ close_FFSfile(FFSFile file);
 extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data);
 
-    
+typedef enum {
+    FFSerror, FFSend, FFSdata, FFSformat, FFScomment
+} FFSRecordType;
+
+extern FFSRecordType
+FFSnext_record_type(FFSFile ffsfile);
+
+extern FFSTypeHandle
+FFSnext_type_handle(FFSFile ffsfile);
+
+extern char *
+FFSread_comment(FFSFile ffsfile);
+
+extern FFSContext
+FFSContext_of_file(FFSFile f);
+
+extern FMContext
+FMContext_of_file(FFSFile f);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

@@ -40,7 +40,7 @@ main()
     FMStructDescRec str_list[5];
     FMOptInfo opt_info[2], opt_info2[2];
 
-    src_context = create_FMcontext();
+    src_context = create_local_FMcontext();
 
     opt_info[0].info_type = 0x584D4C20;   /* XML */
     opt_info[1].info_type = 0;

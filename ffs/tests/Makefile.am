@@ -4,12 +4,14 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 noinst_HEADERS = test_funcs.h
 
+INCLUDES = -I../../fm -I../../cod -I..
+
 LDADD = ../libffs.la
 
 TESTS = context_test
 
 bin_PROGRAMS = 
-#noinst_PROGRAMS = io_read io_read2 io_dyn_read io_test io_write context_test fortran_test xml_test compat_test io_align_test io_default_test io_def_write 
+#noinst_PROGRAMS = io_read io_read2 io_dyn_read io_test io_write context_test fortran_test xml_test compat_test io_default_test io_def_write 
 noinst_PROGRAMS = context_test io_write io_dyn_read
 
 MOSTLYCLEANFILES = dcg/*
@@ -23,7 +25,7 @@ compat_test_SOURCES= compat_test.c test_funcs.c
 io_test_SOURCES= io_test.c test_funcs.c
 io_default_test_SOURCES= io_default_test.c test_funcs.c
 io_write_SOURCES= io_write.c test_funcs.c
-io_align_test_SOURCES= io_align_test.c test_funcs.c
+io_dyn_read_SOURCES= io_dyn_read.c test_funcs.c
 
 
 local_context_test: context_test@EXE_EXT@

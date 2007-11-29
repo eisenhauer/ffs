@@ -191,13 +191,11 @@ set_IOconversion_for_format(FFSContext iofile, FMFormat file_ioformat,
 			    FMFieldList native_field_list,
 				  int native_struct_size);
 
-#define Max(i,j) ((i<j) ? j : i)
+extern
+char *
+make_tmp_buffer(FFSBuffer buf, int size);
 
-/* negative IOformat numbers are reserved as escape codes! */
-#define ARRAY_FOLLOWS -1
-#define COMMENT_FOLLOWS	-2
-#define FORMAT_FOLLOWS -3
-#define REREGISTERED_FORMAT_FOLLOWS -4
+#define Max(i,j) ((i<j) ? j : i)
 
 #if SIZEOF_LONG_DOUBLE != 0 && SIZEOF_LONG_DOUBLE != SIZEOF_DOUBLE
 #define MAX_FLOAT_TYPE long double

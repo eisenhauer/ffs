@@ -13,7 +13,7 @@
 #include "io_interface.h"
 
 typedef enum {
-    OpenNoHeader, OpenHeader, OpenForRead, OpenBeginRead, Closed
+    OpenNoHeader, OpenHeader, OpenForRead, Closed
 } Status;
 
 typedef struct format_info {
@@ -22,11 +22,19 @@ typedef struct format_info {
 
 struct FFSFile {
     FFSContext c;
+    FMContext fmc;
 
+    FFSBuffer tmp_buffer;
     void *file_id;
     format_info *info;
     int info_size;
+    int next_fid_len;
+    int next_data_len;
     FFSBuffer buf;
+    int read_ahead;
+    int errno_val;
+    FFSRecordType next_record_type;
+    FFSTypeHandle next_data_handle;
 
     Status status;
     IOinterface_func write_func;
@@ -79,10 +87,11 @@ open_FFSfile(const char *path, const char *flags)
     if (allow_input) {
 	int magic_number;
 	if ((f->read_func(file, &magic_number, 4, NULL, NULL) != 4) ||
-	    (magic_number != MAGIC_NUMBER)) {
+	    (magic_number != htonl(MAGIC_NUMBER))) {
 	    printf("read headers failed\n");
 	    return NULL;
 	}
+	f->status = OpenForRead;
     }
     if (allow_output) {
 	int magic_number = htonl(MAGIC_NUMBER);
@@ -93,7 +102,21 @@ open_FFSfile(const char *path, const char *flags)
 	    return NULL;
 	}
     }
+    f->fmc = create_local_FMcontext();
+    f->c = create_FFSContext_FM(f->fmc);
     return f;
+}
+
+FFSContext
+FFSContext_of_file(FFSFile f)
+{
+    return f->c;
+}
+
+FMContext
+FMContext_of_file(FFSFile f)
+{
+    return f->fmc;
 }
 
 extern void
@@ -212,7 +235,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     int byte_size;
     int index = format->format_index;
     int vec_count;
-    struct iovec *vec;
+    FFSEncodeVector vec;
     int indicator;
 
     init_format_info(f, index);
@@ -243,9 +266,280 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     vec_count++;
     vec[0].iov_len = 4;
     vec[0].iov_base = &indicator;
-    if (f->writev_func(f->file_id, vec, vec_count, NULL, NULL) != vec_count) {
+    if (f->writev_func(f->file_id, (struct iovec *)vec, vec_count, 
+		       NULL, NULL) != vec_count) {
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
     return 1;
+}
+
+extern FFSTypeHandle
+FFSread_format(FFSFile ffsfile)
+{
+    char *id;
+    char *rep;
+    FMFormat format;
+    if (ffsfile->read_ahead == FALSE) {
+	(void) FFSnext_record_type(ffsfile);
+    }
+    while (ffsfile->next_record_type != FFSformat) {
+	switch (ffsfile->next_record_type) {
+	case FFScomment:
+	    if (ffsfile->tmp_buffer == NULL) {
+		ffsfile->tmp_buffer = create_FFSBuffer();
+	    }
+	    (void) FFSread_comment(ffsfile);
+	    (void) FFSnext_record_type(ffsfile);
+	    break;
+	case FFSdata:
+	    if (ffsfile->tmp_buffer == NULL) {
+		ffsfile->tmp_buffer = create_FFSBuffer();
+	    }
+	    (void) FFSread(ffsfile, NULL);
+	    (void) FFSnext_record_type(ffsfile);
+	    break;
+	default:
+	    return NULL;
+	}
+    }
+    
+    id = malloc(ffsfile->next_fid_len);
+    rep = malloc(ffsfile->next_data_len);
+    if (ffsfile->read_func(ffsfile->file_id, id, 
+			   ffsfile->next_fid_len, NULL, NULL)
+	!= ffsfile->next_fid_len) {
+	printf("Read failed, errno %d\n", errno);
+	return NULL;
+    }
+    if (ffsfile->read_func(ffsfile->file_id, rep, 
+			   ffsfile->next_data_len, NULL, NULL)
+	!= ffsfile->next_data_len) {
+	printf("Read failed, errno %d\n", errno);
+	return NULL;
+    }
+    ffsfile->read_ahead = FALSE;
+    format = load_external_format_FMcontext(ffsfile->c->fmc, id, 
+					    ffsfile->next_fid_len, rep);
+    return FFSTypeHandle_by_index(ffsfile->c, format->format_index);
+}
+
+extern
+FFSTypeHandle
+FFSnext_type_handle(ffsfile)
+FFSFile ffsfile;
+{
+    if (ffsfile->status != OpenForRead)
+	return NULL;
+
+    if (ffsfile->read_ahead == FALSE) {
+	(void) FFSnext_record_type(ffsfile);
+    }
+    while (ffsfile->next_record_type != FFSdata) {
+	switch (ffsfile->next_record_type) {
+	case FFScomment:
+	    (void) FFSread_comment(ffsfile);
+	    (void) FFSnext_record_type(ffsfile);
+	    break;
+	case FFSformat:
+	    (void) FFSread_format(ffsfile);
+	    (void) FFSnext_record_type(ffsfile);
+	    break;
+	default:
+	    return NULL;
+	}
+    }
+    return ffsfile->next_data_handle;
+}
+
+extern
+char *
+FFSread_comment(ffsfile)
+FFSFile ffsfile;
+{
+    if (ffsfile->status != OpenForRead)
+	return NULL;
+
+    if (ffsfile->read_ahead == FALSE) {
+	(void) FFSnext_record_type(ffsfile);
+    }
+    while (ffsfile->next_record_type != FFScomment) {
+	switch (ffsfile->next_record_type) {
+	case FFSdata:
+	    (void) FFSread(ffsfile);
+	    (void) FFSnext_record_type(ffsfile);
+	    break;
+	case FFSformat:
+	    (void) FFSread_format(ffsfile);
+	    (void) FFSnext_record_type(ffsfile);
+	    break;
+	default:
+	    return NULL;
+	}
+    }
+    if (ffsfile->tmp_buffer == NULL) ffsfile->tmp_buffer = create_FFSBuffer();
+    make_tmp_buffer(ffsfile->tmp_buffer, ffsfile->next_data_len);
+    if (ffsfile->read_func(ffsfile->file_id, ffsfile->tmp_buffer->tmp_buffer, 
+			   ffsfile->next_data_len, NULL, NULL)
+	!= ffsfile->next_data_len) {
+	printf("Read failed, errno %d\n", errno);
+	return NULL;
+    }
+    ffsfile->read_ahead = FALSE;
+    return ffsfile->tmp_buffer->tmp_buffer;
+}
+
+static
+int
+get_AtomicInt(file, file_int_ptr)
+FFSFile file;
+FILE_INT *file_int_ptr;
+{
+#if SIZEOF_INT == 4
+    int tmp_value;
+    if (file->read_func(file->file_id, &tmp_value, 4, NULL, NULL) != 4)
+	return 0;
+
+#else
+    Baaad shit;
+#endif
+    ntohl(tmp_value);
+    *file_int_ptr = tmp_value;
+    return 1;
+}
+
+
+extern
+FFSRecordType
+FFSnext_record_type(ffsfile)
+FFSFile ffsfile;
+{
+    FILE_INT indicator_chunk;
+    FILE_INT count = 1;
+    FILE_INT struct_size = 0;
+ restart:
+    if (ffsfile->status != OpenForRead) {
+	return FFSerror;
+    }
+    if (ffsfile->tmp_buffer == NULL) {
+	ffsfile->tmp_buffer = create_FFSBuffer();
+    }
+    if (ffsfile->read_ahead == FALSE) {
+	if (!get_AtomicInt(ffsfile, &indicator_chunk)) {
+	    ffsfile->next_record_type = 
+		(ffsfile->errno_val) ? FFSerror : FFSend;
+	    return ffsfile->next_record_type;
+	}
+	
+	indicator_chunk = ntohl(indicator_chunk);
+	switch (indicator_chunk >> 24) {
+	case 0x1: /* comment */
+		ffsfile->next_record_type = FFScomment;
+		ffsfile->next_data_len = indicator_chunk & 0xffffff;
+		break;
+	case 0x2: /* format */
+		ffsfile->next_record_type = FFSformat;
+		ffsfile->next_fid_len = indicator_chunk & 0xffffff;
+		if (!get_AtomicInt(ffsfile, &indicator_chunk)) {
+		    ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		    return ffsfile->next_record_type;
+		}
+		ffsfile->next_data_len = ntohl(indicator_chunk);
+		break;
+	case 0x3: /* data */ {
+		char *tmp_buf;
+		int header_size;
+		ffsfile->next_record_type = FFSdata;
+		ffsfile->next_data_len = indicator_chunk & 0xffffff;
+		make_tmp_buffer(ffsfile->tmp_buffer, ffsfile->next_data_len);
+		tmp_buf = ffsfile->tmp_buffer->tmp_buffer;
+		/* first get format ID, at least 8 bytes */
+		if (ffsfile->read_func(ffsfile->file_id, tmp_buf, 8, NULL, NULL) != 8) {
+		    ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		    return ffsfile->next_record_type;
+		}
+		ffsfile->next_fid_len = FMformatID_len(tmp_buf);
+		if (ffsfile->next_fid_len > 8) {
+		    int more = ffsfile->next_fid_len - 8;
+		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + 8, more, NULL, NULL) != more) {
+			ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+			return ffsfile->next_record_type;
+		    }
+		}
+		ffsfile->next_data_handle = 
+		    FFS_target_from_encode(ffsfile->c, tmp_buf);
+		if (ffsfile->next_data_handle == NULL) {
+		    /* no target for this format, discard */
+		    int more = ffsfile->next_data_len - ffsfile->next_fid_len;
+		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + ffsfile->next_fid_len, more, NULL, NULL) != more) {
+			ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+			return ffsfile->next_record_type;
+		    }
+		    ffsfile->read_ahead = FALSE;
+		    goto restart;
+		    
+		}
+		header_size = FFSheader_size(ffsfile->next_data_handle);
+		if (header_size > ffsfile->next_fid_len) {
+		    int more = header_size - ffsfile->next_fid_len;
+		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + ffsfile->next_fid_len, more, NULL, NULL) != more) {
+			ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+			return ffsfile->next_record_type;
+		    }
+		}
+		break;
+	default:
+	    printf("CORRUPT FFSFILE\n");
+	    exit(0);
+	}
+	}
+	ffsfile->read_ahead = TRUE;
+    }
+    return ffsfile->next_record_type;
+}
+
+extern int
+FFSread(FFSFile file, char *dest)
+{
+    FFSTypeHandle f;
+    int header_size;
+    int read_size;
+    char *tmp_buf;
+
+    if (file->status != OpenForRead)
+	return 0;
+
+    if (file->read_ahead == FALSE) {
+	(void) FFSnext_record_type(file);
+    }
+    while (file->next_record_type != FFSdata) {
+	switch (file->next_record_type) {
+	case FFScomment:
+	    (void) FFSread_comment(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	case FFSformat:
+	    (void) FFSread_format(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	default:
+	    return 0;
+	}
+    }
+
+    f = file->next_data_handle;
+    header_size = FFSheader_size(f);
+    read_size = file->next_data_len - header_size;
+    tmp_buf = file->tmp_buffer->tmp_buffer;
+    /* should have buffer optimization logic here.  
+     * I.E. if decode_in_place_possible() handle differently.  later
+     */
+    /* read into temporary memory */
+    if (file->read_func(file->file_id, tmp_buf + header_size, read_size, NULL, NULL) != read_size) {
+	file->next_record_type = (file->errno_val) ? FFSerror : FFSend;
+	return 0;
+    }
+    FFSdecode(file->c, file->tmp_buffer->tmp_buffer, dest);
+    file->read_ahead = FALSE;
+    
 }

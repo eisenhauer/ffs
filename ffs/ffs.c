@@ -9,8 +9,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-static char *
-make_tmp_buffer(FFSBuffer buf, int size);
 static void *
 quick_get_pointer(FMFieldPtr iofield, void *data);
 static unsigned long
@@ -702,10 +700,17 @@ extern
 FFSContext
 create_FFSContext()
 {
+    return create_FFSContext_FM(create_FMcontext());
+}
+
+extern
+FFSContext
+create_FFSContext_FM(FMContext fmc)
+{
     FFSContext c;
     c = (FFSContext) malloc((size_t) sizeof(*c));
     init_float_formats();
-    c->fmc = create_FMcontext();
+    c->fmc = fmc;
     c->handle_list_size = 0;
     c->handle_list = NULL;
     c->tmp.tmp_buffer = NULL;
@@ -1273,7 +1278,7 @@ FFSBuffer buf;
     free(buf);
 }
 
-static
+extern
 char *
 make_tmp_buffer(buf, size)
 FFSBuffer buf;

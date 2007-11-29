@@ -20,6 +20,7 @@ int argc;
 char **argv;
 {
     FFSFile file = NULL;
+    FFSContext c;
     FFSTypeHandle first_ioformat = NULL, later_ioformat = NULL;
     FFSTypeHandle nested_ioformat = NULL, structured_ioformat = NULL;
     FFSTypeHandle sixth_ioformat = NULL;
@@ -53,36 +54,36 @@ char **argv;
 	printf("Open failed\n");
 	exit(1);
     }
-    if (!check_only)
-	dump_File(file);
 
-    first_ioformat = FFSset_fixed_target(file, first_format_list);
-    nested_ioformat = FFSset_fixed_target(file, nested_format_list);
-    sixth_ioformat = FFSset_fixed_target(file, variant_format_list);
+    c = FFSContext_of_file(file);
+    first_ioformat = FFSset_fixed_target(c, first_format_list);
+    later_ioformat = FFSset_fixed_target(c, later_format_list);
+    nested_ioformat = FFSset_fixed_target(c, nested_format_list);
+    sixth_ioformat = FFSset_fixed_target(c, variant_format_list);
 
     while (!finished) {
 	char *comment;
 	FFSTypeHandle new_format;
 	char *format_name;
 
-	if (FFSnext_data_handle(file) == first_ioformat) {
+	if (FFSnext_type_handle(file) == first_ioformat) {
 	    first_rec read_data;
-	    if (!read_File(file, &read_data))
-		IOperror(file, "read format1");
+	    if (!FFSread(file, &read_data))
+		printf("read format1");
 	    printf("first format rec had %d, %g, %c\n",
 		   read_data.integer_field, read_data.double_field,
 		   read_data.char_field);
-	} else if (FFSnext_data_handle(file) == later_ioformat) {
+	} else if (FFSnext_type_handle(file) == later_ioformat) {
 	    later_rec read_data;
-	    if (!read_File(file, &read_data))
-		IOperror(file, "read later format");
+	    if (!FFSread(file, &read_data))
+		printf("read later format");
 	    printf("later format rec had %d, %s, %g\n",
 		   read_data.integer_field, read_data.string,
 		   read_data.double_field);
-	} else if (FFSnext_data_handle(file) == nested_ioformat) {
+	} else if (FFSnext_type_handle(file) == nested_ioformat) {
 	    nested_rec read_data;
-	    if (!read_File(file, &read_data))
-		IOperror(file, "read nested format");
+	    if (!FFSread(file, &read_data))
+		printf("read nested format");
 	    printf("nested format had %d { %d, %d, %ld, %s, %g, %c } %s\n",
 		   read_data.integer_field,
 		   read_data.nested_rec.integer_field,
@@ -92,11 +93,11 @@ char **argv;
 		   read_data.nested_rec.double_field,
 		   read_data.nested_rec.char_field,
 		   read_data.string);
-	} else if (FFSnext_data_handle(file) == sixth_ioformat) {
+	} else if (FFSnext_type_handle(file) == sixth_ioformat) {
 	    sixth_rec read_data;
 	    int i;
-	    if (!read_File(file, &read_data))
-		IOperror(file, "read variant format");
+	    if (!FFSread(file, &read_data))
+		printf("read variant format");
 	    printf("variant format had %s, %ld { ", read_data.string,
 		   read_data.icount);
 	    for (i = 0; i < read_data.icount; i++) {
@@ -107,9 +108,11 @@ char **argv;
 		printf(" %g,", read_data.var_double_array[i]);
 	    }
 	    printf("}\n");
-	} else {
+	} else if (FFSnext_type_handle(file) != NULL) {
 	    printf("discarding a record\n");
-	    read_raw_File(file, NULL, 0, NULL);
+	    FFSread(file, NULL);
+	} else {
+	    finished++;
 	}
     }
     return 0;
