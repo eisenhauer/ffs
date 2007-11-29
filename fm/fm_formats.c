@@ -266,6 +266,12 @@ static int format_server_verbose = -1;
 extern void dump_FMFormat(FMFormat ioformat);
 unsigned char ID_length[] = {8, 10, 12};
 
+extern int
+FMformatID_len(char *buffer)
+{
+    return ID_length[version_of_format_ID(buffer)];
+}
+
 extern void
 add_opt_info_FMformat(format, typ, len, block)
 FMFormat format;
