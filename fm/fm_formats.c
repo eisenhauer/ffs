@@ -3363,7 +3363,7 @@ const char *name;
 
 extern
 char *
-global_name_of_Format(format)
+global_name_of_FMFormat(format)
 FMFormat format;
 {
     int size = strlen(format->format_name) + 3 +

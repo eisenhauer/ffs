@@ -173,6 +173,9 @@ FMget_compat_formats(FMFormat ioformat);
 extern char *
 name_of_FMformat(FMFormat format);
 
+extern char *
+global_name_of_FMFormat(FMFormat format);
+
 extern FMFieldList
 copy_field_list(FMFieldList list);
 
