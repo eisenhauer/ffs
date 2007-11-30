@@ -608,6 +608,7 @@ new_FMFormat()
     ioformat->superformat = NULL;
     ioformat->subformats = NULL;
     ioformat->ref_count = 1;
+    ioformat->master_struct_list = NULL;
     ioformat->format_name = NULL;
     ioformat->byte_reversal = 0;
     ioformat->column_major_arrays = 0; /* by default, C mode */
@@ -1472,6 +1473,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     formats[0]->format_index = context->reg_format_count++;
     context->format_list[formats[0]->format_index] = formats[0];
     ret = formats[0];
+    ret->master_struct_list = struct_list;
     free(formats);
     return ret;
 }
@@ -1967,6 +1969,12 @@ FMFormat format;
     return format->format_name;
 }
 
+extern FMStructDescList
+format_list_of_FMFormat(FMFormat format)
+{
+    return format->master_struct_list;
+}
+
 extern FMdata_type
 array_str_to_data_type(str, element_count_ptr)
 const char *str;
@@ -2430,8 +2438,7 @@ FMContext c;
 #define DUMP
 #ifdef DUMP
 static void
-free_FMfield(fmc, ioformat, field, data, string_base, encode, verbose)
-FMContext fmc;
+free_FMfield(ioformat, field, data, string_base, encode, verbose)
 FMFormat ioformat;
 int field;
 void *data;
@@ -2494,7 +2501,7 @@ int verbose;
 		tmp_str = (char *) get_FMaddr(&descr, data, string_base, encode);
 		free(tmp_str);
 	    } else if (subformat != NULL) {
-		FMfree_var_rec_elements(fmc, subformat, (char*)data + data_offset);
+		FMfree_var_rec_elements(subformat, (char*)data + data_offset);
 	    }
 	    data_offset += sub_field_size;
 	}
@@ -2505,15 +2512,14 @@ int verbose;
 }
 
 extern void
-FMfree_var_rec_elements(fmc, ioformat, data)
-FMContext fmc;
+FMfree_var_rec_elements(ioformat, data)
 FMFormat ioformat;
 void *data;
 {
     int index;
     if (ioformat->variant == 0) return;  /* nothing to do */
     for (index=0; index < ioformat->field_count; index++) {
-	free_FMfield(fmc, ioformat, index, data, data, 0, 1);
+	free_FMfield(ioformat, index, data, data, 0, 1);
     }
 }
 

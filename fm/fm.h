@@ -122,6 +122,7 @@ typedef struct _FMFormatBody {
     int variant;
     int recursive;
     int column_major_arrays;
+    FMStructDescList master_struct_list;
     FMFormat superformat;
     FMFormat *subformats;
     FMFieldList field_list;
@@ -173,6 +174,9 @@ FMget_compat_formats(FMFormat ioformat);
 extern char *
 name_of_FMformat(FMFormat format);
 
+extern FMStructDescList
+format_list_of_FMFormat(FMFormat format);
+
 extern char *
 global_name_of_FMFormat(FMFormat format);
 
@@ -202,7 +206,7 @@ extern char*
 FMunencoded_to_XML_string(FMContext fmcontext, FMFormat format, void *data);
 
 extern void
-FMfree_var_rec_elements(FMContext c, FMFormat format, void *data);
+FMfree_var_rec_elements(FMFormat format, void *data);
 
 extern long
 FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data, 
