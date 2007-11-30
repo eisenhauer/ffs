@@ -54,14 +54,14 @@ enum {
 #ifndef LINUX_KERNEL_MODULE
 #include "string.h"
 #endif
-#include "ecl.tab.h"
+#include "cod.tab.h"
 #ifndef FALSE
 #define FALSE 0
 #endif
 
 #ifdef LINUX_KERNEL_MODULE
 #include <linux/string.h>
-#include "kecl.h"
+#include "kcod.h"
 #define fprintf(fmt, args...) printk(args)
 #define printf printk
 #define malloc (void *)DAllocMM
