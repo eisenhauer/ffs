@@ -104,6 +104,9 @@ FFSset_fixed_target(FFSContext c, FMStructDescList struct_list);
 extern FFSTypeHandle
 FFS_target_from_encode(FFSContext c, char *data);
 
+extern FMFormat 
+FMFormat_of_original(FFSTypeHandle h);
+
 extern void
 free_FFSContext(FFSContext c);
 
