@@ -26,7 +26,7 @@ t5_SOURCES = t5.c data_funcs.c
 
 check-local: syntax-tests @test_sub@ 
 
-general_LDADD = ../libcod.la ${MATH_LIB} 
+general_LDADD = ../libcod.la 
 
 general.c:  general.ops
 	perl general.ops

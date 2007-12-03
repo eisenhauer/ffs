@@ -876,7 +876,6 @@ lt_ECHO
 CPP
 PATHPROG
 GENERAL_TEST
-MATH_LIB
 DCG_LIBS
 test_sub
 LIBOBJS
@@ -5116,13 +5115,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5119: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5118: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5122: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5121: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5125: output\"" >&5)
+  (eval echo "\"\$as_me:5124: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6208,7 +6207,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6211 "configure"' > conftest.$ac_ext
+  echo '#line 6210 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7303,11 +7302,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7306: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7305: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7310: \$? = $ac_status" >&5
+   echo "$as_me:7309: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7625,11 +7624,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7628: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7627: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7632: \$? = $ac_status" >&5
+   echo "$as_me:7631: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7730,11 +7729,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7733: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7732: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7737: \$? = $ac_status" >&5
+   echo "$as_me:7736: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7785,11 +7784,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7788: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7787: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7792: \$? = $ac_status" >&5
+   echo "$as_me:7791: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10534,7 +10533,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10537 "configure"
+#line 10536 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10634,7 +10633,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10637 "configure"
+#line 10636 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11049,11 +11048,11 @@ fi
 
 search_list="$search_list /usr/include/atl.h /usr/local/include/atl.h /opt/atl/include/atl.h /opt/misc/include/atl.h /opt/misc/include/$cercs_cv_archive/atl.h"
 tmp_search_results=""
-echo "configure:11052: searching for $search_list " >&5
+echo "configure:11051: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11056: first found $tmp_search_results " >&5
+	echo "configure:11055: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11136,11 +11135,11 @@ fi
 
 search_list="$search_list /usr/lib/libatl.la /usr/local/lib/libatl.la /opt/atl/lib/libatl.la /opt/misc/lib/libatl.la /opt/misc/lib/$cercs_cv_archive/libatl.la"
 tmp_search_results=""
-echo "configure:11139: searching for $search_list " >&5
+echo "configure:11138: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11143: first found $tmp_search_results " >&5
+	echo "configure:11142: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11344,11 +11343,11 @@ fi
 
 search_list="$search_list /usr/include/cercs_env.h /usr/local/include/cercs_env.h /opt/cercs_env/include/cercs_env.h /opt/misc/include/cercs_env.h /opt/misc/include/$cercs_cv_archive/cercs_env.h"
 tmp_search_results=""
-echo "configure:11347: searching for $search_list " >&5
+echo "configure:11346: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11351: first found $tmp_search_results " >&5
+	echo "configure:11350: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11431,11 +11430,11 @@ fi
 
 search_list="$search_list /usr/lib/libcercs_env.la /usr/local/lib/libcercs_env.la /opt/cercs_env/lib/libcercs_env.la /opt/misc/lib/libcercs_env.la /opt/misc/lib/$cercs_cv_archive/libcercs_env.la"
 tmp_search_results=""
-echo "configure:11434: searching for $search_list " >&5
+echo "configure:11433: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11438: first found $tmp_search_results " >&5
+	echo "configure:11437: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11564,13 +11563,6 @@ fi
 
 fi
 
-if test -n "$cercs_cv_cercs_env_link_dir" -o -n "$with_local_specified"; then
-    LIBS="$LIBS -lcercs_env"
-fi
-if test -n "$cercs_cv_atl_link_dir" -o -n "$with_local_specified"; then
-    LIBS="$LIBS -latl"
-fi
-LIBS="$LIBS \$(top_builddir)/../fm/libfm.la"
 
 
 
@@ -11646,11 +11638,11 @@ fi
 
 search_list="$search_list /usr/include/dill.h /usr/local/include/dill.h /opt/dill/include/dill.h /opt/misc/include/dill.h /opt/misc/include/$cercs_cv_archive/dill.h"
 tmp_search_results=""
-echo "configure:11649: searching for $search_list " >&5
+echo "configure:11641: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11653: first found $tmp_search_results " >&5
+	echo "configure:11645: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11733,11 +11725,11 @@ fi
 
 search_list="$search_list /usr/lib/libdill.la /usr/local/lib/libdill.la /opt/dill/lib/libdill.la /opt/misc/lib/libdill.la /opt/misc/lib/$cercs_cv_archive/libdill.la"
 tmp_search_results=""
-echo "configure:11736: searching for $search_list " >&5
+echo "configure:11728: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11740: first found $tmp_search_results " >&5
+	echo "configure:11732: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11866,12 +11858,9 @@ fi
 
 fi
 
-if test -n "$with_local_specified"; then
-   cercs_cv_dill_include_arg="-I../dill";
-   ac_cv_header_dill_h=yes
-fi
 DCG_LIBS="-ldill"
 GENERAL_TEST=./general$ac_exeext
+
 
 
 { echo "$as_me:$LINENO: checking for sqrt in -lm" >&5
@@ -11936,11 +11925,26 @@ fi
 { echo "$as_me:$LINENO: result: $ac_cv_lib_m_sqrt" >&5
 echo "${ECHO_T}$ac_cv_lib_m_sqrt" >&6; }
 if test $ac_cv_lib_m_sqrt = yes; then
-  MATH_LIB=-lm
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBM 1
+_ACEOF
+
+  LIBS="-lm $LIBS"
+
 fi
 
 
-
+if test -n "$cercs_cv_cercs_env_link_dir" -o -n "$with_local_specified"; then
+    LIBS="$LIBS -lcercs_env"
+fi
+if test -n "$cercs_cv_atl_link_dir" -o -n "$with_local_specified"; then
+    LIBS="$LIBS -latl"
+fi
+LIBS="$LIBS \$(top_builddir)/../fm/libfm.la"
+if test -n "$with_local_specified"; then
+   cercs_cv_dill_include_arg="-I../dill";
+   ac_cv_header_dill_h=yes
+fi
 
 { echo "$as_me:$LINENO: checking for ANSI C header files" >&5
 echo $ECHO_N "checking for ANSI C header files... $ECHO_C" >&6; }
@@ -13491,14 +13495,13 @@ lt_ECHO!$lt_ECHO$ac_delim
 CPP!$CPP$ac_delim
 PATHPROG!$PATHPROG$ac_delim
 GENERAL_TEST!$GENERAL_TEST$ac_delim
-MATH_LIB!$MATH_LIB$ac_delim
 DCG_LIBS!$DCG_LIBS$ac_delim
 test_sub!$test_sub$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 22; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 21; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

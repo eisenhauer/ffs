@@ -79,6 +79,13 @@ AC_C_INLINE
 
 CERCS_REQUIRE_PACKAGE(atl,atl.h,libatl.la)
 CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
+CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
+DCG_LIBS="-ldill"
+GENERAL_TEST=./general$ac_exeext
+
+AC_SUBST(GENERAL_TEST)
+AC_CHECK_LIB(m,sqrt)
+AC_SUBST(DCG_LIBS)
 if test -n "$cercs_cv_cercs_env_link_dir" -o -n "$with_local_specified"; then
     LIBS="$LIBS -lcercs_env"
 fi
@@ -86,18 +93,10 @@ if test -n "$cercs_cv_atl_link_dir" -o -n "$with_local_specified"; then
     LIBS="$LIBS -latl"
 fi
 LIBS="$LIBS \$(top_builddir)/../fm/libfm.la"
-CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
 if test -n "$with_local_specified"; then
    cercs_cv_dill_include_arg="-I../dill";
    ac_cv_header_dill_h=yes
 fi
-DCG_LIBS="-ldill"
-GENERAL_TEST=./general$ac_exeext
-
-AC_SUBST(GENERAL_TEST)
-AC_CHECK_LIB(m,sqrt,[MATH_LIB=-lm])
-AC_SUBST(MATH_LIB)
-AC_SUBST(DCG_LIBS)
 
 dnl checks for header files
 AC_HEADER_STDC
