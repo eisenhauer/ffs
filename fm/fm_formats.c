@@ -1453,9 +1453,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 		dump_FMFormat(formats[0]);
 	    }
 	} else {
-	    if (cache_format->context == context) {
-		printf("Cache hit in same CONTEXT!\n");
-	    }
+	    free_format_list(formats);
 	    formats[0] = cache_format;
 	    formats[0]->ref_count++;
 
