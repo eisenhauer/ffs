@@ -377,7 +377,7 @@ FFSFile ffsfile;
     while (ffsfile->next_record_type != FFScomment) {
 	switch (ffsfile->next_record_type) {
 	case FFSdata:
-	    (void) FFSread(ffsfile);
+	    (void) FFSread(ffsfile, NULL);
 	    (void) FFSnext_record_type(ffsfile);
 	    break;
 	case FFSformat:
@@ -510,7 +510,38 @@ FFSFile ffsfile;
 }
 
 extern int
-FFSread(FFSFile file, char *dest)
+FFSnext_record_len(FFSFile file)
+{
+    FFSTypeHandle f;
+    int header_size;
+    int read_size;
+    char *tmp_buf;
+
+    if (file->status != OpenForRead)
+	return 0;
+
+    if (file->read_ahead == FALSE) {
+	(void) FFSnext_record_type(file);
+    }
+    while (file->next_record_type != FFSdata) {
+	switch (file->next_record_type) {
+	case FFScomment:
+	    (void) FFSread_comment(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	case FFSformat:
+	    (void) FFSread_format(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	default:
+	    return 0;
+	}
+    }
+    return file->next_data_len;
+}
+
+extern int
+FFSread(FFSFile file, void *dest)
 {
     FFSTypeHandle f;
     int header_size;

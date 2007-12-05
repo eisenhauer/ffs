@@ -140,11 +140,20 @@ typedef enum {
 extern FFSRecordType
 FFSnext_record_type(FFSFile ffsfile);
 
+extern int
+FFSnext_record_len(FFSFile file);
+
 extern FFSTypeHandle
 FFSnext_type_handle(FFSFile ffsfile);
 
 extern char *
 FFSread_comment(FFSFile ffsfile);
+
+extern int
+FFSread(FFSFile ffsfile, void *dest);
+
+extern FFSTypeHandle
+FFSread_format(FFSFile ffsfile);
 
 extern FFSContext
 FFSContext_of_file(FFSFile f);
