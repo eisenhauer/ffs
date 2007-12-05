@@ -107,6 +107,15 @@ FFS_target_from_encode(FFSContext c, char *data);
 extern FMFormat 
 FMFormat_of_original(FFSTypeHandle h);
 
+extern FFSEncodeVector
+copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec);
+
+extern FFSEncodeVector
+copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec);
+
+extern FMContext
+FMContext_from_FFS(FFSContext c);
+
 extern void
 free_FFSContext(FFSContext c);
 
@@ -114,6 +123,9 @@ free_FFSContext(FFSContext c);
 
 extern FFSFile
 open_FFSfile(const char *path, const char *flags);
+
+extern FFSFile
+open_FFSfd(void *fd, const char *flags);
 
 extern void
 close_FFSfile(FFSFile file);

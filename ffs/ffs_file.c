@@ -61,28 +61,20 @@ free_FFSfile(FFSFile f)
 
 
 extern FFSFile
-open_FFSfile(const char *path, const char *flags)
+open_FFSfd(void *fd, const char *flags)
 {
-    void *file;
+    void *file = fd;
     FFSFile f;
     int allow_input = 0, allow_output = 0;
 
-    file = ffs_file_open_func(path, flags, &allow_input, &allow_output);
-
-    if (file == NULL) {
-	char msg[128];
-	(void) sprintf(msg, "open_FFSfile failed for %s :", path);
-	perror(msg);
-	return NULL;
-    }
     f = malloc(sizeof(struct FFSFile));
     memset(f, 0, sizeof(*f));
     f->file_id = file;
-    f->buf = create_FFSBuffer();
     set_interface_FFSFile(f, ffs_file_write_func, ffs_file_read_func,
 			 ffs_file_writev_func, ffs_file_readv_func, ffs_max_iov,
 			 ffs_close_func);
 
+    f->buf = create_FFSBuffer();
     f->status = OpenNoHeader;
     if (allow_input) {
 	int magic_number;
@@ -104,6 +96,25 @@ open_FFSfile(const char *path, const char *flags)
     }
     f->fmc = create_local_FMcontext();
     f->c = create_FFSContext_FM(f->fmc);
+    return f;
+}
+
+extern FFSFile
+open_FFSfile(const char *path, const char *flags)
+{
+    void *file;
+    FFSFile f;
+    int allow_input = 0, allow_output = 0;
+
+    file = ffs_file_open_func(path, flags, &allow_input, &allow_output);
+
+    if (file == NULL) {
+	char msg[128];
+	(void) sprintf(msg, "open_FFSfile failed for %s :", path);
+	perror(msg);
+	return NULL;
+    }
+    f = open_FFSfd(file, flags);
     return f;
 }
 
