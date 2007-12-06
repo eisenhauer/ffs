@@ -78,6 +78,8 @@ FFSTypeHandle format;
     establish_conversion(c, format, struct_list);
     format->conversion_target = FFSTypeHandle_by_index(c, formatList[nearest_format]->format_index);
     format->status = conversion_set;
+    free(formatList);
+    free(struct_list);
     return;
 }
 

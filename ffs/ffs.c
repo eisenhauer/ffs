@@ -176,6 +176,7 @@ init_encode_state(estate state)
     state->output_len = 0;
     state->iovcnt = 0;
     state->malloc_vec_size = 0;
+    state->addr_list_cnt = 0;
 }
 
 static int
@@ -194,6 +195,7 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
     state.iovec_is_stack = 1;
     state.iovec = stack_iov_array;
     state.addr_list_is_stack = 1;
+    state.addr_list_cnt = 0;
     state.addr_list = stack_addr_list;
     state.copy_all = 1;
     state.saved_offset_difference = 0;
@@ -251,7 +253,7 @@ fixup_output_vector(FFSBuffer b, estate s)
 
     if (tmp_vec_offset == -1) return NULL;
 
-    ret = b->tmp_buffer + tmp_vec_offset;
+    ret = (FFSEncodeVector)(((char*)b->tmp_buffer) + tmp_vec_offset);
     /* leave two blanks, see notes in ffs_file.c */
     /* the upshot is that we use these if we need to add headers */
     ret += 3;
@@ -260,7 +262,7 @@ fixup_output_vector(FFSBuffer b, estate s)
 	if (s->iovec[i].iov_base != NULL) {
 	    ret[i].iov_base = s->iovec[i].iov_base;
 	} else {
-	    ret[i].iov_base = b->tmp_buffer + s->iovec[i].iov_offset;
+	    ret[i].iov_base = ((char*)b->tmp_buffer) + s->iovec[i].iov_offset;
 	}
     }
     ret[s->iovcnt].iov_base = NULL;
@@ -361,15 +363,17 @@ handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset)
 {
     int i;
     /* if base is not variant (I.E. doesn't contain addresses), return;*/
-    if (!f->variant) return;
+    if (!f->variant) return 1;
 
     for (i = 0; i < f->field_count; i++) {
 	int subfield_offset = data_offset + f->field_list[i].field_offset;
+	int ret;
 	if (field_is_flat(f, &f->var_list[i].type_desc)) continue;
-	if (!handle_subfield(buf, f, s, subfield_offset, data_offset, 
-			     &f->var_list[i].type_desc)) return 0;
-	
+	ret = handle_subfield(buf, f, s, subfield_offset, data_offset, 
+			      &f->var_list[i].type_desc);
+	if (ret != 1) return 0;
     }
+    return 1;
 }
 
 static int
@@ -621,6 +625,7 @@ FFSTypeHandle_by_index(FFSContext c, int index)
 	handle->conversion = NULL;
 	handle->status = not_checked;
 	handle->body = FMformat_by_index(c->fmc, index);
+	handle->is_fixed_target = 0;
 	if ((fmf->subformats && (fmf->subformats[0] != NULL)) || fmf->recursive) {
 	    int i, k, subformat_count = 0;
 	    while (fmf->subformats[subformat_count] != NULL) subformat_count++;

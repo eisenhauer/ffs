@@ -131,9 +131,6 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* Use encryption-based authentication for the format server */
-#undef USE_ENCRYPTED_AUTHENTICATOR
-
 /* Version number of package */
 #undef VERSION
 

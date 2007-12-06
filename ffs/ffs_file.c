@@ -510,7 +510,7 @@ FFSFile ffsfile;
 }
 
 extern int
-FFSnext_record_len(FFSFile file)
+FFSnext_data_length(FFSFile file)
 {
     FFSTypeHandle f;
     int header_size;

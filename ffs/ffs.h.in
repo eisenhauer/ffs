@@ -141,7 +141,7 @@ extern FFSRecordType
 FFSnext_record_type(FFSFile ffsfile);
 
 extern int
-FFSnext_record_len(FFSFile file);
+FFSnext_data_length(FFSFile file);
 
 extern FFSTypeHandle
 FFSnext_type_handle(FFSFile ffsfile);
