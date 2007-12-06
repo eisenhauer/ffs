@@ -245,7 +245,7 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
 static FFSEncodeVector
 fixup_output_vector(FFSBuffer b, estate s)
 {
-    int size = (s->iovcnt + 3) * sizeof(struct FFSEncodeVec);
+    int size = (s->iovcnt + 5) * sizeof(struct FFSEncodeVec);
     int tmp_vec_offset = add_to_tmp_buffer(b, size);
     FFSEncodeVector ret;
     /* buffer will not be realloc'd after this */
