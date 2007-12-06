@@ -567,7 +567,7 @@ char **argv;
     nodes[0].link2 = &nodes[sizeof(nodes)/sizeof(nodes[0])-1];
     v.node_count = 0;
     nodes[0].node_num = calc_signature(&nodes[0], &v);
-    xfer_buffer = FFSencode(encode_buffer, node_ioformat,
+/*    xfer_buffer = FFSencode(encode_buffer, node_ioformat,
 					  &nodes[0], &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
     write_buffer(xfer_buffer, buf_size);
@@ -602,7 +602,7 @@ char **argv;
 					  &nodes[0], &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
     write_buffer(xfer_buffer, buf_size);
-
+*/
     
     free_FMcontext(src_context);
     free_FFSBuffer(encode_buffer);
