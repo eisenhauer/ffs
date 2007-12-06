@@ -226,6 +226,31 @@ typedef struct _FMgetFieldStruct {
 #define COMPAT_OPT_INFO_FMFILE 0x45564F4D
 
 typedef struct _FMgetFieldStruct *FMFieldPtr;
+extern float get_FMfloat(FMFieldPtr iofield, void *data);
+extern double get_FMdouble(FMFieldPtr iofield, void *data);
+extern short get_FMshort(FMFieldPtr iofield, void *data);
+extern int get_FMint(FMFieldPtr iofield, void *data);
+extern long get_FMlong(FMFieldPtr iofield, void *data);
+extern void get_FMlong8(FMFieldPtr iofield, void *data, unsigned long *low_long, long *high_long);
+#if defined(SIZEOF_LONG_LONG)
+#if SIZEOF_LONG_LONG != 0
+extern long long get_FMlong_long(FMFieldPtr iofield, void *data);
+extern unsigned long long get_FMulong_long(FMFieldPtr iofield, void *data);
+#endif
+#endif
+#if defined(SIZEOF_LONG_DOUBLE)
+#if SIZEOF_LONG_DOUBLE != 0
+extern long double get_FMlong_double(FMFieldPtr iofield, void *data);
+#endif
+#endif
+extern unsigned short get_FMushort(FMFieldPtr iofield, void *data);
+extern unsigned int get_FMuint(FMFieldPtr iofield, void *data);
+extern unsigned long get_FMulong(FMFieldPtr iofield, void *data);
+extern int get_FMulong8(FMFieldPtr iofield, void *data, unsigned long *low_long, unsigned long *high_long);
+extern char *get_FMstring(FMFieldPtr iofield, void *data);
+extern char get_FMchar(FMFieldPtr iofield, void *data);
+extern int get_FMenum(FMFieldPtr iofield, void *data);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

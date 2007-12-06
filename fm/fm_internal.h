@@ -191,3 +191,4 @@ extern int establish_server_connection(FMContext iofile, int do_fallback);
 extern void general_format_server(int port, int do_restart, int verbose);
 extern void dump_FMFormat(FMFormat ioformat);
 extern int format_server_restarted(FMContext context);
+extern int FMhas_XML_info(FMFormat format);

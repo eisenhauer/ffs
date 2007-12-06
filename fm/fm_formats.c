@@ -32,7 +32,8 @@
 #endif
 #include <stdio.h>
 #include <sys/types.h>
-#include "limits.h"
+#include <limits.h>
+#include <strings.h>
 #else
 #include "kernel/pbio_kernel.h"
 #include "kernel/kpbio.h"
@@ -783,6 +784,9 @@ gen_var_dimens(FMFormat ioformat, int field)
     tmp = &new_var_list[field].type_desc;
     while(tmp->next != NULL) {
 	tmp = tmp->next;
+	if (tmp->type == FMType_pointer) {
+	    ioformat->variant = 1;
+	}
     }
     if (new_var_list[field].data_type == string_type) {
 	tmp->type = FMType_string;
@@ -868,6 +872,7 @@ FMFormat *formats;
 	    if (strcmp(base_type, ioformat->format_name) == 0) {
 		subformat = ioformat;
 		ioformat->recursive = 1;
+		ioformat->variant = 1;
 	    }
 	    if (subformat == NULL) {
 		(void) fprintf(stderr, "Field \"%s\" base type \"%s\" is not a simple type or registered format name.\n",
@@ -1453,7 +1458,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 		dump_FMFormat(formats[0]);
 	    }
 	} else {
-	    free_format_list(formats);
+	    free_FMformat(formats[0]);
 	    formats[0] = cache_format;
 	    formats[0]->ref_count++;
 
@@ -2602,7 +2607,7 @@ void *data;
 {
     int index;
     if (FMhas_XML_info(format)) {
-	dump_XML_record(format, data, 0);
+/*GSE	FMdump_XML(format, data, -1);*/
 	return;
     }
     printf("<%s>\n", format->format_name);
