@@ -1912,42 +1912,6 @@ int size;
     }
 }
 
-extern int
-min_align_type(typ, size)
-FMdata_type typ;
-int size;
-{
-#ifndef HAVE_DILL_H
-    return min_align_size(size);
-#else
-    static dill_stream s = NULL;
-    if (s == NULL) s = dill_create_raw_stream();
-    switch (typ) {
-    case float_type:
-	if (size == dill_type_size(s, DILL_D)) return dill_type_align(s, DILL_D);
-	if (size == dill_type_size(s, DILL_F)) return dill_type_align(s, DILL_F);
-	/* punt */
-	return min_align_size(size);
-    case integer_type: case char_type: case string_type:
-	if (size == dill_type_size(s, DILL_C)) return dill_type_align(s, DILL_C);
-	if (size == dill_type_size(s, DILL_S)) return dill_type_align(s, DILL_S);
-	if (size == dill_type_size(s, DILL_I)) return dill_type_align(s, DILL_I);
-	if (size == dill_type_size(s, DILL_L)) return dill_type_align(s, DILL_L);
-	/* punt */
-	return min_align_size(size);
-    case unsigned_type: case enumeration_type: case boolean_type:
-	if (size == dill_type_size(s, DILL_UC)) return dill_type_align(s, DILL_UC);
-	if (size == dill_type_size(s, DILL_US)) return dill_type_align(s, DILL_US);
-	if (size == dill_type_size(s, DILL_U)) return dill_type_align(s, DILL_U);
-	if (size == dill_type_size(s, DILL_UL)) return dill_type_align(s, DILL_UL);
-	/* punt */
-	return dill_type_align(s, DILL_B);
-    default:
-	return dill_type_align(s, DILL_B);
-    }
-#endif
-}
-
 #if !defined(HAVE_DILL_H)
 extern
  conv_routine

@@ -119,6 +119,9 @@ FMContext_from_FFS(FFSContext c);
 extern void
 free_FFSContext(FFSContext c);
 
+extern FMStructDescList
+get_localized_formats(FMFormat f);
+
 /*  file interface follows*/
 
 extern FFSFile

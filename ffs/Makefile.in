@@ -66,8 +66,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-am_libffs_la_OBJECTS = ffs.lo ffs_conv.lo ffs_gen.lo ffs_file.lo \
-	unix_io.lo evol.lo
+am_libffs_la_OBJECTS = ffs.lo ffs_formats.lo ffs_conv.lo ffs_gen.lo \
+	ffs_file.lo unix_io.lo evol.lo
 libffs_la_OBJECTS = $(am_libffs_la_OBJECTS)
 libffs_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -242,7 +242,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 SUBDIRS = . tests
 noinst_HEADERS = assert.h config.h ffs_gen.h ffs_internal.h 
 INCLUDES = -I../fm
-libffs_la_SOURCES = ffs.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c evol.c
+libffs_la_SOURCES = ffs.c ffs_formats.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c evol.c
 lib_LTLIBRARIES = libffs.la
 EXTRA_libffs_la_SOURCES = ffs_malloc.c unix_io.c nt_io.c ffs_gen.c
 libffs_la_DEPENDENCIES = ../fm/libfm.la
