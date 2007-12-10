@@ -77,6 +77,7 @@ typedef enum {
 typedef struct FMTypeDesc {
     struct FMTypeDesc *next;
     FMTypeEnum type;
+    FMdata_type data_type;
     int field_index;
     int static_size;
     int control_field_index;
@@ -182,6 +183,9 @@ global_name_of_FMFormat(FMFormat format);
 
 extern FMFieldList
 copy_field_list(FMFieldList list);
+
+extern FMStructDescList
+FMlocalize_formats(FMStructDescList list);
 
 extern int 
 count_FMfield(FMFieldList list);

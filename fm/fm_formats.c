@@ -714,6 +714,7 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	FMTypeDesc *root = malloc(sizeof(*root));
 	FMTypeDesc *simple = root;
 	int done = 0;
+	long junk;
 	root->type = FMType_simple;
 	root->next = NULL;
 	root->field_index = field;
@@ -732,12 +733,14 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	    }
 	}
 	/* now we've handled any pointer specs */
+	root->data_type = array_str_to_data_type(typ, &junk);
 	if (strncmp(typ, "string", 6) == 0) {
 	    if ((*(typ + 6) == '[') || (*(typ + 6) == 0) ||
 		isspace(*(typ+6))) {
 		simple->type == FMType_string;
 	    }
 	}
+
 	while (!done) {
 	    FMFieldList field_list = f->field_list;
 	    int control_val;
@@ -776,6 +779,7 @@ gen_var_dimens(FMFormat ioformat, int field)
     if ((!strchr(typ, '*')) && (!strchr(typ, '['))) {
 	new_var_list[field].type_desc.next = NULL;
 	new_var_list[field].type_desc.type = FMType_simple;
+	new_var_list[field].type_desc.data_type = str_to_data_type(typ);
     } else {
 	FMTypeDesc *desc = gen_type_desc(ioformat, field, typ);
 	new_var_list[field].type_desc = *desc;
