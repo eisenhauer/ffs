@@ -1487,6 +1487,8 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 		print_format_ID(formats[0]);
 		printf("\n");
 	    }
+	    free(formats);
+	    return cache_format;
 	}
     }
     if (context->reg_format_count == context->format_list_size) {
