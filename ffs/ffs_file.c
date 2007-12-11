@@ -13,7 +13,7 @@
 #include "io_interface.h"
 
 typedef enum {
-    OpenNoHeader, OpenHeader, OpenForRead, Closed
+    OpenForRead, Closed
 } Status;
 
 typedef struct format_info {
@@ -75,7 +75,7 @@ open_FFSfd(void *fd, const char *flags)
 			 ffs_close_func);
 
     f->buf = create_FFSBuffer();
-    f->status = OpenNoHeader;
+    f->status = OpenForRead;
     if (allow_input) {
 	int magic_number;
 	if ((f->read_func(file, &magic_number, 4, NULL, NULL) != 4) ||
@@ -211,7 +211,7 @@ write_format_to_file(FFSFile f, FMFormat format)
     vec[3].iov_len = 0;
     vec[3].iov_base = NULL;
     if (f->writev_func(f->file_id, vec, 3, NULL, NULL) != 3) {
-	printf("Write failed\n");
+	printf("Write failed errno %d\n", errno);
 	return 0;
     }
     return 1;
@@ -234,7 +234,7 @@ write_comment_FFSfile(FFSFile f, const char *comment)
     vec[1].iov_len = byte_size;
     vec[1].iov_base = comment;
     if (f->writev_func(f->file_id, vec, 2, NULL, NULL) != 2) {
-	printf("Write failed\n");
+	printf("Write failed errno %d\n", errno);
 	return 0;
     }
     return 1;
