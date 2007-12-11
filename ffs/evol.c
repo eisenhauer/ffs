@@ -204,7 +204,7 @@ int *diff2;			/* Number of fields present in format2 and
     subformats2 = format2->subformats;
 /* TODO: Fix for unmatched subformats 
  * -sandip */
-    while (*subformats1 != NULL) {
+    while (subformats1 && (*subformats1 != NULL)) {
 	char *sub1_name = name_of_FMformat(*subformats1);
 	int i = 0;
 	if (*subformats1 == format1) {
@@ -212,7 +212,7 @@ int *diff2;			/* Number of fields present in format2 and
 	    subformats1++;
 	    continue;
 	}
-	while (subformats2[i] != NULL) {
+	while (subformats2 && (subformats2[i] != NULL)) {
 	    if (strcmp(sub1_name, name_of_FMformat(subformats2[i])) == 0) {
 		/* same name, compare */
 		FMformat_cmp_diff(*subformats1, subformats2[i], diff1,
