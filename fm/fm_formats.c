@@ -176,6 +176,7 @@ new_FMContext()
     FMContext c;
     init_float_formats();
     c = (FMContext) malloc((size_t) sizeof(FMContextStruct));
+    c->ref_count = 1;
     c->format_list_size = 0;
     c->format_list = NULL;
     c->reg_format_count = 0;
@@ -1327,16 +1328,19 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     int i, field;
     int struct_count = 0;
     FMFormat *formats, ret;
+    FMStructDescList master_struct_list;
 
     for (struct_count = 0; struct_list[struct_count].format_name != NULL; 
 	 struct_count++) /* set struct_count */;
     
     formats = malloc(sizeof(formats[0]) * (struct_count+1));
+    master_struct_list = malloc(sizeof(struct_list[0]) * (struct_count+1));
     formats[struct_count] = NULL;
     for (i = 0 ; i < struct_count; i++ ) {
 	FMFormat ioformat = new_FMFormat();
 	FMFieldList new_field_list;
 	ioformat->format_name = strdup(struct_list[i].format_name);
+	master_struct_list[i].format_name = ioformat->format_name;
 	ioformat->pointer_size = context->native_pointer_size;
 	ioformat->column_major_arrays = context->native_column_major_arrays;
 	ioformat->float_format = context->native_float_format;
@@ -1353,6 +1357,9 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    free_format_list(formats);
 	    return NULL;
 	}
+	master_struct_list[i].field_list = ioformat->field_list;
+	master_struct_list[i].struct_size = struct_list[i].struct_size;
+	master_struct_list[i].opt_info = NULL;
 	if (struct_list[i].opt_info != NULL) {
 	    FMOptInfo *opt_info = struct_list[i].opt_info;
 	    int opt_info_count = 0;
@@ -1432,10 +1439,18 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    } else if (ioformat->var_list[field].type_desc.type == FMType_pointer) {
 		last_field_end = field_list[field].field_offset +
 		    ioformat->pointer_size;
-	    }		
+	    }
+	}
+	if (struct_list[i].struct_size < last_field_end) {
+	    (void) fprintf(stderr, "Structure size for structure %s is smaller than last field size + offset.  Format rejected.\n",
+			   ioformat->format_name);
+	    free_format_list(formats);
+	    return NULL;
 	}
     }
 
+    master_struct_list[struct_count].format_name = NULL;
+    formats[0]->master_struct_list = master_struct_list;
     {
 	FMFormat cache_format;
 	if (format_server_verbose == -1) {
@@ -1480,7 +1495,6 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     formats[0]->format_index = context->reg_format_count++;
     context->format_list[formats[0]->format_index] = formats[0];
     ret = formats[0];
-    ret->master_struct_list = struct_list;
     free(formats);
     return ret;
 }
@@ -2431,10 +2445,19 @@ FMFormat ioformat;
 }
 
 extern void
+add_ref_FMcontext(c)
+FMContext c;
+{
+    c->ref_count++;
+}
+
+extern void
 free_FMcontext(c)
 FMContext c;
 {
     int i;
+    c->ref_count--;
+    if (c->ref_count != 0) return;
     for (i = 0; i < c->reg_format_count; i++) {
 	free_FMformat(c->format_list[i]);
     }

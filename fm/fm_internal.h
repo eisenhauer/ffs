@@ -14,6 +14,7 @@ extern FMContext new_FMContext();
 struct _format_server;
 
 typedef struct _FMContextStruct {
+    int ref_count;
     int reg_format_count;
     int byte_reversal;
     int native_pointer_size;

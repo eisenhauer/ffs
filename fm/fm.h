@@ -10,6 +10,7 @@ extern
 FMContext create_FMcontext();
 FMContext create_local_FMcontext();
 extern void free_FMcontext();
+extern void add_ref_FMcontext();
 
 #define FMOffset(p_type,field) \
 	((int) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
