@@ -1489,7 +1489,7 @@ FMStructDescRec two_string_format_list[] = {
 FMField field_list4[] = {
     {"ifield", "integer", 
        sizeof(long), FMOffset(fourth_rec_ptr, ifield)},
-    {"int_array", IOArrayDecl(integer,ARRAY_SIZE), 
+    {"int_array", FMArrayDecl(integer,ARRAY_SIZE), 
        sizeof(int), FMOffset(fourth_rec_ptr, int_array[0])},
     {"double field", "float[2][2]",
        sizeof(double), FMOffset(fourth_rec_ptr, double_array[0][0])},
