@@ -24,21 +24,6 @@ extern "C" {
 #endif
 #endif
 
-#ifndef IOOffset
-#define IOOffset(p_type,field) \
-	((int) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
-#if defined(__STDC__) || defined(__ANSI_CPP__) || defined(_MSC_VER)
-#define IOstr(s) #s
-#else
-#define IOstr(s) "s"
-#endif
-#define IOArrayDecl(type, size) IOstr(type[size])
-#define IOArrayDecl2(type, size, size2) IOstr(type[size][size2])
-
-#define IODefaultDecl(name, val) IOstr(name(val))
-
-#endif
-
 #define XML_OPT_INFO 0x584D4C20
 #define COMPAT_OPT_INFO 0x45564F4C
 #define COMPAT_OPT_INFO_IOFILE 0x45564F4D
@@ -132,6 +117,9 @@ open_FFSfd(void *fd, const char *flags);
 
 extern void
 close_FFSfile(FFSFile file);
+
+extern void
+free_FFSfile(FFSFile file);
 
 extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data);
