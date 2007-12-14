@@ -2591,6 +2591,8 @@ add_field_list(int *format_count_p, FMStructDescList *format_list_p, sm_ref typ)
     field_list[field_count].field_size = field_list[field_count].field_offset = 0;
     (*format_list_p)[my_format_num].format_name = strdup(typ->node.struct_type_decl.id);
     (*format_list_p)[my_format_num].field_list = field_list;
+    (*format_list_p)[my_format_num].struct_size = typ->node.struct_type_decl.cg_size;
+    (*format_list_p)[my_format_num].opt_info = NULL;
 }
 
 static FMStructDescList
