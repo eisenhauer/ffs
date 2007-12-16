@@ -236,6 +236,7 @@ get_localized_formats_dill(FMFormat f, dill_stream s)
 	generate_localized_subformat(f->subformats[subformat_count-i-1], &ret_list[subformat_count - i], s);
     }
     generate_localized_subformat(f, ret_list, s);
+    return ret_list;
 }
 
 extern FMStructDescList
