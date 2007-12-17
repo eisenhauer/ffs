@@ -716,6 +716,7 @@ create_FFSContext_FM(FMContext fmc)
     c = (FFSContext) malloc((size_t) sizeof(*c));
     init_float_formats();
     c->fmc = fmc;
+    add_ref_FMcontext(fmc);
     c->handle_list_size = 0;
     c->handle_list = NULL;
     c->tmp.tmp_buffer = NULL;
