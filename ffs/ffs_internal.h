@@ -27,7 +27,7 @@ extern short bswap_16(short s);
 extern int bswap_32(int l);
 #endif
 
-struct FFSBuffer {
+struct _FFSBuffer {
     void *tmp_buffer;
     int tmp_buffer_size;
     int tmp_buffer_in_use_size;
@@ -42,7 +42,7 @@ typedef struct _internal_iovec {
 struct _IOContextStruct {
     FMContext fmc;
 
-    struct FFSBuffer tmp;
+    struct _FFSBuffer tmp;
     int handle_list_size;
     FFSTypeHandle *handle_list;
 };
@@ -185,6 +185,7 @@ extern void ffs_internal_convert_field(FFSContext iofile,
 					      char *string_base, 
 					      int size_delta,
 					      int converted_strings);
+extern int field_is_flat(FMFormat f, FMTypeDesc *t);
 
 extern void 
 set_IOconversion_for_format(FFSContext iofile, FMFormat file_ioformat,

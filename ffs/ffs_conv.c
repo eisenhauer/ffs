@@ -415,8 +415,8 @@ int converted_strings;
 		(!byte_reversal) &&
 		((in_data_type != float_type) ||
 		 (target_fp_format == src_float_format)) &&
-		(!input_var_list[input_index].string &&
-		 !input_var_list[input_index].var_array) &&
+		field_is_flat(src_ioformat->body, 
+			      &input_var_list[input_index].type_desc) &&
 		(!column_row_swap_necessary || !multi_dimen_array) &&
 		(nfl_sort[i].field_size == input_field.field_size)) {
 		/* nothing to do for this field */
@@ -438,8 +438,9 @@ int converted_strings;
 		goto restart;
 	    }
 
-	    if ((in_data_type == unknown_type) &&
-		!input_var_list[input_index].var_array) {
+	    if ((in_data_type == unknown_type) && 
+		!input_var_list[input_index].var_array &&
+		(input_var_list[input_index].type_desc.type != FMType_pointer)) {
 		FFSTypeHandle format = src_ioformat->field_subformats[input_index];
 		if ((format != NULL) && (format->conversion != NULL)) {
 		    switch (format->conversion->conversion_type) {
@@ -459,7 +460,8 @@ int converted_strings;
 	    }
 	    /* falling through */
 	case buffer_and_convert:
-	    if (input_var_list[input_index].var_array) {
+	    if (input_var_list[input_index].var_array ||
+		(input_var_list[input_index].type_desc.type == FMType_pointer)) {
 		if (nfl_sort[i].field_size != input_field.field_size) {
 		    /* argh.  Must buffer variant part too */
 		    conv = copy_dynamic_portion;
@@ -468,7 +470,8 @@ int converted_strings;
 	    }
 	    break;
 	case copy_dynamic_portion:
-	    if (input_var_list[input_index].var_array) {
+	    if (input_var_list[input_index].var_array ||
+		(input_var_list[input_index].type_desc.type == FMType_pointer)) {
 		/* 
 		 * expansion value includes padding for possibly having
 		 * to re-align the value to the proper boundary.
@@ -2695,6 +2698,7 @@ int register_args;
 			   new_src, new_dest));
 		dill_addpi(c, new_src, src_addr, src_offset);
 		dill_addpi(c, new_dest, dest_addr, dest_offset);
+		printf("Calling subconversion for %s\n", subconv->ioformat->body->format_name);
 		ret = dill_scallp(c, (void*)subconv->conv_func, "anon", "%p%p%p%p", new_src,
 			 new_dest, final_string_base, src_string_base);
 		dill_movp(c, final_string_base, ret);
@@ -2723,6 +2727,7 @@ int register_args;
 		dill_addpi(c, dest_addr, dest_addr, dest_offset);
 		dill_ldpi(c, reg_final_string_base, dill_lp(c), final_string_base);
 		dill_ldpi(c, reg_src_string_base, dill_lp(c), src_string_base);
+		printf("Calling subconversion for %s\n", subconv->ioformat->body->format_name);
 		dill_scallv(c, (void*)subconv->conv_func, "anon", "%p%p%p%p", src_addr,
 			 dest_addr, reg_final_string_base, reg_src_string_base);
 		REG_DEBUG(("Putting %d and %d for reg src base & reg dest base\n", reg_src_string_base, reg_final_string_base));

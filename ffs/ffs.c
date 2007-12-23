@@ -338,7 +338,7 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
 static int
 handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent_offset, FMTypeDesc *t);
 
-static int
+extern int
 field_is_flat(FMFormat f, FMTypeDesc *t)
 {
     switch (t->type) {
@@ -1258,7 +1258,7 @@ FFSTypeHandle_name(FFSTypeHandle f)
 FFSBuffer
 create_FFSBuffer()
 {
-    FFSBuffer buf = malloc(sizeof(struct FFSBuffer));
+    FFSBuffer buf = malloc(sizeof(struct _FFSBuffer));
     buf->tmp_buffer = NULL;
     buf->tmp_buffer_size = 0;
     buf->tmp_buffer_in_use_size = 0;
@@ -1268,7 +1268,7 @@ create_FFSBuffer()
 FFSBuffer
 create_fixed_FFSBuffer(char *buffer, int size)
 {
-    FFSBuffer buf = malloc(sizeof(struct FFSBuffer));
+    FFSBuffer buf = malloc(sizeof(struct _FFSBuffer));
     buf->tmp_buffer = buffer;
     buf->tmp_buffer_size = -size;
     buf->tmp_buffer_in_use_size = 0;

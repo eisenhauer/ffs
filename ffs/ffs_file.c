@@ -20,7 +20,7 @@ typedef struct format_info {
     int written_to_file;
 } format_info;
 
-struct FFSFile {
+struct _FFSFile {
     FFSContext c;
     FMContext fmc;
 
@@ -67,7 +67,7 @@ open_FFSfd(void *fd, const char *flags)
     FFSFile f;
     int allow_input = 0, allow_output = 0;
 
-    f = malloc(sizeof(struct FFSFile));
+    f = malloc(sizeof(struct _FFSFile));
     memset(f, 0, sizeof(*f));
     f->file_id = file;
     set_interface_FFSFile(f, ffs_file_write_func, ffs_file_read_func,

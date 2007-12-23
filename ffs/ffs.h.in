@@ -30,9 +30,9 @@ extern "C" {
 
 
 
-typedef struct FFSBuffer *FFSBuffer;
+typedef struct _FFSBuffer *FFSBuffer;
 
-typedef struct FFSFile *FFSFile;
+typedef struct _FFSFile *FFSFile;
 
 typedef struct _IOContextStruct *FFSContext;
 
