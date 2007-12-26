@@ -2726,7 +2726,6 @@ int register_args;
 		dill_addpi(c, dest_addr, dest_addr, dest_offset);
 		dill_ldpi(c, reg_final_string_base, dill_lp(c), final_string_base);
 		dill_ldpi(c, reg_src_string_base, dill_lp(c), src_string_base);
-		printf("Calling subconversion for %s\n", subconv->ioformat->body->format_name);
 		dill_scallv(c, (void*)subconv->conv_func, "anon", "%p%p%p%p", src_addr,
 			 dest_addr, reg_final_string_base, reg_src_string_base);
 		REG_DEBUG(("Putting %d and %d for reg src base & reg dest base\n", reg_src_string_base, reg_final_string_base));
