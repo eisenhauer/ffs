@@ -46,6 +46,7 @@ local_size(int field_index, FMFormat f, FMTypeDesc *type,
 	    if (strcmp(subformat_name, subformats->format_name) == 0) {
 		return subformats->struct_size;
 	    }
+	    subformats++;
 	}
 	assert(0);
     }
