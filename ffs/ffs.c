@@ -517,9 +517,13 @@ copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec) {
 
     if (((char*)vec < (char*)buf->tmp_buffer)
         || ((char*)vec >= (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
-        int i;
+        int i, remainder;
         for (i = 0; vec[i].iov_base; ++i);
-        vec_offset = add_to_tmp_buffer(buf, (i + 1) * sizeof(*vec));
+        vec_offset = add_to_tmp_buffer(buf, (i + 2) * sizeof(*vec));
+	remainder = vec_offset % sizeof(*vec);
+	if (remainder != 0) {
+	    vec_offset += sizeof(*vec) - remainder;
+	}
         memcpy((char *) buf->tmp_buffer + vec_offset, vec, (i + 1) * sizeof(*vec));
     }
 
