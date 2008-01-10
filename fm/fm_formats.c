@@ -176,6 +176,7 @@ new_FMContext()
     FMContext c;
     init_float_formats();
     c = (FMContext) malloc((size_t) sizeof(FMContextStruct));
+    memset(c, 0, sizeof(FMContextStruct));
     c->ref_count = 1;
     c->format_list_size = 0;
     c->format_list = NULL;
@@ -193,6 +194,8 @@ new_FMContext()
     c->server_byte_reversal = 0;
     c->master_context = NULL;
 
+    c->callback = NULL;
+    c->client_data = NULL;
     return (c);
 }
 
@@ -202,6 +205,16 @@ create_local_FMcontext()
 {
     FMContext fmc = new_FMContext();
     fmc->self_server = 1;
+    return fmc;
+}
+
+extern
+FMContext
+create_callback_FMcontext(FMGetFormatRepCallback c, void *client_data)
+{
+    FMContext fmc = create_local_FMcontext();
+    fmc->callback = c;
+    fmc->client_data = client_data;
     return fmc;
 }
 
@@ -3845,12 +3858,8 @@ void *app_context;
     host_IP = get_host_IP_format_ID(buffer);
     host_port = get_host_port_format_ID(buffer);
     format_length = ID_length[version_of_format_ID(buffer)];
-/*    format_rep_return = fmc->server_callback(buffer, format_length, 
-						host_IP,
-						host_port, app_context,
-						fmc->server_client_data);
-*/
-    assert(0);
+    format_rep_return = fmc->callback(buffer, format_length, 
+				      fmc->client_data);
     if (format_rep_return == NULL) {
 	if (format_server_verbose == 1)
 	    printf("Format server callback returned NULL\n");

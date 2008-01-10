@@ -6,9 +6,11 @@ extern "C" {
 #endif
 typedef struct _FMContextStruct *FMContext;
 
-extern
-FMContext create_FMcontext();
-FMContext create_local_FMcontext();
+typedef void *(*FMGetFormatRepCallback)(void *format_ID, int format_ID_length,
+					void *client_data);
+extern FMContext create_FMcontext();
+extern FMContext create_local_FMcontext();
+extern FMContext create_callback_FMcontext(FMGetFormatRepCallback c, void *client_data);
 extern void free_FMcontext();
 extern void add_ref_FMcontext();
 

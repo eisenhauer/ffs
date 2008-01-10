@@ -24,13 +24,14 @@ typedef struct _FMContextStruct {
     char *result;
 
     FMContext master_context;
-/*    FFSGetFormatRepCallback server_callback;
-      FFSGetPortCallback server_get_port_callback;*/
     int self_server;
     void *server_client_data;
     void *server_fd;
     int server_pid;
     int server_byte_reversal;
+
+    FMGetFormatRepCallback callback;
+    void *client_data;
 
     int format_list_size;
     FMFormat *format_list;
