@@ -130,7 +130,7 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
     }
     if (length != 0) {
 	memcpy((char*)buf->tmp_buffer + tmp_data, data, length);
-	s->iovec[s->iovcnt].iov_len = length + pad;
+	s->iovec[s->iovcnt].iov_len = length;
 	s->iovec[s->iovcnt].iov_offset = tmp_data;
 	s->iovec[s->iovcnt].iov_base = NULL;
 	s->iovcnt++;
