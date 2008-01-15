@@ -30,9 +30,6 @@ typedef struct _FMContextStruct {
     int server_pid;
     int server_byte_reversal;
 
-    FMGetFormatRepCallback callback;
-    void *client_data;
-
     int format_list_size;
     FMFormat *format_list;
 } FMContextStruct;

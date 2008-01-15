@@ -52,9 +52,6 @@ static int self_server_register_format(FMContext fmc,
 
 static void byte_swap(char *data, int size);
 static FMFormat server_get_format(FMContext iocontext, void *buffer);
-static FMFormat self_server_get_format(FMContext iocontext,
-					     void *buffer,
-					     void *app_context);
 static void unstringify_field_type(const char *type, char *buffer, 
 					 int size);
 static char *stringify_field_type(const char *type, 
@@ -194,8 +191,6 @@ new_FMContext()
     c->server_byte_reversal = 0;
     c->master_context = NULL;
 
-    c->callback = NULL;
-    c->client_data = NULL;
     return (c);
 }
 
@@ -205,16 +200,6 @@ create_local_FMcontext()
 {
     FMContext fmc = new_FMContext();
     fmc->self_server = 1;
-    return fmc;
-}
-
-extern
-FMContext
-create_callback_FMcontext(FMGetFormatRepCallback c, void *client_data)
-{
-    FMContext fmc = create_local_FMcontext();
-    fmc->callback = c;
-    fmc->client_data = client_data;
     return fmc;
 }
 
@@ -502,7 +487,7 @@ void *app_context;
 	}
     }
     if (is_self_server(fmc)) {
-	new_format = self_server_get_format(iocontext, buffer, app_context);
+	return NULL;
     } else {
 	new_format = server_get_format(iocontext, buffer);
     }
@@ -3829,55 +3814,6 @@ int index;
 	    format->variant |= subformat->variant;
 	}
     }
-}
-
-static FMFormat
-self_server_get_format(iocontext, buffer, app_context)
-FMContext iocontext;
-void *buffer;
-void *app_context;
-{
-    FMContext fmc = (FMContext) iocontext;
-    FMFormat format;
-    int host_IP;
-    int host_port;
-    int format_length;
-    char *format_rep_return;
-
-    if (format_server_verbose == -1) {
-	if (getenv("FORMAT_SERVER_VERBOSE") == NULL) {
-	    format_server_verbose = 0;
-	} else {
-	    format_server_verbose = 1;
-	}
-    }
-    if (fmc->master_context != NULL) {
-	return self_server_get_format(fmc->master_context, buffer,
-				      app_context);
-    }
-    host_IP = get_host_IP_format_ID(buffer);
-    host_port = get_host_port_format_ID(buffer);
-    format_length = ID_length[version_of_format_ID(buffer)];
-    format_rep_return = fmc->callback(buffer, format_length, 
-				      fmc->client_data);
-    if (format_rep_return == NULL) {
-	if (format_server_verbose == 1)
-	    printf("Format server callback returned NULL\n");
-	if ((format = get_local_format_IOcontext(iocontext, buffer))) {
-	    if (format_server_verbose == 1)
-		printf("But we found it anyway....\n");
-	    return format;
-	} else {
-	    if (format_server_verbose == 1)
-		printf("And we failed anyway....\n");
-	    return NULL;
-	}
-    }
-    format = expand_format_from_rep((format_rep)format_rep_return);
-    if (format == NULL)
-	return NULL;
-    add_format_to_iofile(fmc, format, format_length, buffer, -1);
-    return format;
 }
 
 static FMFormat
