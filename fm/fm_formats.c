@@ -426,10 +426,9 @@ void *buffer;
 }
 
 FMFormat
-get_format_app_IOcontext(iocontext, buffer, app_context)
+FMformat_from_ID(iocontext, buffer)
 FMContext iocontext;
-void *buffer;
-void *app_context;
+char *buffer;
 {
     FMContext fmc = (FMContext) iocontext;
     FMFormat new_format;
@@ -444,7 +443,7 @@ void *app_context;
 	}
     }
     if (format_server_verbose && (memcmp(buffer, "\0\0\0\0\0\0\0\0", 6) == 0)) {
-	printf("   ->>>>   Null id in get_format_app_IOcontext\n");
+	printf("   ->>>>   Null id in FMformat_from_ID\n");
     }
     
     switch (version_of_format_ID(buffer)) {
@@ -503,14 +502,6 @@ void *app_context;
 	}
     }
     return new_format;
-}
-
-FMFormat
-FMformat_from_ID(iocontext, buffer)
-FMContext iocontext;
-char *buffer;
-{
-    return get_format_app_IOcontext(iocontext, buffer, NULL);
 }
 
 char **
