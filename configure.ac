@@ -1,4 +1,4 @@
-AC_INIT(ffs.spec)
+AC_INIT(ffs/ffs.h)
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(ffs_release,1.0)
 AM_MAINTAINER_MODE
