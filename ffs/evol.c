@@ -467,6 +467,24 @@ FMformat_compat_cmp2(FMFormat format, FMFormat *formatList,
     return nearest_format;
 }
 
+extern void *
+FFScreate_compat_info(prior_format, xform_code, len_p)
+FMFormat prior_format;
+char *xform_code;
+int *len_p;
+{
+    char *block;
+    int block_len = strlen(xform_code) + prior_format->server_ID.length +1;
+    block = malloc(block_len);
+
+    memcpy(block, prior_format->server_ID.value,
+	   prior_format->server_ID.length);
+    memcpy(block + prior_format->server_ID.length,
+	   xform_code, block_len - prior_format->server_ID.length);
+    *len_p = block_len;
+    return block;
+}
+    
 #ifdef NOT_DEF
 /**
  * Localize the "format" and set the conversion context to convert the wire

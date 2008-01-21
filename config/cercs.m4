@@ -41,7 +41,13 @@ dnl
 AC_MSG_CHECKING(needed include args for $1 package)
 AC_CACHE_VAL(translit(cercs_cv_$1_include_arg, `/',`_'), 
 [
-ifelse([$4],1,cercs_tmp=`pwd`/../$1,
+ifelse([$4],1,[
+search_list="$PWD/../$1 $PWD/../../$1 $PWD/../../../$1"
+CERCS_SEARCH($search_list)
+if test -n "$tmp_search_results"; then
+cercs_tmp=$tmp_search_results
+fi
+],
 CERCS_FIND_FILE($1, $2, cercs_tmp, $with_translit, include))
 if test -n "$cercs_tmp" -a "$cercs_tmp" != "/usr/include/$2"; then
 translit(cercs_cv_$1_include_arg, `/',`_')=-I`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s#.$2##g"`
@@ -70,7 +76,13 @@ dnl
 AC_MSG_CHECKING(needed link args for $1 package)
 AC_CACHE_VAL(translit(cercs_cv_$1_link_dir,  `/',`_'), 
 [
-ifelse([$4],1,cercs_tmp=`pwd`/../$1,
+ifelse([$4],1,[
+search_list="$PWD/../$1 $PWD/../../$1 $PWD/../../../$1"
+CERCS_SEARCH($search_list)
+if test -n "$tmp_search_results"; then
+cercs_tmp=$tmp_search_results
+fi
+],
 CERCS_FIND_FILE($1, $3, cercs_tmp, $with_translit, lib))
 if test -n "$cercs_tmp" -a "$cercs_tmp" != "$3"; then
 translit(cercs_cv_$1_link_dir, `/',`_')=`$PATHPROG $cercs_tmp | sed 's#\\\\#/#g' | sed "s/.$3//g"`
@@ -117,6 +129,9 @@ dnl    /opt/misc/{include,lib}.
 dnl
 AC_DEFUN([CERCS_FIND_FILE],
 [
+echo "First ARG IS $1"
+echo "second ARG IS $2"
+echo "Third ARG IS $3"
 AC_REQUIRE([CERCS_HAS_CSH])
 AC_REQUIRE([CERCS_SET_ARCHIVE])
 $3=""
