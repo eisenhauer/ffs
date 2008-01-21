@@ -1698,8 +1698,6 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 
     operand ret;
 
-    dill_push_init(s);
-
     init_operand(&ret);
     ret.is_addr = 0;
     ret.offset = 0;
@@ -1766,6 +1764,7 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 	start = 0;
 	direction = 1;
     }
+    dill_push_init(s);
     for (i=0; i< arg_count; i++) {
 	int index = start + i * direction;
 	dill_push_arg(s, types_array[index], args_array[index]);
