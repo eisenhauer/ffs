@@ -36,23 +36,28 @@ host_triplet = @host@
 EXTRA_PROGRAMS = t1$(EXEEXT) t2$(EXEEXT) t3$(EXEEXT) t4$(EXEEXT) \
 	t5$(EXEEXT) t6$(EXEEXT)
 subdir = .
-DIST_COMMON = $(am__configure_deps) $(am__include_HEADERS_DIST) \
-	$(noinst_HEADERS) $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/config.h.in $(top_srcdir)/configure \
-	config/config.guess config/config.sub config/install-sh \
-	config/ltmain.sh config/missing mkinstalldirs
+DIST_COMMON = $(am__configure_deps) $(include_HEADERS) \
+	$(noinst_HEADERS) $(srcdir)/../config/config.guess \
+	$(srcdir)/../config/config.sub $(srcdir)/../config/install-sh \
+	$(srcdir)/../config/ltmain.sh $(srcdir)/../config/missing \
+	$(srcdir)/../config/mkinstalldirs $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(top_srcdir)/configure ../config/config.guess \
+	../config/config.sub ../config/install-sh ../config/ltmain.sh \
+	../config/missing ../config/mkinstalldirs mkinstalldirs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/cercs.m4 \
-	$(top_srcdir)/config/definitions.m4 \
-	$(top_srcdir)/config/libtool.m4 \
-	$(top_srcdir)/config/ltoptions.m4 \
-	$(top_srcdir)/config/ltsugar.m4 \
-	$(top_srcdir)/config/ltversion.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/../config/cercs.m4 \
+	$(top_srcdir)/../config/definitions.m4 \
+	$(top_srcdir)/../config/libtool.m4 \
+	$(top_srcdir)/../config/ltoptions.m4 \
+	$(top_srcdir)/../config/ltsugar.m4 \
+	$(top_srcdir)/../config/ltversion.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
-mkinstalldirs = $(install_sh) -d
+mkinstalldirs = $(SHELL) $(top_srcdir)/../config/mkinstalldirs
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -70,7 +75,6 @@ libcod_la_OBJECTS = $(am_libcod_la_OBJECTS)
 libcod_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libcod_la_LDFLAGS) $(LDFLAGS) -o $@
-@KERNEL_FALSE@am_libcod_la_rpath = -rpath $(libdir)
 t1_SOURCES = t1.c
 t1_OBJECTS = t1.$(OBJEXT)
 t1_LDADD = $(LDADD)
@@ -118,7 +122,6 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-pdf-recursive install-ps-recursive install-recursive \
 	installcheck-recursive installdirs-recursive pdf-recursive \
 	ps-recursive uninstall-recursive
-am__include_HEADERS_DIST = cod.h
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(include_HEADERS) $(noinst_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
@@ -257,11 +260,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 SUBDIRS = . tests
-@KERNEL_FALSE@include_HEADERS = cod.h
-@KERNEL_FALSE@lib_LTLIBRARIES = libcod.la
-@KERNEL_TRUE@MOSTLYCLEANFILES = cod_module.o
-@KERNEL_TRUE@SPECIAL_LEX_ARGS = -Skernel/kflex.skl 
-@KERNEL_TRUE@KERNEL_OBJS = kcod.lo
+INCLUDES = -I../fm
+include_HEADERS = cod.h
+lib_LTLIBRARIES = libcod.la
 noinst_HEADERS = assert.h config.h cod.tab.h cod_internal.h structs.h
 libcod_la_SOURCES = cod.c cod_node.c cg.c standard.c
 libcod_la_LIBADD = $(DCG_LIBS) $(KERNEL_OBJS) 
@@ -352,7 +353,7 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libcod.la: $(libcod_la_OBJECTS) $(libcod_la_DEPENDENCIES) 
-	$(libcod_la_LINK) $(am_libcod_la_rpath) $(libcod_la_OBJECTS) $(libcod_la_LIBADD) $(LIBS)
+	$(libcod_la_LINK) -rpath $(libdir) $(libcod_la_OBJECTS) $(libcod_la_LIBADD) $(LIBS)
 t1$(EXEEXT): $(t1_OBJECTS) $(t1_DEPENDENCIES) 
 	@rm -f t1$(EXEEXT)
 	$(LINK) $(t1_OBJECTS) $(t1_LDADD) $(LIBS)
@@ -710,7 +711,6 @@ install-strip:
 	  `test -z '$(STRIP)' || \
 	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
-	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 
 clean-generic:
 
@@ -803,15 +803,9 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags tags-recursive uninstall uninstall-am \
 	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
-@KERNEL_FALSE@all-local:
-@KERNEL_FALSE@check-local:
-@KERNEL_FALSE@install-exec-local:
-
-@KERNEL_TRUE@all-local: cod_module.o
-@KERNEL_TRUE@check-local: kernel_check_target
-@KERNEL_TRUE@install-exec-local: cod_module.o
-@KERNEL_TRUE@		install -d /lib/modules/@KERNEL_VERSION@/kernel/misc
-@KERNEL_TRUE@		install -c cod_module.o /lib/modules/@KERNEL_VERSION@/kernel/misc
+all-local:
+check-local:
+install-exec-local:
 
 lex.yy.c: cod.l
 	@LEX@ $(SPECIAL_LEX_ARGS) cod.l

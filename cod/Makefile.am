@@ -4,25 +4,12 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 SUBDIRS = . tests
 
-if !KERNEL
+INCLUDES = -I../fm
 include_HEADERS = cod.h
 all-local:
 check-local:
 install-exec-local:
 lib_LTLIBRARIES = libcod.la
-
-else KERNEL
-all-local: cod_module.o
-check-local: kernel_check_target
-MOSTLYCLEANFILES = cod_module.o
-install-exec-local: cod_module.o
-		install -d /lib/modules/@KERNEL_VERSION@/kernel/misc
-		install -c cod_module.o /lib/modules/@KERNEL_VERSION@/kernel/misc
-
-SPECIAL_LEX_ARGS= -Skernel/kflex.skl 
-KERNEL_OBJS= kcod.lo
-
-endif KERNEL
 
 noinst_HEADERS = assert.h config.h cod.tab.h cod_internal.h structs.h
 
