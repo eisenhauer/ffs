@@ -11001,9 +11001,6 @@ if test "${cercs_cv_atl_include_arg+set}" = set; then
 else
 
 
-echo "First ARG IS atl"
-echo "second ARG IS atl.h"
-echo "Third ARG IS cercs_tmp"
 
 
 cercs_tmp=""
@@ -11054,11 +11051,11 @@ fi
 
 search_list="$search_list /usr/include/atl.h /usr/local/include/atl.h /opt/atl/include/atl.h /opt/misc/include/atl.h /opt/misc/include/$cercs_cv_archive/atl.h"
 tmp_search_results=""
-echo "configure:11057: searching for $search_list " >&5
+echo "configure:11054: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11061: first found $tmp_search_results " >&5
+	echo "configure:11058: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11094,9 +11091,6 @@ if test "${cercs_cv_atl_link_dir+set}" = set; then
 else
 
 
-echo "First ARG IS atl"
-echo "second ARG IS libatl.la"
-echo "Third ARG IS cercs_tmp"
 
 
 cercs_tmp=""
@@ -11147,11 +11141,11 @@ fi
 
 search_list="$search_list /usr/lib/libatl.la /usr/local/lib/libatl.la /opt/atl/lib/libatl.la /opt/misc/lib/libatl.la /opt/misc/lib/$cercs_cv_archive/libatl.la"
 tmp_search_results=""
-echo "configure:11150: searching for $search_list " >&5
+echo "configure:11144: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11154: first found $tmp_search_results " >&5
+	echo "configure:11148: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11220,11 +11214,11 @@ else
 
 search_list="$PWD/../atl $PWD/../../atl $PWD/../../../atl"
 tmp_search_results=""
-echo "configure:11223: searching for $search_list " >&5
+echo "configure:11217: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11227: first found $tmp_search_results " >&5
+	echo "configure:11221: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11262,11 +11256,11 @@ else
 
 search_list="$PWD/../atl $PWD/../../atl $PWD/../../../atl"
 tmp_search_results=""
-echo "configure:11265: searching for $search_list " >&5
+echo "configure:11259: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11269: first found $tmp_search_results " >&5
+	echo "configure:11263: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11338,9 +11332,6 @@ if test "${cercs_cv_cercs_env_include_arg+set}" = set; then
 else
 
 
-echo "First ARG IS cercs_env"
-echo "second ARG IS cercs_env.h"
-echo "Third ARG IS cercs_tmp"
 
 
 cercs_tmp=""
@@ -11391,11 +11382,11 @@ fi
 
 search_list="$search_list /usr/include/cercs_env.h /usr/local/include/cercs_env.h /opt/cercs_env/include/cercs_env.h /opt/misc/include/cercs_env.h /opt/misc/include/$cercs_cv_archive/cercs_env.h"
 tmp_search_results=""
-echo "configure:11394: searching for $search_list " >&5
+echo "configure:11385: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11398: first found $tmp_search_results " >&5
+	echo "configure:11389: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11431,9 +11422,6 @@ if test "${cercs_cv_cercs_env_link_dir+set}" = set; then
 else
 
 
-echo "First ARG IS cercs_env"
-echo "second ARG IS libcercs_env.la"
-echo "Third ARG IS cercs_tmp"
 
 
 cercs_tmp=""
@@ -11484,11 +11472,11 @@ fi
 
 search_list="$search_list /usr/lib/libcercs_env.la /usr/local/lib/libcercs_env.la /opt/cercs_env/lib/libcercs_env.la /opt/misc/lib/libcercs_env.la /opt/misc/lib/$cercs_cv_archive/libcercs_env.la"
 tmp_search_results=""
-echo "configure:11487: searching for $search_list " >&5
+echo "configure:11475: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11491: first found $tmp_search_results " >&5
+	echo "configure:11479: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11557,11 +11545,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:11560: searching for $search_list " >&5
+echo "configure:11548: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11564: first found $tmp_search_results " >&5
+	echo "configure:11552: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11599,11 +11587,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:11602: searching for $search_list " >&5
+echo "configure:11590: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11606: first found $tmp_search_results " >&5
+	echo "configure:11594: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11675,9 +11663,6 @@ if test "${cercs_cv_dill_include_arg+set}" = set; then
 else
 
 
-echo "First ARG IS dill"
-echo "second ARG IS dill.h"
-echo "Third ARG IS cercs_tmp"
 
 
 cercs_tmp=""
@@ -11728,11 +11713,11 @@ fi
 
 search_list="$search_list /usr/include/dill.h /usr/local/include/dill.h /opt/dill/include/dill.h /opt/misc/include/dill.h /opt/misc/include/$cercs_cv_archive/dill.h"
 tmp_search_results=""
-echo "configure:11731: searching for $search_list " >&5
+echo "configure:11716: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11735: first found $tmp_search_results " >&5
+	echo "configure:11720: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11768,9 +11753,6 @@ if test "${cercs_cv_dill_link_dir+set}" = set; then
 else
 
 
-echo "First ARG IS dill"
-echo "second ARG IS libdill.la"
-echo "Third ARG IS cercs_tmp"
 
 
 cercs_tmp=""
@@ -11821,11 +11803,11 @@ fi
 
 search_list="$search_list /usr/lib/libdill.la /usr/local/lib/libdill.la /opt/dill/lib/libdill.la /opt/misc/lib/libdill.la /opt/misc/lib/$cercs_cv_archive/libdill.la"
 tmp_search_results=""
-echo "configure:11824: searching for $search_list " >&5
+echo "configure:11806: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11828: first found $tmp_search_results " >&5
+	echo "configure:11810: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11894,11 +11876,11 @@ else
 
 search_list="$PWD/../dill $PWD/../../dill $PWD/../../../dill"
 tmp_search_results=""
-echo "configure:11897: searching for $search_list " >&5
+echo "configure:11879: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11901: first found $tmp_search_results " >&5
+	echo "configure:11883: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -11936,11 +11918,11 @@ else
 
 search_list="$PWD/../dill $PWD/../../dill $PWD/../../../dill"
 tmp_search_results=""
-echo "configure:11939: searching for $search_list " >&5
+echo "configure:11921: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:11943: first found $tmp_search_results " >&5
+	echo "configure:11925: first found $tmp_search_results " >&5
 	break
    fi
 done

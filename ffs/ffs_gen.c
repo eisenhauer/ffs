@@ -270,7 +270,7 @@ int byte_swap;
 {
     iogen_oprnd ret_val;
 
-#if defined(v_ldbsi) || defined(HAVE_DILL_H)
+#if defined(v_ldbsi) || defined(DO_DCG)
     if (dill_has_ldbs(c)) {
 	/* have byte swap load extension */
 	if (byte_swap && (data_type != float_type)) {
@@ -436,7 +436,7 @@ iogen_oprnd_ptr src_oprnd;
 	} else {
 	    swap_oprnd = *src_oprnd;
 	    gen_load(c, &swap_oprnd);
-#if defined(v_ldbsi) || defined(HAVE_DILL_H)
+#if defined(v_ldbsi) || defined(DO_DCG)
 	    if (dill_has_ldbs(c)) {
 		/* gen_load did everything for us */
 		return;
@@ -609,18 +609,10 @@ int const_size;
 	final_dest = dest;
     }
     if (const_size != 0) {
-#ifdef HAVE_DILL_H
 	dill_scalli(c, (void*) memcpy, "memcpy", "%p%p%I", final_dest, final_src, 
 		    const_size);
-#else
-	v_scalli((v_iptr) memcpy, "%p%p%I", final_dest, final_src, const_size);
-#endif
     } else {
-#ifdef HAVE_DILL_H
 	dill_scalli(c, (void*) memcpy, "memcpy", "%p%p%i", final_dest, final_src, size);
-#else
-	v_scalli((v_iptr) memcpy, "%p%p%i", final_dest, final_src, size);
-#endif
     }
     if (src_offset != 0) {
 	dill_raw_putreg(c, final_src, DILL_P);

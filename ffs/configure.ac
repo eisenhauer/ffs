@@ -39,11 +39,12 @@ dnl checks for libraries
 FFS_CONVERSION_GENERATION_DEFAULT=0
 CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
 CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
-if test -n "$cercs_cv_dill_include_arg"; then
-if test "$with_code_gen" = yes; then
+AC_ARG_ENABLE(code_generation,AC_HELP_STRING([--enable-code-generation],
+                            [faster conversions via dynamic code generation (default is YES)]),,enable_code_generation="yes")
+echo ENABLE_DCG is $enable_code_generation
+if test "$enable_code_generation" = yes; then
 DCG_LALIB="$cercs_cv_dill_link_dir/libdill.la"
 FFS_CONVERSION_GENERATION_DEFAULT=1
-fi
 fi
 
 CPPFLAGS="$CPPFLAGS"
@@ -74,9 +75,9 @@ dnl
 dnl checks for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS(string.h memory.h malloc.h unistd.h)
-if test "$with_code_gen" = yes; then
-AC_CHECK_HEADER(dill.h, [AC_DEFINE(HAVE_DILL_H,1,[Define if you have dill.h]) 
-			  FFS_GEN_O="ffs_gen.lo"], FFS_GEN_O="")
+if test "$enable_code_generation" = yes; then
+AC_DEFINE(DO_DCG,1,[Define if ffs should do dynamic code generation])
+FFS_GEN_O="ffs_gen.lo"
 fi
 
 AC_SUBST(DCG_LIBRARY)

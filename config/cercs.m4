@@ -1,4 +1,4 @@
-dnl  Mon Oct 29 09:09:35 EDT 2007
+dnl  Mon Jan 21 10:48:58 EST 2008
 dnl
 dnl cercs_require_package(package, include_file, library_file)
 dnl   either include file or library_file may be left off if not needed
@@ -129,9 +129,6 @@ dnl    /opt/misc/{include,lib}.
 dnl
 AC_DEFUN([CERCS_FIND_FILE],
 [
-echo "First ARG IS $1"
-echo "second ARG IS $2"
-echo "Third ARG IS $3"
 AC_REQUIRE([CERCS_HAS_CSH])
 AC_REQUIRE([CERCS_SET_ARCHIVE])
 $3=""

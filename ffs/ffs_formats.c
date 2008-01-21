@@ -15,7 +15,7 @@
 #include <ctype.h>
 extern char *getenv(const char *name);
 
-#ifdef HAVE_DILL_H
+#ifdef DO_DCG
 #include "dill.h"
 #else 
 #define dill_stream void*
@@ -110,7 +110,7 @@ min_align_type(typ, size)
 FMdata_type typ;
 int size;
 {
-#ifndef HAVE_DILL_H
+#ifndef DO_DCG
     return min_align_size(size);
 #else
     static dill_stream s = NULL;
