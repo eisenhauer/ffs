@@ -49,13 +49,13 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libcod_la_LIBADD =
+libcod_la_DEPENDENCIES = cod/libcod.la
 am_libcod_la_OBJECTS =
 libcod_la_OBJECTS = $(am_libcod_la_OBJECTS)
-libffs_la_LIBADD =
+libffs_la_DEPENDENCIES = ffs/libffs.la
 am_libffs_la_OBJECTS =
 libffs_la_OBJECTS = $(am_libffs_la_OBJECTS)
-libfm_la_LIBADD =
+libfm_la_DEPENDENCIES = fm/libfm.la
 am_libfm_la_OBJECTS =
 libfm_la_OBJECTS = $(am_libfm_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -205,9 +205,12 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 SUBDIRS = fm cod ffs .
 noinst_LTLIBRARIES = libfm.la libcod.la libffs.la
-libfm_la_SOURCES = fm/libfm.la
-libcod_la_SOURCES = cod/libcod.la
-libffs_la_SOURCES = ffs/libffs.la
+libfm_la_SOURCES = 
+libfm_la_LIBADD = fm/libfm.la
+libcod_la_SOURCES = 
+libcod_la_LIBADD = cod/libcod.la
+libffs_la_SOURCES = 
+libffs_la_LIBADD = ffs/libffs.la
 all: all-recursive
 
 .SUFFIXES:

@@ -12,6 +12,9 @@ all:
 
 noinst_LTLIBRARIES = libfm.la libcod.la libffs.la
 
-libfm_la_SOURCES = fm/libfm.la
-libcod_la_SOURCES = cod/libcod.la
-libffs_la_SOURCES = ffs/libffs.la
+libfm_la_SOURCES =
+libfm_la_LIBADD = fm/libfm.la
+libcod_la_SOURCES =
+libcod_la_LIBADD = cod/libcod.la
+libffs_la_SOURCES =
+libffs_la_LIBADD = ffs/libffs.la
