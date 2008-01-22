@@ -11454,7 +11454,6 @@ else
   enable_code_generation="yes"
 fi
 
-echo ENABLE_DCG is $enable_code_generation
 if test "$enable_code_generation" = yes; then
 DCG_LALIB="$cercs_cv_dill_link_dir/libdill.la"
 FFS_CONVERSION_GENERATION_DEFAULT=1
