@@ -13,6 +13,7 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -47,10 +48,32 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+libcod_la_LIBADD =
+am_libcod_la_OBJECTS =
+libcod_la_OBJECTS = $(am_libcod_la_OBJECTS)
+libffs_la_LIBADD =
+am_libffs_la_OBJECTS =
+libffs_la_OBJECTS = $(am_libffs_la_OBJECTS)
+libfm_la_LIBADD =
+am_libfm_la_OBJECTS =
+libfm_la_OBJECTS = $(am_libfm_la_OBJECTS)
+DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp =
 am__depfiles_maybe =
-SOURCES =
-DIST_SOURCES =
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+SOURCES = $(libcod_la_SOURCES) $(libffs_la_SOURCES) \
+	$(libfm_la_SOURCES)
+DIST_SOURCES = $(libcod_la_SOURCES) $(libffs_la_SOURCES) \
+	$(libfm_la_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -181,6 +204,10 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 SUBDIRS = fm cod ffs .
+noinst_LTLIBRARIES = libfm.la libcod.la libffs.la
+libfm_la_SOURCES = fm/libfm.la
+libcod_la_SOURCES = cod/libcod.la
+libffs_la_SOURCES = ffs/libffs.la
 all: all-recursive
 
 .SUFFIXES:
@@ -217,6 +244,27 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libcod.la: $(libcod_la_OBJECTS) $(libcod_la_DEPENDENCIES) 
+	$(LINK)  $(libcod_la_OBJECTS) $(libcod_la_LIBADD) $(LIBS)
+libffs.la: $(libffs_la_OBJECTS) $(libffs_la_DEPENDENCIES) 
+	$(LINK)  $(libffs_la_OBJECTS) $(libffs_la_LIBADD) $(LIBS)
+libfm.la: $(libfm_la_OBJECTS) $(libfm_la_DEPENDENCIES) 
+	$(LINK)  $(libfm_la_OBJECTS) $(libfm_la_LIBADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT)
+
+distclean-compile:
+	-rm -f *.tab.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -502,7 +550,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile
+all-am: Makefile $(LTLIBRARIES)
 installdirs: installdirs-recursive
 installdirs-am:
 install: install-recursive
@@ -531,13 +579,14 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-libtool \
-	distclean-tags
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -575,7 +624,8 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-recursive
 
@@ -592,8 +642,9 @@ uninstall-am:
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am am--refresh check check-am clean clean-generic \
-	clean-libtool ctags ctags-recursive dist dist-all dist-bzip2 \
-	dist-gzip dist-shar dist-tarZ dist-zip distcheck distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags ctags-recursive \
+	dist dist-all dist-bzip2 dist-gzip dist-shar dist-tarZ \
+	dist-zip distcheck distclean distclean-compile \
 	distclean-generic distclean-libtool distclean-tags \
 	distcleancheck distdir distuninstallcheck dvi dvi-am html \
 	html-am info info-am install install-am install-data \
@@ -602,19 +653,16 @@ uninstall-am:
 	install-info-am install-man install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
 	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-recursive uninstall uninstall-am
 
 
 all:
-	rm -f fm.h cod.h ffs.h libfm.la libcod.la libffs.la
+	rm -f fm.h cod.h ffs.h
 	$(LN_S) fm/fm.h
-	$(LN_S) fm/libfm.la
 	$(LN_S) cod/cod.h
-	$(LN_S) cod/libcod.la
 	$(LN_S) ffs/ffs.h
-	$(LN_S) ffs/libffs.la
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
