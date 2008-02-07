@@ -187,6 +187,9 @@ char **argv;
 	    fs_port = tmp_port;
 	}
     }
+#ifndef HAVE_WINDOWS_H
+    alarm(0);
+#endif
     general_format_server(fs_port, do_restart, no_fork);
     return 0;
 }
