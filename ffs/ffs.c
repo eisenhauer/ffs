@@ -34,12 +34,15 @@ typedef struct encode_state {
     int iovcnt;
     internal_iovec *iovec;
     int malloc_vec_size;
+
     int addr_list_is_stack;
     int addr_list_cnt;
     addr_list_entry *addr_list;
     int malloc_addr_size;
     int saved_offset_difference;
 }*estate;
+
+static void free_addr_list(estate s);
 
 void
 setup_header(FFSBuffer buf, FMFormat f, estate s) 
@@ -238,6 +241,7 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
 	tmp_data += fmformat->server_ID.length + len_align_pad;
 	memcpy(tmp_data, &record_len, 4);
     }
+    free_addr_list(&state);
     *buf_size = state.output_len;
     return b->tmp_buffer;
 }
@@ -275,6 +279,53 @@ fixup_output_vector(FFSBuffer b, estate s)
 	s->addr_list = NULL;
     }
     return ret;
+}
+
+static void
+add_to_addr_list(estate s, void *addr, int offset)
+{
+    if (s->addr_list_is_stack) {
+	if (s->addr_list_cnt == STACK_ARRAY_SIZE) {
+	    /* reached the max size for stack-based addr list */
+	    addr_list_entry *malloc_list;
+	    s->addr_list_is_stack = 0;
+	    s->malloc_addr_size = 2*STACK_ARRAY_SIZE;
+	    malloc_list = malloc(2*STACK_ARRAY_SIZE * sizeof(addr_list_entry));
+	    memcpy(malloc_list, s->addr_list, STACK_ARRAY_SIZE * sizeof(addr_list_entry));
+	    s->addr_list = malloc_list;
+	}
+    } else {
+       /* malloc'd addr_list */
+       if (s->addr_list_cnt == s->malloc_addr_size) {
+	   s->malloc_addr_size *= 2;
+	   s->addr_list = 
+	       realloc(s->addr_list, sizeof(addr_list_entry)*s->malloc_addr_size);
+       }
+    }
+    s->addr_list[s->addr_list_cnt].addr = addr;
+    s->addr_list[s->addr_list_cnt].offset = offset;
+    s->addr_list_cnt++;
+}
+
+static int
+search_addr_list(estate s, void *addr)
+{
+    int i;
+    int previous_offset = -1;
+    for (i=0; i < s->addr_list_cnt; i++) {
+	if (s->addr_list[i].addr == addr) {
+	    previous_offset = s->addr_list[i].offset;
+	}
+    }
+    return previous_offset;
+}
+
+static void
+free_addr_list(estate s)
+{
+    if (s->addr_list_is_stack == 0) {
+	free(s->addr_list);
+    }
 }
 
 FFSEncodeVector
@@ -332,6 +383,7 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
 	tmp_data += fmformat->server_ID.length + len_align_pad;
 	memcpy(tmp_data, &record_len, 4);
     }
+    free_addr_list(&state);
     return fixup_output_vector(b, &state);
 }
 
@@ -355,6 +407,8 @@ field_is_flat(FMFormat f, FMTypeDesc *t)
 	return !f->field_subformats[t->field_index]->variant;
     case FMType_simple:
 	return TRUE;
+    default:
+	assert(FALSE);
     }
 }
 
@@ -416,6 +470,14 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
 	if (ptr_value == NULL) return 1;
 	size = determine_size(f, buf, parent_offset, t->next);
+	if (f->recursive) {
+	    int previous_offset = search_addr_list(s, ptr_value);
+	    if (previous_offset != -1) {
+		quick_put_ulong(&src_spec, previous_offset,
+				(char*)buf->tmp_buffer + data_offset);
+		return 1;
+	    }
+	}
 	if (!s->copy_all && field_is_flat(f, t->next)) {
 	    /* leave data where it sits */
 	    new_offset = add_data_iovec(s, buf, ptr_value, size, 8);
@@ -425,6 +487,9 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	}
 	quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
 			(char*)buf->tmp_buffer + data_offset);
+	if (f->recursive) {
+	    add_to_addr_list(s, ptr_value, new_offset - s->saved_offset_difference);
+	}
 	if (field_is_flat(f, t->next)) return 1;
 	return handle_subfield(buf, f, s, tmp_data_loc, parent_offset, t->next);
 	break;
