@@ -397,9 +397,6 @@ field_is_flat(FMFormat f, FMTypeDesc *t)
     case FMType_pointer:
 	return FALSE;
     case FMType_array:
-	if (t->static_size == 0) {
-	    return FALSE;
-	}
 	return field_is_flat(f, t->next);
     case FMType_string:
 	return FALSE;
@@ -440,8 +437,17 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
     case FMType_array: {
 	int size = 1;
 	while (t->type == FMType_array) {
-	    if (t->static_size == 0) return f->pointer_size;
-	    size *= t->static_size;
+	    if (t->static_size == 0) {
+		struct _FMgetFieldStruct src_spec;
+		int field = t->control_field_index;
+		memset(&src_spec, 0, sizeof(src_spec));
+		src_spec.size = f->field_list[field].field_size;
+		src_spec.offset = f->field_list[field].field_offset;
+		int tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
+		size = size * tmp;
+	    } else {
+		size *= t->static_size;
+	    }
 	    t = t->next;
 	}
 	size *= determine_size(f, buf, parent_offset, t);
@@ -538,27 +544,9 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    next = next->next;
 	}
 	element_size = determine_size(f, buf, parent_offset, next);
-	if (var_array) {
-	    struct _FMgetFieldStruct src_spec;
-	    char *ptr_value;
-	    int new_offset, size = element_size * elements;
-	    memset(&src_spec, 0, sizeof(src_spec));
-	    src_spec.size = f->pointer_size;
-	    ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
-	    if (ptr_value == NULL) return 1;
-	    if (!s->copy_all && field_is_flat(f, t->next)) {
-		/* leave data where it sits */
-		new_offset = add_data_iovec(s, buf, ptr_value, size, 8);
-	    } else {
-		new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8, &array_data_offset);
-		if (new_offset == -1) return 0;
-	    }
-	    quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
-			    (char*)buf->tmp_buffer + data_offset);
-	}
 	if (field_is_flat(f, next)) return 1;
 	for (i = 0; i < elements ; i++) {
-	    int element_offset = array_data_offset + i * element_size;
+	    int element_offset = data_offset + i * element_size;
 	    if (!handle_subfield(buf, f, s, element_offset, parent_offset, next)) return 0;
 	}
 	break;
