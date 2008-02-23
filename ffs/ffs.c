@@ -760,13 +760,6 @@ FFSTypeHandle_from_encode(FFSContext c, char *buffer)
 
 extern
 FFSContext
-create_FFSContext()
-{
-    return create_FFSContext_FM(create_FMcontext());
-}
-
-extern
-FFSContext
 create_FFSContext_FM(FMContext fmc)
 {
     FFSContext c;
