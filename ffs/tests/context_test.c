@@ -14,6 +14,7 @@
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+#include <sys/uio.h>
 #include <string.h>
 #include <assert.h>
 #include "ffs.h"
@@ -23,7 +24,7 @@
 static void test_receive(char *buffer, int buf_size, int finished,
 			       int test_level);
 static void test_all_receive(char *buffer, int buf_size, int finished);
-static void write_buffer(char *buf, int size);
+static void write_buffer(FMFormat format, char *buf, int size);
 static void read_test_only();
 
 static int write_output = 0;
@@ -160,7 +161,7 @@ char **argv;
     rec1.char_field = 'A';
     xfer_buffer = FFSencode(encode_buffer, first_rec_ioformat, &rec1, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(first_rec_ioformat, xfer_buffer, buf_size);
     memset((char *) &emb_array, 0, sizeof(emb_array));
     emb_array.earray[0].dfield = 4.0;
     emb_array.earray[0].ifield = 4;
@@ -184,7 +185,7 @@ char **argv;
     sprintf(emb_array.earray[3].string, "string%d", emb_array.earray[3].ifield * 5);
     xfer_buffer = FFSencode(encode_buffer, fifth_rec_ioformat, &emb_array, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(fifth_rec_ioformat, xfer_buffer, buf_size);
     free(emb_array.earray[0].string);
     free(emb_array.earray[1].string);
     free(emb_array.earray[2].string);
@@ -199,7 +200,7 @@ char **argv;
     rec2.char_field = 'A';
     xfer_buffer = FFSencode(encode_buffer, second_rec_ioformat, &rec2, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(second_rec_ioformat, xfer_buffer, buf_size);
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
@@ -208,13 +209,13 @@ char **argv;
     rec2.char_field = 'A';
     xfer_buffer = FFSencode(encode_buffer, second_rec_ioformat, &rec2, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(second_rec_ioformat, xfer_buffer, buf_size);
     rec1.integer_field = 17;
     rec1.double_field *= 3.0;
     rec1.char_field = 'B';
     xfer_buffer = FFSencode(encode_buffer, first_rec_ioformat, &rec1, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(first_rec_ioformat, xfer_buffer, buf_size);
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
@@ -223,14 +224,14 @@ char **argv;
     rec2.char_field = 'A';
     xfer_buffer = FFSencode(encode_buffer, second_rec_ioformat, &rec2, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(second_rec_ioformat, xfer_buffer, buf_size);
     rec1.integer_field *= 2;
     rec1.double_field *= 2.717;
     rec1.char_field = 'C';
 /*    write_comment_IOfile(iofile, "this is another comment in the file");*/
     xfer_buffer = FFSencode(encode_buffer, first_rec_ioformat, &rec1, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(first_rec_ioformat, xfer_buffer, buf_size);
     memset((char *) &rec3, 0, sizeof(rec3));
     rec3.integer_field = 14;
     rec3.long_field = 987234;
@@ -247,7 +248,7 @@ char **argv;
     rec3.enum_field = Red_Stripe;
     xfer_buffer = FFSencode(encode_buffer, third_rec_ioformat, &rec3, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(third_rec_ioformat, xfer_buffer, buf_size);
 
     str_list[0].format_name = "later format";
     str_list[0].field_list = later_field_list;
@@ -276,7 +277,7 @@ char **argv;
     rec3.enum_field = Paulaner;
     xfer_buffer = FFSencode(encode_buffer, third_rec_ioformat, &rec3, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(third_rec_ioformat, xfer_buffer, buf_size);
     memset((char *) &rec7, 0, sizeof(rec7));
     rec7.integer_field = 47;
     rec7.nested_rec.integer_field = 14;
@@ -288,7 +289,7 @@ char **argv;
     rec7.string = "Yet another string";
     xfer_buffer = FFSencode(encode_buffer, nested_ioformat, &rec7, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(nested_ioformat, xfer_buffer, buf_size);
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = "testing";
@@ -298,7 +299,7 @@ char **argv;
     rec3.enum_field = Pilsner;
     xfer_buffer = FFSencode(encode_buffer, third_rec_ioformat, &rec3, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(third_rec_ioformat, xfer_buffer, buf_size);
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = NULL;
@@ -308,14 +309,14 @@ char **argv;
     rec3.enum_field = Red_Stripe;
     xfer_buffer = FFSencode(encode_buffer, third_rec_ioformat, &rec3, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(third_rec_ioformat, xfer_buffer, buf_size);
     memset((char *) &rec5, 0, sizeof(rec5));
     rec5.integer_field = 9872346;
     rec5.string = "ABCD";
     rec5.double_field = 3.14159265358797323;
     xfer_buffer = FFSencode(encode_buffer, later_ioformat, &rec5, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(later_ioformat, xfer_buffer, buf_size);
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = "testing";
@@ -325,7 +326,7 @@ char **argv;
     rec3.enum_field = Pilsner;
     xfer_buffer = FFSencode(encode_buffer, third_rec_ioformat, &rec3, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(third_rec_ioformat, xfer_buffer, buf_size);
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
@@ -334,7 +335,7 @@ char **argv;
     rec2.char_field = 'A';
     xfer_buffer = FFSencode(encode_buffer, second_rec_ioformat, &rec2, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(second_rec_ioformat, xfer_buffer, buf_size);
     for (i = 0; i < 10; i++) {
 	memset((char *) &array1[i], 0, sizeof(array1[i]));
 	array1[i].integer_field = 2 * i * i;
@@ -363,20 +364,20 @@ char **argv;
     rec4.ifield = -rec4.int_array[ARRAY_SIZE - 1];
     xfer_buffer = FFSencode(encode_buffer, fourth_rec_ioformat, &rec4, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(fourth_rec_ioformat, xfer_buffer, buf_size);
     memset((char *) &rec6, 0, sizeof(rec6));
     rec6.integer_field = 23462346;
     rec6.string = "Efghij";
     rec6.double_field = 3.14159265358797323 * 2.0;
     xfer_buffer = FFSencode(encode_buffer, later_ioformat, &rec6, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(later_ioformat, xfer_buffer, buf_size);
     rec6.integer_field = 2346987;
     rec6.string = "Klmn";
     rec6.double_field = 3.14159265358797323 * 3.0;
     xfer_buffer = FFSencode(encode_buffer, later_ioformat, &rec6, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(later_ioformat, xfer_buffer, buf_size);
 
     for (i = 1; i < 20; i += 5) {
         memset((char *) &var_array, 0, sizeof(var_array));
@@ -406,7 +407,7 @@ char **argv;
 	xfer_buffer = FFSencode(encode_buffer, sixth_rec_ioformat, 
 					      &var_array, &buf_size);
 	test_all_receive(xfer_buffer, buf_size, 0);
-	write_buffer(xfer_buffer, buf_size);
+	write_buffer(sixth_rec_ioformat, xfer_buffer, buf_size);
 	for (j = 0; j < var_array.icount; j++) {
 	    free(var_array.var_string_array[j].string);
 	}
@@ -460,13 +461,13 @@ char **argv;
 	xfer_buffer = FFSencode(encode_buffer, ninth_rec_ioformat, 
 					      &var_var, &buf_size);
 	test_all_receive(xfer_buffer, buf_size, 0);
-	write_buffer(xfer_buffer, buf_size);
+	write_buffer(ninth_rec_ioformat, xfer_buffer, buf_size);
 
 	xfer_buffer = FFSencode(encode_buffer, 
 					      string_array_ioformat, 
 					      &str_array, &buf_size);
 	test_all_receive(xfer_buffer, buf_size, 0);
-	write_buffer(xfer_buffer, buf_size);
+	write_buffer(string_array_ioformat, xfer_buffer, buf_size);
 
 	for (j = 0; j < var_var.vec_length; j++) {
 	    free(var_var.eventv[j].iov_base);
@@ -498,7 +499,7 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, derive_ioformat,
 					  &derive, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(derive_ioformat, xfer_buffer, buf_size);
 
     str_list[0].format_name = "multi_array";
     str_list[0].field_list = multi_array_flds;
@@ -509,7 +510,7 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, multi_array_ioformat,
 					  &multi_array, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(multi_array_ioformat, xfer_buffer, buf_size);
 
     str_list[0].format_name = "triangle_param";
     str_list[0].field_list = triangle_field;
@@ -525,7 +526,7 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, triangle_ioformat,
 					  &triangle, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(triangle_ioformat, xfer_buffer, buf_size);
     
 
     str_list[0].format_name = "add_action";
@@ -546,7 +547,7 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, add_action_ioformat,
 					  &add_action_record, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(add_action_ioformat, xfer_buffer, buf_size);
     
 
     str_list[0].format_name = "node";
@@ -570,7 +571,7 @@ char **argv;
 /*    xfer_buffer = FFSencode(encode_buffer, node_ioformat,
 					  &nodes[0], &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(node_ioformat, xfer_buffer, buf_size);
 
     nodes[0].link2 = NULL;
     nodes[sizeof(nodes)/sizeof(nodes[0]) - 1].link1 = &nodes[2];
@@ -580,7 +581,7 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, node_ioformat,
 					  &nodes[0], &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(node_ioformat, xfer_buffer, buf_size);
 
     for (i=0; i <  sizeof(nodes)/sizeof(nodes[0]) - 1; i++) {
 	nodes[i].link1 = nodes[i].link2 = NULL;
@@ -601,14 +602,14 @@ char **argv;
     xfer_buffer = FFSencode(encode_buffer, node_ioformat,
 					  &nodes[0], &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
-    write_buffer(xfer_buffer, buf_size);
+    write_buffer(node_ioformat, xfer_buffer, buf_size);
 */
     
     free_FMcontext(src_context);
     free_FFSBuffer(encode_buffer);
     src_context = NULL;
     test_all_receive(NULL, 0, 1);
-    write_buffer(NULL, 0);
+    write_buffer(first_rec_ioformat, NULL, 0);
     free_written_data();
     if (rcv_context != NULL) free_FFSContext(rcv_context);
     if (fail) exit(1);
@@ -619,6 +620,7 @@ char **argv;
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
+static FMContext loaded_FMcontext = NULL;
 
 static char *
 get_buffer(size_p)
@@ -628,14 +630,17 @@ int *size_p;
     static char *buffer = NULL;
     char *tmp_buffer;
     static int last_size = -1;
-    unsigned short ssize;
     int to_read;
     int tmp_size;
     unsigned char csize;
     unsigned int beef = 0xdeadbeef;
+    int indicator;
 
     if (read_file == NULL) exit(1);
 
+    if (loaded_FMcontext == NULL) {
+	loaded_FMcontext = create_local_FMcontext();
+    }
     if (file_fd == 0) {
 	file_fd = open(read_file, O_RDONLY|O_BINARY, 0777);
 	buffer = malloc(1);
@@ -645,11 +650,27 @@ int *size_p;
 	    printf("memory overwrite error\n");
 	}
     }
-    read(file_fd, &csize, 1);	/* low byte of 2-byte size */
-    ssize = csize;
-    read(file_fd, &csize, 1);	/* high byte of 2-byte size */
-    ssize += ((csize << 8) & 0xff00);
-    to_read = ssize;
+    read(file_fd, &indicator, 4);
+    indicator = ntohl(indicator);
+    if ((indicator >> 24) == 0x2) {
+	/* got a format coming in */
+	int format_rep_size, format_id_size;
+	char *format_id, *format_rep;
+	read(file_fd, &format_rep_size, 4);
+	format_rep_size = ntohl(format_rep_size);
+	format_id_size = indicator & 0xff;
+	format_id = malloc(format_id_size);
+	format_rep = malloc(format_rep_size);
+	read(file_fd, format_id, format_id_size);
+	read(file_fd, format_rep, format_rep_size);
+	(void) load_external_format_FMcontext(loaded_FMcontext, format_id,
+					      format_id_size, format_rep);
+	read(file_fd, &indicator, 4);
+	indicator = ntohl(indicator);
+    }
+    if ((indicator >> 24) != 0x3) printf("BAD!\n");
+    to_read = indicator & 0xffffff;
+    last_size = to_read;
     buffer = realloc(buffer, to_read+4);
     tmp_buffer = buffer;
     while((tmp_size = read(file_fd, tmp_buffer, to_read)) != to_read) {
@@ -664,15 +685,14 @@ int *size_p;
 	to_read -= tmp_size;
 	tmp_buffer += tmp_size;
     } 
-    last_size = ssize;
     memcpy(buffer+last_size, &beef, 4);
-    if (ssize == 0) {
+    if (last_size == 0) {
 	free(buffer);
 	close(file_fd);
 	file_fd = 0;
 	return NULL;
     } else {
-	*size_p = ssize;
+	*size_p = last_size;
 	return buffer;
     }
 }
@@ -833,7 +853,11 @@ int test_level;
     size_func_t size_func = size_funcs[test_level];
     decode_func_t decode_func = decode_funcs[test_level];
     if (c == NULL) {
-	c = create_FFSContext();
+	if (loaded_FMcontext != NULL) {
+	    c = create_FFSContext_FM(loaded_FMcontext);
+	} else {
+	    c = create_FFSContext();
+	}
 	rcv_context = c;
 	set_targets(rcv_context);
     }
@@ -1124,24 +1148,71 @@ int test_level;
     }
 }
 
+static FMFormat seen_formats[100];
+static int seen_count = 0;
+
 static void
-write_buffer(buf, size)
+write_buffer(format, buf, size)
+FMFormat format;
 char *buf;
 int size;
 {
     static int file_fd = 0;
-    unsigned short ssize;
-    unsigned char csize;
+    int i;
+    int written = 0;
+    int indicator;
     if (output_file == NULL) return;
 
     if (file_fd == 0) {
 	file_fd = open(output_file, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0777);
     }
-    printf("Writing buffer of size %d\n", size);
-    ssize = size;
-    csize = ssize & 0xff;
-    write(file_fd, &csize, 1);	/* low byte of 2-byte size */
-    csize = ((ssize >> 8) & 0xff);
-    write(file_fd, &csize, 1);	/* high byte of 2-byte size */
+    for (i=0; i < seen_count; i++) {
+	if (format == seen_formats[i]) {
+	    written++;
+	}
+    }
+    if (!written) {
+	struct {
+	    int indicator;
+	    int format_len;
+	} format_header;
+	struct iovec vec[4];
+	char *server_id;
+	int id_len;
+	char *server_rep;
+	int rep_len;
+	server_id = get_server_ID_FMformat(format, &id_len);
+	server_rep = get_server_rep_FMformat(format, &rep_len);
+
+	/*
+	 * next_data indicator is a 2 4-byte chunks in network byte order.
+	 * In the first chunk, 
+	 *    the top byte is 0x2, middle 2 are unused and
+	 *    the bottom byte is the size of the format id;
+	 * The second chunk holds the length of the format rep;
+	 */
+	
+	format_header.indicator = htonl((id_len & 0xff) | 0x2 << 24);
+	format_header.format_len = htonl(rep_len);
+	
+	vec[0].iov_len = 8;
+	vec[0].iov_base = &format_header;
+	vec[1].iov_len = id_len;
+	vec[1].iov_base = server_id;
+	vec[2].iov_len = rep_len;
+	vec[2].iov_base = server_rep;
+	vec[3].iov_len = 0;
+	vec[3].iov_base = NULL;
+	writev(file_fd, vec, 3);
+	seen_formats[seen_count++] = format;
+    }
+
+    /*
+     * next_data indicator is a 4-byte chunk in network byte order.
+     * The top byte is 0x3.  The bottom 3 bytes are the size of the data.
+     */
+    indicator = htonl((size & 0xffffff) | 0x3 << 24);
+
+    write(file_fd, &indicator, 4);
     write(file_fd, buf, size);
 }

@@ -36,7 +36,7 @@ host_triplet = @host@
 TESTS = context_test$(EXEEXT)
 bin_PROGRAMS =
 noinst_PROGRAMS = context_test$(EXEEXT) io_write$(EXEEXT) \
-	io_dyn_read$(EXEEXT)
+	io_dyn_read$(EXEEXT) context_test2$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -59,6 +59,11 @@ am_context_test_OBJECTS = context_test.$(OBJEXT) test_funcs.$(OBJEXT)
 context_test_OBJECTS = $(am_context_test_OBJECTS)
 context_test_LDADD = $(LDADD)
 context_test_DEPENDENCIES = ../libffs.la
+am_context_test2_OBJECTS = context_test2.$(OBJEXT) \
+	test_funcs.$(OBJEXT)
+context_test2_OBJECTS = $(am_context_test2_OBJECTS)
+context_test2_LDADD = $(LDADD)
+context_test2_DEPENDENCIES = ../libffs.la
 am_io_dyn_read_OBJECTS = io_dyn_read.$(OBJEXT) test_funcs.$(OBJEXT)
 io_dyn_read_OBJECTS = $(am_io_dyn_read_OBJECTS)
 io_dyn_read_LDADD = $(LDADD)
@@ -79,10 +84,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(context_test_SOURCES) $(io_dyn_read_SOURCES) \
-	$(io_write_SOURCES)
-DIST_SOURCES = $(context_test_SOURCES) $(io_dyn_read_SOURCES) \
-	$(io_write_SOURCES)
+SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
+	$(io_dyn_read_SOURCES) $(io_write_SOURCES)
+DIST_SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
+	$(io_dyn_read_SOURCES) $(io_write_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -143,6 +148,7 @@ MKDIR_P = @MKDIR_P@
 NM = @NM@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OUTPUT_TARGET = @OUTPUT_TARGET@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -157,8 +163,6 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SOFLAGS = @SOFLAGS@
 SOLIBS = @SOLIBS@
-SPECIAL_TEST_DIR = @SPECIAL_TEST_DIR@
-SPECIAL_TEST_TARGET = @SPECIAL_TEST_TARGET@
 STRIP = @STRIP@
 UIO_SIZE_T_TYPE = @UIO_SIZE_T_TYPE@
 VERSION = @VERSION@
@@ -180,7 +184,6 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-check_files = @check_files@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -220,6 +223,7 @@ INCLUDES = -I../../fm -I../../cod -I..
 LDADD = ../libffs.la
 MOSTLYCLEANFILES = dcg/*
 context_test_SOURCES = context_test.c test_funcs.c
+context_test2_SOURCES = context_test2.c test_funcs.c
 fortran_test_SOURCES = fortran_test.c test_funcs.c
 xml_test_SOURCES = xml_test.c test_funcs.c
 compat_test_SOURCES = compat_test.c test_funcs.c
@@ -298,6 +302,9 @@ clean-noinstPROGRAMS:
 context_test$(EXEEXT): $(context_test_OBJECTS) $(context_test_DEPENDENCIES) 
 	@rm -f context_test$(EXEEXT)
 	$(LINK) $(context_test_OBJECTS) $(context_test_LDADD) $(LIBS)
+context_test2$(EXEEXT): $(context_test2_OBJECTS) $(context_test2_DEPENDENCIES) 
+	@rm -f context_test2$(EXEEXT)
+	$(LINK) $(context_test2_OBJECTS) $(context_test2_LDADD) $(LIBS)
 io_dyn_read$(EXEEXT): $(io_dyn_read_OBJECTS) $(io_dyn_read_DEPENDENCIES) 
 	@rm -f io_dyn_read$(EXEEXT)
 	$(LINK) $(io_dyn_read_OBJECTS) $(io_dyn_read_LDADD) $(LIBS)
@@ -474,7 +481,7 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
+	$(MAKE) $(AM_MAKEFLAGS) check-TESTS check-local
 check: check-am
 all-am: Makefile $(PROGRAMS) $(HEADERS) all-local
 installdirs:
@@ -566,48 +573,35 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am all-local check check-TESTS check-am \
-	clean clean-binPROGRAMS clean-generic clean-libtool \
-	clean-noinstPROGRAMS ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-local \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	check-local clean clean-binPROGRAMS clean-generic \
+	clean-libtool clean-noinstPROGRAMS ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-binPROGRAMS install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-exec-local install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binPROGRAMS
 
 all-local:
 install-exec-local:
 
-local_context_test: context_test@EXE_EXT@
-	./context_test@EXE_EXT@ -w /tmp/context.@ARCH@
-	cp /tmp/context.@ARCH@ @SPECIAL_TEST_DIR@/.@ARCH@
-	rm /tmp/context.@ARCH@
-	mv -f @SPECIAL_TEST_DIR@/.@ARCH@ @SPECIAL_TEST_DIR@/context.@ARCH@
-	@chmod ugo+r @SPECIAL_TEST_DIR@/context.@ARCH@
-	for targ in @SPECIAL_TEST_DIR@/context.*; \
-	do ./context_test@EXE_EXT@ -r "$$targ"  || (echo " in $$targ" && exit 0);\
-	done
+write_output: context_test
+	rm -f ../output_dir/context_test_output.@ARCH@.bin
+	./context_test -w ../output_dir/context_test_output.@ARCH@.bin
 
-../output_dir/test_output.@ARCH@.v6b.bin: io_write@EXE_EXT@ io_align_test@EXE_EXT@
-	./io_align_test
-	./io_def_write
-	./io_default_test
-	./io_write
-	rm -f ../output_dir/test_output.@ARCH@.v6b.bin
-	mv test_output ../output_dir/test_output.@ARCH@.v6b.bin
-
-check_target:  io_test@EXE_EXT@ ../output_dir/test_output.@ARCH@.v6b.bin
+check-local:  context_test @OUTPUT_TARGET@
 	@failed=0;\
-	for i in ../output_dir/test*.bin; do \
-	    if ./io_test@EXE_EXT@ $$i; then\
+	for i in ../output_dir/context_test_output*.bin; do \
+	    if ./context_test -r $$i; then\
 	    	echo "PASS: $$i";\
 	    else\
-	    	echo "FAILED: io_test $$i";\
+	    	echo "FAILED: context_test -r $$i";\
 	        failed=`expr $$failed + 1`; \
 	    fi;\
 	done;\
