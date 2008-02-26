@@ -2852,6 +2852,7 @@ FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data, int encode)
 	    tmp_src_spec.size = f->field_list[field].field_size;
 	    tmp_src_spec.offset = f->field_list[field].field_offset;
 	    tmp_src_spec.data_type = integer_type;
+	    tmp_src_spec.byte_swap = f->byte_reversal;
 	    if (!encode) {
 		tmp_src_spec.byte_swap = 0;
 		tmp_src_spec.src_float_format = tmp_src_spec.target_float_format;
@@ -3582,7 +3583,7 @@ extern FMFormat
 expand_format_from_rep(rep)
 format_rep rep;
 {
-    UINT2 format_count;
+    int format_count;
     FMFormat top_format;
     FMFormat *subformats;
     FMStructDescList master_struct_list;
@@ -3592,13 +3593,11 @@ format_rep rep;
 	(((char*)rep ) + sizeof(struct _format_wire_format_0));
     int byte_reversal = ((rep->record_byte_order & 0x1) != OUR_BYTE_ORDER);
     format_count = rep->subformat_count;
-    if (byte_reversal) byte_swap((char*)&format_count, 2);
     top_format = expand_subformat_from_rep(subrep);
     subformats = malloc(sizeof(subformats[0]) * (format_count + 1));
     master_struct_list = malloc(sizeof(master_struct_list[0]) * (format_count+2));
     for (i = 0; i < format_count; i++) {
 	UINT2 last_subrep_size = ntohs(subrep->f.f0.subformat_rep_length);
-	if (byte_reversal) byte_swap((char*) &last_subrep_size, 2);
 	subrep = (struct _subformat_wire_format*)(((char*)subrep) + last_subrep_size);
 	subformats[i] = expand_subformat_from_rep(subrep);
 	master_struct_list[i+1].format_name = subformats[i]->format_name;
