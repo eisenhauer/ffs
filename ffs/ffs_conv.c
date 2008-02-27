@@ -2793,6 +2793,7 @@ int extra_dest_offset;
 		    control_field.size = f->field_list[field].field_size;
 		    control_field.offset = f->field_list[field].field_offset;
 		    control_field.data_type = integer_type;
+		    control_field.byte_swap = f->byte_reversal;
 		    src_drisc_type = drisc_type(&control_field);
 		    src_required_align = TYPE_ALIGN(c, src_drisc_type);
 		    if ((assume_align < src_required_align) || 
