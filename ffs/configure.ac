@@ -73,7 +73,7 @@ LIBS=$oldLibs
 dnl
 dnl checks for header files
 AC_HEADER_STDC
-AC_CHECK_HEADERS(string.h memory.h malloc.h unistd.h)
+AC_CHECK_HEADERS(string.h memory.h malloc.h unistd.h dill.h)
 if test "$enable_code_generation" = yes; then
 AC_DEFINE(DO_DCG,1,[Define if ffs should do dynamic code generation])
 FFS_GEN_O="ffs_gen.lo"
@@ -108,17 +108,12 @@ fi
 AC_SUBST(UIO_SIZE_T_TYPE)
 LIBS="$LIBS -lcercs_env"
 
-AC_SUBST(SPECIAL_TEST_TARGET)
-AC_SUBST(SPECIAL_TEST_DIR)
-foreign_targets="sparc sun4u-5.5 sun4-5.4 linux rs6000 irix5 irix6 irix6-64";
-if test -n "$ARCH"; then
-foreign_targets=`echo $known_targets | sed "s/$ARCH//"`;
+if test -n "$cercs_cv_archive"; then
+ARCH=$cercs_cv_archive
+OUTPUT_TARGET=write_output
 fi
-for targ in $foreign_targets; do
-    check_files="$check_files ${targ}.check";
-done
-AC_SUBST(check_files)
 AC_SUBST(ARCH)
+AC_SUBST(OUTPUT_TARGET)
 AC_DEFINE_UNQUOTED(ARCH,"$ARCH", [Define as a string to identify the machine architecture])
 AC_ARG_WITH(format_server, [  --with-format-server=HOST    Which host will run the format server.],FORMAT_SERVER_HOST=$withval)
 
