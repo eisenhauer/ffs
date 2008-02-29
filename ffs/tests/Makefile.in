@@ -36,7 +36,7 @@ host_triplet = @host@
 TESTS = context_test$(EXEEXT)
 bin_PROGRAMS =
 noinst_PROGRAMS = context_test$(EXEEXT) io_write$(EXEEXT) \
-	io_dyn_read$(EXEEXT) context_test2$(EXEEXT)
+	io_dyn_read$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -59,11 +59,6 @@ am_context_test_OBJECTS = context_test.$(OBJEXT) test_funcs.$(OBJEXT)
 context_test_OBJECTS = $(am_context_test_OBJECTS)
 context_test_LDADD = $(LDADD)
 context_test_DEPENDENCIES = ../libffs.la
-am_context_test2_OBJECTS = context_test2.$(OBJEXT) \
-	test_funcs.$(OBJEXT)
-context_test2_OBJECTS = $(am_context_test2_OBJECTS)
-context_test2_LDADD = $(LDADD)
-context_test2_DEPENDENCIES = ../libffs.la
 am_io_dyn_read_OBJECTS = io_dyn_read.$(OBJEXT) test_funcs.$(OBJEXT)
 io_dyn_read_OBJECTS = $(am_io_dyn_read_OBJECTS)
 io_dyn_read_LDADD = $(LDADD)
@@ -84,10 +79,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(io_dyn_read_SOURCES) $(io_write_SOURCES)
-DIST_SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(io_dyn_read_SOURCES) $(io_write_SOURCES)
+SOURCES = $(context_test_SOURCES) $(io_dyn_read_SOURCES) \
+	$(io_write_SOURCES)
+DIST_SOURCES = $(context_test_SOURCES) $(io_dyn_read_SOURCES) \
+	$(io_write_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -302,9 +297,6 @@ clean-noinstPROGRAMS:
 context_test$(EXEEXT): $(context_test_OBJECTS) $(context_test_DEPENDENCIES) 
 	@rm -f context_test$(EXEEXT)
 	$(LINK) $(context_test_OBJECTS) $(context_test_LDADD) $(LIBS)
-context_test2$(EXEEXT): $(context_test2_OBJECTS) $(context_test2_DEPENDENCIES) 
-	@rm -f context_test2$(EXEEXT)
-	$(LINK) $(context_test2_OBJECTS) $(context_test2_LDADD) $(LIBS)
 io_dyn_read$(EXEEXT): $(io_dyn_read_OBJECTS) $(io_dyn_read_DEPENDENCIES) 
 	@rm -f io_dyn_read$(EXEEXT)
 	$(LINK) $(io_dyn_read_OBJECTS) $(io_dyn_read_LDADD) $(LIBS)

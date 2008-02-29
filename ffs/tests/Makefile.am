@@ -12,7 +12,7 @@ TESTS = context_test
 
 bin_PROGRAMS = 
 #noinst_PROGRAMS = io_read io_read2 io_dyn_read io_test io_write context_test fortran_test xml_test compat_test io_default_test io_def_write 
-noinst_PROGRAMS = context_test io_write io_dyn_read context_test2
+noinst_PROGRAMS = context_test io_write io_dyn_read
 
 MOSTLYCLEANFILES = dcg/*
 all-local:
