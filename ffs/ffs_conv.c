@@ -167,7 +167,8 @@ IOConversionPtr conv;
 {
     int i;
     for (i = 0; i < conv->conv_count; i++) {
-	if (conv->conversions[i].subconversion) {
+	if ((conv->conversions[i].subconversion) && 
+	    (conv->conversions[i].subconversion != conv)) {
 	    FFSfree_conversion(conv->conversions[i].subconversion);
 	}
 	if (conv->conversions[i].default_value) {
@@ -263,7 +264,8 @@ int converted_strings;
     int input_index, conv_index = 0, i = 0;
     FMfloat_format src_float_format = src_ioformat->body->float_format;
     IOConversionPtr conv_ptr =
-	(IOConversionPtr) malloc(sizeof(IOConversionStruct));
+	(IOConversionPtr) malloc(sizeof(IOConversionStruct) +
+				 target_field_count * sizeof(IOconvFieldStruct));
     int column_row_swap_necessary = (target_column_major != src_ioformat->body->column_major_arrays);
     
     if (target_fp_format == -1) target_fp_format = ffs_my_float_format;
@@ -501,9 +503,6 @@ int converted_strings;
 	if (conv == none_required) {
 	    conv = direct_to_mem;
 	}
-	conv_ptr =
-	    (IOConversionPtr) realloc(conv_ptr, sizeof(IOConversionStruct) +
-				 conv_index * sizeof(IOconvFieldStruct));
 	conv_ptr->conversion_type = conv;
 	memset(&conv_ptr->conversions[conv_index].src_field, 0, 
 	       sizeof(conv_ptr->conversions[conv_index].src_field));
@@ -524,10 +523,8 @@ int converted_strings;
 	}
 	in_data_type = array_str_to_data_type(input_field.field_type, 
 					      &in_elements);
-	if (in_elements != 1) {
-	    conv_ptr->conversions[conv_index].iovar =
-		&input_var_list[input_index];
-	}
+	conv_ptr->conversions[conv_index].iovar =
+	    &input_var_list[input_index];
 	if (in_data_type == unknown_type) {
 	    FFSTypeHandle format = src_ioformat->field_subformats[input_index];
 	    if ((format != NULL) && (format->conversion != NULL)) {
@@ -543,7 +540,9 @@ int converted_strings;
 				      string_offset_size,
 				      converted_strings);
 		conv_ptr->conversions[conv_index].subconversion = subconv;
-	    } else if (format != src_ioformat) {
+	    } else if (format == src_ioformat) {
+		conv_ptr->conversions[conv_index].subconversion = conv_ptr;
+	    } else {
 		
 		fprintf(stderr, "Unknown field type for field %s ->\"%s\", format %lx\n",
 			input_field.field_name,
@@ -756,9 +755,8 @@ int required_alignment;
 	tmp_src_field.offset = 0;
 	tmp_src_field.size = sizeof(MAX_UNSIGNED_TYPE);
 	tmp_src_field.byte_swap = FALSE;
-	ffs_internal_convert_field(iofile, &tmp_src_field, &tmp_int,
-				    unsigned_type, dest_size,
-				    dest, 0, *string_base_p, 0, FALSE);
+	ffs_internal_convert_field(&tmp_src_field, &tmp_int,
+				    unsigned_type, dest_size, dest);
     } else {
 	/* not a native field struct.  Keep the pointer as an offset. */
 	struct _FMgetFieldStruct tmp_src_field;  /* OK */
@@ -786,25 +784,18 @@ int required_alignment;
 	tmp_src_field.offset = 0;
 	tmp_src_field.size = sizeof(MAX_INTEGER_TYPE);
 	tmp_src_field.byte_swap = FALSE;
-	ffs_internal_convert_field(iofile, &tmp_src_field, &tmp_int,
-				    integer_type, dest_size,
-				    dest, 0, *string_base_p, 0, FALSE);
+	ffs_internal_convert_field(&tmp_src_field, &tmp_int,
+				   integer_type, dest_size, dest);
     }
 }
 
 extern void
-ffs_internal_convert_field(iofile, src_spec, src, dest_type, dest_size, dest,
-	  string_offset_size, string_base, size_delta, converted_strings)
-FFSContext iofile;
+ffs_internal_convert_field(src_spec, src, dest_type, dest_size, dest)
 FMFieldPtr src_spec;
 void *src;
 FMdata_type dest_type;
 int dest_size;
 void *dest;
-int string_offset_size;
-char *string_base;
-int size_delta;
-int converted_strings;
 {
     int float_OK = 1;
     if (dest_type == float_type) {
@@ -861,8 +852,6 @@ int converted_strings;
 		long long lltmp = tmp;
 		memcpy(dest, &lltmp, sizeof(long long));
 #endif
-	    } else {
-/*		iofile->result = "size problems in conversion";*/
 	    }
 	    break;
 	}
@@ -901,8 +890,6 @@ int converted_strings;
 		unsigned long long *dest_field = (unsigned long long *) dest;
 		*dest_field = tmp;
 #endif
-	    } else {
-/*		iofile->result = "size problems in conversion";*/
 	    }
 	    break;
 	}
@@ -920,19 +907,7 @@ int converted_strings;
 		long double *dest_field = (long double *) dest;
 		*dest_field = tmp;
 #endif
-	    } else {
-/*		iofile->result = "size problems in conversion";*/
 	    }
-	    break;
-	}
-    case string_type:
-	{
-	    void *junk;
-	    int junk_int;
-	    /* use Junk values because we don't care about address output */
-	    convert_addr_field(iofile, src_spec, src, dest_size, dest,
-			       string_offset_size, &string_base, size_delta,
-			       converted_strings, &junk_int, &junk, 1);
 	    break;
 	}
     default:
@@ -962,9 +937,22 @@ do_var_part_conv(IOConversionPtr conv, IOconvFieldStruct * conv_field,
 		       void *src_string_base, void **final_string_base, void *orig_src);
 
 static int debug_code_generation = -1;
+typedef struct conv_status {
+    void *src;
+    void *dest;
+    void *src_pointer_base;
+    void *dest_pointer_base;
+    int   src_offset_adjust;
+    int   dest_offset_adjust;
+    int   cur_offset;
+    int *control_value;
+    int target_pointer_size;
+    int src_pointer_size;
+} *ConvStatus;
+
 static void
-internal_convert_record(IOConversionPtr conv, void *src, void *dest, 
-			      void **final_string_base_p, void *src_string_base);
+internal_convert_record(IOConversionPtr conv, ConvStatus conv_status, 
+			void *src, void *dest);
 
 static void
 print_IOConversion(conv_ptr, indent)
@@ -1073,9 +1061,13 @@ int indent;
 	if (conv_ptr->conversions[i].subconversion) {
 	    for (ind = 0; ind < indent; ind++)
 		printf("    ");
-	    printf("    Subconversion as follows:\n");
-	    print_IOConversion(conv_ptr->conversions[i].subconversion,
-			       indent + 1);
+	    if (conv_ptr->conversions[i].subconversion == conv_ptr) {
+		printf("    Subconversion is recursive\n");
+	    } else {
+		printf("    Subconversion as follows:\n");
+		print_IOConversion(conv_ptr->conversions[i].subconversion,
+				   indent + 1);
+	    }
 	}
     }
 }
@@ -1171,8 +1163,12 @@ int indent;
 	if (conv_ptr->conversions[i].subconversion) {
 	    for (ind = 0; ind < indent; ind++)
 		printf("    ");
-	    print_IOConversion_as_XML(conv_ptr->conversions[i].subconversion,
-				      indent + 1);
+	    if (conv_ptr->conversions[i].subconversion == conv_ptr) {
+		printf("    Subconversion is recursive\n");
+	    } else {
+		print_IOConversion_as_XML(conv_ptr->conversions[i].subconversion,
+					  indent + 1);
+	    }
 	}
     }
     printf("</IOConversion>\n");
@@ -1248,7 +1244,17 @@ void *src_string_base;
 	conv->conv_func(src, dest, final_string_base, src_string_base);
 	return;
     } else {
-	internal_convert_record(conv, src, dest, &final_string_base, src_string_base);
+	struct conv_status cs;
+
+	cs.src_pointer_base = src_string_base;
+	cs.dest_pointer_base = final_string_base;
+	cs.src_offset_adjust = -conv->string_offset_size;
+	cs.dest_offset_adjust = -conv->string_offset_size;
+	cs.cur_offset = 0;
+	cs.control_value = NULL;
+	cs.target_pointer_size = conv->target_pointer_size;
+	cs.src_pointer_size = conv->ioformat->body->pointer_size;
+	internal_convert_record(conv, &cs, src, dest);
     }
 }
 
@@ -1302,12 +1308,9 @@ transpose_array(int *dimens, char *src, char *dest, int source_column_major,
 		    /* simple (native) field or variant array */
 		    if (dest_type != string_type) {
 /*GSE var char blocks here*/
-			ffs_internal_convert_field(conv->context, &tmp_spec, src,
-						    dest_type, dest_size,
-				    dest_field, conv->string_offset_size,
-						    *final_string_base_p,
-						    conv->base_size_delta,
-						conv->converted_strings);
+			ffs_internal_convert_field(&tmp_spec, src,
+						   dest_type, dest_size,
+						   dest_field);
 		    } else {
 			printf("Bad type in transpose\n");
 			free(index);
@@ -1346,35 +1349,212 @@ transpose_array(int *dimens, char *src, char *dest, int source_column_major,
     }
 }
 
+static long
+get_offset_for_addr(char *src_field_addr, ConvStatus conv_status, 
+		    IOconvFieldStruct *conv)
+{
+    struct _FMgetFieldStruct tmp_src_field;  /* OK */
+    MAX_INTEGER_TYPE tmp_int;
+    tmp_src_field = conv->src_field;
+    tmp_src_field.size = conv_status->src_pointer_size;
+    tmp_src_field.data_type = integer_type;
+    tmp_src_field.offset = 0;
+
+    tmp_int = get_big_int(&tmp_src_field, src_field_addr);
+    return tmp_int;
+}
+    
 static void
-internal_convert_record(conv, src, dest, final_string_base_p, src_string_base)
+convert_address_field(char *src_field_addr, char **output_source_ptr,
+		      char *dest_field_addr, char **output_dest_ptr,
+		      ConvStatus conv_status, IOconvFieldStruct *conv,
+		      int required_alignment)
+{
+    int dest_size = conv_status->target_pointer_size;
+    char *output_dest = NULL;
+    char *output_source = NULL;
+    int offset = get_offset_for_addr(src_field_addr, conv_status,
+				     conv);
+    if (offset != 0) {
+	int align_tmp = 0;
+	output_source = conv_status->src_pointer_base + offset + 
+	    conv_status->src_offset_adjust;
+	/* handle possibly different string base */
+	output_dest = conv_status->dest_pointer_base + offset + 
+	    conv_status->dest_offset_adjust;
+	
+	if ((align_tmp = (((unsigned long)output_dest) % required_alignment)) != 0) {
+	    output_dest += (required_alignment - align_tmp);
+	    conv_status->dest_offset_adjust += (required_alignment - align_tmp);
+	}
+    }
+
+    *output_source_ptr = output_dest;
+    *output_dest_ptr = output_source;
+    if (dest_size == sizeof(char *)) {
+	(*(char**)dest_field_addr) = output_dest;   /* set field in dest */
+    }
+}
+
+
+static void
+new_convert_address_field(int offset, char **output_source_ptr,
+		      char *dest_field_addr, char **output_dest_ptr,
+		      ConvStatus conv_status, int required_alignment)
+{
+    int dest_size = conv_status->target_pointer_size;
+    char *output_dest = NULL;
+    char *output_source = NULL;
+
+    if (offset != 0) {
+	int align_tmp = 0;
+	output_source = conv_status->src_pointer_base + offset + 
+	    conv_status->src_offset_adjust;
+	/* handle possibly different string base */
+	output_dest = conv_status->dest_pointer_base + offset + 
+	    conv_status->dest_offset_adjust;
+	
+	if ((align_tmp = (((unsigned long)output_dest) % required_alignment)) != 0) {
+	    output_dest += (required_alignment - align_tmp);
+	    conv_status->dest_offset_adjust += (required_alignment - align_tmp);
+	}
+    }
+
+    *output_source_ptr = output_source;
+    *output_dest_ptr = output_dest;
+    if (dest_size == sizeof(char *)) {
+	(*(char**)dest_field_addr) = output_dest;   /* set field in dest */
+    }
+}
+
+static void
+new_convert_field(char *src_field_addr, char *dest_field_addr, 
+		  ConvStatus conv_status, 
+		  IOconvFieldStruct *conv, FMTypeDesc *type_desc)
+{
+    switch(type_desc->type) {
+    case FMType_pointer: {
+	char *new_src, *new_dest;
+	int offset = get_offset_for_addr(src_field_addr, conv_status, 
+					 conv);
+	new_convert_address_field(offset, &new_src, dest_field_addr, 
+			      &new_dest, conv_status, 8);
+	if (new_dest == NULL) break;
+	if ((offset != 0) && type_desc->pointer_recursive) {
+	    /* GSE */
+	    if (offset <= conv_status->cur_offset) {
+		break;
+	    }
+	}
+	conv_status->cur_offset = offset;
+	new_convert_field(new_src, new_dest, conv_status, conv,
+			  type_desc->next);
+	break;
+    }
+    case FMType_string:{
+	char *new_src, *new_dest;
+	convert_address_field(src_field_addr, &new_src, dest_field_addr, 
+			      &new_dest, conv_status, conv, 1);
+	if (new_src != new_dest) strcpy(new_src, new_dest);
+	break;
+    }
+    case FMType_subformat: {
+	IOConversionPtr subtype_conv = conv->subconversion;
+	FMFormat f = subtype_conv->ioformat->body;
+	struct conv_status cs;
+	
+	cs.src_pointer_base = conv_status->src_pointer_base;
+	cs.dest_pointer_base = conv_status->dest_pointer_base;
+	cs.src_offset_adjust = conv_status->src_offset_adjust;
+	cs.dest_offset_adjust = conv_status->dest_offset_adjust;
+	cs.cur_offset = conv_status->cur_offset;
+	cs.control_value = NULL;
+	cs.target_pointer_size = subtype_conv->target_pointer_size;
+	cs.src_pointer_size = subtype_conv->ioformat->body->pointer_size;
+
+	internal_convert_record(subtype_conv, &cs, src_field_addr, 
+				dest_field_addr);
+	conv_status->dest_offset_adjust = cs.dest_offset_adjust;
+	conv_status->cur_offset = cs.cur_offset;
+	break;
+    }
+    case FMType_simple: {
+	struct _FMgetFieldStruct tmp_spec = conv->src_field;
+	tmp_spec.offset = 0;
+	ffs_internal_convert_field(&tmp_spec, src_field_addr,
+				   tmp_spec.data_type, conv->dest_size,
+				   dest_field_addr);
+	break;
+    }
+    case FMType_array: {
+	int elements = 1, i;
+	char *new_src = src_field_addr;
+	char *new_dest = dest_field_addr;
+	FMTypeDesc *next = type_desc;
+	while (next->type == FMType_array) {
+	    if (next->static_size != 0) {
+		elements *= next->static_size;
+	    } else {
+		elements *= conv_status->control_value[next->control_field_index];
+		
+	    }
+	    next = next->next;
+	}
+	for (i=0; i< elements ; i++) {
+	    new_convert_field(new_src, new_dest, conv_status, conv,
+			      next);
+	    new_src += conv->src_field.size;
+	    new_dest += conv->dest_size;
+	}
+	
+    }
+	break;
+    }
+}
+
+static void
+internal_convert_record(conv, conv_status, src, dest)
 IOConversionPtr conv;
+ConvStatus conv_status;
 void *src;
 void *dest;
-void **final_string_base_p;
-void *src_string_base;
 {
     int i;
-    long *control_value = NULL;
-
+    int *control_value = NULL;
     for (i = 0; i < conv->conv_count; i++) {
-	if (conv->conversions[i].iovar != NULL) {
-	    if (get_static_array_element_count(conv->conversions[i].iovar) == -1) {
+	FMTypeDesc *next = &conv->conversions[i].iovar->type_desc;
+	while (next != NULL) {
+	    if ((next->type == FMType_array) && 
+		(next->static_size == 0)) {
+		long elements;
+		FMFormat f = conv->ioformat->body;
+		int field = next->control_field_index;
+		struct _FMgetFieldStruct tmp_src_spec;
+		memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
+		tmp_src_spec.size = f->field_list[field].field_size;
+		tmp_src_spec.offset = f->field_list[field].field_offset;
+		tmp_src_spec.data_type = integer_type;
+		tmp_src_spec.byte_swap = conv->ioformat->body->byte_reversal;
+		elements = get_big_int(&tmp_src_spec, src);
 		if (control_value == NULL) {
 		    int j;
-		    control_value = (long *) malloc(sizeof(long) * conv->conv_count);
-		    for (j = 0; j < conv->conv_count; j++)
+		    control_value = (int *) malloc(sizeof(int) * f->field_count);
+		    for (j = 0; j < f->field_count; j++)
 			control_value[j] = 0;
+		    conv_status->control_value = control_value;
 		}
-		control_value[i] = 
-		    FMget_array_element_count(conv->ioformat->body, conv->conversions[i].iovar, src, 1);
+		control_value[next->control_field_index] = elements;
 	    }
+	    next = next->next;
 	}
     }
     for (i = 0; i < conv->conv_count; i++) {
 	FMFieldPtr src_spec = &conv->conversions[i].src_field;
+	FMTypeDesc *type_desc = &conv->conversions[i].iovar->type_desc;
 	int elements = get_static_array_element_count(conv->conversions[i].iovar);
 	int byte_swap = conv->conversions[i].src_field.byte_swap;
+	char *src_field_addr = (char*)src + src_spec->offset;
+	char *dest_field_addr = (char*)dest + conv->conversions[i].dest_offset;
 
 	if (conv->conversions[i].src_field.size == 1) byte_swap = 0;
 	if (conv->conversions[i].default_value){
@@ -1385,277 +1565,27 @@ void *src_string_base;
 	} else if (!byte_swap &&
 		   (src_spec->size == conv->conversions[i].dest_size) &&
 		   (conv->conversions[i].subconversion == NULL) &&
-		   (elements != -1) &&
+		   (type_desc->type != FMType_pointer) &&
+		   (type_desc->type != FMType_string) &&
+		   (elements != -1 /* var array */) &&
 		   (conv->conversions[i].rc_swap == no_row_column_swap) &&
 		   ((src_spec->data_type != float_type) || 
 		    (src_spec->src_float_format == src_spec->target_float_format)) &&
 		   ((src_spec->data_type != string_type) || 
-		    (final_string_base_p == NULL) || ((*final_string_base_p) == NULL))) {
+		    ((conv_status->dest_pointer_base) == NULL))) {
 	    /* data movement is all that is required */
-	    void *dest_field = (void *) (conv->conversions[i].dest_offset +
-					 (char *) dest);
-	    if (elements == 1) {
-		memcpy(dest_field, (char *) src + src_spec->offset,
-		       src_spec->size);
-	    } else {
-		memcpy(dest_field, (char *) src + src_spec->offset,
-		       src_spec->size * elements);
-	    }
-	} else if ((conv->conversions[i].rc_swap == no_row_column_swap) ||
-		   (elements == -1) /* var array */ ){
-	    int j;
-	    void *dest_field = (void *) (conv->conversions[i].dest_offset +
-					 (char *) dest);
-	    struct _FMgetFieldStruct tmp_spec;  /* OK */
-	    FMdata_type dest_type = src_spec->data_type;
-	    int dest_size = conv->conversions[i].dest_size;
-	    int iter_count;
-	    tmp_spec = *src_spec;
-
-	    if (elements == -1) {
-		/* really a variant array, adjust address like a string */
-		tmp_spec.data_type = string_type;
-		tmp_spec.size = conv->ioformat->body->pointer_size;
-		dest_type = string_type;
-		dest_size = conv->target_pointer_size;
-		iter_count = 1;
-	    } else {
-		iter_count = elements;
-	    }
-	    tmp_spec.offset = src_spec->offset - tmp_spec.size;
-	    for (j = 0; j < iter_count; j++) {
-		tmp_spec.offset += tmp_spec.size;
-		if (dest_type != unknown_type) {
-		    /* simple (native) field or variant array */
-		    if (dest_type != string_type) {
-/*GSE var char blocks here*/
-			ffs_internal_convert_field(conv->context, &tmp_spec, src,
-						    dest_type, dest_size,
-				    dest_field, conv->string_offset_size,
-						    *final_string_base_p,
-						    conv->base_size_delta,
-						conv->converted_strings);
-		    } else {
-			int src_offset;
-			void *src_base;
-			void *dst_base;
-			/* string or variant array */
-			int req_align;
-			if (elements == -1) {
-			    req_align = min_align_size(conv->conversions[i].dest_size);
-			} else {
-			    req_align = 1;
-			}
-			convert_addr_field(conv->context, &tmp_spec, src,
-					   dest_size, dest_field,
-					   conv->string_offset_size,
-					   final_string_base_p,
-					   conv->base_size_delta,
-					   conv->converted_strings,
-					   &src_offset, &dst_base,
-					   req_align);
-			src_base = (char *) src_string_base + src_offset
-			    - conv->string_offset_size;
-			if ((conv->conversion_type == copy_dynamic_portion) ||
-			    (elements == -1)) {
-			    int control = 0;
-			    if (control_value != NULL)
-				control = control_value[i];
-			    do_var_part_conv(conv, &conv->conversions[i],
-					     src_base, dst_base,
-					     control, src_string_base,
-					     final_string_base_p, src);
-			}
-		    }
-		} else {
-		    IOConversionPtr subconv =
-		    conv->conversions[i].subconversion;
-		    void *subsrc = (void *) ((char *) src + tmp_spec.offset);
-		    internal_convert_record(subconv, subsrc, dest_field,
-				     final_string_base_p, src_string_base);
-		}
-		dest_field = (void *) ((char *) dest_field +
-				       conv->conversions[i].dest_size);
-	    }
-	} else {   
-	    /* 
-	     * the only remaining possibility is that this is a
-	     * multi-dimensional array that requires a transpose as well as
-	     * some possible conversion
-	     */
-	    int source_column_major = 
-		(conv->conversions[i].rc_swap == swap_source_column_major);
-	    int dimen_count = conv->conversions[i].iovar->dimen_count;
-	    int *dimens = malloc(sizeof(int) * (dimen_count + 1));
-	    int j;
-	    FMdata_type dest_type = src_spec->data_type;
-	    int dest_size = conv->conversions[i].dest_size;
-	    void *dest_base = (void *) (conv->conversions[i].dest_offset +
-					 (char *) dest);
-
-	    for (j=0; j < dimen_count; j++) {
-		int stat = conv->conversions[i].iovar->dimens[j].static_size;
-		if (stat != -1) {
-		    dimens[j] = stat;
-		} else {
-		    FMFormat f = conv->ioformat->body;
-		    int field = conv->conversions[i].iovar->dimens[j].control_field_index;
-		    struct _FMgetFieldStruct tmp_src_spec;
-		    memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
-		    tmp_src_spec.size = f->field_list[field].field_size;
-		    tmp_src_spec.offset = f->field_list[field].field_offset;
-		    tmp_src_spec.data_type = integer_type;
-		    dimens[j] = get_big_int(&tmp_src_spec, src);
-		}
-	    }
-	    dimens[dimen_count] = 0;
-	    transpose_array(dimens, (char *) src + src_spec->offset, dest_base,
-			    source_column_major, dest_type, dest_size, conv, 
-			    dest_base, src_spec, final_string_base_p);
-	    free(dimens);
+	    memcpy(dest_field_addr, src_field_addr,
+		   src_spec->size * elements);
+	    continue;
 	}
-
+	new_convert_field(src_field_addr, dest_field_addr, conv_status, 
+			  &conv->conversions[i], type_desc);
     }
     if (control_value != NULL) {
 	free(control_value);
     }
 }
 
-static void
-do_var_part_conv(conv, conv_field, src_area, final_area,
-		 control_value, src_string_base, final_string_base_p, orig_src)
-IOConversionPtr conv;
-IOconvFieldStruct *conv_field;
-void *src_area;
-void *final_area;
-int control_value;
-void *src_string_base;
-void **final_string_base_p;
-void *orig_src;
-{
-    int copy_length = 0;
-    FMFieldPtr src_spec = &(conv_field->src_field);
-    int elements = get_static_array_element_count(conv_field->iovar);
-
-    /* handle copying or conversion */
-    if (elements != -1) {
-	/* simple string */
-	if ((src_area != NULL) && (final_area != NULL)) {
-	    int copy_length = strlen(src_area) + 1;
-	    memcpy(final_area, src_area, copy_length);
-	}
-    } else {
-	/* variant array */
-	int byte_swap = conv_field->src_field.byte_swap;
-	if (src_spec->size == 1) byte_swap = 0;
-	if (!byte_swap &&
-	    (src_spec->src_float_format == src_spec->target_float_format) &&
-	    (src_spec->size == conv_field->dest_size) &&
-	    (conv_field->subconversion == NULL) &&
-	    (conv_field->rc_swap == no_row_column_swap) &&
-	    (src_spec->data_type != string_type)) {
-
-	    /* data movement is all that is required */
-	    if (conv->conversion_type == copy_dynamic_portion) {
-		copy_length = conv_field->dest_size *
-		    control_value;
-		memcpy(final_area, src_area, copy_length);
-	    } else {
-		/* not even that is necessary */
-	    }
-	} else if (conv_field->rc_swap == no_row_column_swap) {
-	    /* must do conversions */
-	    int length = control_value;
-	    int j;
-	    void *dest_field = final_area;
-	    struct _FMgetFieldStruct tmp_spec;  /* OK */
-	    FMdata_type dest_type = src_spec->data_type;
-	    int dest_size = conv_field->dest_size;
-
-	    tmp_spec = *src_spec;
-	    *final_string_base_p = (char *) *final_string_base_p +
-		(length * (dest_size - src_spec->size));
-	    for (j = 0; j < length; j++) {
-		tmp_spec.offset = j * src_spec->size;
-		if (dest_type != unknown_type) {
-		    /* simple (native) field in variant array */
-		    if (src_spec->data_type != string_type) {
-			ffs_internal_convert_field(conv->context, &tmp_spec,
-						    src_area, dest_type, 
-						    dest_size, dest_field,
-						    conv->string_offset_size,
-						    *final_string_base_p,
-						    conv->base_size_delta,
-						    conv->converted_strings);
-		    } else {
-			/* variant string array */
-			void *dest_base;
-			void *src_base;
-			int src_offset;
-			convert_addr_field(conv->context, &tmp_spec, src_area,
-					   dest_size, dest_field,
-					   conv->string_offset_size, 
-					   final_string_base_p, 
-					   conv->base_size_delta,
-					   conv->converted_strings,
-					   &src_offset, &dest_base, 1);
-			src_base = (char *) src_string_base + src_offset
-			    - conv->string_offset_size;
-			if (conv->conversion_type == copy_dynamic_portion) {
-			    int copy_length = strlen(src_base) + 1;
-			    memcpy(dest_base, src_base, copy_length);
-			}
-		    }
-		        
-		} else {
-		    IOConversionPtr subconv =
-		    conv_field->subconversion;
-		    void *subsrc = (char *) src_area + j * src_spec->size;
-		    internal_convert_record(subconv, subsrc, dest_field,
-					    final_string_base_p,
-					    src_string_base);
-		}
-		dest_field = (void *) ((char *) dest_field +
-				       conv_field->dest_size);
-	    }
-	} else {
-	    /* 
-	     * the only remaining possibility is that this is a
-	     * multi-dimensional array that requires a transpose as well as
-	     * some possible conversion
-	     */
-	    int source_column_major = 
-		(conv_field->rc_swap == swap_source_column_major);
-	    int dimen_count = conv_field->iovar->dimen_count;
-	    int *dimens = malloc(sizeof(int) * (dimen_count + 1));
-	    int j;
-	    FMdata_type dest_type = src_spec->data_type;
-	    int dest_size = conv_field->dest_size;
-	    for (j=0; j < dimen_count; j++) {
-		int stat = conv_field->iovar->dimens[j].static_size;
-		if (stat != -1) {
-		    dimens[j] = stat;
-		} else {
-		    FMFormat f = conv->ioformat->body;
-		    int field =conv_field->iovar->dimens[j].control_field_index;
-		    struct _FMgetFieldStruct tmp_src_spec;
-		    memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
-		    tmp_src_spec.size = f->field_list[field].field_size;
-		    tmp_src_spec.offset = f->field_list[field].field_offset;
-		    tmp_src_spec.data_type = integer_type;
-		    dimens[j] = get_big_int(&tmp_src_spec, orig_src);
-		}
-	    }
-	    dimens[dimen_count] = 0;
-/*	    printf("Would do transpose 2, src_area = %lx, dest_base = %lx\n",
-	    src_area, final_area);*/
-	    transpose_array(dimens, (char *) src_area, final_area,
-			    source_column_major, dest_type, dest_size, conv, 
-			    final_area, src_spec, final_string_base_p);
-	    free(dimens);
-	}
-    }
-}
 
 static MAX_INTEGER_TYPE
 get_big_int(iofield, data)

@@ -177,14 +177,9 @@ extern int min_align_type(FMdata_type typ, int size);
 extern void init_float_formats();
 extern conv_routine generate_conversion(IOConversionPtr conv, 
 					      int base_alignment);
-extern void ffs_internal_convert_field(FFSContext iofile, 
-					      FMFieldPtr src_spec, void *src,
-					      FMdata_type dest_type, 
-					      int dest_size, void *dest, 
-					      int string_offset_size,
-					      char *string_base, 
-					      int size_delta,
-					      int converted_strings);
+extern void ffs_internal_convert_field(FMFieldPtr src_spec, void *src,
+				       FMdata_type dest_type, 
+				       int dest_size, void *dest);
 extern int field_is_flat(FMFormat f, FMTypeDesc *t);
 
 extern void 
