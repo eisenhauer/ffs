@@ -670,6 +670,7 @@ new_FMTypeDesc()
 {
     FMTypeDesc *tmp = malloc(sizeof(*tmp));
     memset(tmp, 0, sizeof(*tmp));
+    return tmp;
 }
     
 /*
