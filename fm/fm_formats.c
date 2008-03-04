@@ -665,6 +665,13 @@ is_var_array_field(FMFieldList field_list, int field)
     return ret;
 }
 
+static FMTypeDesc *
+new_FMTypeDesc()
+{
+    FMTypeDesc *tmp = malloc(sizeof(*tmp));
+    memset(tmp, 0, sizeof(*tmp));
+}
+    
 /*
 	integer			an integer
 	*integer		a pointer to an integer
@@ -700,7 +707,7 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	return root;
     } else {
 	int dimen_count = 0;
-	FMTypeDesc *root = malloc(sizeof(*root));
+	FMTypeDesc *root = new_FMTypeDesc();
 	FMTypeDesc *simple = root;
 	int done = 0;
 	int var_array = 0;
@@ -712,7 +719,7 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	    typ++;
 	}
 	while (*typ == '*') {
-	    FMTypeDesc *tmp = malloc(sizeof(*tmp));
+	    FMTypeDesc *tmp = new_FMTypeDesc();
 	    tmp->type = FMType_pointer;
 	    tmp->field_index = field;
 	    tmp->next = root;
@@ -742,7 +749,7 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 		done++;
 		continue;
 	    }
-	    tmp = malloc(sizeof(*tmp));
+	    tmp = new_FMTypeDesc();
 	    tmp->type = FMType_array;
 	    tmp->field_index = field;
 	    tmp->static_size = static_size;
@@ -756,7 +763,7 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	    dimen_count++;
 	}
 	if (var_array) {
-	    FMTypeDesc *tmp = malloc(sizeof(*tmp));
+	    FMTypeDesc *tmp = new_FMTypeDesc();
 	    tmp->type = FMType_pointer;
 	    tmp->next = root;
 	    root = tmp;
@@ -774,7 +781,7 @@ gen_var_dimens(FMFormat ioformat, int field)
     int dimen_count = 0;
     int done = 0;
     FMDimen *dimens = NULL;
-    FMTypeDesc *tmp;
+    FMTypeDesc *tmp, *last;
     if ((!strchr(typ, '*')) && (!strchr(typ, '['))) {
 	new_var_list[field].type_desc.next = NULL;
 	new_var_list[field].type_desc.type = FMType_simple;
@@ -785,7 +792,9 @@ gen_var_dimens(FMFormat ioformat, int field)
 	free(desc);
     }
     tmp = &new_var_list[field].type_desc;
+    last = NULL;
     while(tmp->next != NULL) {
+	last = tmp;
 	tmp = tmp->next;
 	if (tmp->type == FMType_pointer) {
 	    ioformat->variant = 1;
@@ -796,6 +805,9 @@ gen_var_dimens(FMFormat ioformat, int field)
     } else if (ioformat->field_subformats[field] != NULL) {
 	tmp->type = FMType_subformat;
 	tmp->field_index = field;
+	if (ioformat->field_subformats[field]->recursive) {
+	    if (last) last->pointer_recursive++;
+	}
     }
     while (!done) {
 	int control_val;

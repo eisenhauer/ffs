@@ -78,6 +78,7 @@ typedef struct FMTypeDesc {
     struct FMTypeDesc *next;
     FMTypeEnum type;
     FMdata_type data_type;
+    int pointer_recursive;
     int field_index;
     int static_size;
     int control_field_index;
