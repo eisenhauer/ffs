@@ -527,7 +527,6 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	int element_size;
 	int var_array = 0;
 	FMTypeDesc *next = t;
-	int array_data_offset = data_offset;
 	while (next->type == FMType_array) {
 	    if (next->static_size == 0) {
 		struct _FMgetFieldStruct src_spec;
