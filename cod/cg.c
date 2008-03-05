@@ -1797,7 +1797,7 @@ cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_siz
 	    int memset_size = (new_size - old_size) * struct_size;
 	    void *cur_base = *(char **)base_addr;
 	    void *new_base = realloc(cur_base, malloc_size);
-	    memset(new_base + (old_size *struct_size), 0,  memset_size);
+	    memset((char*)new_base + (old_size *struct_size), 0,  memset_size);
 	    *(void**)base_addr = new_base;
 	}
     }	

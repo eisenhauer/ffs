@@ -1377,10 +1377,10 @@ convert_address_field(char *src_field_addr, char **output_source_ptr,
 				     conv);
     if (offset != 0) {
 	int align_tmp = 0;
-	output_source = conv_status->src_pointer_base + offset + 
-	    conv_status->src_offset_adjust;
+	output_source = (char*)conv_status->src_pointer_base + offset + 
+	  conv_status->src_offset_adjust;
 	/* handle possibly different string base */
-	output_dest = conv_status->dest_pointer_base + offset + 
+	output_dest = (char*)conv_status->dest_pointer_base + offset + 
 	    conv_status->dest_offset_adjust;
 	
 	if ((align_tmp = (((unsigned long)output_dest) % required_alignment)) != 0) {
@@ -1408,10 +1408,10 @@ new_convert_address_field(int offset, char **output_source_ptr,
 
     if (offset != 0) {
 	int align_tmp = 0;
-	output_source = conv_status->src_pointer_base + offset + 
+	output_source = (char*)conv_status->src_pointer_base + offset + 
 	    conv_status->src_offset_adjust;
 	/* handle possibly different string base */
-	output_dest = conv_status->dest_pointer_base + offset + 
+	output_dest = (char*)conv_status->dest_pointer_base + offset + 
 	    conv_status->dest_offset_adjust;
 	
 	if ((align_tmp = (((unsigned long)output_dest) % required_alignment)) != 0) {
