@@ -685,110 +685,6 @@ FMStructDescList struct_list;
     }
 }
 
-
-static void
-convert_addr_field(iofile, src_spec, src, dest_size, dest, string_offset_size,
-		   string_base_p, size_delta, converted_strings, src_offset_p,
-		   dest_p, required_alignment)
-FFSContext iofile;
-FMFieldPtr src_spec;
-void *src;
-int dest_size;
-void *dest;
-int string_offset_size;
-char **string_base_p;
-int size_delta;
-int converted_strings;
-int *src_offset_p;
-void **dest_p;
-int required_alignment;
-{
-    int align_tmp;
-    if ((dest_size == sizeof(char *)) && (*string_base_p != NULL)) {
-	struct _FMgetFieldStruct tmp_src_field;  /* OK */
-	MAX_INTEGER_TYPE tmp_int;
-	char **dest_field = (char **) dest;
-	tmp_src_field = *src_spec;
-
-	tmp_src_field.data_type = integer_type;
-
-	tmp_int = get_big_int(&tmp_src_field, src);
-
-	*src_offset_p = tmp_int;
-	if (tmp_int != 0) {
-	    /* handle possibly different string base */
-	    tmp_int -= (long) string_offset_size;
-	    *dest_field = *string_base_p + tmp_int;
-	    if ((align_tmp = (((unsigned long)*dest_field) % required_alignment)) != 0) {
-		*dest_field += (required_alignment - align_tmp);
-		*string_base_p  += (required_alignment - align_tmp);
-	    }
-	} else {
-	    *dest_field = NULL;
-	}
-	*dest_p = *dest_field;
-    } else if ((dest_size > sizeof(char *)) && (*string_base_p != NULL)) {
-	/* native field is bigger than char*, store it */
-	struct _FMgetFieldStruct tmp_src_field;  /* OK */
-	MAX_UNSIGNED_TYPE tmp_int;
-	tmp_src_field = *src_spec;
-
-	tmp_src_field.data_type = integer_type;
-
-	tmp_int = get_big_unsigned(&tmp_src_field, src);
-
-	*src_offset_p = tmp_int;
-
-	if (tmp_int != 0) {
-	    /* handle possibly different string base */
-	    tmp_int -= (long) string_offset_size;
-	    *dest_p = tmp_int + *string_base_p;
-	    tmp_int = tmp_int + (MAX_UNSIGNED_TYPE) (unsigned long) *string_base_p;
-	    if ((align_tmp = (((unsigned long)*dest_p) % required_alignment)) != 0) {
-		*dest_p = (char*)*dest_p + (required_alignment - align_tmp);
-		tmp_int += (required_alignment - align_tmp);
-		*string_base_p  += (required_alignment - align_tmp);
-	    }
-	} else {
-	    *dest_p = NULL;
-	}
-	tmp_src_field.offset = 0;
-	tmp_src_field.size = sizeof(MAX_UNSIGNED_TYPE);
-	tmp_src_field.byte_swap = FALSE;
-	ffs_internal_convert_field(&tmp_src_field, &tmp_int,
-				    unsigned_type, dest_size, dest);
-    } else {
-	/* not a native field struct.  Keep the pointer as an offset. */
-	struct _FMgetFieldStruct tmp_src_field;  /* OK */
-	MAX_INTEGER_TYPE tmp_int;
-	tmp_src_field = *src_spec;
-
-	tmp_src_field.data_type = integer_type;
-	tmp_int = get_big_int(&tmp_src_field, src);
-
-	*src_offset_p = tmp_int;
-	if (tmp_int != 0) {
-	    if (!converted_strings) {
-		/* record size might change, adjust offset */
-		tmp_int += size_delta;
-	    }
-	    *dest_p = tmp_int + *string_base_p;
-	    if ((align_tmp = (((unsigned long)*dest_p) % required_alignment)) != 0) {
-		*dest_p =  (char*)*dest_p + (required_alignment - align_tmp);
-		tmp_int += (required_alignment - align_tmp);
-		*string_base_p  += (required_alignment - align_tmp);
-	    }
-	} else {
-	    *dest_p = NULL;
-	}
-	tmp_src_field.offset = 0;
-	tmp_src_field.size = sizeof(MAX_INTEGER_TYPE);
-	tmp_src_field.byte_swap = FALSE;
-	ffs_internal_convert_field(&tmp_src_field, &tmp_int,
-				   integer_type, dest_size, dest);
-    }
-}
-
 extern void
 ffs_internal_convert_field(src_spec, src, dest_type, dest_size, dest)
 FMFieldPtr src_spec;
@@ -930,11 +826,6 @@ get_static_array_element_count(FMVarInfoList var)
     }
     return count;
 }
-
-static void
-do_var_part_conv(IOConversionPtr conv, IOconvFieldStruct * conv_field,
-		     void *src_area, void *final_area, int control_value,
-		       void *src_string_base, void **final_string_base, void *orig_src);
 
 static int debug_code_generation = -1;
 typedef struct conv_status {
@@ -1460,7 +1351,6 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
     }
     case FMType_subformat: {
 	IOConversionPtr subtype_conv = conv->subconversion;
-	FMFormat f = subtype_conv->ioformat->body;
 	struct conv_status cs;
 	
 	cs.src_pointer_base = conv_status->src_pointer_base;

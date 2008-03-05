@@ -80,6 +80,7 @@ local_size(int field_index, FMFormat f, FMTypeDesc *type,
 	return given_size;
     }
     }
+    return 0;
 }
 
 static int
