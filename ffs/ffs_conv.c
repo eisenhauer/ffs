@@ -843,7 +843,7 @@ typedef struct conv_status {
 
 static void
 internal_convert_record(IOConversionPtr conv, ConvStatus conv_status, 
-			void *src, void *dest);
+			void *src, void *dest, int data_already_copied);
 
 static void
 print_IOConversion(conv_ptr, indent)
@@ -1145,7 +1145,7 @@ void *src_string_base;
 	cs.control_value = NULL;
 	cs.target_pointer_size = conv->target_pointer_size;
 	cs.src_pointer_size = conv->ioformat->body->pointer_size;
-	internal_convert_record(conv, &cs, src, dest);
+	internal_convert_record(conv, &cs, src, dest, 1);
     }
 }
 
@@ -1280,8 +1280,8 @@ convert_address_field(char *src_field_addr, char **output_source_ptr,
 	}
     }
 
-    *output_source_ptr = output_dest;
-    *output_dest_ptr = output_source;
+    *output_source_ptr = output_source;
+    *output_dest_ptr = output_dest;
     if (dest_size == sizeof(char *)) {
 	(*(char**)dest_field_addr) = output_dest;   /* set field in dest */
     }
@@ -1318,10 +1318,48 @@ new_convert_address_field(int offset, char **output_source_ptr,
     }
 }
 
+static int
+decode_size_delta(ConvStatus conv_status, 
+		  IOconvFieldStruct *conv, FMTypeDesc *type_desc)
+{
+    switch(type_desc->type) {
+    case FMType_string:
+    case FMType_pointer:
+	return (conv_status->target_pointer_size - conv_status->src_pointer_size);
+    case FMType_subformat:
+	return conv->subconversion->base_size_delta;
+    case FMType_simple:
+	return(conv->dest_size - conv->src_field.size);
+    default:
+    case FMType_array:
+	assert(0);
+    }
+}
+
+static int
+item_size(ConvStatus conv_status, 
+	   IOconvFieldStruct *conv, FMTypeDesc *type_desc)
+{
+    switch(type_desc->type) {
+    case FMType_string:
+    case FMType_pointer:
+	return conv_status->src_pointer_size;
+    case FMType_subformat:
+	return conv->subconversion->ioformat->body->record_length;
+    case FMType_simple:
+	return conv->src_field.size;
+    case FMType_array:
+    default:
+	assert(0);
+    }
+}
+
+
 static void
 new_convert_field(char *src_field_addr, char *dest_field_addr, 
 		  ConvStatus conv_status, 
-		  IOconvFieldStruct *conv, FMTypeDesc *type_desc)
+		  IOconvFieldStruct *conv, FMTypeDesc *type_desc,
+		  int data_already_copied)
 {
     switch(type_desc->type) {
     case FMType_pointer: {
@@ -1338,15 +1376,21 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	    }
 	}
 	conv_status->cur_offset = offset;
+	/* at this point...  We should tweak conv_status->dest_offset_adjust 
+	 * IFF the src and dest sizes of the thing pointed to by this 
+	 * pointer are different.   Also, memcpy src to dest if necessary.
+	 */
 	new_convert_field(new_src, new_dest, conv_status, conv,
-			  type_desc->next);
+			  type_desc->next, 0);
 	break;
     }
     case FMType_string:{
 	char *new_src, *new_dest;
 	convert_address_field(src_field_addr, &new_src, dest_field_addr, 
 			      &new_dest, conv_status, conv, 1);
-	if (new_src != new_dest) strcpy(new_src, new_dest);
+	if (new_src != new_dest) { 
+	    strcpy(new_dest, new_src);
+	}
 	break;
     }
     case FMType_subformat: {
@@ -1363,7 +1407,7 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	cs.src_pointer_size = subtype_conv->ioformat->body->pointer_size;
 
 	internal_convert_record(subtype_conv, &cs, src_field_addr, 
-				dest_field_addr);
+				dest_field_addr, data_already_copied);
 	conv_status->dest_offset_adjust = cs.dest_offset_adjust;
 	conv_status->cur_offset = cs.cur_offset;
 	break;
@@ -1390,9 +1434,20 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	    }
 	    next = next->next;
 	}
+	if (!data_already_copied) {
+	    int base_delta = decode_size_delta(conv_status, conv, next);
+	    int total_delta = base_delta * elements;
+	    conv_status->dest_offset_adjust += total_delta;
+	    if (1) {
+		int base_size = item_size(conv_status, conv, next);
+		memcpy(dest_field_addr, src_field_addr, base_size * elements);
+	    }
+	    data_already_copied = 1;
+	}
+
 	for (i=0; i< elements ; i++) {
 	    new_convert_field(new_src, new_dest, conv_status, conv,
-			      next);
+			      next, data_already_copied);
 	    new_src += conv->src_field.size;
 	    new_dest += conv->dest_size;
 	}
@@ -1403,14 +1458,16 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 }
 
 static void
-internal_convert_record(conv, conv_status, src, dest)
+internal_convert_record(conv, conv_status, src, dest, data_already_copied)
 IOConversionPtr conv;
 ConvStatus conv_status;
 void *src;
 void *dest;
+int data_already_copied;
 {
     int i;
     int *control_value = NULL;
+    if (conv->conversion_type == none_required) return;
     for (i = 0; i < conv->conv_count; i++) {
 	FMTypeDesc *next = &conv->conversions[i].iovar->type_desc;
 	while (next != NULL) {
@@ -1469,7 +1526,7 @@ void *dest;
 	    continue;
 	}
 	new_convert_field(src_field_addr, dest_field_addr, conv_status, 
-			  &conv->conversions[i], type_desc);
+			  &conv->conversions[i], type_desc, 1);
     }
     if (control_value != NULL) {
 	free(control_value);
