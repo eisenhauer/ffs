@@ -542,7 +542,8 @@ deformatlist_eq(format_list_element *f1, format_list_element *f2)
     if ((f1->format_name != NULL) || (f2->format_name != NULL)) {
 	if ((f1->format_name != NULL) && (f2->format_name != NULL)) {
 	    if (strcmp(f1->format_name, f2->format_name) != 0) {
-		printf("format list names differ\n");
+		printf("format list names differ, \"%s\" \"%s\"\n",
+		       f1->format_name, f2->format_name);
 		return 0;
 	    }
 	} else {
@@ -819,7 +820,8 @@ xml_format_list_eq(msg_format_list_element *f1, msg_format_list_element *f2)
     if ((f1->format_name != NULL) || (f2->format_name != NULL)) {
 	if ((f1->format_name != NULL) && (f2->format_name != NULL)) {
 	    if (strcmp(f1->format_name, f2->format_name) != 0) {
-		printf("format list names differ\n");
+		printf("format list names differ, \"%s\" \"%s\"\n",
+		       f1->format_name, f2->format_name);
 		return 0;
 	    }
 	} else {
