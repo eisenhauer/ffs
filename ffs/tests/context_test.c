@@ -964,7 +964,7 @@ int test_level;
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
 		printf("decode failed, variant format\n");
 	    if (!sixth_rec_eq(read_data, &rec6_array[sixth_rec_count[test_level]++])) {
-		printf("Rec6 failure\n");
+		printf("sixth_rec failure\n");
 		fail++;
 	    }
 	    check_mem(size, (char*)read_data);
@@ -1074,7 +1074,7 @@ int test_level;
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
 		printf("decode failed, decode msg format\n");
 	    if (!add_rec_eq(read_data, &add_action_record)) {
-		printf("add rec failure\n");
+		printf("add_action failure\n");
 		fail++;
 	    }
 	    check_mem(size, (char*)read_data);
