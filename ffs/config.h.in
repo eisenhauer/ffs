@@ -16,9 +16,6 @@
 /* Define with the name of the domain which the format server will service */
 #undef FORMAT_SERVICE_DOMAIN
 
-/* Define to 1 if you have the <dill.h> header file. */
-#undef HAVE_DILL_H
-
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
