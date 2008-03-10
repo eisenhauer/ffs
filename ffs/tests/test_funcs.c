@@ -1831,8 +1831,12 @@ already_visited(visit_table v, node_ptr n)
 
 extern int calc_signature(node_ptr n, visit_table v)
 {
+    int n1, n2;
     if (n == NULL) return 0;
-    if (already_visited(v, n)) return 5 * n->node_num;
-    return 3 * calc_signature(n->link1, v) + 7 * calc_signature(n->link1, v) 
-	+ n->node_num;
+    if (already_visited(v, n)) {
+	return 5 * n->node_num;
+    }
+    n1 = calc_signature(n->link1, v);
+    n2 = calc_signature(n->link1, v);
+    return  3*n1 + 7 * n2 + n->node_num;
 }
