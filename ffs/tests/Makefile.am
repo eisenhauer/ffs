@@ -8,11 +8,11 @@ INCLUDES = -I../../fm -I../../cod -I..
 
 LDADD = ../libffs.la
 
-TESTS = context_test
+TESTS = context_test context_test2
 
 bin_PROGRAMS = 
 #noinst_PROGRAMS = io_read io_read2 io_dyn_read io_test io_write context_test fortran_test xml_test compat_test io_default_test io_def_write 
-noinst_PROGRAMS = context_test io_write io_dyn_read
+noinst_PROGRAMS = context_test context_test2 io_write io_dyn_read
 
 MOSTLYCLEANFILES = dcg/*
 all-local:
