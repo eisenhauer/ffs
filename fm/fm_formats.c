@@ -1333,6 +1333,18 @@ int format_count;
     }
 }
 
+extern FMFormat
+FMlookup_format(FMContext context, FMStructDescList struct_list)
+{
+    int i;
+    for (i=0 ; i < context->reg_format_count; i++) {
+	if (context->format_list[i]->orig_struct_list == struct_list) {
+	    return context->format_list[i];
+	}
+    }
+    return NULL;
+}
+
 FMFormat
 register_data_format(FMContext context, FMStructDescList struct_list)
 {
@@ -1507,6 +1519,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     }
     formats[0]->format_index = context->reg_format_count++;
     context->format_list[formats[0]->format_index] = formats[0];
+    formats[0]->orig_struct_list = struct_list;
     ret = formats[0];
     free(formats);
     return ret;

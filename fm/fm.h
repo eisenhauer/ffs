@@ -125,6 +125,7 @@ typedef struct _FMFormatBody {
     int recursive;
     int column_major_arrays;
     FMStructDescList master_struct_list;
+    FMStructDescList orig_struct_list;	/* we don't own this memory */
     FMFormat superformat;
     FMFormat *subformats;
     FMFieldList field_list;
@@ -162,6 +163,30 @@ add_opt_info_FMformat(FMFormat format, int typ, int len, void *block);
 
 extern FMFormat
 register_data_format(FMContext context, FMStructDescList struct_list);
+
+/*!
+ * lookup the FMFormat associated with a particular FMStructDescList
+ *
+ * FMlookup_format() addresses a specific problem particular to libraries.
+ * FFSwrite() requires a FMFormat value that results from a
+ * register_data_format() call.  Efficiency would dictate that the
+ * register_data_format() be performed once and the FMFormat value used
+ * repeatedly for multiple writes.  However, libraries which want to avoid
+ * the use of static variables, or which wish to support multiple
+ * FFS/FMContext values per process have no convenient way to store the
+ * FMFormat values for reuse.  CMlookup_format() exploits the fact that
+ * field_lists are often constants with fixed addresses (I.E. their memory
+ * is not reused for other field lists later in the application).  This call
+ * quickly looks up the FMFormat value in an FMcontext by searching for a
+ * matching format_list address.
+ * 
+ * \warning You should *not* use this convenience routine if you cannot
+ * guarantee that all field lists used to register formats have a unique
+ * address.   Normally if you use static format lists, the addresses will 
+ * be unique. 
+ */
+extern FMFormat
+FMlookup_format(FMContext context, FMStructDescList struct_list);
 
 typedef enum {Format_Less, Format_Greater, Format_Equal, 
 	      Format_Incompatible} FMformat_order;
