@@ -241,6 +241,46 @@ write_comment_FFSfile(FFSFile f, const char *comment)
 }
 
 extern int
+write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
+{
+    FFSTypeHandle h = FFSTypeHandle_from_encode(c, (char*)data);
+    FMFormat cf = FMFormat_of_original(h);
+    int id_len = 0;
+    char *id = get_server_ID_FMformat(cf, &id_len);
+    int rep_len = 0;
+    char *rep = get_server_rep_FMformat(cf, &rep_len);
+
+    FMFormat f2 = load_external_format_FMcontext(f->fmc, id, id_len, rep);
+    int index = f2->format_index;
+
+    struct FFSEncodeVec vec[2];
+    int indicator;
+
+    init_format_info(f, index);
+    if (!f->info[index].written_to_file) {
+	if (write_format_to_file(f, f2) != 1) return 0;
+    }
+
+    /*
+     * next_data indicator is a 4-byte chunk in network byte order.
+     * The top byte is 0x3.  The bottom 3 bytes are the size of the data.
+     */
+    indicator = htonl((byte_size & 0xffffff) | 0x3 << 24);
+
+    vec[0].iov_len = 4;
+    vec[0].iov_base = &indicator;
+    vec[1].iov_len = byte_size;
+    vec[1].iov_base = data;
+    if (f->writev_func(f->file_id, (struct iovec *)vec, 2, 
+		       NULL, NULL) != 2) {
+	printf("Write failed, errno %d\n", errno);
+	return 0;
+    }
+    return 1;
+}
+
+				   
+extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data)
 {
     int byte_size;
@@ -583,5 +623,5 @@ FFSread(FFSFile file, void *dest)
     }
     FFSdecode(file->c, file->tmp_buffer->tmp_buffer, dest);
     file->read_ahead = FALSE;
-    
+    return 1;
 }
