@@ -1807,6 +1807,9 @@ int size;
 }
 
 #if !defined(HAVE_DILL_H)
+int ffs_putreg(void* s, int reg, int type) {}
+int ffs_getreg(void*s, int reg, int type) {}
+int ffs_localb(void*s, int reg, int type) {}
 extern
  conv_routine
 generate_conversion(conv, alignment)
