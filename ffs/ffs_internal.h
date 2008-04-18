@@ -94,9 +94,7 @@ typedef struct _IOconvFieldStruct {
     IOConversionPtr subconversion;
 } IOconvFieldStruct;
 
-typedef void (*conv_routine) (void *src, void *dest, 
-				   void *final_string_base, 
-				   void *src_string_base);
+typedef void (*conv_routine) (void *src, void *dest, void *cs);
 
 typedef struct _IOConversionStruct {
     IOconversion_type conversion_type;
