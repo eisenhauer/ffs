@@ -34,7 +34,8 @@ host_triplet = @host@
 EXTRA_PROGRAMS = t1$(EXEEXT) t2$(EXEEXT) t3$(EXEEXT) t4$(EXEEXT) \
 	t5$(EXEEXT) t6$(EXEEXT) t7$(EXEEXT) t8$(EXEEXT) t9$(EXEEXT) \
 	t10$(EXEEXT) t11$(EXEEXT) t12$(EXEEXT) gray$(EXEEXT) \
-	general$(EXEEXT) mix$(EXEEXT) atl_test$(EXEEXT)
+	general$(EXEEXT) mix$(EXEEXT) atl_test$(EXEEXT) \
+	strings$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -65,6 +66,10 @@ mix_SOURCES = mix.c
 mix_OBJECTS = mix.$(OBJEXT)
 mix_LDADD = $(LDADD)
 mix_DEPENDENCIES = ../libcod.la
+strings_SOURCES = strings.c
+strings_OBJECTS = strings.$(OBJEXT)
+strings_LDADD = $(LDADD)
+strings_DEPENDENCIES = ../libcod.la
 am_t1_OBJECTS = t1.$(OBJEXT) data_funcs.$(OBJEXT)
 t1_OBJECTS = $(am_t1_OBJECTS)
 t1_LDADD = $(LDADD)
@@ -125,12 +130,12 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = atl_test.c general.c gray.c mix.c $(t1_SOURCES) t10.c t11.c \
-	t12.c $(t2_SOURCES) t3.c t4.c $(t5_SOURCES) t6.c t7.c t8.c \
-	t9.c
-DIST_SOURCES = atl_test.c general.c gray.c mix.c $(t1_SOURCES) t10.c \
-	t11.c t12.c $(t2_SOURCES) t3.c t4.c $(t5_SOURCES) t6.c t7.c \
-	t8.c t9.c
+SOURCES = atl_test.c general.c gray.c mix.c strings.c $(t1_SOURCES) \
+	t10.c t11.c t12.c $(t2_SOURCES) t3.c t4.c $(t5_SOURCES) t6.c \
+	t7.c t8.c t9.c
+DIST_SOURCES = atl_test.c general.c gray.c mix.c strings.c \
+	$(t1_SOURCES) t10.c t11.c t12.c $(t2_SOURCES) t3.c t4.c \
+	$(t5_SOURCES) t6.c t7.c t8.c t9.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -303,6 +308,9 @@ gray$(EXEEXT): $(gray_OBJECTS) $(gray_DEPENDENCIES)
 mix$(EXEEXT): $(mix_OBJECTS) $(mix_DEPENDENCIES) 
 	@rm -f mix$(EXEEXT)
 	$(LINK) $(mix_OBJECTS) $(mix_LDADD) $(LIBS)
+strings$(EXEEXT): $(strings_OBJECTS) $(strings_DEPENDENCIES) 
+	@rm -f strings$(EXEEXT)
+	$(LINK) $(strings_OBJECTS) $(strings_LDADD) $(LIBS)
 t1$(EXEEXT): $(t1_OBJECTS) $(t1_DEPENDENCIES) 
 	@rm -f t1$(EXEEXT)
 	$(LINK) $(t1_OBJECTS) $(t1_LDADD) $(LIBS)
@@ -538,7 +546,7 @@ syntax-tests:  t4.stamp
 
 run_time_tests: general_tests
 
-general_tests: t1@EXEEXT@ t2.stamp t3@EXEEXT@ t5@EXEEXT@ t6@EXEEXT@ t8@EXEEXT@ t9@EXEEXT@ t10@EXEEXT@ t12@EXEEXT@ gray@EXEEXT@ mix@EXEEXT@ atl_test@EXEEXT@ @GENERAL_TEST@
+general_tests: t1@EXEEXT@ t2.stamp t3@EXEEXT@ t5@EXEEXT@ t6@EXEEXT@ t8@EXEEXT@ t9@EXEEXT@ t10@EXEEXT@ t12@EXEEXT@ gray@EXEEXT@ mix@EXEEXT@ atl_test@EXEEXT@ @GENERAL_TEST@ strings@EXEEXT@
 	./t1 -w test_output/t1/t1.@ARCH@
 	./t3
 	./t5 -w test_output/t5/t5.@ARCH@
@@ -549,6 +557,7 @@ general_tests: t1@EXEEXT@ t2.stamp t3@EXEEXT@ t5@EXEEXT@ t6@EXEEXT@ t8@EXEEXT@ t
 	./t12
 	./atl_test
 	./gray
+	./strings
 	@GENERAL_TEST@
 
 check-local: syntax-tests @test_sub@ 
