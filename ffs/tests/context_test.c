@@ -34,6 +34,7 @@ static int fail = 0;
 static char *test_only = NULL;
 
 static FFSContext rcv_context = NULL;
+static int verbose = 0;
 
 int
 main(argc, argv)
@@ -75,6 +76,8 @@ char **argv;
 	    write_output++;
 	} else if (strcmp(argv[i], "-r") == 0) {
 	    read_file = argv[++i];
+	} else if (strcmp(argv[i], "-v") == 0) {
+	    verbose++;
 	} else if (strcmp(argv[i], "-t") == 0) {
 	    test_only = argv[++i];
 	} else {
@@ -719,21 +722,36 @@ static void
 set_targets(context)
 FFSContext context;
 {
-    first_rec_ioformat = FFSset_fixed_target(context, first_format_list);
-    second_rec_ioformat = FFSset_fixed_target(context, string_format_list);
-    third_rec_ioformat = FFSset_fixed_target(context, two_string_format_list);
-    fourth_rec_ioformat = FFSset_fixed_target(context, fourth_format_list);
-    fifth_rec_ioformat = FFSset_fixed_target(context, structured_format_list);
-    sixth_rec_ioformat = FFSset_fixed_target(context, variant_format_list);
-    later_rec_ioformat = FFSset_fixed_target(context, later_format_list);
-    nested_rec_ioformat = FFSset_fixed_target(context, nested_format_list);
-    ninth_rec_ioformat = FFSset_fixed_target(context, ninth_format_list);
-    string_array_ioformat = FFSset_fixed_target(context, string_array_format_list);
-    derive_ioformat = FFSset_fixed_target(context, derive_format_list);
-    multi_array_ioformat = FFSset_fixed_target(context, multi_array_format_list);
-    triangle_ioformat = FFSset_fixed_target(context, triangle_format_list);
-    add_action_ioformat = FFSset_fixed_target(context, add_action_format_list);
-    node_ioformat = FFSset_fixed_target(context, node_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "first_rec") == 0))
+	first_rec_ioformat = FFSset_fixed_target(context, first_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "second_rec") == 0))
+	second_rec_ioformat = FFSset_fixed_target(context, string_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "third_rec") == 0))
+	third_rec_ioformat = FFSset_fixed_target(context, two_string_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "fourth_rec") == 0))
+	fourth_rec_ioformat = FFSset_fixed_target(context, fourth_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "fifth_rec") == 0))
+	fifth_rec_ioformat = FFSset_fixed_target(context, structured_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "sixth_rec") == 0))
+	sixth_rec_ioformat = FFSset_fixed_target(context, variant_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "later_rec") == 0))
+	later_rec_ioformat = FFSset_fixed_target(context, later_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "nested_rec") == 0))
+	nested_rec_ioformat = FFSset_fixed_target(context, nested_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "ninth_rec") == 0))
+	ninth_rec_ioformat = FFSset_fixed_target(context, ninth_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "string_array") == 0))
+	string_array_ioformat = FFSset_fixed_target(context, string_array_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "derive") == 0))
+	derive_ioformat = FFSset_fixed_target(context, derive_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "multi_array") == 0))
+	multi_array_ioformat = FFSset_fixed_target(context, multi_array_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "triangle_param") == 0))
+	triangle_ioformat = FFSset_fixed_target(context, triangle_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "add_action") == 0))
+	add_action_ioformat = FFSset_fixed_target(context, add_action_format_list);
+    if ((test_only == NULL) || (strcmp(test_only, "node") == 0))
+	node_ioformat = FFSset_fixed_target(context, node_format_list);
 }
 
 int base_size_func(FFSContext context, char *src, int rec_len,
@@ -865,9 +883,13 @@ int test_level;
 /*	char *comment;*/
 	FFSTypeHandle buffer_format = FFS_target_from_encode(rcv_context, buffer);
 
-	if (buffer_format == NULL) {
+	if ((buffer_format == NULL) && (test_only == NULL)) {
 	    printf("No format!\n");
 	    exit(1);
+	}
+	if (verbose && (test_only == NULL)) {
+	    printf("Testing format %s, test level %d\n",
+		   FFSTypeHandle_name(buffer_format), test_level);
 	}
 	if (((test_only == NULL) || (strcmp(test_only, "first_rec") == 0)) &&
 	    (buffer_format == first_rec_ioformat)) {
@@ -938,10 +960,6 @@ int test_level;
 	    check_mem(size, (char*)read_data);
 	    free(read_data);
 	    fourth_rec_count[test_level]++;
-	} else if (buffer_format == embedded_rec_ioformat) {
-	    
-	    printf("Emb Rec failure\n");
-	    fail++;
 	} else if (((test_only == NULL) || (strcmp(test_only, "fifth_rec") == 0)) &&
 		   (buffer_format == fifth_rec_ioformat)) {
 	    int size = size_func(rcv_context, buffer, buf_size, sizeof(fifth_rec));
