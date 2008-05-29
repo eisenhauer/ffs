@@ -1103,7 +1103,18 @@ void *src_string_base;
     }
     if (conv->conv_func) {
 /*	printf("%s","");*/
+	struct run_time_conv_status rtcs1;
+	struct run_time_conv_status rtcs2;
+	struct run_time_conv_status rtcs3;
+	struct run_time_conv_status rtcs4;
+
 	struct run_time_conv_status rtcs;
+	struct run_time_conv_status rtcsa;
+	struct run_time_conv_status rtcsb;
+	struct run_time_conv_status rtcsc;
+	struct run_time_conv_status rtcsd;
+	struct run_time_conv_status rtcse;
+	struct run_time_conv_status rtcsf;
 	if (debug_code_generation) {
 	    int i;
 	    int limit = 30;
@@ -2087,9 +2098,18 @@ int base_alignment;
     }
     if (debug_code_generation) {
 	if (register_args) {
-	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%p%p",
+	    dill_reg src_pointer_base, dest_pointer_base, dest_offset_adjust;	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%p%p",
 		     "convert for %s called with src= %lx, dest %lx, rt_conv_status =%lx\n",
 		     format_name, args[0], args[1], args[2]);
+	    ffs_getreg(c, &src_pointer_base, DILL_P, DILL_VAR);
+	    dill_ldpi(c, src_pointer_base, args[2], FMOffset(RTConvStatus,src_pointer_base));
+	    ffs_getreg(c, &dest_pointer_base, DILL_P, DILL_VAR);
+	    dill_ldpi(c, dest_pointer_base, args[2], FMOffset(RTConvStatus,dest_pointer_base));
+	    ffs_getreg(c, &dest_offset_adjust, DILL_I, DILL_VAR);
+	    dill_ldpi(c, dest_offset_adjust, args[2], FMOffset(RTConvStatus,dest_offset_adjust));
+	    dill_scallv(c, (void*)printf, "printf", "%P%p%p%p",
+		     "rt_conv_status is src_pointer_base= %lx, dest_pointer_base=%lx, dest_offset_adjust =%lx\n",
+		     src_pointer_base, dest_pointer_base, dest_offset_adjust);
 	} else {
 #ifdef HAVE_DILL_H	    
 	    dill_reg v_at;
@@ -2113,7 +2133,6 @@ int base_alignment;
     if (register_args) {
 	dill_reg tmp;
 	int mask;
-	int zero_target = dill_alloc_label(c);
 	if (ffs_getreg(c, &tmp, DILL_I, DILL_VAR) == 0) {
 	    printf("out of regs for mod\n");
 	}
@@ -2131,6 +2150,7 @@ int base_alignment;
 	    mask = 0;
 	}
 	if (mask != 0) {
+	    int zero_target = dill_alloc_label(c);
 	    dill_anduli(c, tmp, args[0], mask);
 	    dill_beqli(c, tmp, 0, zero_target);
 	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%I",
@@ -2162,8 +2182,8 @@ int base_alignment;
     conv->free_func = (void(*)(void*))&dill_free_handle;
     return (conv_routine) conversion_routine;
 }
-#define REG_DEBUG(x) printf x ;
-/*#define REG_DEBUG(x)*/
+/*#define REG_DEBUG(x) printf x ;*/
+#define REG_DEBUG(x)
 
 static void
 gen_var_part_conv(dill_stream c, IOConversionPtr conv, int i, int control_base,
@@ -2422,7 +2442,7 @@ static void
 gen_convert_address_field(c, tmp_spec, assume_align, src_addr, src_offset,
 			  dest_size, dest_addr, dest_offset, string_offset_size,
 			  rt_conv_status, base_size_delta, 
-			  string_src_reg, string_dest_reg, register_args)
+			  string_src_reg, string_dest_reg, register_args, null_target)
 dill_stream c;
 struct _FMgetFieldStruct tmp_spec;
 int assume_align;
@@ -2437,13 +2457,13 @@ int base_size_delta;
 dill_reg *string_src_reg;
 dill_reg *string_dest_reg;
 int register_args;
+int null_target;
 {
     iogen_oprnd src_oprnd;
     int src_drisc_type;
     int src_required_align;
     int src_is_aligned = 1;
-    int null_target = dill_alloc_label(c);
-    
+    dill_reg tmp_dest_reg;
 
     src_drisc_type = drisc_type(&tmp_spec);
     src_required_align = TYPE_ALIGN(c, src_drisc_type);
@@ -2458,6 +2478,7 @@ int register_args;
 			  integer_type, src_is_aligned,
 			  tmp_spec.byte_swap);
 
+    *string_dest_reg = src_oprnd.vc_reg;
     /* src_oprnd now holds the offset value */
     if (dest_size >= sizeof(char *)) {
 
@@ -2468,6 +2489,12 @@ int register_args;
 	    free_oprnd(c, src_oprnd);
 	    src_oprnd = tmp_oprnd;
 	}
+#ifdef VERBOSE
+	dill_scallv(c, (void*)printf, "printf", "%P%i%p%I",
+		    "Fetched msgptr %d from address %lx offset %d\n", src_oprnd.vc_reg,
+		    src_addr, src_offset);
+#endif
+
 	/* generate : if it's zero, leave it zero  branch away */
 	dill_beqli(c, src_oprnd.vc_reg, 0, null_target);
 
@@ -2479,9 +2506,9 @@ int register_args;
 	if (!ffs_getreg(c, string_src_reg, DILL_P, DILL_TEMP))
 	  gen_fatal("gen field convert out of registers C\n");
 	REG_DEBUG(("Getting reg %d for string src reg\n", *string_src_reg));
-	if (!ffs_getreg(c, string_dest_reg, DILL_P, DILL_TEMP))
+	if (!ffs_getreg(c, &tmp_dest_reg, DILL_P, DILL_TEMP))
 	  gen_fatal("gen field convert out of registers D\n");
-	REG_DEBUG(("Getting reg %d for string dest reg\n", *string_dest_reg));
+	REG_DEBUG(("Getting reg %d for string dest reg\n", tmp_dest_reg));
 
 	/* calculate the address of this in the source */
 	if (register_args) {
@@ -2495,17 +2522,16 @@ int register_args;
 	    
 	/* and the address in the destination */
 	if (register_args) {
-	    dill_ldpi(c, *string_dest_reg, rt_conv_status, FMOffset(RTConvStatus, dest_pointer_base));
-	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, *string_dest_reg);
+	    dill_ldpi(c, tmp_dest_reg, rt_conv_status, FMOffset(RTConvStatus, dest_pointer_base));
+	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, tmp_dest_reg);
 	} else {
-	    dill_ldpi(c, *string_dest_reg, dill_lp(c), rt_conv_status);
-	    dill_ldpi(c, *string_dest_reg, *string_dest_reg, FMOffset(RTConvStatus, dest_pointer_base));
-	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, *string_dest_reg);
+	    dill_ldpi(c, tmp_dest_reg, dill_lp(c), rt_conv_status);
+	    dill_ldpi(c, tmp_dest_reg, tmp_dest_reg, FMOffset(RTConvStatus, dest_pointer_base));
+	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, tmp_dest_reg);
 	}
 	dill_mark_label(c, null_target);
 
 	dill_movp(c, *string_dest_reg, src_oprnd.vc_reg);
-
 	if (dest_size > sizeof(char *)) {
 	    iogen_oprnd tmp_oprnd;
 	    tmp_oprnd = gen_size_conversion(c, src_oprnd,
@@ -2516,6 +2542,8 @@ int register_args;
 	REG_DEBUG(("Regs %d and %d are src and dest \n",
 		   _vrr(*string_src_reg), _vrr(*string_dest_reg)));
 	free_oprnd(c, src_oprnd);
+    } else {
+	assert(FALSE);
     }
 }
 
@@ -2546,7 +2574,6 @@ int register_args;
     int src_required_align;
     int src_is_aligned = 1;
     int null_target = dill_alloc_label(c);
-
 
     src_drisc_type = drisc_type(&tmp_spec);
     src_required_align = TYPE_ALIGN(c, src_drisc_type);
@@ -2582,9 +2609,8 @@ int register_args;
 	if (!ffs_getreg(c, string_src_reg, DILL_P, DILL_TEMP))
 	  gen_fatal("gen field convert out of registers C\n");
 	REG_DEBUG(("Getting reg %d for string src reg\n", *string_src_reg));
-	if (!ffs_getreg(c, string_dest_reg, DILL_P, DILL_TEMP))
-	  gen_fatal("gen field convert out of registers D\n");
-	REG_DEBUG(("Getting reg %d for string dest reg\n", *string_dest_reg));
+	*string_dest_reg = src_oprnd.vc_reg;
+	REG_DEBUG(("Getting reg %d for string dest reg\n", src_oprnd.vc_reg));
 
 	/* calculate the address of this in the source */
 	if (register_args) {
@@ -2598,12 +2624,11 @@ int register_args;
 	if (register_args) {
 	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, final_string_base);
 	} else {
-	    dill_ldpi(c, *string_dest_reg, dill_lp(c), final_string_base);
-	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, *string_dest_reg);
+	    dill_reg tmp;
+	    ffs_getreg(c, &tmp, DILL_P, DILL_TEMP);
+	    dill_ldpi(c, tmp, dill_lp(c), final_string_base);
+	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, tmp);
 	}
-	dill_mark_label(c, null_target);
-
-	dill_movp(c, *string_dest_reg, src_oprnd.vc_reg);
 
 	if (dest_size > sizeof(char *)) {
 	    iogen_oprnd tmp_oprnd;
@@ -2692,6 +2717,7 @@ int extra_dest_offset;
 			(((control_field.offset +extra_src_offset) % src_required_align) == 0)) {
 			src_is_aligned = 0;
 		    }
+#ifdef RAW
 		    if ((first_assign == 0) && (register_args== 0)) {
 			/* 
 			 *    we've got something in a register, 
@@ -2702,7 +2728,7 @@ int extra_dest_offset;
 				   _vrr(count_oprnd.vc_reg)));
 			ffs_putreg(c, count_oprnd.vc_reg, DILL_I);
 		    }
-			
+#endif			
 		    src_oprnd = gen_fetch(c, src_addr, 
 					  control_field.offset + extra_src_offset,
 					  control_field.size,
@@ -2714,6 +2740,7 @@ int extra_dest_offset;
 			free_oprnd(c, src_oprnd);
 			src_oprnd = tmp_oprnd;
 		    }
+#ifdef RAW
 		    if ((first_assign == 0) && (register_args == 0)) {
 			/* 
 			 *    we've got something in a register, 
@@ -2723,6 +2750,7 @@ int extra_dest_offset;
 			REG_DEBUG(("Getting %d as count\n", _vrr(count_oprnd.vc_reg)));
 			dill_ldii(c, count_oprnd.vc_reg, dill_lp(c), count_storage);
 		    }
+#endif
 		} else {
 		    src_oprnd.address = 0;
 		    src_oprnd.data_type = integer_type;
@@ -2736,7 +2764,9 @@ int extra_dest_offset;
 		    dill_seti(c, src_oprnd.vc_reg, dimens[j].static_size);
 		}
 		if (first_assign) {
+#ifdef RAW
 		    count_storage = ffs_local(c, DILL_I);
+#endif
 		    count_oprnd = src_oprnd;
 		    first_assign = 0;
 		} else {
@@ -2827,17 +2857,18 @@ int extra_dest_offset;
 				  final_string_base, src_string_base,
 				  register_args);
 	    } else {
-		int src_storage = ffs_local(c, DILL_P);
-		int dest_storage = ffs_local(c, DILL_P);
-		int loop_storage = 0;
 		int src_align_offset = src_offset %
 		    subfield_required_align(c, &conv->conversions[i], 0);
 		int loop_var_type;
+#ifdef RAW
+		int src_storage = ffs_local(c, DILL_P);
+		int dest_storage = ffs_local(c, DILL_P);
+		int loop_storage = 0;
 
 		/* save values of src_addr and dest_addr */
 		dill_stpi(c, src_addr, dill_lp(c), src_storage);
 		dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
-
+#endif
 		if (((elements == -1) ||
 		    (conv->conversions[i].subconversion == NULL)) &&
 		    !debug_code_generation) {
@@ -2850,7 +2881,7 @@ int extra_dest_offset;
 			gen_fatal("gen field convert out of registers CC\n");
 		    loop_var_type = DILL_VAR;
 		}
-		REG_DEBUG(("Getting %d as loop_var\n", _vrr(loop_var)));
+		REG_DEBUG(("Getting3 %d as loop_var\n", _vrr(loop_var)));
 		dill_addpi(c, src_addr, src_addr, src_offset - src_align_offset);
 		dill_addpi(c, dest_addr, dest_addr, dest_offset);
 
@@ -2865,6 +2896,7 @@ int extra_dest_offset;
 		loop = dill_alloc_label(c);
 		dill_seti(c, loop_var, elements);
 		dill_mark_label(c, loop);
+#ifdef RAW
 		if (!register_args) {
 		    /* store away loop var and free the reg */
 		    loop_storage = ffs_local(c, DILL_I);
@@ -2872,6 +2904,7 @@ int extra_dest_offset;
 		    REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
 		    ffs_putreg(c, loop_var, DILL_I);
 		}
+#endif
 		old_gen_subfield_conv(c, conv, i, tmp_spec, dest_type, assume_align,
 				  src_addr, src_align_offset,
 				  dest_size, dest_addr, 0,
@@ -2880,12 +2913,14 @@ int extra_dest_offset;
 				  register_args);
 
 		/* generate end of loop */
+#ifdef RAW
 		if (!register_args) {
 		    /* store away loop var and free the reg */
 		    ffs_getreg(c, &loop_var, DILL_I, loop_var_type);
-		    REG_DEBUG(("Getting %d as loop_var\n", _vrr(loop_var)));
+		    REG_DEBUG(("Getting2 %d as loop_var\n", _vrr(loop_var)));
 		    dill_ldii(c, loop_var, dill_lp(c), loop_storage);
 		}
+#endif
 		dill_subli(c, loop_var, loop_var, 1);
 		dill_addpi(c, src_addr, src_addr, tmp_spec.size);
 		dill_addpi(c, dest_addr, dest_addr,
@@ -2899,9 +2934,11 @@ int extra_dest_offset;
 		ffs_putreg(c, loop_var, DILL_I);
 		REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
 
+#ifdef RAW
 		/* restore values of src_addr and dest_addr */
 		dill_ldpi(c, src_addr, dill_lp(c), src_storage);
 		dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
 	    }
 	} else {   
 	    /* 
@@ -2947,8 +2984,10 @@ int data_already_copied;
     case FMType_pointer: {
 	dill_reg actual_src_reg, actual_dest_reg;
 	struct _FMgetFieldStruct tmp_spec = conv->src_field;
+	int null_target = dill_alloc_label(c);
 	tmp_spec.offset = 0;
 	tmp_spec.size = conv_status->src_pointer_size;
+	
 	gen_convert_address_field(c, tmp_spec, 0, src_addr, src_offset,
 				  conv_status->target_pointer_size, 
 				  dest_addr, dest_offset, 
@@ -2956,30 +2995,42 @@ int data_already_copied;
 				  rt_conv_status,
 				  decode_size_delta(conv_status, conv, type_desc),
 				  &actual_src_reg, &actual_dest_reg, 
-				  conv_status->register_args);
-	dill_stpi(c, actual_dest_reg, dest_addr, dest_offset);
+				  conv_status->register_args, null_target);
 	{
+	    dill_reg reg_rt_conv_status;
+#ifdef RAW
 	    int src_storage = ffs_local(c, DILL_P);
 	    int dest_storage = ffs_local(c, DILL_P);
-	    dill_reg reg_rt_conv_status;
-
 	    /* save values of src_addr and dest_addr */
 	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
 	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
-
-	    dill_movp(c, src_addr, actual_src_reg);
-	    dill_movp(c, dest_addr, actual_dest_reg);
+#else
+	    dill_reg tmp_src_reg, tmp_dest_reg;
+	    ffs_getreg(c, &tmp_dest_reg, DILL_P, DILL_VAR);
+	    ffs_getreg(c, &tmp_src_reg, DILL_P, DILL_VAR);
+#endif
+	    dill_movp(c, tmp_src_reg, actual_src_reg);
+	    dill_movp(c, tmp_dest_reg, actual_dest_reg);
 	    REG_DEBUG(("Putting %d and %d for new src & dest\n", 
 		       actual_src_reg, actual_dest_reg));
 	    ffs_putreg(c, actual_src_reg, DILL_P);
 	    ffs_putreg(c, actual_dest_reg, DILL_P);
-	    generate_convert_field(c, conv_status, actual_src_reg, 0, 
-				   actual_dest_reg, 0, rt_conv_status,
+	    generate_convert_field(c, conv_status, tmp_src_reg, 0, 
+				   tmp_dest_reg, 0, rt_conv_status,
 				   conv, type_desc->next, 0);
 	    
+#ifdef RAW
 	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
 	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
 	}
+	dill_mark_label(c, null_target);
+	
+#ifdef VERBOSE
+	dill_scallv(c, (void*)printf, "printf", "%P%p",
+		    "storing POINTER value %lx\n",actual_dest_reg);
+#endif
+	dill_stpi(c, actual_dest_reg, dest_addr, dest_offset);
 
 #ifdef NOT
 	char *new_src, *new_dest;
@@ -3008,18 +3059,25 @@ int data_already_copied;
 	dill_reg actual_src_reg, actual_dest_reg;
 	struct _FMgetFieldStruct tmp_spec = conv->src_field;
 	tmp_spec.offset = 0;
+	int null_target = dill_alloc_label(c);
 	gen_convert_address_field(c, tmp_spec, 0, src_addr, src_offset,
 				  conv->dest_size, dest_addr, dest_offset, 
 				  conv_status->src_offset_adjust, 
 				  rt_conv_status,
 				  decode_size_delta(conv_status, conv, type_desc),
 				  &actual_src_reg, &actual_dest_reg, 
-				  conv_status->register_args);
+				  conv_status->register_args, null_target);
 	/* generate strcpy */
-	dill_scallv(c, (void*)strcpy, "strcpy", "%p%p", actual_dest_reg, actual_src_reg);
-/*	if (new_src != new_dest) { 
-	    strcpy(new_dest, new_src);
-	    }*/
+	if (!data_already_copied) {
+#ifdef VERBOSE
+	    dill_scallv(c, (void*)printf, "printf", "%P%p%p",
+			"Calling Strcpy with args %lx, %lx\n",actual_dest_reg, actual_src_reg);
+
+#endif
+	    dill_scallv(c, (void*)strcpy, "strcpy", "%p%p", actual_dest_reg, actual_src_reg);
+	}
+	dill_mark_label(c, null_target);
+	
 	dill_stpi(c, actual_dest_reg, dest_addr, dest_offset);
 	REG_DEBUG(("Putting %d and %d for new src & dest\n", 
 		   actual_src_reg, actual_dest_reg));
@@ -3048,13 +3106,15 @@ int data_already_copied;
 	    ffs_putreg(c, new_src, DILL_P);
 	    ffs_putreg(c, new_dest, DILL_P);
 	} else {
+	    dill_reg reg_rt_conv_status;
+#ifdef RAW
 	    int src_storage = ffs_local(c, DILL_P);
 	    int dest_storage = ffs_local(c, DILL_P);
-	    dill_reg reg_rt_conv_status;
 
 	    /* save values of src_addr and dest_addr */
 	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
 	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
 
 	    if (!ffs_getreg(c, &reg_rt_conv_status, DILL_P, DILL_TEMP))
 		gen_fatal("temp string vals in subcall\n");
@@ -3067,8 +3127,10 @@ int data_already_copied;
 	    REG_DEBUG(("Putting %d reg_rt_conv_status\n", reg_rt_conv_status));
 	    ffs_putreg(c, reg_rt_conv_status, DILL_P);
 	    /* restore values of src_addr and dest_addr */
+#ifdef RAW
 	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
 	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
 	}
 	    
 	break;
@@ -3104,17 +3166,19 @@ int data_already_copied;
 	}
 
 	dill_reg loop_var;
+	int src_align_offset = src_offset %subfield_required_align(c, conv, 0);
+	int loop_var_type;
+
 	int loop;
+#ifdef RAW
 	int src_storage = ffs_local(c, DILL_P);
 	int dest_storage = ffs_local(c, DILL_P);
 	int loop_storage = 0;
-	int src_align_offset = src_offset %subfield_required_align(c, conv, 0);
-	int loop_var_type;
 
 	/* save values of src_addr and dest_addr */
 	dill_stpi(c, src_addr, dill_lp(c), src_storage);
 	dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
-
+#endif
 	if (((conv->subconversion == NULL)) &&
 	    !debug_code_generation) {
 	    if (!ffs_getreg(c, &loop_var, DILL_I, DILL_TEMP))
@@ -3126,7 +3190,7 @@ int data_already_copied;
 		gen_fatal("gen field convert out of registers CC\n");
 	    loop_var_type = DILL_VAR;
 	}
-	REG_DEBUG(("Getting %d as loop_var\n", _vrr(loop_var)));
+	REG_DEBUG(("Getting1 %d as loop_var\n", _vrr(loop_var)));
 	dill_addpi(c, src_addr, src_addr, src_offset - src_align_offset);
 	dill_addpi(c, dest_addr, dest_addr, dest_offset);
 
@@ -3136,12 +3200,17 @@ int data_already_copied;
 	next = type_desc;
 	while (next->type == FMType_array) {
 	    if (next->static_size == 0) {
-		printf("should gen multiply\n");
+		dill_reg addr_reg = (dill_reg)(long)conv_status->control_value;
+		dill_reg val;
+		int field = next->control_field_index;
+		ffs_getreg(c, &val, DILL_I, DILL_TEMP);
+		dill_ldii(c, val, addr_reg, field*sizeof(int));
+		dill_muli(c, loop_var, loop_var, val);
 	    }
 	    next = next->next;
 	}
 	dill_mark_label(c, loop);
-#ifdef NOT
+#if defined(NOT) & defined(RAW)
 	if (!register_args) {
 	    /* store away loop var and free the reg */
 	    loop_storage = ffs_local(c, DILL_I);
@@ -3154,7 +3223,7 @@ int data_already_copied;
 			       rt_conv_status, conv, next, 
 			       data_already_copied);
 	
-#ifdef NOT
+#if defined(NOT) & defined(RAW)
 	/* generate end of loop */
 	if (!register_args) {
 	    /* store away loop var and free the reg */
@@ -3176,8 +3245,10 @@ int data_already_copied;
 	REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
 	
 	/* restore values of src_addr and dest_addr */
+#ifdef RAW
 	dill_ldpi(c, src_addr, dill_lp(c), src_storage);
 	dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
     }
 /*	for (i=0; i< elements ; i++) {
 	    new_convert_field(new_src, new_dest, conv_status, conv,
@@ -3217,6 +3288,7 @@ int register_args;
 		int field = next->control_field_index;
 		struct _FMgetFieldStruct tmp_src_spec;
 		iogen_oprnd src_oprnd;
+		dill_reg addr_reg;
 
 		memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
 		tmp_src_spec.size = f->field_list[field].field_size;
@@ -3243,9 +3315,18 @@ int register_args;
 
 		if (control_base == -1) {
 		    control_base = ffs_localb(c, sizeof(int) * f->field_count);
+#ifdef RAW
 		}
 		gen_store(c, src_oprnd, dill_lp(c), control_base + field * sizeof(int),
 			  sizeof(int), integer_type, TRUE /* aligned */ );
+#else
+		    addr_reg = dill_getreg(c, DILL_P);
+		    dill_virtual_lea(c, addr_reg, control_base);
+		    conv_status->control_value = (int*)(long)addr_reg;
+	        }
+	        gen_store(c, src_oprnd, addr_reg, field*sizeof(int),
+			  sizeof(int), integer_type, TRUE /* aligned */);
+#endif
 		free_oprnd(c, src_oprnd);
 	    }
 	    next = next->next;
@@ -3375,6 +3456,7 @@ int register_args;
 	/* generate a call to strcpy to do the move */
 	int end = dill_alloc_label(c);
 	dill_beqpi(c, dest_addr, 0, end);
+
 	dill_scallv(c, (void*)strcpy, "strcpy", "%p%p", dest_addr, src_addr);
 	dill_mark_label(c, end);
 	return;
@@ -3474,20 +3556,24 @@ int register_args;
 	    }
 	} else {
 	    /* must do conversions one by one */
+#ifdef RAW
 	    int src_storage = ffs_local(c, DILL_P);
 	    int dest_storage = ffs_local(c, DILL_P);
 	    int local_loop_storage = ffs_local(c, DILL_I);
 	    int local_src_storage = ffs_local(c, DILL_P);
 	    int local_dest_storage = ffs_local(c, DILL_P);
+#endif
 	    dill_reg loop_var;
 	    int dest_size = conv->conversions[i].dest_size;
 	    int loop = dill_alloc_label(c);
 	    int end = dill_alloc_label(c);
 	    FMdata_type dest_type = src_spec->data_type;
 
+#ifdef RAW
 	    /* save values of src_addr and dest_addr */
 	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
 	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
 
 	    if (((elements == -1) ||
 		 (conv->conversions[i].subconversion == NULL)) &&
@@ -3554,6 +3640,7 @@ int register_args;
 			"top varloopvar = %s[%x], src %lx, dest %lx\n",
 			field_name, loop_var, src_addr, dest_addr);
 	    }
+#ifdef RAW
 	    if (!register_args) {
 		/* store away loop var and free the reg */
 		dill_stii(c, loop_var, dill_lp(c), local_loop_storage);
@@ -3564,6 +3651,7 @@ int register_args;
 	    }
 	    dill_stpi(c, src_addr, dill_lp(c), local_src_storage);
 	    dill_stpi(c, dest_addr, dill_lp(c), local_dest_storage);
+#endif
 
 	    if (dest_type != string_type) {
 		int subelement_align = 1;
@@ -3588,6 +3676,7 @@ int register_args;
 				  control_base, final_string_base,
 				  src_string_base, register_args);
 	    }
+#ifdef RAW
 	    dill_ldpi(c, dest_addr, dill_lp(c), local_dest_storage);
 	    dill_ldpi(c, src_addr, dill_lp(c), local_src_storage);
 	    if (!register_args) {
@@ -3598,6 +3687,7 @@ int register_args;
 	    } else {
 		dill_restorep(c, loop_var);
 	    }
+#endif
 	    if (debug_code_generation) {
 		dill_scallv(c, (void*)printf, "printf", "%P%P%i%p%p",
 			"bottom varloopvar = %s[%x], src %lx, dest %lx\n",
@@ -3611,9 +3701,11 @@ int register_args;
 	    ffs_putreg(c, loop_var, DILL_I);
 	    REG_DEBUG(("Putting %d as lop_var\n", loop_var));
 	    dill_mark_label(c, end);
+#ifdef RAW
 	    /* restore values of src_addr and dest_addr */
 	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
 	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
+#endif
 	}
     }
 }
