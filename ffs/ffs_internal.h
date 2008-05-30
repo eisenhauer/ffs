@@ -108,6 +108,7 @@ typedef struct _IOConversionStruct {
     FFSTypeHandle ioformat;
     void *free_data;
     void (*free_func)(void*);
+    char *conv_pkg;
     conv_routine conv_func;
     conv_routine conv_func4;
     conv_routine conv_func2;

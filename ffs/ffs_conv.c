@@ -664,6 +664,39 @@ FMStructDescList struct_list;
     return 1;
 }
 
+#ifdef HAVE_DILL_H
+static void
+link_conversion_sets(FFSTypeHandle ioformat)
+{
+    dill_extern_entry* externs;
+    int i, subformat_count;
+    while (ioformat->subformats && ioformat->subformats[subformat_count])
+	subformat_count++;
+    externs = malloc(sizeof(externs[0]) * (subformat_count + 2));
+    
+    for(i=0; i < subformat_count; i++) {
+	FFSTypeHandle th = ioformat->subformats[i];
+	externs[i].extern_name = FFSTypeHandle_name(th);
+	if (th->conversion->conv_pkg != NULL) {
+	    externs[i].extern_value = dill_package_entry(th->conversion->conv_pkg);
+	} else {
+	    externs[i].extern_value = th->conversion->conv_func;
+	}
+    }
+    externs[subformat_count].extern_name = FFSTypeHandle_name(ioformat);
+    if (ioformat->conversion->conv_pkg != NULL) {
+	externs[subformat_count].extern_value = 
+	    dill_package_entry(ioformat->conversion->conv_pkg);
+    } else {
+	externs[subformat_count].extern_value = ioformat->conversion->conv_func;
+    }
+    externs[subformat_count+1].extern_name = NULL;
+    externs[subformat_count+1].extern_value = NULL;
+}
+#else
+static void link_conversion_sets(FFSTypeHandle ioformat){}
+#endif
+
 extern
 void
 establish_conversion(iocontext, ioformat, struct_list)
@@ -673,6 +706,7 @@ FMStructDescList struct_list;
 {
     int i;
     int subformat_count = 0;
+    int use_package = 0;
     while (ioformat->body->subformats && ioformat->body->subformats[subformat_count])
 	subformat_count++;
     for (i=subformat_count-1; i>= 0; i--) {
@@ -680,9 +714,15 @@ FMStructDescList struct_list;
 	if (!(set_conversion_from_list(iocontext, f, struct_list))) {
 	    return;
 	}
+	if (f->conversion->conv_pkg != NULL) {
+	    use_package++;
+	}
     }
     if (!(set_conversion_from_list(iocontext, ioformat, struct_list))) {
 	return;
+    }
+    if (use_package) {
+	link_conversion_sets(ioformat);
     }
 }
 
@@ -841,7 +881,7 @@ typedef struct conv_status {
     int target_pointer_size;
     int src_pointer_size;
     int register_args;
-    IOconversion_type conversion_type;
+    IOConversionPtr global_conv;
 } *ConvStatus;
 
 typedef struct run_time_conv_status {
@@ -1168,7 +1208,7 @@ void *src_string_base;
 	cs.control_value = NULL;
 	cs.target_pointer_size = conv->target_pointer_size;
 	cs.src_pointer_size = conv->ioformat->body->pointer_size;
-	cs.conversion_type = conv->conversion_type;
+	cs.global_conv = conv;
 	internal_convert_record(conv, &cs, src, dest, 1);
     }
 }
@@ -1430,7 +1470,7 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	cs.target_pointer_size = subtype_conv->target_pointer_size;
 	cs.src_pointer_size = subtype_conv->ioformat->body->pointer_size;
 
-	cs.conversion_type = subtype_conv->conversion_type;
+	cs.global_conv = subtype_conv;
 	internal_convert_record(subtype_conv, &cs, src_field_addr, 
 				dest_field_addr, data_already_copied);
 	conv_status->dest_offset_adjust = cs.dest_offset_adjust;
@@ -2170,16 +2210,25 @@ int base_alignment;
     cs.target_pointer_size = conv->target_pointer_size;
     cs.src_pointer_size = conv->ioformat->body->pointer_size;
     cs.register_args = register_args;
-    cs.conversion_type = conv->conversion_type;
+    cs.global_conv = conv;
+    conv->conv_pkg = NULL;
     new_generate_conversion_code(c, &cs, conv, args, base_alignment, register_args);
     dill_retp(c, args[2]);
-    conversion_handle = dill_finalize(c);
-    conversion_routine = (void(*)()) dill_get_fp(conversion_handle);
+    if (conv->conv_pkg == (char*)-1) {
+	int pkg_len;
+	conv->conv_pkg = dill_finalize_package(c, &pkg_len);
+	conv->free_data = conv->conv_pkg;
+	conv->free_func = (void(*)(void*))&free;
+	return NULL;
+    } else {
+	conversion_handle = dill_finalize(c);
+	conv->free_data = conversion_handle;
+	conv->free_func = (void(*)(void*))&dill_free_handle;
+	conversion_routine = (void(*)()) dill_get_fp(conversion_handle);
+    }
     if (generation_verbose) {
 	dill_dump(c);
     }
-    conv->free_data = conversion_handle;
-    conv->free_func = (void(*)(void*))&dill_free_handle;
     return (conv_routine) conversion_routine;
 }
 /*#define REG_DEBUG(x) printf x ;*/
@@ -3086,6 +3135,14 @@ int data_already_copied;
 	break;
     }
     case FMType_subformat: {
+	FFSTypeHandle subformat = conv->subconversion->ioformat;
+	char *name = FFSTypeHandle_name(subformat);
+	if (conv->subconversion->conv_func == NULL) {
+	    /* we're not linking to an address that's valid, 
+	       must fill it in later */
+	    conv_status->global_conv->conv_pkg = (char *) -1;
+	}
+	    
 	if (conv_status->register_args) {
 	    dill_reg new_src, new_dest, ret;
 	    if (!ffs_getreg(c, &new_src, DILL_P, DILL_TEMP) ||
@@ -3095,7 +3152,7 @@ int data_already_copied;
 		       new_src, new_dest));
 	    dill_addpi(c, new_src, src_addr, src_offset);
 	    dill_addpi(c, new_dest, dest_addr, dest_offset);
-	    ret = dill_scallp(c, conv->subconversion->conv_func, "anon", "%p%p%p", new_src,
+	    ret = dill_scallp(c, conv->subconversion->conv_func, name, "%p%p%p", new_src,
 			      new_dest, rt_conv_status);
 	    REG_DEBUG(("Putting %d and %d for new src & dest\n", 
 		       new_src, new_dest));
@@ -3122,7 +3179,7 @@ int data_already_copied;
 	    dill_addpi(c, src_addr, src_addr, src_offset);
 	    dill_addpi(c, dest_addr, dest_addr, dest_offset);
 	    dill_ldpi(c, reg_rt_conv_status, dill_lp(c), rt_conv_status);
-	    dill_scallp(c, conv->subconversion->conv_func, "ANON", "%p%p%p", src_addr,
+	    dill_scallp(c, conv->subconversion->conv_func, name, "%p%p%p", src_addr,
 			dest_addr, reg_rt_conv_status);
 	    REG_DEBUG(("Putting %d reg_rt_conv_status\n", reg_rt_conv_status));
 	    ffs_putreg(c, reg_rt_conv_status, DILL_P);
@@ -3132,7 +3189,6 @@ int data_already_copied;
 	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 #endif
 	}
-	    
 	break;
     }
     case FMType_simple: {
