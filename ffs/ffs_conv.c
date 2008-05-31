@@ -2235,13 +2235,6 @@ int base_alignment;
 #define REG_DEBUG(x)
 
 static void
-gen_var_part_conv(dill_stream c, IOConversionPtr conv, int i, int control_base,
-			int assume_align, dill_reg src_addr, dill_reg dest_addr,
-			dill_reg src_string_base, dill_reg final_string_base,
-			int register_args);
-
-
-static void
 gen_mem_float_conv(dill_stream c, struct _FMgetFieldStruct src, int src_addr, 
 		   int src_offset, int assume_align,
 		   int dest_reg, int dest_offset,
@@ -2714,306 +2707,6 @@ int register_args;
 {
 }
 
-extern
- conv_routine
-generate_conversion_code(c, conv, args, assume_align, register_args, 
-			 extra_src_offset, extra_dest_offset)
-dill_stream c;
-IOConversionPtr conv;
-dill_reg *args;
-int assume_align;
-int register_args;
-int extra_src_offset;
-int extra_dest_offset;
-{
-    int i;
-    dill_reg src_addr = args[0];
-    dill_reg dest_addr = args[1];
-    dill_reg final_string_base = args[2];
-    dill_reg src_string_base = args[3];
-    int control_base = -1;
-
-    for (i = 0; i < conv->conv_count; i++) {
-	int elements = 
-	    get_static_array_element_count(conv->conversions[i].iovar);
-	if (elements == -1) {
-	    iogen_oprnd count_oprnd;
-	    int count_storage;
-	    int j;
-	    int first_assign = 1;
-	    int dimen_count = conv->conversions[i].iovar->dimen_count;
-	    FMDimen *dimens = conv->conversions[i].iovar->dimens;
-	    if (control_base == -1) {
-		control_base = ffs_localb(c, sizeof(int) * conv->conv_count);
-	    }
-	    for (j=0; j< dimen_count; j++) {
-		struct _FMgetFieldStruct control_field;
-		int field = dimens[j].control_field_index;
-		iogen_oprnd src_oprnd;
-		if (dimens[j].static_size == 0) {
-		    int src_is_aligned = 1;
-		    int src_drisc_type;
-		    int src_required_align;
-		    FMFormat f = conv->ioformat->body;
-		    memset(&control_field, 0, sizeof(control_field));
-		    control_field.size = f->field_list[field].field_size;
-		    control_field.offset = f->field_list[field].field_offset;
-		    control_field.data_type = integer_type;
-		    control_field.byte_swap = f->byte_reversal;
-		    src_drisc_type = drisc_type(&control_field);
-		    src_required_align = TYPE_ALIGN(c, src_drisc_type);
-		    if ((assume_align < src_required_align) || 
-			(((control_field.offset +extra_src_offset) % src_required_align) == 0)) {
-			src_is_aligned = 0;
-		    }
-#ifdef RAW
-		    if ((first_assign == 0) && (register_args== 0)) {
-			/* 
-			 *    we've got something in a register, 
-			 *    *and* we're tight on registers 
-			 */
-			dill_stii(c, count_oprnd.vc_reg, dill_lp(c), count_storage);
-			REG_DEBUG(("Putting %d as count\n", 
-				   _vrr(count_oprnd.vc_reg)));
-			ffs_putreg(c, count_oprnd.vc_reg, DILL_I);
-		    }
-#endif			
-		    src_oprnd = gen_fetch(c, src_addr, 
-					  control_field.offset + extra_src_offset,
-					  control_field.size,
-					  control_field.data_type,
-					  src_is_aligned, control_field.byte_swap);
-		    if (src_oprnd.size != sizeof(int)) {
-			iogen_oprnd tmp_oprnd;
-			tmp_oprnd = gen_size_conversion(c, src_oprnd, sizeof(int));
-			free_oprnd(c, src_oprnd);
-			src_oprnd = tmp_oprnd;
-		    }
-#ifdef RAW
-		    if ((first_assign == 0) && (register_args == 0)) {
-			/* 
-			 *    we've got something in a register, 
-			 *    *and* we're tight on registers 
-			 */
-			ffs_getreg(c, &count_oprnd.vc_reg, DILL_I, DILL_TEMP);
-			REG_DEBUG(("Getting %d as count\n", _vrr(count_oprnd.vc_reg)));
-			dill_ldii(c, count_oprnd.vc_reg, dill_lp(c), count_storage);
-		    }
-#endif
-		} else {
-		    src_oprnd.address = 0;
-		    src_oprnd.data_type = integer_type;
-		    src_oprnd.size = sizeof(int);
-		    src_oprnd.offset = 0;
-		    src_oprnd.aligned = 0;
-		    src_oprnd.byte_swap = 0;
-		    if (!ffs_getreg(c, &src_oprnd.vc_reg, DILL_I, DILL_TEMP))
-			gen_fatal("gen const out of registers\n");
-		    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(src_oprnd.vc_reg)));
-		    dill_seti(c, src_oprnd.vc_reg, dimens[j].static_size);
-		}
-		if (first_assign) {
-#ifdef RAW
-		    count_storage = ffs_local(c, DILL_I);
-#endif
-		    count_oprnd = src_oprnd;
-		    first_assign = 0;
-		} else {
-		    dill_muli(c, count_oprnd.vc_reg, count_oprnd.vc_reg, 
-			    src_oprnd.vc_reg);
-		    free_oprnd(c, src_oprnd);
-		}
-	    }
-	    gen_store(c, count_oprnd, dill_lp(c), control_base + i * sizeof(int),
-		      sizeof(int), integer_type, TRUE /* aligned */ );
-	    free_oprnd(c, count_oprnd);
-	}
-    }
-    for (i = 0; i < conv->conv_count; i++) {
-	FMFieldPtr src_spec = &conv->conversions[i].src_field;
-	int byte_swap = conv->conversions[i].src_field.byte_swap;
-	int elements = 
-	    get_static_array_element_count(conv->conversions[i].iovar);
-	if (conv->conversions[i].src_field.size == 1) byte_swap = 0;
-	if (conv->conversions[i].default_value) {
-	    iogen_oprnd src_oprnd;
-	    int dst_is_aligned = (assume_align >= sizeof(long)) &
-		(((conv->conversions[i].dest_offset + extra_dest_offset) % 8) == 0);
-	    src_oprnd = gen_set(c, conv->conversions[i].dest_size, 
-				conv->conversions[i].default_value);
-	    gen_store(c, src_oprnd, dest_addr,
-		      conv->conversions[i].dest_offset+extra_dest_offset,
-		      conv->conversions[i].dest_size,
-		      src_oprnd.data_type, dst_is_aligned);
-	    free_oprnd(c, src_oprnd);
-	} else if (!byte_swap &&
-		   (src_spec->src_float_format == src_spec->target_float_format) &&
-		   (src_spec->size == conv->conversions[i].dest_size) &&
-		   (conv->conversions[i].subconversion == NULL) &&
-		   (elements != -1) &&
-		   (conv->conversions[i].rc_swap == no_row_column_swap) &&
-		   ((src_spec->data_type != string_type))) {
-	    /* data movement is all that is required */
-	    int total_size = src_spec->size * elements;
-
-	    if (total_size <= sizeof(long)) {
-		iogen_oprnd src_oprnd;
-		int src_is_aligned = (assume_align >= sizeof(long)) &
-		    (((src_spec->offset +extra_src_offset) % 8) == 0);
-		int dst_is_aligned = (assume_align >= sizeof(long)) &
-		    (((conv->conversions[i].dest_offset + extra_dest_offset) % 8) == 0);
-		src_oprnd = gen_fetch(c, src_addr, 
-				      src_spec->offset + extra_src_offset,
-				      total_size, src_spec->data_type,
-				      src_is_aligned, 0);
-		gen_store(c, src_oprnd, dest_addr,
-			  conv->conversions[i].dest_offset+extra_dest_offset,
-			  conv->conversions[i].dest_size,
-			  src_spec->data_type, dst_is_aligned);
-		free_oprnd(c, src_oprnd);
-	    } else {
-		gen_memcpy(c, src_addr, src_spec->offset + extra_src_offset, 
-			   dest_addr,
-			   conv->conversions[i].dest_offset + extra_dest_offset,
-			   0, total_size);
-	    }
-	} else if ((conv->conversions[i].rc_swap == no_row_column_swap) ||
-		   (elements == -1) /* var array */ ){
-	    dill_reg loop_var;
-	    int loop;
-
-	    int dest_offset = conv->conversions[i].dest_offset + extra_dest_offset;
-	    int src_offset = src_spec->offset + extra_src_offset;
-	    FMdata_type dest_type = src_spec->data_type;
-	    int dest_size = conv->conversions[i].dest_size;
-	    struct _FMgetFieldStruct tmp_spec;  /* OK */
-	    tmp_spec = *src_spec;
-	    tmp_spec.offset = 0;
-
-	    if (elements == -1) {
-		/* really a variant array, adjust address like a string */
-		tmp_spec.data_type = string_type;
-		tmp_spec.size = conv->ioformat->body->pointer_size;
-		dest_type = string_type;
-		dest_size = conv->target_pointer_size;
-		elements = 1;
-	    }
-	    if (elements == 1) {   /* GSE fix this */
-		old_gen_subfield_conv(c, conv, i, tmp_spec, dest_type, 
-				  assume_align, src_addr, src_offset,
-				  dest_size, dest_addr, dest_offset,
-				  control_base,
-				  final_string_base, src_string_base,
-				  register_args);
-	    } else {
-		int src_align_offset = src_offset %
-		    subfield_required_align(c, &conv->conversions[i], 0);
-		int loop_var_type;
-#ifdef RAW
-		int src_storage = ffs_local(c, DILL_P);
-		int dest_storage = ffs_local(c, DILL_P);
-		int loop_storage = 0;
-
-		/* save values of src_addr and dest_addr */
-		dill_stpi(c, src_addr, dill_lp(c), src_storage);
-		dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
-#endif
-		if (((elements == -1) ||
-		    (conv->conversions[i].subconversion == NULL)) &&
-		    !debug_code_generation) {
-		    if (!ffs_getreg(c, &loop_var, DILL_I, DILL_TEMP))
-			gen_fatal("gen field convert out of registers BB \n");
-		    loop_var_type = DILL_TEMP;
-		} else {
-		    /* may call a subconversion in here, use VARs */
-		    if (!ffs_getreg(c, &loop_var, DILL_I, DILL_VAR))
-			gen_fatal("gen field convert out of registers CC\n");
-		    loop_var_type = DILL_VAR;
-		}
-		REG_DEBUG(("Getting3 %d as loop_var\n", _vrr(loop_var)));
-		dill_addpi(c, src_addr, src_addr, src_offset - src_align_offset);
-		dill_addpi(c, dest_addr, dest_addr, dest_offset);
-
-		if (elements == -1) {
-		    /* 
-		     * really a variant array, adjust address like a string 
-		     */
-		    tmp_spec.data_type = string_type;
-		    tmp_spec.size = conv->ioformat->body->pointer_size;
-		}
-		/* gen conversion loop */
-		loop = dill_alloc_label(c);
-		dill_seti(c, loop_var, elements);
-		dill_mark_label(c, loop);
-#ifdef RAW
-		if (!register_args) {
-		    /* store away loop var and free the reg */
-		    loop_storage = ffs_local(c, DILL_I);
-		    dill_stii(c, loop_var, dill_lp(c), loop_storage);
-		    REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
-		    ffs_putreg(c, loop_var, DILL_I);
-		}
-#endif
-		old_gen_subfield_conv(c, conv, i, tmp_spec, dest_type, assume_align,
-				  src_addr, src_align_offset,
-				  dest_size, dest_addr, 0,
-				  control_base,
-				  final_string_base, src_string_base,
-				  register_args);
-
-		/* generate end of loop */
-#ifdef RAW
-		if (!register_args) {
-		    /* store away loop var and free the reg */
-		    ffs_getreg(c, &loop_var, DILL_I, loop_var_type);
-		    REG_DEBUG(("Getting2 %d as loop_var\n", _vrr(loop_var)));
-		    dill_ldii(c, loop_var, dill_lp(c), loop_storage);
-		}
-#endif
-		dill_subli(c, loop_var, loop_var, 1);
-		dill_addpi(c, src_addr, src_addr, tmp_spec.size);
-		dill_addpi(c, dest_addr, dest_addr,
-			conv->conversions[i].dest_size);
-		if (debug_code_generation) {
-		    dill_scallv(c, (void*)printf, "printf", "%P%p%p%p",
-			     "loopvar = %x, src %x, dest %x\n", loop_var,
-			     src_addr, dest_addr);
-		}
-		dill_bgtli(c, loop_var, 0, loop);
-		ffs_putreg(c, loop_var, DILL_I);
-		REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
-
-#ifdef RAW
-		/* restore values of src_addr and dest_addr */
-		dill_ldpi(c, src_addr, dill_lp(c), src_storage);
-		dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
-#endif
-	    }
-	} else {   
-	    /* 
-	     * the only remaining possibility is that this is a
-	     * multi-dimensional array that requires a transpose as well as
-	     * some possible conversion
-	     */
-	    int src_storage = ffs_local(c, DILL_P);
-	    int dest_storage = ffs_local(c, DILL_P);
-	    
-	    /* save values of src_addr and dest_addr */
-	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
-	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
-	    
-	    
-/*	    generate_transpose(
-	    dill_scallv(c, transpose, "transpose");*/
-	    /* restore values of src_addr and dest_addr */
-	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
-	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
-	    
-	}
-    }
-    return NULL;
-}
-
 static void
 generate_convert_field(c, conv_status, src_addr, src_offset, 
 		       dest_addr, dest_offset,
@@ -3081,27 +2774,6 @@ int data_already_copied;
 #endif
 	dill_stpi(c, actual_dest_reg, dest_addr, dest_offset);
 
-#ifdef NOT
-	char *new_src, *new_dest;
-	int offset = get_offset_for_addr(src_field_addr, conv_status, 
-					 conv);
-	new_convert_address_field(offset, &new_src, dest_field_addr, 
-			      &new_dest, conv_status, 8);
-	if (new_dest == NULL) break;
-	if ((offset != 0) && type_desc->pointer_recursive) {
-	    /* GSE */
-	    if (offset <= conv_status->cur_offset) {
-		break;
-	    }
-	}
-	conv_status->cur_offset = offset;
-	/* at this point...  We should tweak conv_status->dest_offset_adjust 
-	 * IFF the src and dest sizes of the thing pointed to by this 
-	 * pointer are different.   Also, memcpy src to dest if necessary.
-	 */
-	new_convert_field(new_src, new_dest, conv_status, conv,
-			  type_desc->next, 0);
-#endif
 	break;
     }
     case FMType_string:{
@@ -3124,6 +2796,7 @@ int data_already_copied;
 
 #endif
 	    dill_scallv(c, (void*)strcpy, "strcpy", "%p%p", actual_dest_reg, actual_src_reg);
+
 	}
 	dill_mark_label(c, null_target);
 	
@@ -3164,6 +2837,10 @@ int data_already_copied;
 	    ffs_putreg(c, new_dest, DILL_P);
 	} else {
 	    dill_reg reg_rt_conv_status;
+	    dill_reg new_src, new_dest, ret;
+	    if (!ffs_getreg(c, &new_src, DILL_P, DILL_TEMP) ||
+		!ffs_getreg(c, &new_dest, DILL_P, DILL_TEMP))
+		gen_fatal("temp vals in subcall\n");
 #ifdef RAW
 	    int src_storage = ffs_local(c, DILL_P);
 	    int dest_storage = ffs_local(c, DILL_P);
@@ -3176,11 +2853,11 @@ int data_already_copied;
 	    if (!ffs_getreg(c, &reg_rt_conv_status, DILL_P, DILL_TEMP))
 		gen_fatal("temp string vals in subcall\n");
 	    REG_DEBUG(("Getting %d and %d for reg_rt_conv_status\n", reg_rt_conv_status));
-	    dill_addpi(c, src_addr, src_addr, src_offset);
-	    dill_addpi(c, dest_addr, dest_addr, dest_offset);
+	    dill_addpi(c, new_src, src_addr, src_offset);
+	    dill_addpi(c, new_dest, dest_addr, dest_offset);
 	    dill_ldpi(c, reg_rt_conv_status, dill_lp(c), rt_conv_status);
-	    dill_scallp(c, conv->subconversion->conv_func, name, "%p%p%p", src_addr,
-			dest_addr, reg_rt_conv_status);
+	    dill_scallp(c, conv->subconversion->conv_func, name, "%p%p%p", new_src,
+			new_dest, reg_rt_conv_status);
 	    REG_DEBUG(("Putting %d reg_rt_conv_status\n", reg_rt_conv_status));
 	    ffs_putreg(c, reg_rt_conv_status, DILL_P);
 	    /* restore values of src_addr and dest_addr */
@@ -3210,17 +2887,6 @@ int data_already_copied;
 	    next = next->next;
 	}
 	
-	if (!data_already_copied) {
-/*	    int base_delta = decode_size_delta(conv_status, conv, next);
-	    int total_delta = base_delta * elements;
-	    conv_status->dest_offset_adjust += total_delta;
-	    if (1) {
-		int base_size = item_size(conv_status, conv, next);
-		memcpy(dest_field_addr, src_field_addr, base_size * elements);
-	    }
-	    data_already_copied = 1;*/
-	}
-
 	dill_reg loop_var;
 	int src_align_offset = src_offset %subfield_required_align(c, conv, 0);
 	int loop_var_type;
@@ -3234,7 +2900,18 @@ int data_already_copied;
 	/* save values of src_addr and dest_addr */
 	dill_stpi(c, src_addr, dill_lp(c), src_storage);
 	dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
+#else
+	{
+	    dill_reg tmp_src, tmp_dest;
+	    ffs_getreg(c, &tmp_src, DILL_P,DILL_TEMP);
+	    ffs_getreg(c, &tmp_dest, DILL_P,DILL_TEMP);
+	    dill_movp(c, tmp_src, src_addr);
+	    dill_movp(c, tmp_dest, dest_addr);
+	    src_addr = tmp_src;
+	    dest_addr = tmp_dest;
+	}
 #endif
+
 	if (((conv->subconversion == NULL)) &&
 	    !debug_code_generation) {
 	    if (!ffs_getreg(c, &loop_var, DILL_I, DILL_TEMP))
@@ -3265,6 +2942,34 @@ int data_already_copied;
 	    }
 	    next = next->next;
 	}
+	if (!data_already_copied) {
+	    int base_delta = decode_size_delta(conv_status, conv, next);
+	    int base_size = item_size(conv_status, conv, next);
+	    dill_reg size;
+	    ffs_getreg(c, &size, DILL_I, DILL_TEMP);
+	    dill_mulii(c, size, loop_var, base_size);
+#ifdef VERBOSE
+	    dill_scallv(c, (void*)printf, "printf", "%P%p%p",
+			"Calling Memcpy with args %lx, %lx, %d\n",dest_addr, src_addr, size);
+
+#endif
+	    dill_scallv(c, (void*)memcpy, "memcpy", "%p%p%i",
+			dest_addr, src_addr, size);
+	    if (base_delta != 0) {
+		dill_reg dest_src_ptr, delta;
+		ffs_getreg(c, &delta, DILL_I, DILL_TEMP);
+		ffs_getreg(c, &dest_src_ptr, DILL_I, DILL_TEMP);
+		dill_mulii(c, delta, loop_var, base_delta);
+#ifdef VERBOSE
+		dill_scallv(c, (void*)printf, "printf", "%P%p",
+			    "Adjusting dest_pointer_base by %lx\n", delta);
+#endif
+		dill_ldpi(c, dest_src_ptr, rt_conv_status, FMOffset(RTConvStatus,dest_pointer_base));
+		dill_addp(c, dest_src_ptr, dest_src_ptr, delta);
+		dill_stpi(c, dest_src_ptr, rt_conv_status, FMOffset(RTConvStatus,dest_pointer_base));
+	    }
+	}
+
 	dill_mark_label(c, loop);
 #if defined(NOT) & defined(RAW)
 	if (!register_args) {
@@ -3445,324 +3150,7 @@ int register_args;
 	}
 	generate_convert_field(c, conv_status, src_addr, src_offset, dest_addr, dest_offset,
 			       rt_conv_status, &conv->conversions[i], type_desc, 
-			       1);
-    }
-}
-
-static void
-gen_var_part_conv(c, conv, i, control_base, assume_align, dest_addr,
-		  src_addr, src_string_base, final_string_base, 
-		  register_args)
-dill_stream c;
-IOConversionPtr conv;
-int i;
-int control_base;
-int assume_align;
-dill_reg src_addr, dest_addr;
-dill_reg src_string_base, final_string_base;
-int register_args;
-{
-    const char *field_name;
-    int src_offset = conv->conversions[i].src_field.offset;
-    int j = 0;
-    /* 
-     * This section handles converting or moving the body 
-     * of a dynamic array or string (the actual pointer was handled 
-     * above)
-     */
-
-    int elements = 
-	get_static_array_element_count(conv->conversions[i].iovar);
-    while (conv->ioformat->body->field_list[j].field_offset != src_offset)
-	j++;
-    field_name = conv->ioformat->body->field_list[j].field_name;
-/** handle copying or conversion */
-    if (debug_code_generation) {
-	if (register_args) {
-	    dill_scallv(c, (void*)printf, "printf", "%P%P%I%p%p%p%p",
-		     "varconvpart conversion \"%s\" %d src %lx, dest %lx, src_string_base %lx, final_string_base %lx\n",
-		     field_name,
-		     i, src_addr, dest_addr, 
-		     src_string_base, final_string_base);
-	} else {
-#ifdef HAVE_DILL_H	    
-	    dill_reg v_at;
-	    if (ffs_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
-		gen_fatal("Out of regs 1\n");
-	    }
-#endif
-	    dill_scallv(c, (void*)printf, "printf", "%P%P%I%p%p",
-		     "varconvpart conversion \"%s\" %d src %lx, dest %lx\n",
-		     field_name,
-		     i, src_addr, dest_addr);
-	    dill_ldpi(c, v_at, dill_lp(c), src_string_base);
-	    dill_scallv(c, (void*)printf, "printf", "%P%p",
-		     "                       src_string_base %lx\n",
-		     v_at);
-	    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-	    dill_scallv(c, (void*)printf, "printf", "%P%p",
-		     "                       final_string_base %lx\n",
-		     v_at);
-#ifdef HAVE_DILL_H	    
-	    ffs_putreg(c, v_at, DILL_I);
-#endif
-	}
-    }
-    if (elements != -1) {
-	/* generate a call to strcpy to do the move */
-	int end = dill_alloc_label(c);
-	dill_beqpi(c, dest_addr, 0, end);
-
-	dill_scallv(c, (void*)strcpy, "strcpy", "%p%p", dest_addr, src_addr);
-	dill_mark_label(c, end);
-	return;
-    }
-    {
-	FMFieldPtr src_spec = &conv->conversions[i].src_field;
-	/* variant array */
-	int byte_swap = conv->conversions[i].src_field.byte_swap;
-	int required_alignment = 1;
-	if (conv->conversions[i].src_field.size == 1) byte_swap = 0;
-	if (conv->conversions[i].subconversion != NULL) {
-	    required_alignment = 
-		conv->conversions[i].subconversion->required_alignment;
-	} else {
-	    /* overassumption */
-	    required_alignment = conv->conversions[i].dest_size;
-	}
-	if (required_alignment > 1) {
-#ifdef HAVE_DILL_H	    
-	    dill_reg tmp;
-	    if (ffs_getreg(c, &tmp, DILL_I, DILL_TEMP) == 0) {
-		gen_fatal("Out of regs 1\n");
-	    }
-#endif
-	    dill_negl(c, tmp, dest_addr);
-	    dill_andli(c, tmp, tmp, required_alignment -1);
-	    if (register_args) {
-		dill_addl(c, final_string_base, final_string_base, tmp);
-	    } else {
-#ifdef HAVE_DILL_H	    
-		dill_reg v_at;
-		if (ffs_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
-		    gen_fatal("Out of regs 1\n");
-		}
-#endif
-		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-		if (debug_code_generation) {
-		    dill_savel(c, tmp);
-		    dill_savel(c, v_at);
-		    dill_scallv(c, (void*)printf, "printf", "%P%p",
-			    "before adjustment    final_string_base %lx\n",
-			    v_at);
-		    dill_restorel(c, v_at);
-		    dill_restorel(c, tmp);
-		}
-		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-		dill_addl(c, v_at, v_at, tmp);
-		dill_stpi(c, v_at, dill_lp(c), final_string_base);
-		dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-		dill_savel(c, tmp);
-		if (debug_code_generation) {
-		    dill_scallv(c, (void*)printf, "printf", "%P%p",
-			    "after adjustment    final_string_base %lx\n",
-			    v_at);
-		}
-		dill_restorel(c, tmp);
-#ifdef HAVE_DILL_H	    
-		ffs_putreg(c, v_at, DILL_I);
-#endif
-	    }
-	    dill_addp(c, dest_addr, dest_addr, tmp);
-	    if (debug_code_generation) {
-		dill_scallv(c, (void*)printf, "printf", "%P%p%p", "	after dynarray alignment adjustment, dest_addr = %lx, final_string base = %lx\n", dest_addr, final_string_base);
-	    }
-#ifdef HAVE_DILL_H	    
-	    ffs_putreg(c, tmp, DILL_I);
-#endif
-	}
-
-	if (!byte_swap &&
-	    (src_spec->size == conv->conversions[i].dest_size) &&
-	    (conv->conversions[i].subconversion == NULL) &&
-	    (src_spec->data_type != string_type) &&
-	    ((src_spec->data_type != float_type) || 
-		(src_spec->src_float_format == src_spec->target_float_format))) {
-
-	    /* data movement is all that is required */
-	    if (conv->conversion_type == copy_dynamic_portion) {
-		dill_reg size_reg;
-		if (!ffs_getreg(c, &size_reg, DILL_I, DILL_TEMP))
-		    gen_fatal("gen var convert size out of registers BB \n");
-		REG_DEBUG(("Getting %d as size_reg\n", _vrr(size_reg)));
-		/* load control (array size) value */
-		dill_ldii(c, size_reg, dill_lp(c), control_base + i * sizeof(int));
-		/* scale it by destination size */
-		dill_mulii(c, size_reg, (dill_reg)size_reg,
-			conv->conversions[i].dest_size);
-		/* generate a memcpy */
-		gen_memcpy(c, src_addr, 0, dest_addr, 0, size_reg, 0);
-		ffs_putreg(c, size_reg, DILL_I);
-		REG_DEBUG(("Putting %d as size_reg\n", _vrr(size_reg)));
-	    } else {
-		/* 
-		 * not even that is necessary, variant part is
-		 * already where it needs to go 
-		 */
-	    }
-	} else {
-	    /* must do conversions one by one */
-#ifdef RAW
-	    int src_storage = ffs_local(c, DILL_P);
-	    int dest_storage = ffs_local(c, DILL_P);
-	    int local_loop_storage = ffs_local(c, DILL_I);
-	    int local_src_storage = ffs_local(c, DILL_P);
-	    int local_dest_storage = ffs_local(c, DILL_P);
-#endif
-	    dill_reg loop_var;
-	    int dest_size = conv->conversions[i].dest_size;
-	    int loop = dill_alloc_label(c);
-	    int end = dill_alloc_label(c);
-	    FMdata_type dest_type = src_spec->data_type;
-
-#ifdef RAW
-	    /* save values of src_addr and dest_addr */
-	    dill_stpi(c, src_addr, dill_lp(c), src_storage);
-	    dill_stpi(c, dest_addr, dill_lp(c), dest_storage);
-#endif
-
-	    if (((elements == -1) ||
-		 (conv->conversions[i].subconversion == NULL)) &&
-		!debug_code_generation) {
-		if (!ffs_getreg(c, &loop_var, DILL_I, DILL_VAR))
-		    gen_fatal("gen var convert loop out of registers CC\n");
-	    } else {
-		/* may call a subconversion in here, use VARs */
-		if (!ffs_getreg(c, &loop_var, DILL_I, DILL_VAR))
-		    gen_fatal("gen var convert loop out of registers DD\n");
-	    }
-	    REG_DEBUG(("Getting %d as var_loop_var\n", _vrr(loop_var)));
-	    dill_ldii(c, loop_var, dill_lp(c), control_base + i * sizeof(int));
-
-	    if ((dest_size - src_spec->size) != 0) {
-		dill_reg tmp;
-		if (!ffs_getreg(c, &tmp, DILL_I, DILL_TEMP)) {
-		    gen_fatal("in var loop EE");
-		}
-		REG_DEBUG(("Getting %d as tmp str adjust\n", tmp));
-		dill_mulii(c, tmp, loop_var, (dest_size - src_spec->size));
-
-		/* adjust string base !!!!  non-local variation */
-		/* this is because new variant part may change size */
-		if (register_args) {
-		    dill_addl(c, final_string_base, final_string_base, tmp);
-		} else {
-#ifdef HAVE_DILL_H
-		    dill_reg v_at;
-		    if (ffs_getreg(c, &v_at, DILL_I, DILL_TEMP) == 0) {
-			gen_fatal("Out of regs 1\n");
-		    }
-#endif
-		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-		    if (debug_code_generation) {
-			dill_savel(c, tmp);
-			dill_savel(c, v_at);
-			dill_scallv(c, (void*)printf, "printf", "%P%p",
-				 "before adjustment    final_string_base %lx\n",
-				 v_at);
-			dill_restorel(c, v_at);
-			dill_restorel(c, tmp);
-		    }
-		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-		    dill_addl(c, v_at, v_at, tmp);
-		    dill_stpi(c, v_at, dill_lp(c), final_string_base);
-		    dill_ldpi(c, v_at, dill_lp(c), final_string_base);
-		    if (debug_code_generation) {
-			dill_scallv(c, (void*)printf, "printf", "%P%p",
-				 "after adjustment    final_string_base %lx\n",
-				 v_at);
-		    }
-#ifdef HAVE_DILL_H	    
-		    ffs_putreg(c, v_at, DILL_I);
-#endif
-		}
-		ffs_putreg(c, tmp, DILL_I);
-		REG_DEBUG(("Putting %d as tmp str adjust\n", tmp));
-	    }
-	    dill_mark_label(c, loop);
-	    dill_beqli(c, loop_var, 0, end);
-	    if (debug_code_generation) {
-		dill_scallv(c, (void*)printf, "printf", "%P%P%i%p%p",
-			"top varloopvar = %s[%x], src %lx, dest %lx\n",
-			field_name, loop_var, src_addr, dest_addr);
-	    }
-#ifdef RAW
-	    if (!register_args) {
-		/* store away loop var and free the reg */
-		dill_stii(c, loop_var, dill_lp(c), local_loop_storage);
-		ffs_putreg(c, loop_var, DILL_I);
-		REG_DEBUG(("Putting %d as loop_var\n", loop_var));
-	    } else {
-		dill_savep(c, loop_var);
-	    }
-	    dill_stpi(c, src_addr, dill_lp(c), local_src_storage);
-	    dill_stpi(c, dest_addr, dill_lp(c), local_dest_storage);
-#endif
-
-	    if (dest_type != string_type) {
-		int subelement_align = 1;
-		int src_structure_size = conv->conversions[i].src_field.size;
-		if ((src_structure_size & 0x1) == 0) subelement_align = 2;
-		if ((src_structure_size & 0x3) == 0) subelement_align = 4;
-		if ((src_structure_size & 0x7) == 0) subelement_align = 8;
-		if ((src_structure_size & 0xf) == 0) subelement_align = 16;
-		old_gen_subfield_conv(c, conv, i, *src_spec, dest_type,
-				  subelement_align, src_addr, 0, dest_size,
-				  dest_addr, 0,
-				  control_base, final_string_base,
-				  src_string_base, register_args);
-	    } else {
-		IOConversionStruct tmp_conv = *conv;
-		tmp_conv.conv_count = 0;
-		tmp_conv.conversions[0] = conv->conversions[i];
-		tmp_conv.conversions[0].iovar = NULL;
-		old_gen_subfield_conv(c, &tmp_conv, 0, *src_spec, dest_type,
-				  assume_align, src_addr, 0, dest_size,
-				  dest_addr, 0,
-				  control_base, final_string_base,
-				  src_string_base, register_args);
-	    }
-#ifdef RAW
-	    dill_ldpi(c, dest_addr, dill_lp(c), local_dest_storage);
-	    dill_ldpi(c, src_addr, dill_lp(c), local_src_storage);
-	    if (!register_args) {
-		/* store away loop var and free the reg */
-		ffs_getreg(c, &loop_var, DILL_I, DILL_VAR);
-		REG_DEBUG(("Getting %d as lop_var FF\n", loop_var));
-		dill_ldii(c, loop_var, dill_lp(c), local_loop_storage);
-	    } else {
-		dill_restorep(c, loop_var);
-	    }
-#endif
-	    if (debug_code_generation) {
-		dill_scallv(c, (void*)printf, "printf", "%P%P%i%p%p",
-			"bottom varloopvar = %s[%x], src %lx, dest %lx\n",
-			field_name, loop_var, src_addr, dest_addr);
-	    }
-	    dill_subli(c, loop_var, loop_var, 1);
-	    dill_addpi(c, src_addr, src_addr, src_spec->size);
-	    dill_addpi(c, dest_addr, dest_addr,
-		    conv->conversions[i].dest_size);
-	    dill_jv(c, loop);
-	    ffs_putreg(c, loop_var, DILL_I);
-	    REG_DEBUG(("Putting %d as lop_var\n", loop_var));
-	    dill_mark_label(c, end);
-#ifdef RAW
-	    /* restore values of src_addr and dest_addr */
-	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
-	    dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
-#endif
-	}
+			       conv->conversion_type != copy_dynamic_portion);
     }
 }
 

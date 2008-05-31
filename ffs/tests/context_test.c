@@ -1030,17 +1030,17 @@ int test_level;
 		   (buffer_format == string_array_ioformat)) {
 	    int size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(string_array_rec));
-	    string_array_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
+	    string_array_rec *sread_data = get_mem(size);
+	    memset(sread_data, 0, size);
+	    if (!decode_func(rcv_context, buffer, buf_size, sread_data))
 		printf("decode failed, string array format\n");
-	    if (!string_array_eq(read_data, 
+	    if (!string_array_eq(sread_data, 
 				 &string_array_array[string_array_count[test_level]++])) {
 		printf("string array failure\n");
 		fail++;
 	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
+	    check_mem(size, (char*)sread_data);
+	    free(sread_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "derive") == 0)) &&
 		   (buffer_format == derive_ioformat)) {
 	    int size = size_func(rcv_context, buffer, buf_size, 
