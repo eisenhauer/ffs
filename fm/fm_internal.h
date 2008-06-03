@@ -96,7 +96,7 @@ struct _subformat_wire_format_0 {  /* 20 bytes for base */
 /*byte 12*/   INT4 record_length;
 /*byte 16*/   UINT2 opt_info_offset;
 /*byte 18*/   unsigned char column_major_arrays;  /* false for C, true for Fortran */
-/*byte 19*/   unsigned char unused_in_format_0;
+/*byte 19*/   unsigned char alignment;
 };
 
 struct _format_wire_format {

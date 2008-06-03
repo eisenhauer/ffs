@@ -87,6 +87,89 @@ char **result_p;
     return length;
 }
 
+int
+unix_timeout_read_func(conn, buffer, length, errno_p, result_p)
+void *conn;
+void *buffer;
+int length;
+int *errno_p;
+char **result_p;
+{
+    int left = length;
+    int count = 2;
+    int iget;
+    int fd = (int) (long) conn;
+    int fdflags = fcntl(fd, F_GETFL, 0);
+
+    fdflags |= O_NONBLOCK;
+    if (fcntl(fd, F_SETFL, fdflags) == -1) 
+	perror("fcntl block");
+    iget = read(fd, (char *) buffer, length);
+    if (iget == 0) {
+	*result_p = "End of file";
+	*errno_p = 0;
+	fdflags &= ~O_NONBLOCK;
+	if (fcntl(fd, F_SETFL, fdflags) == -1) 
+	    perror("fcntl nonblock");
+	return 0;		/* end of file */
+    } else if (iget == -1) {
+	int lerrno = errno;
+	*errno_p = lerrno;
+	if ((lerrno != EWOULDBLOCK) &&
+	    (lerrno != EAGAIN) &&
+	    (lerrno != EINTR)) {
+	    /* serious error */
+	    fdflags &= ~O_NONBLOCK;
+	    if (fcntl(fd, F_SETFL, fdflags) == -1) 
+		perror("fcntl nonblock");
+	    return -1;
+	} else {
+	    *errno_p = 0;
+	    iget = 0;
+	}
+    }
+    left = length - iget;
+    while (left > 0) {
+	count--;
+	if (count <= 0) {
+	    fdflags &= ~O_NONBLOCK;
+	    if (fcntl(fd, F_SETFL, fdflags) == -1) 
+		perror("fcntl nonblock");
+	    return -1;
+	}
+	sleep(1);
+	iget = read(fd, (char *) buffer + length - left, left);
+	if (iget == 0) {
+	    *result_p = "End of file";
+	    *errno_p = 0;
+	    fdflags &= ~O_NONBLOCK;
+	    if (fcntl(fd, F_SETFL, fdflags) == -1) 
+		perror("fcntl nonblock");
+	    return length - left;	/* end of file */
+	} else if (iget == -1) {
+	    int lerrno = errno;
+	    *errno_p = errno;
+	    if ((lerrno != EWOULDBLOCK) &&
+		(lerrno != EAGAIN) &&
+		(lerrno != EINTR)) {
+		/* serious error */
+		fdflags &= ~O_NONBLOCK;
+		if (fcntl(fd, F_SETFL, fdflags) == -1) 
+		    perror("fcntl nonblock");
+		return (length - left);
+	    } else {
+		*errno_p = 0;
+		iget = 0;
+	    }
+	}
+	left -= iget;
+    }
+    fdflags &= ~O_NONBLOCK;
+    if (fcntl(fd, F_SETFL, fdflags) == -1) 
+	perror("fcntl nonblock");
+    return length;
+}
+
 static int
 unix_readv_func(conn, iov, icount, errno_p, result_p)
 void *conn;

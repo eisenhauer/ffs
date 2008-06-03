@@ -601,6 +601,7 @@ new_FMFormat()
     ioformat->master_struct_list = NULL;
     ioformat->format_name = NULL;
     ioformat->byte_reversal = 0;
+    ioformat->alignment = 0;
     ioformat->column_major_arrays = 0; /* by default, C mode */
     ioformat->recursive = 0;
     ioformat->float_format = fm_my_float_format;
@@ -773,6 +774,77 @@ gen_type_desc(FMFormat f, int field, const char *typ)
     }
 }
 
+typedef struct {
+    char tmp;
+    void *p;
+} *sp;
+
+typedef struct {
+    char tmp;
+    short s;
+} *ss;
+
+typedef struct {
+    char tmp;
+    int i;
+} *si;
+
+typedef struct {
+    char tmp;
+    long l;
+} *sl;
+
+typedef struct {
+    char tmp;
+    float f;
+} *sf;
+
+typedef struct {
+    char tmp;
+    double d;
+} *sd;
+
+static int
+type_alignment(ioformat, field)
+FMFormat ioformat;
+int field;
+{
+    FMVarInfoList var = &ioformat->var_list[field];
+    FMTypeDesc *t = &var->type_desc;
+    int size = ioformat->field_list[field].field_size;
+    while (t != NULL) {
+	switch (t->type) {
+	case FMType_pointer:
+	case FMType_string:
+	    return FMOffset(sp, p);
+	case FMType_array:
+	    t = t->next;
+	    break;
+	case FMType_subformat:
+	    return ioformat->field_subformats[field]->alignment;
+	case FMType_simple:
+	    switch(t->data_type) {
+	    case integer_type: case unsigned_type:
+	    case enumeration_type: case boolean_type: case char_type:
+		if (size == 1) return 1;
+		if ((size == sizeof(short)) || (size < sizeof(int)))
+		    return FMOffset(ss, s);
+		if ((size < sizeof(int))  || (size < sizeof(long)))
+		    return FMOffset(si, i);
+		return FMOffset(sl, l);
+		break;
+	    case unknown_type: case string_type:
+		assert(0);
+	    case float_type:
+		if (size < sizeof(float)) return size;
+		if (size < sizeof(double)) return FMOffset(sf, f);
+		return FMOffset(sd, d);
+	    }
+	    break;
+	}
+    }
+}
+
 static void
 gen_var_dimens(FMFormat ioformat, int field)
 {
@@ -850,7 +922,10 @@ FMFormat *formats;
     FMFieldList field_list = ioformat->field_list;
     int field_count = ioformat->field_count;
     int field;
-
+    static int first = 1;
+    if (first) {
+	first = 0;
+    }
     if (ioformat->var_list)
 	free(ioformat->var_list);
     if (ioformat->field_subformats)
@@ -859,8 +934,10 @@ FMFormat *formats;
 	malloc((size_t) sizeof(FMVarInfoStruct) * field_count);
     ioformat->field_subformats = malloc(sizeof(FMFormat) * field_count);
     ioformat->var_list = new_var_list;
+    ioformat->alignment = 1;
     for (field = 0; field < field_count; field++) {
 	long elements;
+	int type_align;
 	new_var_list[field].string = 0;
 	new_var_list[field].var_array = 0;
 	new_var_list[field].byte_vector = 0;
@@ -908,6 +985,10 @@ FMFormat *formats;
 	    ioformat->field_subformats[field] = subformat;
 	}
 	gen_var_dimens(ioformat, field);
+	type_align = type_alignment(ioformat, field);
+	if (ioformat->alignment < type_align) {
+	    ioformat->alignment = type_align;
+	}
     }
     return 1;
 }
@@ -963,7 +1044,7 @@ int *super_rep_size;
     rep->f.f0.header_size = sizeof(struct _subformat_wire_format_0);
     
     rep->f.f0.column_major_arrays = ioformat->column_major_arrays;
-    rep->f.f0.unused_in_format_0 = 0;  /* so it's not random */
+    rep->f.f0.alignment = ioformat->alignment;
     rep->f.f0.opt_info_offset = 0; /* will be set later */
 
     string_base = (char *) rep;
@@ -2382,11 +2463,11 @@ dump_FMFormat(ioformat)
 FMFormat ioformat;
 {
     int index, i;
-    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d;\n\t\t  Pointer size = %d; Column_major_arrays = %d; File Version = %d; ",
+    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
 	   ioformat->format_name, ioformat->record_length,
 	   ioformat->field_count, ioformat->byte_reversal,
 	   ioformat->pointer_size, ioformat->column_major_arrays,
-	   ioformat->IOversion);
+	   ioformat->alignment, ioformat->IOversion);
     printf("Server ID = ");
     for (i = 0; i < ioformat->server_ID.length; i++) {
 	printf("%02x", ((unsigned char *) ioformat->server_ID.value)[i]);
@@ -2451,6 +2532,7 @@ FMFormat ioformat;
     printf("<recordLength>%d</recordLength>\n", ioformat->record_length);
     printf("<fieldCount>%d</fieldCount>\n", ioformat->field_count);
     printf("<byteReversal>%d</byteReversal>\n", ioformat->byte_reversal);
+    printf("<alignment>%d</alignment>\n", ioformat->alignment);
     printf("<columnMajorArrays>%d</columnMajorArrays>\n", ioformat->column_major_arrays);
     printf("<pointerSize>%d</pointerSize>\n", ioformat->pointer_size);
     printf("<IOversion>%d</IOversion>\n", ioformat->IOversion);
@@ -3206,6 +3288,31 @@ int byte_reversal;
     return 1;
 }
 
+extern int
+unix_timeout_read_func(void *conn, void *buffer, int length, 
+		       int *errno_p, char **result_p);
+
+static int
+get_serverTimeoutInt(fd, file_int_ptr, byte_reversal)
+void *fd;
+FILE_INT *file_int_ptr;
+int byte_reversal;
+{
+#if SIZEOF_INT == 4
+    int tmp_value;
+    int junk_errno;
+    char *junk_result_str;
+    if (unix_timeout_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4)
+	return 0;
+#else
+    Baaad shit;
+#endif
+    if (byte_reversal)
+	byte_swap((char *) &tmp_value, 4);
+    *file_int_ptr = tmp_value;
+    return 1;
+}
+
 static int server_read_failure = 0;
 
 extern int
@@ -3567,6 +3674,7 @@ struct _subformat_wire_format *rep;
 	struct _opt_info_wire_format tmp_info;
 	int offset, info_count = 0;
 
+	format->alignment = rep->f.f0.alignment;
 	format->column_major_arrays = rep->f.f0.column_major_arrays;
 	tmp = rep->f.f0.opt_info_offset;
 	if (byte_reversal) byte_swap((char*)&tmp, 2);
@@ -4086,7 +4194,7 @@ FSClient fsc;
     FILE_INT pid = getpid();
 
     fsc->byte_reversal = 0;
-    get_serverAtomicInt(fsc->fd, &magic, fsc->byte_reversal);
+    get_serverTimeoutInt(fsc->fd, &magic, fsc->byte_reversal);
 
     switch (magic) {
     case MAGIC_NUMBER:

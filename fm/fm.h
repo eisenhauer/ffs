@@ -123,6 +123,7 @@ typedef struct _FMFormatBody {
     int field_count;
     int variant;
     int recursive;
+    int alignment;
     int column_major_arrays;
     FMStructDescList master_struct_list;
     FMStructDescList orig_struct_list;	/* we don't own this memory */
