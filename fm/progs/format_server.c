@@ -114,7 +114,6 @@ char **argv;
 	    printf("Format server already running.  Exiting\n");
 	}
 	exit(0);
-#ifdef HAVE_FORK
     } else {
 	/* make really, really certain there's no format_server running */
 	FILE *format_server_pid_file = fopen(format_server_pid, "r");
@@ -154,7 +153,6 @@ char **argv;
 		printf("Running...\n");
 	    }
 	}
-#endif
     }
 
     {
