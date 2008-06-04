@@ -572,7 +572,7 @@ int converted_strings;
 	    default_val = NULL;
 	}
     }
-    conv_ptr->conv_func = generate_conversion(conv_ptr, 8);
+    conv_ptr->conv_func = generate_conversion(conv_ptr, src_ioformat->body->alignment, 4);
     switch(conv_ptr->required_alignment) {
     case 1:
 	conv_ptr->conv_func1 = conv_ptr->conv_func;
@@ -680,7 +680,7 @@ link_conversion_sets(FFSTypeHandle ioformat)
 	if (th->conversion->conv_pkg != NULL) {
 	    externs[i].extern_value = dill_package_entry(th->conversion->conv_pkg);
 	} else {
-	    externs[i].extern_value = th->conversion->conv_func;
+	    externs[i].extern_value = (void *)th->conversion->conv_func;
 	}
     }
     externs[subformat_count].extern_name = FFSTypeHandle_name(ioformat);
@@ -688,7 +688,7 @@ link_conversion_sets(FFSTypeHandle ioformat)
 	externs[subformat_count].extern_value = 
 	    dill_package_entry(ioformat->conversion->conv_pkg);
     } else {
-	externs[subformat_count].extern_value = ioformat->conversion->conv_func;
+	externs[subformat_count].extern_value = (void*)ioformat->conversion->conv_func;
     }
     externs[subformat_count+1].extern_name = NULL;
     externs[subformat_count+1].extern_value = NULL;
@@ -1863,9 +1863,10 @@ int ffs_getreg(void*s, int reg, int type) {}
 int ffs_localb(void*s, int reg, int type) {}
 extern
  conv_routine
-generate_conversion(conv, alignment)
+generate_conversion(conv, src_alignment, dest_alignment)
 IOConversionPtr conv;
-int alignment;
+int src_alignment;
+int dest_alignment;
 {
     return NULL;
 }
@@ -1956,14 +1957,7 @@ IOConversionPtr conv;
     int i;
     int required_align = 0;
     if (conv->conv_count == 0) return 0;
-    for (i = 0; i < conv->conv_count; i++) {
-	int subfield_requires = 
-	    subfield_required_align(c, &conv->conversions[i],
-				    conv->conversions[i].src_field.offset);
-	required_align = max(subfield_requires, required_align);
-    }
-    assert(required_align != 0);
-    return required_align;
+    return conv->ioformat->body->alignment;
 }
 
 static
@@ -2020,9 +2014,10 @@ int ffs_putreg(dill_stream s, int reg, int type)
 
 extern
  conv_routine
-generate_conversion(conv, base_alignment)
+generate_conversion(conv, src_alignment, dest_alignment)
 IOConversionPtr conv;
-int base_alignment;
+int src_alignment;
+int dest_alignment;
 {
     dill_stream c = NULL;
     dill_exec_handle conversion_handle;
@@ -2199,7 +2194,6 @@ int base_alignment;
 	    dill_mark_label(c, zero_target);
 	}
     }
-/*    generate_conversion_code(c, conv, args, base_alignment, register_args, 0, 0);*/
     
     cs.src_pointer_base = 0;
     cs.dest_pointer_base = 0;
@@ -2212,7 +2206,7 @@ int base_alignment;
     cs.register_args = register_args;
     cs.global_conv = conv;
     conv->conv_pkg = NULL;
-    new_generate_conversion_code(c, &cs, conv, args, base_alignment, register_args);
+    new_generate_conversion_code(c, &cs, conv, args, src_alignment, register_args);
     dill_retp(c, args[2]);
     if (conv->conv_pkg == (char*)-1) {
 	int pkg_len;
@@ -2530,6 +2524,7 @@ int null_target;
 	    tmp_oprnd = gen_size_conversion(c, src_oprnd, sizeof(long));
 	    free_oprnd(c, src_oprnd);
 	    src_oprnd = tmp_oprnd;
+	    *string_dest_reg = src_oprnd.vc_reg;
 	}
 #ifdef VERBOSE
 	dill_scallv(c, (void*)printf, "printf", "%P%i%p%I",
@@ -2571,11 +2566,12 @@ int null_target;
 	    dill_ldpi(c, tmp_dest_reg, tmp_dest_reg, FMOffset(RTConvStatus, dest_pointer_base));
 	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, tmp_dest_reg);
 	}
-	dill_mark_label(c, null_target);
+/*	dill_mark_label(c, null_target);*/
 
 	dill_movp(c, *string_dest_reg, src_oprnd.vc_reg);
 	if (dest_size > sizeof(char *)) {
 	    iogen_oprnd tmp_oprnd;
+	    printf("Doing gen size conversion\n");
 	    tmp_oprnd = gen_size_conversion(c, src_oprnd,
 					    dest_size);
 	    free_oprnd(c, src_oprnd);
@@ -2825,7 +2821,7 @@ int data_already_copied;
 		       new_src, new_dest));
 	    dill_addpi(c, new_src, src_addr, src_offset);
 	    dill_addpi(c, new_dest, dest_addr, dest_offset);
-	    ret = dill_scallp(c, conv->subconversion->conv_func, name, "%p%p%p", new_src,
+	    ret = dill_scallp(c, (void*)conv->subconversion->conv_func, name, "%p%p%p", new_src,
 			      new_dest, rt_conv_status);
 	    REG_DEBUG(("Putting %d and %d for new src & dest\n", 
 		       new_src, new_dest));
@@ -2856,7 +2852,7 @@ int data_already_copied;
 	    dill_addpi(c, new_src, src_addr, src_offset);
 	    dill_addpi(c, new_dest, dest_addr, dest_offset);
 	    dill_ldpi(c, reg_rt_conv_status, dill_lp(c), rt_conv_status);
-	    dill_scallp(c, conv->subconversion->conv_func, name, "%p%p%p", new_src,
+	    dill_scallp(c, (void*)conv->subconversion->conv_func, name, "%p%p%p", new_src,
 			new_dest, reg_rt_conv_status);
 	    REG_DEBUG(("Putting %d reg_rt_conv_status\n", reg_rt_conv_status));
 	    ffs_putreg(c, reg_rt_conv_status, DILL_P);
@@ -2888,7 +2884,6 @@ int data_already_copied;
 	}
 	
 	dill_reg loop_var;
-	int src_align_offset = src_offset %subfield_required_align(c, conv, 0);
 	int loop_var_type;
 
 	int loop;
@@ -2924,7 +2919,7 @@ int data_already_copied;
 	    loop_var_type = DILL_VAR;
 	}
 	REG_DEBUG(("Getting1 %d as loop_var\n", _vrr(loop_var)));
-	dill_addpi(c, src_addr, src_addr, src_offset - src_align_offset);
+	dill_addpi(c, src_addr, src_addr, src_offset);
 	dill_addpi(c, dest_addr, dest_addr, dest_offset);
 
 	/* gen conversion loop */

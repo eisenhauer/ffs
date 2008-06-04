@@ -175,7 +175,7 @@ extern int validate_data_type(const char *str);
 extern int min_align_type(FMdata_type typ, int size);
 extern void init_float_formats();
 extern conv_routine generate_conversion(IOConversionPtr conv, 
-					      int base_alignment);
+					int src_alignment, int dest_alignment);
 extern void ffs_internal_convert_field(FMFieldPtr src_spec, void *src,
 				       FMdata_type dest_type, 
 				       int dest_size, void *dest);
