@@ -1199,6 +1199,7 @@ int size;
 	int id_len;
 	char *server_rep;
 	int rep_len;
+	if (verbose) dump_FMFormat(format);
 	server_id = get_server_ID_FMformat(format, &id_len);
 	server_rep = get_server_rep_FMformat(format, &rep_len);
 
