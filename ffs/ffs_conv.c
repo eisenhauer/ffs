@@ -2867,7 +2867,9 @@ int data_already_copied;
     case FMType_simple: {
 	struct _FMgetFieldStruct tmp_spec = conv->src_field;
 	tmp_spec.offset = 0;
-	gen_simple_field_conv(c, tmp_spec, 8, src_addr, src_offset, 
+	gen_simple_field_conv(c, tmp_spec, 
+			      conv_status->global_conv->required_alignment, 
+			      src_addr, src_offset, 
 			      conv->dest_size, tmp_spec.data_type, 
 			      dest_addr, dest_offset);
 	break;
