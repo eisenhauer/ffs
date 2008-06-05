@@ -289,6 +289,7 @@ int converted_strings;
     conv_ptr->conv_func4 = NULL;
     conv_ptr->conv_func2 = NULL;
     conv_ptr->conv_func1 = NULL;
+    conv_ptr->conv_pkg = NULL;
     conv_ptr->string_offset_size = string_offset_size;
     conv_ptr->converted_strings = converted_strings;
 
