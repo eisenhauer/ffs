@@ -1504,7 +1504,7 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	    int base_delta = decode_size_delta(conv_status, conv, next);
 	    int total_delta = base_delta * elements;
 	    conv_status->dest_offset_adjust += total_delta;
-	    if (1) {
+	    if (conv_status->global_conv->conversion_type == copy_dynamic_portion) {
 		int base_size = item_size(conv_status, conv, next);
 		memcpy(dest_field_addr, src_field_addr, base_size * elements);
 	    }
@@ -2889,7 +2889,7 @@ int data_already_copied;
 	dill_reg loop_var;
 	int loop_var_type;
 
-	int loop;
+	int loop_head, loop_end;
 #ifdef RAW
 	int src_storage = ffs_local(c, DILL_P);
 	int dest_storage = ffs_local(c, DILL_P);
@@ -2926,7 +2926,8 @@ int data_already_copied;
 	dill_addpi(c, dest_addr, dest_addr, dest_offset);
 
 	/* gen conversion loop */
-	loop = dill_alloc_label(c);
+	loop_head = dill_alloc_label(c);
+	loop_end = dill_alloc_label(c);
 	dill_seti(c, loop_var, static_elements);
 	next = type_desc;
 	while (next->type == FMType_array) {
@@ -2942,17 +2943,18 @@ int data_already_copied;
 	}
 	if (!data_already_copied) {
 	    int base_delta = decode_size_delta(conv_status, conv, next);
-	    int base_size = item_size(conv_status, conv, next);
-	    dill_reg size;
-	    ffs_getreg(c, &size, DILL_I, DILL_TEMP);
-	    dill_mulii(c, size, loop_var, base_size);
+	    if (conv_status->global_conv->conversion_type == copy_dynamic_portion) {
+		int base_size = item_size(conv_status, conv, next);
+		dill_reg size;
+		ffs_getreg(c, &size, DILL_I, DILL_TEMP);
+		dill_mulii(c, size, loop_var, base_size);
 #ifdef VERBOSE
-	    dill_scallv(c, (void*)printf, "printf", "%P%p%p",
-			"Calling Memcpy with args %lx, %lx, %d\n",dest_addr, src_addr, size);
-
+		dill_scallv(c, (void*)printf, "printf", "%P%p%p",
+			    "Calling Memcpy with args %lx, %lx, %d\n",dest_addr, src_addr, size);
 #endif
-	    dill_scallv(c, (void*)memcpy, "memcpy", "%p%p%i",
-			dest_addr, src_addr, size);
+		dill_scallv(c, (void*)memcpy, "memcpy", "%p%p%i",
+			    dest_addr, src_addr, size);
+	    }
 	    if (base_delta != 0) {
 		dill_reg dest_src_ptr, delta;
 		ffs_getreg(c, &delta, DILL_I, DILL_TEMP);
@@ -2968,7 +2970,12 @@ int data_already_copied;
 	    }
 	}
 
-	dill_mark_label(c, loop);
+	if (debug_code_generation) {
+	    dill_scallv(c, (void*)printf, "printf", "%P%S%p",
+			"format %s, field Initial loopvar = %x\n", conv_status->global_conv->ioformat->body->format_name, loop_var);
+	}
+	dill_mark_label(c, loop_head);
+	dill_bleii(c, loop_var, 0, loop_end);
 #if defined(NOT) & defined(RAW)
 	if (!register_args) {
 	    /* store away loop var and free the reg */
@@ -2991,7 +2998,7 @@ int data_already_copied;
 	    dill_ldii(c, loop_var, dill_lp(c), loop_storage);
 	}
 #endif
-	dill_subli(c, loop_var, loop_var, 1);
+	dill_subii(c, loop_var, loop_var, 1);
 	dill_addpi(c, src_addr, src_addr, tmp_spec.size);
 	dill_addpi(c, dest_addr, dest_addr, conv->dest_size);
 	if (debug_code_generation) {
@@ -2999,7 +3006,8 @@ int data_already_copied;
 			"loopvar = %x, src %x, dest %x\n", loop_var,
 			src_addr, dest_addr);
 	}
-	dill_bgtli(c, loop_var, 0, loop);
+	dill_jv(c, loop_head);
+	dill_mark_label(c, loop_end);
 	ffs_putreg(c, loop_var, DILL_I);
 	REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
 	
@@ -3009,13 +3017,6 @@ int data_already_copied;
 	dill_ldpi(c, dest_addr, dill_lp(c), dest_storage);
 #endif
     }
-/*	for (i=0; i< elements ; i++) {
-	    new_convert_field(new_src, new_dest, conv_status, conv,
-			      next, data_already_copied);
-	    new_src += conv->src_field.size;
-	    new_dest += conv->dest_size;
-	}
-*/	
 	break;
     }
 }
