@@ -2974,8 +2974,9 @@ int data_already_copied;
 	    dill_scallv(c, (void*)printf, "printf", "%P%S%p",
 			"format %s, field Initial loopvar = %x\n", conv_status->global_conv->ioformat->body->format_name, loop_var);
 	}
-	dill_mark_label(c, loop_head);
+
 	dill_bleii(c, loop_var, 0, loop_end);
+	dill_mark_label(c, loop_head);
 #if defined(NOT) & defined(RAW)
 	if (!register_args) {
 	    /* store away loop var and free the reg */
@@ -3006,7 +3007,7 @@ int data_already_copied;
 			"loopvar = %x, src %x, dest %x\n", loop_var,
 			src_addr, dest_addr);
 	}
-	dill_jv(c, loop_head);
+	dill_bgtii(c, loop_var, 0, loop_head);
 	dill_mark_label(c, loop_end);
 	ffs_putreg(c, loop_var, DILL_I);
 	REG_DEBUG(("Putting %d as loop_var\n", _vrr(loop_var)));
