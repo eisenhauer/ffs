@@ -923,6 +923,7 @@ FMFormat *formats;
     int field_count = ioformat->field_count;
     int field;
     static int first = 1;
+    int do_alignment = 0;
     if (first) {
 	first = 0;
     }
@@ -934,7 +935,10 @@ FMFormat *formats;
 	malloc((size_t) sizeof(FMVarInfoStruct) * field_count);
     ioformat->field_subformats = malloc(sizeof(FMFormat) * field_count);
     ioformat->var_list = new_var_list;
-    ioformat->alignment = 1;
+    if (ioformat->alignment == 0) {
+	do_alignment++;
+	ioformat->alignment = 1;
+    }
     for (field = 0; field < field_count; field++) {
 	long elements;
 	int type_align;
@@ -986,7 +990,7 @@ FMFormat *formats;
 	}
 	gen_var_dimens(ioformat, field);
 	type_align = type_alignment(ioformat, field);
-	if (ioformat->alignment < type_align) {
+	if (do_alignment && (ioformat->alignment < type_align)) {
 	    ioformat->alignment = type_align;
 	}
     }
