@@ -4330,3 +4330,9 @@ format_server_restarted(FMContext context)
     return (ret == 0);
 }
 
+extern void
+set_array_order_FMContext(FMContext iofile, int column_major)
+{
+    iofile->native_column_major_arrays = column_major;
+}
+

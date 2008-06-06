@@ -146,6 +146,9 @@ get_server_ID_FMformat(FMFormat ioformat, int *id_length);
 extern int
 get_rep_len_format_ID(void *format_ID);
 
+extern void
+set_array_order_FMContext(FMContext iofile, int column_major);
+
 FMFormat
 FMformat_from_ID(FMContext iocontext, char *buffer);
 
