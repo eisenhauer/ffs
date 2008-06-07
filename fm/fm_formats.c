@@ -821,6 +821,7 @@ int field;
 	    t = t->next;
 	    break;
 	case FMType_subformat:
+	    assert(ioformat->field_subformats[field]->alignment != 0);
 	    return ioformat->field_subformats[field]->alignment;
 	case FMType_simple:
 	    switch(t->data_type) {
@@ -913,6 +914,23 @@ gen_var_dimens(FMFormat ioformat, int field)
     new_var_list[field].dimen_count = dimen_count;
 }
 
+extern void
+set_alignment(ioformat)
+FMFormat ioformat;
+{
+    int align = 0;
+    int field_align;
+    int field;
+    if (ioformat->alignment != 0) return;
+    for (field = 0; field < ioformat->field_count; field++) {
+	field_align = type_alignment(ioformat, field);
+	if (ioformat->alignment < field_align) {
+	    ioformat->alignment = field_align;
+	}
+    }
+}
+
+	
 extern int
 generate_var_list(ioformat, formats)
 FMFormat ioformat;
@@ -923,7 +941,6 @@ FMFormat *formats;
     int field_count = ioformat->field_count;
     int field;
     static int first = 1;
-    int do_alignment = 0;
     if (first) {
 	first = 0;
     }
@@ -935,10 +952,6 @@ FMFormat *formats;
 	malloc((size_t) sizeof(FMVarInfoStruct) * field_count);
     ioformat->field_subformats = malloc(sizeof(FMFormat) * field_count);
     ioformat->var_list = new_var_list;
-    if (ioformat->alignment == 0) {
-	do_alignment++;
-	ioformat->alignment = 1;
-    }
     for (field = 0; field < field_count; field++) {
 	long elements;
 	int type_align;
@@ -989,10 +1002,6 @@ FMFormat *formats;
 	    ioformat->field_subformats[field] = subformat;
 	}
 	gen_var_dimens(ioformat, field);
-	type_align = type_alignment(ioformat, field);
-	if (do_alignment && (ioformat->alignment < type_align)) {
-	    ioformat->alignment = type_align;
-	}
     }
     return 1;
 }
@@ -1487,7 +1496,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     }
 
     for (i= 0; i < struct_count; i++) {
-	if (!generate_var_list(formats[i], formats)) {
+	if (!generate_var_list(formats[struct_count -i - 1], formats)) {
 	    free_format_list(formats);
 	    return NULL;
 	}
@@ -1497,6 +1506,10 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     memcpy(formats[0]->subformats, &formats[1], sizeof(FMFormat) * struct_count);
     formats[0]->subformats[struct_count-1] = NULL;
     topo_order_subformats(formats[0], struct_count-1);
+    for (i=struct_count-2; i>=0; i--) {
+	set_alignment(formats[0]->subformats[i]);
+    }
+    set_alignment(formats[0]);
     /* bubble up the variant flags */
     for (i= 0; i < struct_count; i++) {
 	int j;
