@@ -1143,19 +1143,7 @@ void *src_string_base;
 	src_string_base = final_string_base;
     }
     if (conv->conv_func) {
-/*	printf("%s","");*/
-	struct run_time_conv_status rtcs1;
-	struct run_time_conv_status rtcs2;
-	struct run_time_conv_status rtcs3;
-	struct run_time_conv_status rtcs4;
-
 	struct run_time_conv_status rtcs;
-	struct run_time_conv_status rtcsa;
-	struct run_time_conv_status rtcsb;
-	struct run_time_conv_status rtcsc;
-	struct run_time_conv_status rtcsd;
-	struct run_time_conv_status rtcse;
-	struct run_time_conv_status rtcsf;
 	if (debug_code_generation) {
 	    int i;
 	    int limit = 30;
@@ -1216,9 +1204,8 @@ void *src_string_base;
 
 void
 transpose_array(int *dimens, char *src, char *dest, int source_column_major,
-		FMdata_type dest_type, int dest_size, IOConversionPtr conv,
-		void *dest_base, FMFieldPtr src_spec, 
-		void **final_string_base_p)
+		FMdata_type dest_type, int dest_size, 
+		void *dest_base, FMFieldPtr src_spec)
 {
     int dimen_count = 0;
     int *index;
@@ -1500,24 +1487,53 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	    }
 	    next = next->next;
 	}
-	if (!data_already_copied) {
-	    int base_delta = decode_size_delta(conv_status, conv, next);
-	    int total_delta = base_delta * elements;
-	    conv_status->dest_offset_adjust += total_delta;
-	    if (conv_status->global_conv->conversion_type == copy_dynamic_portion) {
-		int base_size = item_size(conv_status, conv, next);
-		memcpy(dest_field_addr, src_field_addr, base_size * elements);
+	if (conv->rc_swap == no_row_column_swap) {
+	    if (!data_already_copied) {
+		int base_delta = decode_size_delta(conv_status, conv, next);
+		int total_delta = base_delta * elements;
+		conv_status->dest_offset_adjust += total_delta;
+		if (conv_status->global_conv->conversion_type == copy_dynamic_portion) {
+		    int base_size = item_size(conv_status, conv, next);
+		    memcpy(dest_field_addr, src_field_addr, base_size * elements);
+		}
+		data_already_copied = 1;
 	    }
-	    data_already_copied = 1;
-	}
 
-	for (i=0; i< elements ; i++) {
-	    new_convert_field(new_src, new_dest, conv_status, conv,
-			      next, data_already_copied);
-	    new_src += conv->src_field.size;
-	    new_dest += conv->dest_size;
+	    for (i=0; i< elements ; i++) {
+		new_convert_field(new_src, new_dest, conv_status, conv,
+				  next, data_already_copied);
+		new_src += conv->src_field.size;
+		new_dest += conv->dest_size;
+	    }
+	} else {
+	    /* row/column swap time */
+	    int source_column_major = 
+		(conv->rc_swap == swap_source_column_major);
+	    int dimen_count = conv->iovar->dimen_count;
+	    int *dimens = malloc(sizeof(int) * (dimen_count + 1));
+	    int i = dimen_count -1;
+	    FMdata_type dest_type = conv->src_field.data_type;
+	    int dest_size = conv->dest_size;
+	    void *dest_base = (void *) new_dest;
+	    struct _FMgetFieldStruct tmp_spec = conv->src_field;
+	    tmp_spec.offset = 0;
+
+	    FMTypeDesc *next = type_desc;
+	    while (next->type == FMType_array) {
+		if (next->static_size != 0) {
+		    dimens[i] = next->static_size;
+		} else {
+		    dimens[i] = conv_status->control_value[next->control_field_index];
+		}
+		i--;
+		next = next->next;
+	    }
+	    dimens[dimen_count] = 0;
+	    transpose_array(dimens, (char *) new_src, dest_base,
+			    source_column_major, dest_type, dest_size,
+			    dest_base, &tmp_spec);
+	    free(dimens);
 	}
-	
     }
 	break;
     }
@@ -1915,59 +1931,13 @@ struct _FMgetFieldStruct *field;
 }
 
 static int
-subfield_required_align(c, conv, offset)
-dill_stream c;
-IOconvFieldStruct *conv;
-int offset;
-{
-    int field_required_align;
-    int field_align, access_align;
-    static int structure_align = -1;
-    int elements = get_static_array_element_count(conv->iovar);
-    if (structure_align == -1) {
-	int j;
-	for (j=DILL_C; j<= DILL_D; j++) {
-	    structure_align = max(structure_align, TYPE_ALIGN(c, j));
-	}
-    }
-    if (elements == -1) {
-	field_required_align = TYPE_ALIGN(c, DILL_P);
-    } else if (conv->subconversion == NULL) {
-	int drisc_data_type = drisc_type(&conv->src_field);
-	field_required_align = TYPE_ALIGN(c, drisc_data_type);
-    } else {
-	field_required_align = structure_align;
-    }
-    field_align = offset % field_required_align;
-    if (field_align == 0) {
-	access_align = field_required_align;
-    } else {
-	int access_align1 = min_align_size(field_align);
-	int access_align2 =
-	    min_align_size(field_required_align - field_align);
-	access_align = max(access_align1, access_align2);
-    }
-    return access_align;
-}
-
-static int
 conv_required_alignment(c, conv)
 dill_stream c;
 IOConversionPtr conv;
 {
-    int i;
-    int required_align = 0;
     if (conv->conv_count == 0) return 0;
     return conv->ioformat->body->alignment;
 }
-
-static
- conv_routine
- generate_conversion_code(dill_stream c,
-				IOConversionPtr conv, dill_reg * args,
-				int assume_align, int register_args,
-				int extra_src_offset, 
-				int extra_dest_offset);
 
 extern void
 new_generate_conversion_code(dill_stream c, ConvStatus conv_status, IOConversionPtr conv, dill_reg *args, int assume_align, int register_args);
@@ -2003,6 +1973,7 @@ int ffs_getreg(dill_stream s, int *reg_p, int type, int var_tmp)
     int reg = dill_getreg(s, type);
     *reg_p = reg;
 #endif
+    return 1;
 }
 
 int ffs_putreg(dill_stream s, int reg, int type)
@@ -2010,6 +1981,7 @@ int ffs_putreg(dill_stream s, int reg, int type)
 #ifdef RAW
     return dill_raw_putreg(s, reg, type);
 #endif
+    return 1;
 }
 
 
@@ -2587,124 +2559,6 @@ int null_target;
 }
 
 static void
-old_gen_addr_field_conv(c, tmp_spec, assume_align, src_addr, src_offset,
-		    dest_size, dest_addr, dest_offset, string_offset_size,
-  final_string_base, src_string_base, base_size_delta, converted_strings,
-		    string_src_reg, string_dest_reg, register_args)
-dill_stream c;
-struct _FMgetFieldStruct tmp_spec;
-int assume_align;
-dill_reg src_addr;
-int src_offset;
-int dest_size;
-dill_reg dest_addr;
-int dest_offset;
-int string_offset_size;
-dill_reg final_string_base;
-dill_reg src_string_base;
-int base_size_delta;
-int converted_strings;
-dill_reg *string_src_reg;
-dill_reg *string_dest_reg;
-int register_args;
-{
-    iogen_oprnd src_oprnd;
-    int src_drisc_type;
-    int src_required_align;
-    int src_is_aligned = 1;
-    int null_target = dill_alloc_label(c);
-
-    src_drisc_type = drisc_type(&tmp_spec);
-    src_required_align = TYPE_ALIGN(c, src_drisc_type);
-    if ((assume_align < src_required_align) || 
-	((src_offset % src_required_align) != 0)) {
-	src_is_aligned = 0;
-    }
-
-
-    /* handle addresses */
-    src_oprnd = gen_fetch(c, src_addr, src_offset, tmp_spec.size,
-			  integer_type, src_is_aligned,
-			  tmp_spec.byte_swap);
-
-    /* src_oprnd now holds the offset value */
-    if (dest_size >= sizeof(char *)) {
-
-	if (src_oprnd.size != dest_size) {
-	    /* make it the right size to operate on */
-	    iogen_oprnd tmp_oprnd;
-	    tmp_oprnd = gen_size_conversion(c, src_oprnd, sizeof(long));
-	    free_oprnd(c, src_oprnd);
-	    src_oprnd = tmp_oprnd;
-	}
-	/* generate : if it's zero, leave it zero  branch away */
-	dill_beqli(c, src_oprnd.vc_reg, 0, null_target);
-
-	/* else, sub the string_offset_size */
-	dill_subli(c, src_oprnd.vc_reg, src_oprnd.vc_reg,
-		string_offset_size);
- 
-	/* Moving to here to more effiecntly use registers */   
-	if (!ffs_getreg(c, string_src_reg, DILL_P, DILL_TEMP))
-	  gen_fatal("gen field convert out of registers C\n");
-	REG_DEBUG(("Getting reg %d for string src reg\n", *string_src_reg));
-	*string_dest_reg = src_oprnd.vc_reg;
-	REG_DEBUG(("Getting reg %d for string dest reg\n", src_oprnd.vc_reg));
-
-	/* calculate the address of this in the source */
-	if (register_args) {
-	    dill_addl(c, *string_src_reg, src_oprnd.vc_reg, src_string_base);
-	} else {
-	    dill_ldpi(c, *string_src_reg, dill_lp(c), src_string_base);
-	    dill_addl(c, *string_src_reg, src_oprnd.vc_reg, *string_src_reg);
-	}
-	    
-	/* and the address in the destination */
-	if (register_args) {
-	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, final_string_base);
-	} else {
-	    dill_reg tmp;
-	    ffs_getreg(c, &tmp, DILL_P, DILL_TEMP);
-	    dill_ldpi(c, tmp, dill_lp(c), final_string_base);
-	    dill_addl(c, src_oprnd.vc_reg, src_oprnd.vc_reg, tmp);
-	}
-
-	if (dest_size > sizeof(char *)) {
-	    iogen_oprnd tmp_oprnd;
-	    tmp_oprnd = gen_size_conversion(c, src_oprnd,
-					    dest_size);
-	    free_oprnd(c, src_oprnd);
-	    src_oprnd = tmp_oprnd;
-	}
-	REG_DEBUG(("Regs %d and %d are src and dest \n",
-		   _vrr(*string_src_reg), _vrr(*string_dest_reg)));
-	free_oprnd(c, src_oprnd);
-    }
-}
-
-static void
-old_gen_subfield_conv(c, conv, i, tmp_spec, dest_type, assume_align, src_addr,
-	     src_offset, dest_size, dest_addr, dest_offset, control_base,
-		  final_string_base, src_string_base, register_args)
-dill_stream c;
-IOConversionPtr conv;
-int i;
-struct _FMgetFieldStruct tmp_spec;
-FMdata_type dest_type;
-int assume_align;
-dill_reg src_addr;
-int src_offset;
-int dest_size;
-dill_reg dest_addr;
-int dest_offset;
-int control_base;
-dill_reg final_string_base;
-dill_reg src_string_base;
-int register_args;
-{
-}
-
-static void
 generate_convert_field(c, conv_status, src_addr, src_offset, 
 		       dest_addr, dest_offset,
 		       rt_conv_status, conv, type_desc, data_already_copied)
@@ -2736,7 +2590,6 @@ int data_already_copied;
 				  &actual_src_reg, &actual_dest_reg, 
 				  conv_status->register_args, null_target);
 	{
-	    dill_reg reg_rt_conv_status;
 #ifdef RAW
 	    int src_storage = ffs_local(c, DILL_P);
 	    int dest_storage = ffs_local(c, DILL_P);
@@ -2834,7 +2687,7 @@ int data_already_copied;
 	    ffs_putreg(c, new_dest, DILL_P);
 	} else {
 	    dill_reg reg_rt_conv_status;
-	    dill_reg new_src, new_dest, ret;
+	    dill_reg new_src, new_dest;
 	    if (!ffs_getreg(c, &new_src, DILL_P, DILL_TEMP) ||
 		!ffs_getreg(c, &new_dest, DILL_P, DILL_TEMP))
 		gen_fatal("temp vals in subcall\n");
@@ -3036,7 +2889,6 @@ int register_args;
     dill_reg dest_addr = args[1];
     dill_reg rt_conv_status = args[2];
     int control_base = -1;
-    FMFormat f = conv->ioformat->body;
 
     for (i = 0; i < conv->conv_count; i++) {
 	FMTypeDesc *next = &conv->conversions[i].iovar->type_desc;
