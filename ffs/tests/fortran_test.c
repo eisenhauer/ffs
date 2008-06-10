@@ -1,9 +1,10 @@
 
-#include "config.h"
+#include "../config.h"
 #include <fcntl.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #endif
+#include <stdio.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -16,14 +17,13 @@
 #include <string.h>
 #include <assert.h>
 #include "ffs.h"
-#include "unix_defs.h"
 
 #include "test_funcs.h"
 
-static void test_receive ARGS((char *buffer, int buf_size, int finished,
-			       int test_level));
-static void test_all_receive ARGS((char *buffer, int buf_size, int finished));
-static void write_buffer ARGS((char *buf, int size));
+static void test_receive (char *buffer, int buf_size, int finished,
+			       int test_level);
+static void test_all_receive (char *buffer, int buf_size, int finished);
+static void write_buffer (char *buf, int size);
 static void read_test_only();
 
 static int write_output = 0;
@@ -32,30 +32,19 @@ static char *read_file = NULL;
 static int fail = 0;
 static char *test_only = NULL;
 
-static IOContext rcv_context = NULL;
+static FFSContext rcv_context = NULL;
 
 int
 main(argc, argv)
 int argc;
 char **argv;
 {
-    IOContext src_context;
+    FMContext src_context;
+    FFSBuffer buffer;
     char *xfer_buffer;
     int buf_size;
-    first_rec rec1;
-    first_rec array1[10];
-    second_rec rec2;
-    third_rec rec3;
-    fourth_rec rec4;
-    later_rec rec5;
-    later_rec2 rec6;
-    nested_rec rec7;
-    fifth_rec emb_array;
-    sixth_rec var_array;
-    ninth_rec var_var;
-    string_array_rec str_array;
-    int i, j;
-    IOFormat fortran_array_ioformat;
+    int i;
+    FMFormat fortran_array_ioformat;
 
     init_written_data();
 
@@ -80,30 +69,30 @@ char **argv;
 	read_test_only();
 	free_written_data();
 	if (rcv_context != NULL) {
-	    free_IOcontext(rcv_context);
+	    free_FFSContext(rcv_context);
 	    rcv_context = NULL;
 	}
 	if (fail) exit(1);
 	exit(0);
     }
-    src_context = create_IOcontext(NULL);
+    src_context = create_FMcontext(NULL);
     
-    set_array_order_IOfile((IOFile)src_context, 1);
-    fortran_array_ioformat = register_IOcontext_format("multi_array",
-						     multi_array_flds, 
-						     src_context);
-    xfer_buffer = encode_IOcontext_buffer(src_context, fortran_array_ioformat,
-					  &fortran_array, &buf_size);
+    set_array_order_FMContext(src_context, 1);
+    fortran_array_ioformat = register_data_format(src_context,
+						  multi_array_format_list);
+    buffer = create_FFSBuffer();
+    xfer_buffer = FFSencode(buffer, fortran_array_ioformat,
+			    &fortran_array, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
     write_buffer(xfer_buffer, buf_size);
 
     
-    free_IOcontext(src_context);
+    free_FMcontext(src_context);
     src_context = NULL;
     test_all_receive(NULL, 0, 1);
     write_buffer(NULL, 0);
     free_written_data();
-    if (rcv_context != NULL) free_IOcontext(rcv_context);
+    if (rcv_context != NULL) free_FFSContext(rcv_context);
     if (fail) exit(1);
     return 0;
 }
@@ -181,158 +170,67 @@ read_test_only()
     test_all_receive(NULL, 0, 1);
 }
 
-static IOFormat first_rec_ioformat, second_rec_ioformat, third_rec_ioformat;
-static IOFormat fourth_rec_ioformat, later_rec_ioformat, nested_rec_ioformat;
-static IOFormat embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
-static IOFormat ninth_rec_ioformat, string_array_ioformat, derive_ioformat;
-static IOFormat multi_array_ioformat, triangle_ioformat, add_action_ioformat;
+static FFSTypeHandle multi_array_ioformat;
 
 static void
-set_conversion(context, formats)
-IOContext context;
-IOFormat *formats;
+set_targets(context)
+FFSContext context;
 {
-    int i;
-    for (i = 0; formats[i] != NULL; i++) {
-	IOFormat format = formats[i];
-	char *format_name;
-	format_name = name_of_IOformat(format);
-	if (strcmp(format_name, "first format") == 0) {
-	    first_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list,
-				     sizeof(first_rec));
-	} else if (strcmp(format_name, "string format") == 0) {
-	    second_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list2,
-				     sizeof(second_rec));
-	} else if (strcmp(format_name, "two string format") == 0) {
-	    third_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list3,
-				     sizeof(third_rec));
-	} else if (strcmp(format_name, "internal array format") == 0) {
-	    fourth_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list4,
-				     sizeof(fourth_rec));
-	} else if (strcmp(format_name, "embedded") == 0) {
-	    embedded_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, embedded_field_list,
-				     sizeof(embedded_rec));
-	} else if (strcmp(format_name, "structured array format") == 0) {
-	    fifth_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list5,
-				     sizeof(fifth_rec));
-	} else if (strcmp(format_name, "variant array format") == 0) {
-	    sixth_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list6,
-				     sizeof(sixth_rec));
-	} else if (strcmp(format_name, "later format") == 0) {
-	    later_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, later_field_list, 
-				     sizeof(later_rec));
-	} else if (strcmp(format_name, "nested format") == 0) {
-	    nested_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, nested_field_list,
-				     sizeof(nested_rec));
-	} else if (strcmp(format_name, "EventVecElem") == 0) {
-	    set_conversion_IOcontext(context, format, event_vec_elem_fields,
-				     sizeof(struct _io_encode_vec));
-	} else if (strcmp(format_name, "EventV") == 0) {
-	    ninth_rec_ioformat = format;
-	    set_conversion_IOcontext(context, format, field_list9,
-				     sizeof(ninth_rec));
-	} else if (strcmp(format_name, "StringArray") == 0) {
-	    string_array_ioformat = format;
-	    set_conversion_IOcontext(context, format, string_array_field_list,
-				     sizeof(string_array_rec));
-	} else if (strcmp(format_name, "IOfield_list") == 0) {
-	    set_conversion_IOcontext(context, format, field_list_flds,
-				     sizeof(IOFieldList*));
-	} else if (strcmp(format_name, "DEFormatList") == 0) {
-	    set_conversion_IOcontext(context, format, format_list_field_list,
-				     sizeof(format_list_element));
-	} else if (strcmp(format_name, "channel_ID") == 0) {
-	    set_conversion_IOcontext(context, format, channel_id_flds,
-				     sizeof(channel_ID_struct));
-	} else if (strcmp(format_name, "Channel Derive") == 0) {
-	    derive_ioformat = format;
-	    set_conversion_IOcontext(context, format, derive_msg_field_list,
-				     sizeof(DeriveMsg));
-	} else if (strcmp(format_name, "multi_array") == 0) {
-	    multi_array_ioformat = format;
-	    set_conversion_IOcontext(context, format, multi_array_flds,
-				     sizeof(multi_array));
-	} else if (strcmp(format_name, "compressed_mesh_param") == 0) {
-	    triangle_ioformat = format;
-	    set_conversion_IOcontext(context, format, compressed_mesh,
-				     sizeof(compressed_mesh_param));
-	} else if (strcmp(format_name, "triangle_param") == 0) {
-	    triangle_ioformat = format;
-	    set_conversion_IOcontext(context, format, triangle_field,
-				     sizeof(triangle_param));
-	} else if (strcmp(format_name, "XMLFormatList") == 0) {
-	    set_conversion_IOcontext(context, format, xml_format_list_flds,
-				     sizeof(msg_format_list_element));
-	} else if (strcmp(format_name, "add_action") == 0) {
-	    add_action_ioformat = format;
-	    set_conversion_IOcontext(context, format, add_field_list,
-				     sizeof(add_rec));
-	} else {
-	    printf("Got unexpected format %s\n", format_name);
-	}
-    }
+    multi_array_ioformat = FFSset_fixed_target(context, multi_array_format_list);
 }
 
 
-int base_size_func(IOContext context, char *src, int rec_len,
+int base_size_func(FFSContext context, char *src, int rec_len,
 		   int native_struct_size)
 {
     return native_struct_size;
 }
 
-int total_size_func(IOContext context, char *src, int rec_len, 
+int total_size_func(FFSContext context, char *src, int rec_len, 
 		    int native_struct_size)
 {
-    return this_IOrecord_length(context, src, rec_len);
+    return FFS_est_decode_length(context, src, rec_len);
 }
 
 static int 
-decode_in_place(IOContext context, char *src, int src_len, void *dest)
+decode_in_place(FFSContext context, char *src, int src_len, void *dest)
 {
-    if (decode_in_place_possible(get_format_IOcontext(context, src))) {
+    if (decode_in_place_possible(FFSTypeHandle_from_encode(context, src))) {
 	int ret, header_len;
 	char *real_dest;
-	ret = decode_in_place_IOcontext(context, src, (void**)&real_dest);
+	ret = FFSdecode_in_place(context, src, (void**)&real_dest);
 	header_len = real_dest - src;
 	memcpy(dest, real_dest, src_len - header_len);
 	return ret;
     } else {
-	return decode_to_buffer_IOcontext(context, src, dest);
+	return FFSdecode_to_buffer(context, src, dest);
     }
 }
 
 static int
-decode_IOcontext_wrapper(IOContext context, char *src, int src_len, void *dest)
+decode_IOcontext_wrapper(FFSContext context, char *src, int src_len, void *dest)
 {
-    return decode_IOcontext(context, src, dest);
+    return FFSdecode(context, src, dest);
 }
 
 static int
-decode_to_buffer_IOcontext_wrapper(IOContext context, char *src, int src_len,
+decode_to_buffer_IOcontext_wrapper(FFSContext context, char *src, int src_len,
 				   void *dest)
 {
-    return decode_to_buffer_IOcontext(context, src, dest);
+    return FFSdecode_to_buffer(context, src, dest);
 }
 
-typedef int (*size_func_t) ARGS((IOContext context, char *src, int buf_size, 
-				   int nativ_struct));
+typedef int (*size_func_t)(FFSContext context, char *src, int buf_size, 
+				   int nativ_struct);
 
-typedef int (*decode_func_t) ARGS((IOContext context, char *src, int src_len, 
-				   void *dest));
+typedef int (*decode_func_t)(FFSContext context, char *src, int src_len, 
+				   void *dest);
 
 size_func_t size_funcs[] = {base_size_func, total_size_func, total_size_func};
 decode_func_t decode_funcs[] = {decode_IOcontext_wrapper, 
 				decode_to_buffer_IOcontext_wrapper,
 				decode_in_place};
+
 
 #define NUM_TESTS 3
 
@@ -382,225 +280,32 @@ int buf_size;
 int finished;
 int test_level;
 {
-    static IOContext iocontext = NULL;
-    static int first_rec_count[NUM_TESTS] = {0,0,0};
-    static int second_rec_count[NUM_TESTS] = {0,0,0};
-    static int third_rec_count[NUM_TESTS] = {0,0,0};
-    static int fourth_rec_count[NUM_TESTS] = {0,0,0};
-    static int fifth_rec_count[NUM_TESTS] = {0,0,0};
-    static int sixth_rec_count[NUM_TESTS] = {0,0,0};
-    static int nested_rec_count[NUM_TESTS] = {0,0,0};
-    static int later_rec_count[NUM_TESTS] = {0,0,0};
-    static int ninth_rec_count[NUM_TESTS] = {0,0,0};
-    static int string_array_count[NUM_TESTS] = {0,0,0};
+    static FFSContext c = NULL;
 
     static int unknown_rec_count[NUM_TESTS] = {0,0,0};
     size_func_t size_func = size_funcs[test_level];
     decode_func_t decode_func = decode_funcs[test_level];
-    if (iocontext == NULL) {
-	iocontext = create_IOcontext();
-	rcv_context = iocontext;
+    if (c == NULL) {
+	c = create_FFSContext();
+	rcv_context = c;
+	set_targets(rcv_context);
     }
     if (!finished) {
-	IOFormat buffer_format = get_format_IOcontext(iocontext, buffer);
+	FFSTypeHandle buffer_format = FFS_target_from_encode(rcv_context, buffer);
 
 	if (buffer_format == NULL) {
 	    printf("No format!\n");
 	    exit(1);
 	}
-	if (!has_conversion_IOformat(buffer_format)) {
-	    IOFormat *buffer_formats;
-	    buffer_formats = get_subformats_IOcontext(iocontext, buffer);
-	    set_conversion(iocontext, buffer_formats);
-	    free(buffer_formats);
-	}
-	if (((test_only == NULL) || (strcmp(test_only, "first_rec") == 0)) &&
-	    (buffer_format == first_rec_ioformat)) {
-	    first_rec read_data[10];
-	    memset(&read_data[0], 0, sizeof(first_rec));
-	    if (!decode_func(iocontext, buffer, buf_size, &read_data[0]))
-		IOperror((IOFile)iocontext, "read first data");
-	    if (!first_rec_eq(&read_data[0], &rec1_array[first_rec_count[test_level]++])) {
-		printf("Rec1 failure\n");
-		fail++;
-	    }
-	} else if (((test_only == NULL) || (strcmp(test_only, "second_rec") == 0)) &&
-		   (buffer_format == second_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(second_rec));
-	    second_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read second data failed");
-	    if (!second_rec_eq(read_data, &rec2_array[second_rec_count[test_level]++])) {
-		printf("Rec2 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "third_rec") == 0)) &&
-		   (buffer_format == third_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(third_rec));
-	    third_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read third data failed");
-	    if (!third_rec_eq(read_data, &rec3_array[third_rec_count[test_level]++])) {
-		printf("Rec3 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "fourth_rec") == 0)) &&
-		   (buffer_format == fourth_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(fourth_rec));
-	    fourth_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read fourth data failed");
-	    if (!fourth_rec_eq(read_data, &rec4)) {
-		printf("Rec4 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	    fourth_rec_count[test_level]++;
-	} else if (buffer_format == embedded_rec_ioformat) {
-	    
-	    printf("Emb Rec failure\n");
-	    fail++;
-	} else if (((test_only == NULL) || (strcmp(test_only, "fifth_rec") == 0)) &&
-		   (buffer_format == fifth_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(fifth_rec));
-	    fifth_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read fifth data failed");
-	    if (!fifth_rec_eq(read_data, &rec5)) {
-		printf("Rec5 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	    fifth_rec_count[test_level]++;
-	} else if (((test_only == NULL) || (strcmp(test_only, "sixth_rec") == 0)) &&
-		   (buffer_format == sixth_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(sixth_rec));
-	    sixth_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read variant format");
-	    if (!sixth_rec_eq(read_data, &rec6_array[sixth_rec_count[test_level]++])) {
-		printf("Rec6 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "nested_rec") == 0)) &&
-		   (buffer_format == nested_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(nested_rec));
-	    nested_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read variant format");
-	    if (!nested_rec_eq(read_data, &rec7_array[nested_rec_count[test_level]++])) {
-		printf("Rec7 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "later_rec") == 0)) &&
-		   (buffer_format == later_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(later_rec));
-	    later_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read variant format");
-	    if (!later_rec_eq(read_data, &rec8_array[later_rec_count[test_level]++])) {
-		printf("Rec8 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "ninth_rec") == 0)) &&
-		   (buffer_format == ninth_rec_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, sizeof(ninth_rec));
-	    ninth_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read variant format");
-	    if (!ninth_rec_eq(read_data, &rec9_array[ninth_rec_count[test_level]++])) {
-		printf("Rec9 failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "string_array") == 0)) &&
-		   (buffer_format == string_array_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, 
-				 sizeof(string_array_rec));
-	    string_array_rec *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read string array format");
-	    if (!string_array_eq(read_data, 
-				 &string_array_array[string_array_count[test_level]++])) {
-		printf("string array failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "derive") == 0)) &&
-		   (buffer_format == derive_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, 
-				 sizeof(DeriveMsg));
-	    DeriveMsgPtr read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read decode msg format");
-	    if (!derive_eq(read_data, &derive)) {
-		printf("derive msg failure, decode func %d\n", test_level);
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "multi_array") == 0)) &&
-		   (buffer_format == multi_array_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, 
+	if (buffer_format == multi_array_ioformat) {
+	    int size = size_func(c, buffer, buf_size, 
 				 sizeof(multi_array));
 	    multi_array_rec2 *read_data = get_mem(size);
 	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read decode msg format");
+	    if (!decode_func(c, buffer, buf_size, read_data))
+		printf("read decode msg format");
 	    if (!multi_array_eq((multi_array_rec*)read_data, (multi_array_rec*)&multi_array2)) {
 		printf("multi array failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "triangle_param") == 0)) &&
-		   (buffer_format == triangle_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, 
-				 sizeof(triangle_param));
-	    triangle_param *read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read decode msg format");
-	    if (!triangle_param_eq(read_data, &triangle)) {
-		printf("triangle param failure\n");
-		fail++;
-	    }
-	    check_mem(size, (char*)read_data);
-	    free(read_data);
-	} else if (((test_only == NULL) || (strcmp(test_only, "add_action") == 0)) &&
-		   (buffer_format == add_action_ioformat)) {
-	    int size = size_func(iocontext, buffer, buf_size, 
-				 sizeof(add_rec));
-	    add_rec_ptr read_data = get_mem(size);
-	    memset(read_data, 0, size);
-	    if (!decode_func(iocontext, buffer, buf_size, read_data))
-		IOperror((IOFile)iocontext, "read decode msg format");
-	    if (!add_rec_eq(read_data, &add_action_record)) {
-		printf("add rec failure\n");
 		fail++;
 	    }
 	    check_mem(size, (char*)read_data);
@@ -612,8 +317,8 @@ int test_level;
     } else {
 	/* finished */
 	if (test_level == 0) {
-	    free_IOcontext(iocontext);
-	    iocontext = NULL;
+	    free_FFSContext(rcv_context);
+	    rcv_context = NULL;
 	}
 	if (test_only != NULL) return;
 	if (unknown_rec_count[test_level] != 0) {

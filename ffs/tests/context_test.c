@@ -635,7 +635,6 @@ int *size_p;
     static int last_size = -1;
     int to_read;
     int tmp_size;
-    unsigned char csize;
     unsigned int beef = 0xdeadbeef;
     int indicator;
 
@@ -713,7 +712,7 @@ read_test_only()
 
 static FFSTypeHandle first_rec_ioformat, second_rec_ioformat, third_rec_ioformat;
 static FFSTypeHandle fourth_rec_ioformat, later_rec_ioformat, nested_rec_ioformat;
-static FFSTypeHandle embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
+static FFSTypeHandle fifth_rec_ioformat, sixth_rec_ioformat;
 static FFSTypeHandle ninth_rec_ioformat, string_array_ioformat, derive_ioformat;
 static FFSTypeHandle multi_array_ioformat, triangle_ioformat, add_action_ioformat;
 static FFSTypeHandle node_ioformat;
