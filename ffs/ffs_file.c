@@ -254,7 +254,7 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
     int index = f2->format_index;
 
     struct FFSEncodeVec vec[2];
-    int indicator;
+    int indicator[2];
 
     init_format_info(f, index);
     if (!f->info[index].written_to_file) {
@@ -262,13 +262,17 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
     }
 
     /*
-     * next_data indicator is a 4-byte chunk in network byte order.
-     * The top byte is 0x3.  The bottom 3 bytes are the size of the data.
+     * next_data indicator is two 4-byte chunks in network byte order.
+     * The top byte is 0x3.  The next 3 bytes are reserved for future use.
+     * The following 4-bytes are the size of the data -- assume size fits
+     * in a signed int.
      */
-    indicator = htonl((byte_size & 0xffffff) | 0x3 << 24);
+    indicator[0] = htonl(0x3 << 24);
+    indicator[1] = htonl(byte_size ); 
 
-    vec[0].iov_len = 4;
-    vec[0].iov_base = &indicator;
+
+    vec[0].iov_len = 8;
+    vec[0].iov_base = indicator;
     vec[1].iov_len = byte_size;
     vec[1].iov_base = data;
     if (f->writev_func(f->file_id, (struct iovec *)vec, 2, 
@@ -287,7 +291,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     int index = format->format_index;
     int vec_count;
     FFSEncodeVector vec;
-    int indicator;
+    int indicator[2];
 
     init_format_info(f, index);
     if (!f->info[index].written_to_file) {
@@ -304,10 +308,13 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     }
 
     /*
-     * next_data indicator is a 4-byte chunk in network byte order.
-     * The top byte is 0x3.  The bottom 3 bytes are the size of the data.
+     * next_data indicator is two 4-byte chunks in network byte order.
+     * The top byte is 0x3.  The next 3 bytes are reserved for future use.
+     * The following 4-bytes are the size of the data -- assume size fits
+     * in a signed int.
      */
-    indicator = htonl((byte_size & 0xffffff) | 0x3 << 24);
+    indicator[0] = htonl(0x3 << 24);
+    indicator[1] = htonl(byte_size ); 
 
     /* 
      *  utilize the fact that we have some blank vec entries *before the 
@@ -315,8 +322,8 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
      */
     vec--;
     vec_count++;
-    vec[0].iov_len = 4;
-    vec[0].iov_base = &indicator;
+    vec[0].iov_len = 8;
+    vec[0].iov_base = indicator;
     if (f->writev_func(f->file_id, (struct iovec *)vec, vec_count, 
 		       NULL, NULL) != vec_count) {
 	printf("Write failed, errno %d\n", errno);
@@ -501,7 +508,11 @@ FFSFile ffsfile;
 		char *tmp_buf;
 		int header_size;
 		ffsfile->next_record_type = FFSdata;
-		ffsfile->next_data_len = indicator_chunk & 0xffffff;
+		if (!get_AtomicInt(ffsfile, &indicator_chunk)) {
+		    ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		    return ffsfile->next_record_type;
+		}
+		ffsfile->next_data_len = ntohl(indicator_chunk);
 		make_tmp_buffer(ffsfile->tmp_buffer, ffsfile->next_data_len);
 		tmp_buf = ffsfile->tmp_buffer->tmp_buffer;
 		/* first get format ID, at least 8 bytes */
