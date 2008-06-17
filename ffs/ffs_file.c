@@ -410,6 +410,16 @@ FFSFile ffsfile;
     return ffsfile->next_data_handle;
 }
 
+extern int
+FFSfile_next_decode_length(FFSFile iofile)
+{
+    FFSContext context = iofile->c;
+    FFSTypeHandle th = FFSnext_type_handle(iofile);
+    int len = iofile->next_data_len;
+    FFS_decode_length_format(context, th, len);
+
+}
+
 extern
 char *
 FFSread_comment(ffsfile)
@@ -636,3 +646,50 @@ FFSread(FFSFile file, void *dest)
     file->read_ahead = FALSE;
     return 1;
 }
+
+extern int
+FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest)
+{
+    FFSTypeHandle f;
+    int header_size;
+    int read_size;
+    char *tmp_buf;
+
+    if (file->status != OpenForRead)
+	return 0;
+
+    if (file->read_ahead == FALSE) {
+	(void) FFSnext_record_type(file);
+    }
+    while (file->next_record_type != FFSdata) {
+	switch (file->next_record_type) {
+	case FFScomment:
+	    (void) FFSread_comment(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	case FFSformat:
+	    (void) FFSread_format(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	default:
+	    return 0;
+	}
+    }
+
+    f = file->next_data_handle;
+    header_size = FFSheader_size(f);
+    read_size = file->next_data_len - header_size;
+    tmp_buf = file->tmp_buffer->tmp_buffer;
+    /* should have buffer optimization logic here.  
+     * I.E. if decode_in_place_possible() handle differently.  later
+     */
+    /* read into temporary memory */
+    if (file->read_func(file->file_id, tmp_buf + header_size, read_size, NULL, NULL) != read_size) {
+	file->next_record_type = (file->errno_val) ? FFSerror : FFSend;
+	return 0;
+    }
+    FFSdecode_to_buffer(file->c, file->tmp_buffer->tmp_buffer, b->tmp_buffer);
+    file->read_ahead = FALSE;
+    return 1;
+}
+

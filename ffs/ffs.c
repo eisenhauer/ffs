@@ -1076,12 +1076,9 @@ IOConversionPtr conv;
 }
 
 extern int
-FFS_est_decode_length(context, src, record_length)
-FFSContext context;
-char *src;
-int record_length;
+FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat, 
+			 int record_length)
 {
-    FFSTypeHandle ioformat = FFSTypeHandle_from_encode(context, src);
     IOConversionPtr conv;
     int variant_part, final_base_size, src_base_size;
 
@@ -1096,6 +1093,16 @@ int record_length;
 					   conv->base_size_delta);
     src_base_size = expand_size_to_align(ioformat->body->record_length);
     return variant_part + Max(final_base_size, src_base_size);
+}
+
+extern int
+FFS_est_decode_length(context, src, record_length)
+FFSContext context;
+char *src;
+int record_length;
+{
+    FFSTypeHandle ioformat = FFSTypeHandle_from_encode(context, src);
+    return FFS_decode_length_format(context, ioformat, record_length);
 }
 
 extern int

@@ -190,6 +190,10 @@ extern
 char *
 make_tmp_buffer(FFSBuffer buf, int size);
 
+extern int
+FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat, 
+			 int record_length);
+
 #define Max(i,j) ((i<j) ? j : i)
 
 #if SIZEOF_LONG_DOUBLE != 0 && SIZEOF_LONG_DOUBLE != SIZEOF_DOUBLE

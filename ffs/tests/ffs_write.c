@@ -93,14 +93,7 @@ main()
     embedded_rec_ioformat = register_data_format(src_context, str_list);
 
 
-    str_list[0].format_name = "embedded";
-    str_list[0].field_list = embedded_field_list;
-    str_list[0].struct_size = sizeof(embedded_rec);
-    str_list[0].opt_info = &opt_info[0];
-    str_list[1].format_name = NULL;
-    opt_info[0].info_len = strlen(struct_array_xml) +1;
-    opt_info[0].info_block = struct_array_xml;
-    fifth_rec_ioformat = register_data_format(src_context, str_list);
+    fifth_rec_ioformat = register_data_format(src_context, structured_format_list);
 
     str_list[0].format_name = "variant array format";
     str_list[0].field_list = field_list6;

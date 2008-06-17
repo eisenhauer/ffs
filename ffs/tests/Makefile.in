@@ -37,7 +37,8 @@ TESTS = context_test$(EXEEXT) context_test2$(EXEEXT) \
 	fortran_test$(EXEEXT)
 bin_PROGRAMS =
 noinst_PROGRAMS = context_test$(EXEEXT) context_test2$(EXEEXT) \
-	io_write$(EXEEXT) io_dyn_read$(EXEEXT) fortran_test$(EXEEXT)
+	ffs_write$(EXEEXT) io_dyn_read$(EXEEXT) fortran_test$(EXEEXT) \
+	ffs_file_test$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -65,6 +66,15 @@ am_context_test2_OBJECTS = context_test2.$(OBJEXT) \
 context_test2_OBJECTS = $(am_context_test2_OBJECTS)
 context_test2_LDADD = $(LDADD)
 context_test2_DEPENDENCIES = ../libffs.la
+am_ffs_file_test_OBJECTS = ffs_file_test.$(OBJEXT) \
+	test_funcs.$(OBJEXT)
+ffs_file_test_OBJECTS = $(am_ffs_file_test_OBJECTS)
+ffs_file_test_LDADD = $(LDADD)
+ffs_file_test_DEPENDENCIES = ../libffs.la
+am_ffs_write_OBJECTS = ffs_write.$(OBJEXT) test_funcs.$(OBJEXT)
+ffs_write_OBJECTS = $(am_ffs_write_OBJECTS)
+ffs_write_LDADD = $(LDADD)
+ffs_write_DEPENDENCIES = ../libffs.la
 am_fortran_test_OBJECTS = fortran_test.$(OBJEXT) test_funcs.$(OBJEXT)
 fortran_test_OBJECTS = $(am_fortran_test_OBJECTS)
 fortran_test_LDADD = $(LDADD)
@@ -73,10 +83,6 @@ am_io_dyn_read_OBJECTS = io_dyn_read.$(OBJEXT) test_funcs.$(OBJEXT)
 io_dyn_read_OBJECTS = $(am_io_dyn_read_OBJECTS)
 io_dyn_read_LDADD = $(LDADD)
 io_dyn_read_DEPENDENCIES = ../libffs.la
-am_io_write_OBJECTS = io_write.$(OBJEXT) test_funcs.$(OBJEXT)
-io_write_OBJECTS = $(am_io_write_OBJECTS)
-io_write_LDADD = $(LDADD)
-io_write_DEPENDENCIES = ../libffs.la
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
 depcomp =
 am__depfiles_maybe =
@@ -90,11 +96,11 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES) \
-	$(io_write_SOURCES)
+	$(ffs_file_test_SOURCES) $(ffs_write_SOURCES) \
+	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES)
 DIST_SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES) \
-	$(io_write_SOURCES)
+	$(ffs_file_test_SOURCES) $(ffs_write_SOURCES) \
+	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -234,9 +240,9 @@ context_test2_SOURCES = context_test2.c test_funcs.c
 fortran_test_SOURCES = fortran_test.c test_funcs.c
 xml_test_SOURCES = xml_test.c test_funcs.c
 compat_test_SOURCES = compat_test.c test_funcs.c
-io_test_SOURCES = io_test.c test_funcs.c
+ffs_file_test_SOURCES = ffs_file_test.c test_funcs.c
 io_default_test_SOURCES = io_default_test.c test_funcs.c
-io_write_SOURCES = io_write.c test_funcs.c
+ffs_write_SOURCES = ffs_write.c test_funcs.c
 io_dyn_read_SOURCES = io_dyn_read.c test_funcs.c
 all: all-am
 
@@ -312,15 +318,18 @@ context_test$(EXEEXT): $(context_test_OBJECTS) $(context_test_DEPENDENCIES)
 context_test2$(EXEEXT): $(context_test2_OBJECTS) $(context_test2_DEPENDENCIES) 
 	@rm -f context_test2$(EXEEXT)
 	$(LINK) $(context_test2_OBJECTS) $(context_test2_LDADD) $(LIBS)
+ffs_file_test$(EXEEXT): $(ffs_file_test_OBJECTS) $(ffs_file_test_DEPENDENCIES) 
+	@rm -f ffs_file_test$(EXEEXT)
+	$(LINK) $(ffs_file_test_OBJECTS) $(ffs_file_test_LDADD) $(LIBS)
+ffs_write$(EXEEXT): $(ffs_write_OBJECTS) $(ffs_write_DEPENDENCIES) 
+	@rm -f ffs_write$(EXEEXT)
+	$(LINK) $(ffs_write_OBJECTS) $(ffs_write_LDADD) $(LIBS)
 fortran_test$(EXEEXT): $(fortran_test_OBJECTS) $(fortran_test_DEPENDENCIES) 
 	@rm -f fortran_test$(EXEEXT)
 	$(LINK) $(fortran_test_OBJECTS) $(fortran_test_LDADD) $(LIBS)
 io_dyn_read$(EXEEXT): $(io_dyn_read_OBJECTS) $(io_dyn_read_DEPENDENCIES) 
 	@rm -f io_dyn_read$(EXEEXT)
 	$(LINK) $(io_dyn_read_OBJECTS) $(io_dyn_read_LDADD) $(LIBS)
-io_write$(EXEEXT): $(io_write_OBJECTS) $(io_write_DEPENDENCIES) 
-	@rm -f io_write$(EXEEXT)
-	$(LINK) $(io_write_OBJECTS) $(io_write_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -604,8 +613,13 @@ install-exec-local:
 write_output: context_test
 	rm -f ../output_dir/context_test_output.@ARCH@.bin
 	./context_test -w ../output_dir/context_test_output.@ARCH@.bin
+	./ffs_write
+	rm -f ../output_dir/file_output.@ARCH@.bin
+	mv test_output ../output_dir/file_output.@ARCH@.bin
 
-check-local:  context_test @OUTPUT_TARGET@
+check-local: context_check file_check
+
+context_check:  context_test @OUTPUT_TARGET@
 	@failed=0;\
 	for i in ../output_dir/context_test_output*.bin; do \
 	    if ./context_test -r $$i; then\
@@ -616,9 +630,26 @@ check-local:  context_test @OUTPUT_TARGET@
 	    fi;\
 	done;\
 	if test "$$failed" -eq 0; then \
-	    echo "All tests passed"; \
+	    echo "All context tests passed"; \
 	else\
-	    echo "$$failed tests failed";\
+	    echo "$$failed context tests failed";\
+	fi;\
+	test "$$failed" -eq 0
+
+file_check:  ffs_file_test ../output_dir/file_output.@ARCH@.bin
+	@failed=0;\
+	for i in ../output_dir/file*.bin; do \
+	    if ./ffs_file_test $$i; then\
+	    	echo "PASS: $$i";\
+	    else\
+	    	echo "FAILED: ffs_file_test $$i";\
+	        failed=`expr $$failed + 1`; \
+	    fi;\
+	done;\
+	if test "$$failed" -eq 0; then \
+	    echo "All file tests passed"; \
+	else\
+	    echo "$$failed file tests failed";\
 	fi;\
 	test "$$failed" -eq 0
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
