@@ -257,6 +257,8 @@ fixup_output_vector(FFSBuffer b, estate s)
 
     if (tmp_vec_offset == -1) return NULL;
 
+    tmp_vec_offset += sizeof(ret[0]) - 1;
+    tmp_vec_offset -= tmp_vec_offset % sizeof(ret[0]);
     ret = (FFSEncodeVector)(((char*)b->tmp_buffer) + tmp_vec_offset);
     /* leave two blanks, see notes in ffs_file.c */
     /* the upshot is that we use these if we need to add headers */
