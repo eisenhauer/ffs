@@ -35,6 +35,7 @@ struct _FFSFile {
     int errno_val;
     FFSRecordType next_record_type;
     FFSTypeHandle next_data_handle;
+    FFSTypeHandle next_actual_handle;
 
     Status status;
     IOinterface_func write_func;
@@ -428,9 +429,9 @@ FFSfile_next_decode_length(FFSFile iofile)
 {
     FFSContext context = iofile->c;
     FFSTypeHandle th = FFSnext_type_handle(iofile);
+    th = iofile->next_actual_handle;
     int len = iofile->next_data_len;
-    FFS_decode_length_format(context, th, len);
-
+    return FFS_decode_length_format(context, th, len);
 }
 
 extern
@@ -553,6 +554,8 @@ FFSFile ffsfile;
 		}
 		ffsfile->next_data_handle = 
 		    FFS_target_from_encode(ffsfile->c, tmp_buf);
+		ffsfile->next_actual_handle = 
+		    FFSTypeHandle_from_encode(ffsfile->c, tmp_buf);
 		if (ffsfile->next_data_handle == NULL) {
 		    /* no target for this format, discard */
 		    int more = ffsfile->next_data_len - ffsfile->next_fid_len;
