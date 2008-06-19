@@ -52,6 +52,7 @@ int size;
     FFSBuffer b = create_fixed_FFSBuffer(data, size);
     int ret = FFSread_to_buffer(iofile, b, size);
     free(b);
+    return ret;
 }
 
 
@@ -178,7 +179,7 @@ int (*read_func) ();
 		second_rec *read_data = malloc(size);
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
-		    printf("read second data failed");
+		    printf("read second data failed\n");
 		if (!second_rec_eq(read_data, &rec2_array[second_rec_count++])) {
 		    printf("Rec2 failure\n");
 		    exit(1);
@@ -189,7 +190,7 @@ int (*read_func) ();
 		third_rec *read_data = malloc(size);
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
-		    printf("read third data failed");
+		    printf("read third data failed\n");
 		if (!third_rec_eq(read_data, &rec3_array[third_rec_count++])) {
 		    printf("Rec3 failure\n");
 		    exit(1);
@@ -200,7 +201,7 @@ int (*read_func) ();
 		fourth_rec *read_data = malloc(size);
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
-		    printf("read fourth data failed");
+		    printf("read fourth data failed\n");
 		if (!fourth_rec_eq(read_data, &rec4)) {
 		    printf("Rec4 failure\n");
 		    exit(1);
@@ -216,7 +217,7 @@ int (*read_func) ();
 		fifth_rec *read_data = malloc(size);
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
-		    printf("read fifth data failed");
+		    printf("read fifth data failed\n");
 		if (!fifth_rec_eq(read_data, &rec5)) {
 		    printf("Rec5 failure\n");
 		    exit(1);
@@ -228,7 +229,7 @@ int (*read_func) ();
 		sixth_rec *read_data = malloc(size);
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
-		    printf("read variant format");
+		    printf("read variant format failed\n");
 		if (!sixth_rec_eq(read_data, &rec6_array[sixth_rec_count++])) {
 		    printf("Rec6 failure\n");
 		    exit(1);
