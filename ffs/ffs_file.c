@@ -324,6 +324,19 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     vec_count++;
     vec[0].iov_len = 8;
     vec[0].iov_base = indicator;
+    while (vec_count > f->max_iov) {
+	/* 
+	 * if iovcnt is more than the number of chunks we can write in a 
+	 * single AtomicWriteV, recurse to write out max allowed.
+	 */
+	if (f->writev_func(f->file_id, (struct iovec *)vec, f->max_iov, 
+			   NULL, NULL) != f->max_iov) {
+	    printf("Write failed, errno %d\n", errno);
+	    return 0;
+	}
+	vec_count -= f->max_iov;
+	vec += f->max_iov;
+    }
     if (f->writev_func(f->file_id, (struct iovec *)vec, vec_count, 
 		       NULL, NULL) != vec_count) {
 	printf("Write failed, errno %d\n", errno);
