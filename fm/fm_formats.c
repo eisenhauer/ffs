@@ -44,7 +44,7 @@
 #include "fm.h"
 #include "fm_internal.h"
 
-int IOdumpVerbose = 0;
+int FMdumpVerbose = 0;
 
 static int server_register_format(FMContext fmc, FMFormat ioformat);
 static int self_server_register_format(FMContext fmc,
@@ -2632,11 +2632,7 @@ int verbose;
 	data_offset = 0;
 	sub_field_size = iofield->field_size;
     } else {
-	if (ioformat->IOversion <= 3) {
-	    sub_field_size = iofield->field_size / dimension;
-	} else {
-	    sub_field_size = iofield->field_size;
-	}
+	sub_field_size = iofield->field_size;
     }
     if (!iovar->string) { 
 	/* must be substructured */
@@ -2697,11 +2693,11 @@ FMFormat ioformat;
 void *data;
 {
     int index;
-    if (IOdumpVerbose)
+    if (FMdumpVerbose)
 	printf("Record type %s :", ioformat->format_name);
     for (index = 0; index < ioformat->field_count; index++) {
 	(void) dump_FMfield(ioformat, ioformat, index, data, data, 1,
-			    IOdumpVerbose);
+			    FMdumpVerbose);
     }
     printf("\n");
 }
@@ -3062,11 +3058,7 @@ int char_limit;
 	    sub_field_size = fmfield->field_size;
 	} else {
 	    /* normal internal array */
-	    if (format->IOversion <= 3) {
-		sub_field_size = fmfield->field_size / dimension;
-	    } else {
-		sub_field_size = fmfield->field_size;
-	    }
+	    sub_field_size = fmfield->field_size;
 	}
 	for (; dimension > 0; dimension--) {
 	    char_count +=
@@ -3102,11 +3094,7 @@ int char_limit;
 	    return char_count;
 	}
 	*left_paren = '[';
-	if (format->IOversion <= 3) {
-	    sub_field_size = fmfield->field_size / (dimension1 * dimension2);
-	} else {
-	    sub_field_size = fmfield->field_size;
-	}
+	sub_field_size = fmfield->field_size;
 	for (; dimension2 > 0; dimension2--) {
 	    int i = 0;
 	    printf("\n\t{ ");
