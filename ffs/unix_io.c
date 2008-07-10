@@ -215,37 +215,22 @@ void *conn;
 }
 
 static void *
-unix_file_open_func(path, flag_str, input, output)
+unix_file_open_func(path, flag_str)
 const char *path;
 const char *flag_str;
-int *input;
-int *output;
 {
     int flags;
     int file_id;
     long tmp_flags = (long)flag_str;
-    *input = *output = 0;
 
-    tmp_flags &= ~(O_TRUNC);
-    tmp_flags &= ~(O_CREAT);
-    if ((O_RDONLY == tmp_flags) ||
-	(O_WRONLY == tmp_flags)) {
-	 /* must be old style call */
-	 flags = (long)flag_str;
-	 *input = (O_RDONLY == (long)flag_str);
-	 *output = (O_WRONLY & (long)flag_str);
+    if (strcmp(flag_str, "r") == 0) {
+	flags = O_RDONLY;
+    } else if (strcmp(flag_str, "w") == 0) {
+	flags = O_WRONLY | O_CREAT | O_TRUNC;
     } else {
-	 if (strcmp(flag_str, "r") == 0) {
-	      flags = O_RDONLY;
-	      *input = TRUE;
-	 } else if (strcmp(flag_str, "w") == 0) {
-	      flags = O_WRONLY | O_CREAT | O_TRUNC;
-	      *output = TRUE;
-	 } else {
-	      fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
-		      path);
-	      return NULL;
-	 }
+	fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
+		path);
+	return NULL;
     }
     file_id = open(path, flags, 0777);
     if (file_id == -1) {

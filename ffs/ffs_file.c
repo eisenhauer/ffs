@@ -16,6 +16,10 @@ typedef enum {
     OpenForRead, Closed
 } Status;
 
+typedef enum {
+    Simple, Indexed
+} Organization;
+
 typedef struct format_info {
     int written_to_file;
 } format_info;
@@ -24,6 +28,7 @@ struct _FFSFile {
     FFSContext c;
     FMContext fmc;
 
+    Organization  file_org;
     FFSBuffer tmp_buffer;
     void *file_id;
     format_info *info;
@@ -33,6 +38,7 @@ struct _FFSFile {
     FFSBuffer buf;
     int read_ahead;
     int errno_val;
+    int raw_flag;
     FFSRecordType next_record_type;
     FFSTypeHandle next_data_handle;
     FFSTypeHandle next_actual_handle;
@@ -59,7 +65,55 @@ free_FFSfile(FFSFile f)
 }
 
 
+static void
+parse_flags(const char *flags, int *allow_input_p, int *allow_output_p, 
+	    int *raw_p, int *index_p)
+{
+    int input = -1;
+    int output = -1;
+    int raw = -1;
+    int index = -1;
 
+    if (flags == NULL) return;
+
+    while (flags[0] != 0) {
+	switch(flags[0]) {
+	case 'R':
+	    raw = 1;
+	    /* falling through */
+	case 'r':
+	    if (output == 1) {
+		printf("Warning, read flag specified after write flag\n");
+	    }
+	    if (index != -1) {
+		printf("Cannot specify index on input files\n");
+		index = 0;
+	    }
+	    input = 1;
+	    output = 0;
+	    break;
+	case 'i':
+	    index = 1;
+	    /* falling through */
+	case 'w':
+	    if (input == 1) {
+		printf("Warning, write flag specified after read flag\n");
+	    }
+	    output = 1;
+	    input = 0;
+	    break;
+	}
+	flags++;
+    }
+    if (index == -1) index = 0;
+    *index_p = index;
+    if (raw == -1) raw = 0;
+    *raw_p = raw;
+    if (input == -1) input = 0;
+    *allow_input_p = input;
+    if (output == -1) output = 0;
+    *allow_output_p = output;
+}
 
 extern FFSFile
 open_FFSfd(void *fd, const char *flags)
@@ -67,10 +121,17 @@ open_FFSfd(void *fd, const char *flags)
     void *file = fd;
     FFSFile f;
     int allow_input = 0, allow_output = 0;
+    int raw = 0, index = 0;
 
     f = malloc(sizeof(struct _FFSFile));
     memset(f, 0, sizeof(*f));
     f->file_id = file;
+    parse_flags(flags, &allow_input, &allow_output, &raw, &index);
+
+    f->file_org = Simple;
+    if (index) f->file_org = Indexed;
+    if (raw) f->raw_flag = 1;
+
     set_interface_FFSFile(f, ffs_file_write_func, ffs_file_read_func,
 			 ffs_file_writev_func, ffs_file_readv_func, ffs_max_iov,
 			 ffs_close_func);
@@ -83,7 +144,7 @@ open_FFSfd(void *fd, const char *flags)
 	    (magic_number != htonl(MAGIC_NUMBER))) {
 	    printf("read headers failed\n");
 	    return NULL;
-	}
+	    }
 	f->status = OpenForRead;
     }
     if (allow_output) {
@@ -106,8 +167,15 @@ open_FFSfile(const char *path, const char *flags)
     void *file;
     FFSFile f;
     int allow_input = 0, allow_output = 0;
+    int raw, index;
 
-    file = ffs_file_open_func(path, flags, &allow_input, &allow_output);
+    parse_flags(flags, &allow_input, &allow_output, &raw, &index);
+
+    if (allow_input) {
+	file = ffs_file_open_func(path, "r");
+    } else {
+	file = ffs_file_open_func(path, "w");
+    }
 
     if (file == NULL) {
 	char msg[128];
@@ -328,7 +396,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     while (vec_count > f->max_iov) {
 	/* 
 	 * if iovcnt is more than the number of chunks we can write in a 
-	 * single AtomicWriteV, recurse to write out max allowed.
+	 * single AtomicWriteV, loop to write out max allowed.
 	 */
 	if (f->writev_func(f->file_id, (struct iovec *)vec, f->max_iov, 
 			   NULL, NULL) != f->max_iov) {
@@ -556,7 +624,7 @@ FFSFile ffsfile;
 		    FFS_target_from_encode(ffsfile->c, tmp_buf);
 		ffsfile->next_actual_handle = 
 		    FFSTypeHandle_from_encode(ffsfile->c, tmp_buf);
-		if (ffsfile->next_data_handle == NULL) {
+		if ((ffsfile->next_data_handle == NULL) && (!ffsfile->raw_flag)) {
 		    /* no target for this format, discard */
 		    int more = ffsfile->next_data_len - ffsfile->next_fid_len;
 		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + ffsfile->next_fid_len, more, NULL, NULL) != more) {
@@ -567,7 +635,7 @@ FFSFile ffsfile;
 		    goto restart;
 		    
 		}
-		header_size = FFSheader_size(ffsfile->next_data_handle);
+		header_size = FFSheader_size(ffsfile->next_actual_handle);
 		if (header_size > ffsfile->next_fid_len) {
 		    int more = header_size - ffsfile->next_fid_len;
 		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + ffsfile->next_fid_len, more, NULL, NULL) != more) {
@@ -659,6 +727,53 @@ FFSread(FFSFile file, void *dest)
 	return 0;
     }
     FFSdecode(file->c, file->tmp_buffer->tmp_buffer, dest);
+    file->read_ahead = FALSE;
+    return 1;
+}
+
+extern int
+FFSread_raw(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
+{
+    FFSTypeHandle f;
+    int header_size;
+    int read_size;
+    char *tmp_buf;
+
+    if (file->status != OpenForRead)
+	return 0;
+
+    if (file->read_ahead == FALSE) {
+	(void) FFSnext_record_type(file);
+    }
+    while (file->next_record_type != FFSdata) {
+	switch (file->next_record_type) {
+	case FFScomment:
+	    (void) FFSread_comment(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	case FFSformat:
+	    (void) FFSread_format(file);
+	    (void) FFSnext_record_type(file);
+	    break;
+	default:
+	    return 0;
+	}
+    }
+
+    f = file->next_actual_handle;
+    *fp = FMFormat_of_original(f);
+    header_size = FFSheader_size(f);
+    read_size = file->next_data_len - header_size;
+    tmp_buf = file->tmp_buffer->tmp_buffer;
+    /* should have buffer optimization logic here.  
+     * I.E. if decode_in_place_possible() handle differently.  later
+     */
+    /* read into temporary memory */
+    if (file->read_func(file->file_id, dest, read_size, NULL, NULL) != read_size) {
+	file->next_record_type = (file->errno_val) ? FFSerror : FFSend;
+	return 0;
+    }
+
     file->read_ahead = FALSE;
     return 1;
 }

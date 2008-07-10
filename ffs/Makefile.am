@@ -2,13 +2,13 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-SUBDIRS = . tests
+SUBDIRS = . progs tests
 
 noinst_HEADERS = assert.h config.h ffs_gen.h ffs_internal.h 
 
 INCLUDES = -I../fm
 
-libffs_la_SOURCES = ffs.c ffs_formats.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c evol.c
+libffs_la_SOURCES = ffs.c ffs_formats.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c evol.c version.c
 
 lib_LTLIBRARIES = libffs.la
 EXTRA_libffs_la_SOURCES = ffs_malloc.c unix_io.c nt_io.c ffs_gen.c

@@ -217,36 +217,28 @@ void *conn;
 }
 
 static void *
-nt_file_open_func(path, flag_str, input, output)
+nt_file_open_func(path, flag_str)
 const char *path;
 const char *flag_str;
-int *input;
-int *output;
 {
 
     void *file;
     long tmp_flags = (long)flag_str;
     tmp_flags &= ~(O_TRUNC);
     tmp_flags &= ~(O_CREAT);
+    int input = TRUE;
 
-    if ((O_RDONLY == tmp_flags) ||
-	(O_WRONLY == tmp_flags)) {
-	 /* must be old style call */
-	*input = (O_RDONLY == (long) flag_str);
-	*output = (O_WRONLY & (long) flag_str);
+    if (strcmp(flag_str, "r") == 0) {
+	input = TRUE;
+    } else if (strcmp(flag_str, "w") == 0) {
+	input = FALSE;
     } else {
-	if (strcmp(flag_str, "r") == 0) {
-	    *input = TRUE;
-	} else if (strcmp(flag_str, "w") == 0) {
-	    *output = TRUE;
-	} else {
-	    fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
-		    path);
-	    return NULL;
-	}
+	fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
+		path);
+	return NULL;
     }
 
-    if (*input) {
+    if (input) {
 	file = CreateFile(path, GENERIC_READ, FILE_SHARE_READ,
 		      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_ARCHIVE, NULL);
 

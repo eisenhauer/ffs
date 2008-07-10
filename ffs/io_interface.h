@@ -38,9 +38,7 @@ typedef int (*IOinterface_close) ARGS((void *conn));
 
 typedef int (*IOinterface_poll) ARGS((void *conn));
 
-typedef void *(*IOinterface_open)(const char *path,
-					const char *flag_str, 
-					int *input, int *output);
+typedef void *(*IOinterface_open)(const char *path, const char *flag_str);
 typedef void (*IOinterface_init)(void );
 
 extern IOinterface_func ffs_file_read_func;
