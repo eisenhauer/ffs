@@ -211,6 +211,9 @@ name_of_FMformat(FMFormat format);
 extern FMStructDescList
 format_list_of_FMFormat(FMFormat format);
 
+extern void
+FMlocalize_structs(FMStructDescList list);
+
 extern char *
 global_name_of_FMFormat(FMFormat format);
 

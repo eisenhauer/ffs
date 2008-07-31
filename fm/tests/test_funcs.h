@@ -93,11 +93,11 @@ typedef struct _sixth_rec {
 typedef struct _io_encode_vec {
      void *iov_base;
      long  iov_len;
-} *EncodeVector;
+} *IOEncodeVector;
 
 typedef struct _nested_variants {
     int vec_length;
-    EncodeVector eventv;
+    IOEncodeVector eventv;
 } ninth_rec, *ninth_rec_ptr;
 
 typedef struct _string_array {
@@ -211,6 +211,19 @@ typedef struct {
     msg_format_list_element *out_formats;
 } add_rec, *add_rec_ptr;
 
+typedef struct node {
+    int node_num;
+    struct node *link1;
+    struct node *link2;
+} *node_ptr;
+
+typedef struct visit_table {
+    int node_count;
+    void *nodes[100];
+} *visit_table;
+
+extern int calc_signature(node_ptr n, visit_table v);
+
 extern FMField field_list[];
 extern FMField newer_field_list[];
 extern FMField field_list2[];
@@ -234,6 +247,24 @@ extern FMField compressed_mesh[];
 extern FMField triangle_field[];
 extern FMField xml_format_list_flds[];
 extern FMField add_field_list[];
+extern FMField node_field_list[];
+
+extern FMStructDescRec first_format_list[];
+extern FMStructDescRec string_format_list[];
+extern FMStructDescRec structured_format_list[];
+extern FMStructDescRec two_string_format_list[];
+extern FMStructDescRec fourth_format_list[];
+extern FMStructDescRec later_format_list[];
+extern FMStructDescRec nested_format_list[];
+extern FMStructDescRec embedded_format_list[];
+extern FMStructDescRec variant_format_list[];
+extern FMStructDescRec ninth_format_list[];
+extern FMStructDescRec string_array_format_list[];
+extern FMStructDescRec derive_format_list[];
+extern FMStructDescRec multi_array_format_list[];
+extern FMStructDescRec triangle_format_list[];
+extern FMStructDescRec add_action_format_list[];
+extern FMStructDescRec node_format_list [];
 
 extern void init_written_data();
 extern void free_written_data();

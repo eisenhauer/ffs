@@ -734,9 +734,9 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	/* now we've handled any pointer specs */
 	root->data_type = array_str_to_data_type(typ, &junk);
 	if (strncmp(typ, "string", 6) == 0) {
-	    if ((*(typ + 6) == '[') || (*(typ + 6) == 0) ||
-		isspace(*(typ+6))) {
-		simple->type == FMType_string;
+	    if ((*(typ + 6) == 0) || (*(typ + 6) == '[') ||
+		(isspace(*(typ+6)))) {
+		root->type = FMType_string;
 	    }
 	}
 
@@ -844,6 +844,180 @@ int field;
 	    break;
 	}
     }
+}
+
+static int
+determine_size(FMFormat top, int index, int field)
+{
+    FMFormat ioformat = top->subformats[index];
+    FMVarInfoList var = &ioformat->var_list[field];
+    FMTypeDesc *t = &var->type_desc;
+    int size = ioformat->field_list[field].field_size;
+    while (t != NULL) {
+	switch (t->type) {
+	case FMType_pointer:
+	case FMType_string:
+	    return sizeof(char*);
+	case FMType_array:
+	    t = t->next;
+	    break;
+	case FMType_subformat: {
+	    int i = 0;
+	    FMFormat subformat = ioformat->field_subformats[field];
+	    while (top->subformats[i] != subformat) i++;
+	    return top->master_struct_list[i].struct_size;
+	}
+	case FMType_simple:
+	    switch(t->data_type) {
+	    case integer_type: case unsigned_type:
+	    case enumeration_type: case boolean_type: case char_type:
+		if (size >= 0) return size;
+		return sizeof(int);
+	    case unknown_type: case string_type:
+		assert(0);
+	    case float_type:
+		if (size >= 0) return size;
+		return sizeof(double);
+	    }
+	    break;
+	}
+    }
+}
+    
+
+static void
+set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
+{
+    int offset = 0;
+    int i, field_count = 0;
+    FMFormat f;
+    FMFieldList fl = structs[index].field_list;
+    int bad_size = 0;
+
+    if (structs[index].struct_size != -1) return;
+
+    
+    f = top->subformats[index];
+    while (structs[index].field_list[field_count].field_name != NULL) {
+	field_count++;
+    }
+    if (f->field_subformats == NULL) {
+	FMTypeDesc *desc;
+	f->field_subformats = malloc(sizeof(char*) * field_count);
+	memset(f->field_subformats, 0, sizeof(char*) * field_count);
+	f->field_list = structs[index].field_list;
+	f->var_list = malloc(sizeof(f->var_list[0]) * field_count);
+	printf("Allocated var list %p for format %s\n", f->var_list,
+	       structs[index].format_name);
+	memset(f->var_list, 0, sizeof(f->var_list[0]) * field_count);
+	i = 0;
+	while (fl[i].field_name != NULL) {
+	    desc = gen_type_desc(f, i, structs[index].field_list[i].field_type);
+	    f->var_list[i].type_desc = *desc;
+	    i++;
+	}
+    }
+
+    i = 0;
+    while (fl[i].field_name != NULL) {
+	FMTypeDesc *tmp;
+	int align_req;
+	tmp = &f->var_list[i].type_desc;
+	while (tmp != NULL) {
+	    if (tmp->data_type == unknown_type) {
+	    
+		int j = 0;
+		char *base_type = base_data_type(structs[index].field_list[i].field_type);
+
+		while(structs[j].format_name) {
+		    if (strcmp(base_type, structs[j].format_name) == 0) {
+			tmp->type = FMType_subformat;
+			f->field_subformats[i] = top->subformats[j];
+		    }
+		    j++;
+		}
+		assert(tmp->type != FMType_simple);
+		free(base_type);
+	    }
+	    tmp = tmp->next;
+	}
+	align_req = type_alignment(f, i);
+
+	if (align_req > 0) {
+	    if (align_req > f->alignment) {
+		printf("Setting alignment to %d\n", align_req);
+		f->alignment = align_req;
+	    }
+	    offset = (offset + align_req - 1) & (-align_req);
+	    fl[i].field_offset = offset;
+	}
+	if (fl[i].field_size > 0) {
+	    offset += fl[i].field_size;
+	} else {
+	    fl[i].field_size = determine_size(top, index, i);
+	    if (fl[i].field_size > 0) {
+		offset += fl[i].field_size;
+	    } else {
+		offset++;
+		bad_size++;
+	    }
+	}
+	i++;
+    }
+    if ((bad_size == 0) && (f->alignment != -1)) {
+	int struct_size = offset + f->alignment - 1;
+	int pad = -struct_size & (f->alignment -1);  /*  only works if req_align is power of two */
+	struct_size += pad;
+	structs[index].struct_size = struct_size;
+	printf("Setting size for struct %s to %d\n",
+	       structs[index].format_name, structs[index].struct_size);
+    }
+}
+
+extern void
+FMlocalize_structs(FMStructDescList list)
+{
+    int i, j, struct_count = 0;
+    FMFormat f;
+    while(list[struct_count].format_name != NULL) { 
+	list[struct_count].struct_size = -1;
+	struct_count++;
+    }
+
+    f = malloc(sizeof(*f));
+    memset(f, 0, sizeof(*f));
+    f->subformats = malloc(sizeof(f->subformats[0]) * struct_count);
+    for (j = 0; j < struct_count; j++) {
+	f->subformats[j] = malloc(sizeof(*f));
+	memset(f->subformats[j], 0, sizeof(*f));
+	f->subformats[j]->field_subformats = NULL;
+	f->subformats[j]->alignment = -1;
+    }
+    for (j = 0; j < struct_count; j++) {
+	for (i=0 ; i < struct_count ; i++) {
+	    set_sizes_and_offsets(f, i, list);
+	}
+    }
+    for (j = 0; j < struct_count; j++) {
+	int k = 0;
+	FMFormat sub = f->subformats[j]; 
+	free(sub->field_subformats);
+	if (sub->var_list) {
+	    while(sub->field_list[k].field_name != NULL) {
+		FMTypeDesc *d = sub->var_list[k].type_desc.next;
+		while (d != NULL) {
+		    FMTypeDesc *tmp = d->next;
+		    free(d);
+		    d = tmp;
+		}
+		k++;
+	    }
+	}
+	free(sub->var_list);
+	free(sub);
+    }
+    free(f->subformats);
+    free(f);
 }
 
 static void

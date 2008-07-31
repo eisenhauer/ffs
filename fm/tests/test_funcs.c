@@ -4,6 +4,7 @@
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #endif
+#include <stdio.h>
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -11,8 +12,7 @@
 #include <malloc.h>
 #endif
 #include <string.h>
-#include "fm.h"
-#include <stdio.h>
+#include "ffs.h"
 
 #include "test_funcs.h"
 
@@ -500,7 +500,7 @@ string_array_rec *r1, *r2;
 
 int
 /* compares a single element */
-fmfieldlist_eq(FMFieldList l1, FMFieldList l2)
+iofieldlist_eq(FMFieldList l1, FMFieldList l2)
 {
     if ((l1->field_name != NULL) || (l2->field_name != NULL)) {
 	if ((l1->field_name != NULL) && (l2->field_name != NULL)) {
@@ -542,7 +542,8 @@ deformatlist_eq(format_list_element *f1, format_list_element *f2)
     if ((f1->format_name != NULL) || (f2->format_name != NULL)) {
 	if ((f1->format_name != NULL) && (f2->format_name != NULL)) {
 	    if (strcmp(f1->format_name, f2->format_name) != 0) {
-		printf("format list names differ\n");
+		printf("format list names differ, \"%s\" \"%s\"\n",
+		       f1->format_name, f2->format_name);
 		return 0;
 	    }
 	} else {
@@ -555,7 +556,7 @@ deformatlist_eq(format_list_element *f1, format_list_element *f2)
 	return 0;
     }
     for (i=0; i < f1->field_list_len ; i++) {
-	if (!fmfieldlist_eq(&f1->field_list[i], &f2->field_list[i])) {
+	if (!iofieldlist_eq(&f1->field_list[i], &f2->field_list[i])) {
 	    printf("Field list element %d of format list %s was different\n",
 		   i, f1->format_name);
 	    return 0;
@@ -620,7 +621,7 @@ derive_eq(DeriveMsgPtr d1, DeriveMsgPtr d2)
 	return 0;
     }
     for (i=0; i < d1->field_list_len ; i++) {
-	if (!fmfieldlist_eq(&d1->field_list[i], &d2->field_list[i])) {
+	if (!iofieldlist_eq(&d1->field_list[i], &d2->field_list[i])) {
 	    printf("Field list element %d was different\n", i);
 	    return 0;
 	}
@@ -819,7 +820,8 @@ xml_format_list_eq(msg_format_list_element *f1, msg_format_list_element *f2)
     if ((f1->format_name != NULL) || (f2->format_name != NULL)) {
 	if ((f1->format_name != NULL) && (f2->format_name != NULL)) {
 	    if (strcmp(f1->format_name, f2->format_name) != 0) {
-		printf("format list names differ\n");
+		printf("format list names differ, \"%s\" \"%s\"\n",
+		       f1->format_name, f2->format_name);
 		return 0;
 	    }
 	} else {
@@ -843,7 +845,7 @@ xml_format_list_eq(msg_format_list_element *f1, msg_format_list_element *f2)
 	return 0;
     }
     for (i=0; i < f1->field_list_len ; i++) {
-	if (!fmfieldlist_eq(&f1->field_list[i], &f2->field_list[i])) {
+	if (!iofieldlist_eq(&f1->field_list[i], &f2->field_list[i])) {
 	    printf("Field list element %d of format list %s was different\n",
 		   i, f1->format_name);
 	    return 0;
@@ -851,6 +853,28 @@ xml_format_list_eq(msg_format_list_element *f1, msg_format_list_element *f2)
     }
     return 1;
 }
+
+void
+add_rec_dump(add_rec_ptr r)
+{
+    int i;
+    printf("in_format_name %p \"%s\"\n", (char*)r->in_format_name - (char*)r,
+	   r->in_format_name);
+    printf("func_str %p \"%s\"\n", (char*)r->func_str - (char*)r, r->func_str);
+    printf("out_formats %p \n", (char*)r->out_formats - (char*)r);
+    for (i = 0; i < r->format_count; i++) {
+	int j;
+	printf("out[%d].format_name %p \"%s\"\n", i, (char*)r->out_formats[i].format_name - (char*)r, r->out_formats[i].format_name);
+	if (r->out_formats[i].xml_markup != NULL)
+	    printf("out[%d].xml_markup %p \"%s\"\n", i, (char*)r->out_formats[i].xml_markup - (char*)r, r->out_formats[i].xml_markup);
+	printf("out[%d].field_list %p \n", i, (char*)r->out_formats[i].field_list - (char*)r);
+	for (j = 0; j < r->out_formats[i].field_list_len; j++) {
+	    printf("out[%d].field_list[%d].field_name %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_name - (char*)r, r->out_formats[i].field_list[j].field_name);
+	    printf("out[%d].field_list[%d].field_type %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_type - (char*)r, r->out_formats[i].field_list[j].field_type);
+	}
+    }
+}
+	
 
 int
 add_rec_eq(add_rec_ptr r1, add_rec_ptr r2)
@@ -871,7 +895,7 @@ add_rec_eq(add_rec_ptr r1, add_rec_ptr r2)
     if ((r1->func_str != NULL) || (r2->func_str != NULL)) {
 	if ((r1->func_str != NULL) && (r2->func_str != NULL)) {
 	    if (strcmp(r1->func_str, r2->func_str) != 0) {
-		printf("func_strs differ, \"%s\", \"%s\"\n", r1->func_str, 
+		printf("func_strs differ, \"%s\", \"%s\"\n", r1->func_str,
 		       r2->func_str);
 		return 0;
 	    }
@@ -1404,6 +1428,10 @@ FMField field_list[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec first_format_list [] = {
+    {"first format", field_list, sizeof(first_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 FMField newer_field_list[] = {
     {"ganzzahlfeld", "integer", 
        sizeof(int), FMOffset(newer_rec_ptr, ganzzahl)},
@@ -1430,6 +1458,10 @@ FMField field_list2[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec string_format_list[] = {
+    {"string format", field_list2, sizeof(second_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 FMField field_list3[] = {
     {"integer field", "integer", 
        sizeof(int), FMOffset(third_rec_ptr, integer_field)},
@@ -1452,6 +1484,10 @@ FMField field_list3[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec two_string_format_list[] = {
+    {"two string format", field_list3, sizeof(third_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 FMField field_list4[] = {
     {"ifield", "integer", 
        sizeof(long), FMOffset(fourth_rec_ptr, ifield)},
@@ -1459,6 +1495,11 @@ FMField field_list4[] = {
        sizeof(int), FMOffset(fourth_rec_ptr, int_array[0])},
     {"double field", "float[2][2]",
        sizeof(double), FMOffset(fourth_rec_ptr, double_array[0][0])},
+    { NULL, NULL, 0, 0}
+};
+
+FMStructDescRec fourth_format_list[] = {
+    {"internal array format", field_list4, sizeof(fourth_rec), NULL},
     { NULL, NULL, 0, 0}
 };
 
@@ -1478,6 +1519,12 @@ FMField field_list5[] = {
     {NULL, NULL, 0, 0}
 };
 
+FMStructDescRec structured_format_list[] = {
+    {"structured array format", field_list5, sizeof(fifth_rec), NULL},
+    {"embedded", embedded_field_list, sizeof(embedded_rec), NULL},
+    { NULL, NULL, 0, NULL}
+};
+
 FMField later_field_list[] = {
     {"integer field", "integer", 
        sizeof(((later_rec_ptr)0)->integer_field), FMOffset(later_rec_ptr, integer_field)},
@@ -1487,6 +1534,12 @@ FMField later_field_list[] = {
        sizeof(double), FMOffset(later_rec_ptr, double_field)},
     { NULL, NULL, 0, 0}
 };
+
+FMStructDescRec later_format_list[] = {
+    {"later format", later_field_list, sizeof(later_rec), NULL},
+    { NULL, NULL, 0, NULL}
+};
+
 
 FMField later_field_list2[] = {
     {"integer field", "integer", 
@@ -1510,6 +1563,17 @@ FMField nested_field_list[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec nested_format_list[] = {
+    {"nested format", nested_field_list, sizeof(nested_rec), NULL},
+    {"string format", field_list2, sizeof(second_rec), NULL},
+    { NULL, NULL, 0, 0}
+};
+
+FMStructDescRec embedded_format_list[] = {
+    {"embedded", embedded_field_list, sizeof(embedded_rec), NULL},
+    { NULL, NULL, 0, 0}
+};
+
 FMField field_list6[] = {
     {"string field", "string",
        sizeof(char *), FMOffset(sixth_rec_ptr, string)},
@@ -1526,11 +1590,17 @@ FMField field_list6[] = {
     { NULL, NULL, 0, 0}
 };
 
+FMStructDescRec variant_format_list[] = {
+    {"variant array format", field_list6, sizeof(sixth_rec), NULL},
+    {"string format", field_list2, sizeof(second_rec), NULL},
+    { NULL, NULL, 0, 0}
+};
+
 FMField event_vec_elem_fields[] =
 {
-    {"elem", "char[len]", sizeof(char), FMOffset(EncodeVector,iov_base)},
-    {"len", "integer", sizeof(((EncodeVector)0)[0].iov_len), 
-     FMOffset(EncodeVector, iov_len)},
+    {"elem", "char[len]", sizeof(char), FMOffset(IOEncodeVector,iov_base)},
+    {"len", "integer", sizeof(((IOEncodeVector)0)[0].iov_len), 
+     FMOffset(IOEncodeVector, iov_len)},
     {(char *) 0, (char *) 0, 0, 0}
 };
 
@@ -1543,6 +1613,14 @@ FMField field_list9[] =
     {(char *) 0, (char *) 0, 0, 0}
 };
 
+FMStructDescRec ninth_format_list[] = 
+{
+    {"EventV", field_list9, sizeof(ninth_rec), NULL},
+    {"EventVecElem", event_vec_elem_fields, sizeof(struct _io_encode_vec), NULL},
+    {NULL, NULL, 0, NULL}
+};
+
+
 FMField string_array_field_list[] =
 {
     {"array_len", "integer", sizeof(int),
@@ -1553,6 +1631,12 @@ FMField string_array_field_list[] =
      FMOffset(string_array_rec_ptr, array)},
     {(char *) 0, (char *) 0, 0, 0}
 
+};
+
+FMStructDescRec string_array_format_list[] = 
+{
+    {"string_array", string_array_field_list, sizeof(string_array_rec), NULL},
+    {NULL, NULL, 0, NULL}
 };
 
 FMField channel_id_flds[] = {
@@ -1612,6 +1696,15 @@ FMField derive_msg_field_list[] = {
     {(char *) 0, (char *) 0, 0, 0}
 };
 
+FMStructDescRec derive_format_list[] = {
+    {"Channel Derive", derive_msg_field_list, sizeof(DeriveMsg), NULL},
+    {"IOfield_list", field_list_flds, sizeof(FMField), NULL},
+    {"DEFormatList", format_list_field_list, sizeof(format_list_element), NULL},
+    {"channel_ID", channel_id_flds, sizeof(channel_ID_struct), NULL},
+    {NULL, NULL, 0, NULL}
+};
+	
+
 FMField multi_array_flds[] = {
     {"ifield", "integer", sizeof(long), FMOffset(multi_array_rec_ptr, ifield)},
     {"double_array", "float[2][2][2][2]", sizeof(double),
@@ -1623,6 +1716,11 @@ FMField multi_array_flds[] = {
     {"int_array3", "integer[ifield][ifield][ifield]", sizeof(int),
     FMOffset(multi_array_rec_ptr, int_array3)},
     {(char *) 0, (char *) 0, 0, 0}
+};
+
+FMStructDescRec multi_array_format_list[] = {
+    {"multi_array", multi_array_flds, sizeof(multi_array), NULL},
+    {NULL, NULL, 0, NULL}
 };
 
 FMField compressed_mesh[] = {
@@ -1664,6 +1762,12 @@ FMField triangle_field[] = {
   {NULL, NULL, 0 , 0}
 };
     
+FMStructDescRec triangle_format_list[] = {
+    {"triangle_param", triangle_field, sizeof(triangle), NULL},
+    {"compressed_mesh_param", compressed_mesh, sizeof(compressed_mesh_param), NULL},
+    {NULL, NULL, 0, NULL}
+};
+
 FMField add_field_list[] =
 {
     {"action_type", "integer",
@@ -1676,6 +1780,14 @@ FMField add_field_list[] =
      sizeof(msg_format_list_element), FMOffset(add_rec_ptr, out_formats)},
     {"func_str", "string",
      sizeof(char*), FMOffset(add_rec_ptr, func_str)},
+    {NULL, NULL, 0, 0}
+};
+
+FMStructDescRec add_action_format_list[] = 
+{
+    {"add_action", add_field_list, sizeof(add_action_record), NULL},
+    {"XMLFormatList", xml_format_list_flds, sizeof(msg_format_list_element), NULL},
+    {"IOfield_list", field_list_flds, sizeof(FMField), NULL},
     {NULL, NULL, 0, 0}
 };
 
@@ -1692,3 +1804,39 @@ FMField xml_format_list_flds[] =
     {(char *) 0, (char *) 0, 0, 0}
 };
 
+FMField node_field_list[] = 
+{
+    {"node_num", "integer", sizeof(int), FMOffset(node_ptr, node_num)},
+    {"link1", "*node", sizeof(struct node), FMOffset(node_ptr, link1)},
+    {"link2", "*node", sizeof(struct node), FMOffset(node_ptr, link2)},
+    {(char *) 0, (char *) 0, 0, 0}
+};
+
+FMStructDescRec node_format_list [] = {
+    {"node", node_field_list, sizeof(struct node), NULL},
+    {NULL, NULL, 0, NULL}
+};
+
+static int
+already_visited(visit_table v, node_ptr n)
+{
+    int i;
+    for (i=0; i < v->node_count; i++) {
+	if (v->nodes[i] == n) return 1;
+    }
+    v->nodes[v->node_count] = n;
+    v->node_count++;
+    return 0;
+}
+
+extern int calc_signature(node_ptr n, visit_table v)
+{
+    int n1, n2;
+    if (n == NULL) return 0;
+    if (already_visited(v, n)) {
+	return 5 * n->node_num;
+    }
+    n1 = calc_signature(n->link1, v);
+    n2 = calc_signature(n->link1, v);
+    return  3*n1 + 7 * n2 + n->node_num;
+}
