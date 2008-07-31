@@ -907,8 +907,6 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
 	memset(f->field_subformats, 0, sizeof(char*) * field_count);
 	f->field_list = structs[index].field_list;
 	f->var_list = malloc(sizeof(f->var_list[0]) * field_count);
-	printf("Allocated var list %p for format %s\n", f->var_list,
-	       structs[index].format_name);
 	memset(f->var_list, 0, sizeof(f->var_list[0]) * field_count);
 	i = 0;
 	while (fl[i].field_name != NULL) {
@@ -945,7 +943,6 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
 
 	if (align_req > 0) {
 	    if (align_req > f->alignment) {
-		printf("Setting alignment to %d\n", align_req);
 		f->alignment = align_req;
 	    }
 	    offset = (offset + align_req - 1) & (-align_req);
@@ -969,8 +966,6 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
 	int pad = -struct_size & (f->alignment -1);  /*  only works if req_align is power of two */
 	struct_size += pad;
 	structs[index].struct_size = struct_size;
-	printf("Setting size for struct %s to %d\n",
-	       structs[index].format_name, structs[index].struct_size);
     }
 }
 
