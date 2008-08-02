@@ -236,11 +236,12 @@ FMdump_data(FMFormat format, void *data, int character_limit);
 
 extern int
 FMdump_encoded_data(FMFormat format, void *data, int character_limit);
-extern int
-FMdump_XML(FMFormat format, void *data, int character_limit);
 
 extern int
-FMdump_encoded_XML(FMFormat format, void *data, int character_limit);
+FMdump_XML(FMFormat format, void *data, int encoded);
+
+extern int
+FMdump_encoded_XML(FMContext c, void *data, int character_limit);
 
 extern char*
 FMunencoded_to_XML_string(FMContext fmcontext, FMFormat format, void *data);

@@ -165,9 +165,6 @@ FMunencoded_to_XML_string(FMContext fmcontext, FMFormat format, void *data)
 }
 
 extern void
-dump_XML_record(FMFormat format, void *data, int encoded);
-
-extern void
 internal_dump_XML_record(FMFormat format, void *data, void *string_base, int encoded)
 {
     struct dstring ds;
@@ -203,7 +200,7 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
     int i = -1;
     xml_output_info info;
     if (!FMhas_XML_info(format)) {
-	dump_XML_record(format, data, encoded);
+	FMdump_XML(format, data, encoded);
 	return;
     }
     info = format->xml_out;
@@ -319,8 +316,8 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
     }
 }
 
-extern void
-dump_XML_record(FMFormat format, void *data, int encoded)
+extern int
+FMdump_XML(FMFormat format, void *data, int encoded)
 {
     internal_dump_XML_record(format, data, data, encoded);
 }

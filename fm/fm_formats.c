@@ -2916,6 +2916,31 @@ int character_limit;
     return ((character_limit > 0) && (char_count > character_limit));
 }
 
+extern int
+FMdump_encoded_XML(FMContext c, void *data, int limit)
+{
+    int index;
+    FMFormat format = FMformat_from_ID(c, data);
+    int char_count = 0;
+    int header_size = format->server_ID.length;
+    if (format->variant) {
+	header_size += sizeof(INT4);
+    }
+    header_size += (8 - header_size) & 0x7;
+    data = (char*)data + header_size;
+
+    
+    if (FMhas_XML_info(format)) {
+	FMdump_XML(format, data, 1);
+	return;
+    }
+    printf("<%s>\n", format->format_name);
+    for (index = 0; index < format->field_count; index++) {
+	dump_FMfield_as_XML(format, format, index, data, data, 1, 1);
+    }
+    printf("</%s>\n", format->format_name);
+}
+
 extern void
 dump_unencoded_FMrecord_as_XML(fmc, format, data)
 FMContext fmc;
@@ -2924,7 +2949,7 @@ void *data;
 {
     int index;
     if (FMhas_XML_info(format)) {
-/*GSE	FMdump_XML(format, data, -1);*/
+	FMdump_XML(format, data, 0);
 	return;
     }
     printf("<%s>\n", format->format_name);

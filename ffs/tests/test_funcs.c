@@ -55,92 +55,92 @@ triangle_param triangle;
 add_rec add_action_record;
 
 char *first_xml = "\
-<FirstRecord integer_attribute=<PBIO:data field_id=0> double_attribute=<PBIO:data field_id=1> character_attribute=<PBIO:data field_id=2>>\n";
+<FirstRecord integer_attribute=<FFS:data field_id=0> double_attribute=<FFS:data field_id=1> character_attribute=<FFS:data field_id=2>>\n";
 
 char *string_xml = "\
-<StringRecord integer_attribute=<PBIO:data field_id=0>>\n\
-    <Short value=<PBIO:data field_id=1>>\n\
-    <Long  value=<PBIO:data field_id=2>>\n\
+<StringRecord integer_attribute=<FFS:data field_id=0>>\n\
+    <Short value=<FFS:data field_id=1>>\n\
+    <Long  value=<FFS:data field_id=2>>\n\
     <String>\n\
-       <PBIO:data field_id=3>\n\
+       <FFS:data field_id=3>\n\
     </String>\n\
-    <Double value=<PBIO:data field_id=4>> \n\
-    <Character value=<PBIO:data field_id=5>>\n\
+    <Double value=<FFS:data field_id=4>> \n\
+    <Character value=<FFS:data field_id=5>>\n\
 </StringRecord>\n";
 
 char *third_xml = "\
-<TwoStringRecord integer_attribute=<PBIO:data field_name=\"integer field\">>\n\
-    <Long  value=<PBIO:data field_name=\"long field\">>\n\
-    <UnsignedInt  value=<PBIO:data field_name=\"uint field\">>\n\
-    <UnsignedLong  value=<PBIO:data field_name=\"ulong field\">>\n\
+<TwoStringRecord integer_attribute=<FFS:data field_name=\"integer field\">>\n\
+    <Long  value=<FFS:data field_name=\"long field\">>\n\
+    <UnsignedInt  value=<FFS:data field_name=\"uint field\">>\n\
+    <UnsignedLong  value=<FFS:data field_name=\"ulong field\">>\n\
     <String>\n\
-       <PBIO:data field_id=4>\n\
+       <FFS:data field_id=4>\n\
     </String>\n\
-    <Double value=<PBIO:data field_id=5>> \n\
+    <Double value=<FFS:data field_id=5>> \n\
     <StringTwo>\n\
-       <PBIO:data field_name=\"string field2\">\n\
+       <FFS:data field_name=\"string field2\">\n\
     </StringTwo>\n\
-    <Character value=<PBIO:data field_id=7>>\n\
-    <Enumeration value=<PBIO:data field_id=8>>\n\
+    <Character value=<FFS:data field_id=7>>\n\
+    <Enumeration value=<FFS:data field_id=8>>\n\
 </TwoStringRecord>\n";
 
 char *fourth_xml = "\
-<StaticArrayRecord  ifield=<PBIO:data field_name=ifield>>\n\
-<IntArray><PBIO:array>\n\
+<StaticArrayRecord  ifield=<FFS:data field_name=ifield>>\n\
+<IntArray><FFS:array>\n\
 	<ArrayElement>\n\
-		<PBIO:array_data_mark  field_name=int_array>\n\
+		<FFS:array_data_mark  field_name=int_array>\n\
 	</ArrayElement>\n\
-</PBIO:array></IntArray>\n\
-<DoubleArray><PBIO:array>\n\
+</FFS:array></IntArray>\n\
+<DoubleArray><FFS:array>\n\
 	<DoubleElement>\n\
-		<PBIO:array_data_mark  field_name=\"double field\">\n\
+		<FFS:array_data_mark  field_name=\"double field\">\n\
 	</DoubleElement>\n\
-</PBIO:array></DoubleArray>\n\
+</FFS:array></DoubleArray>\n\
 </StaticArrayRecord>\n";
 
 char *embedded_xml = "\
-<EmbeddedRecord  ifield=<PBIO:data field_name=ifield> \
-string=\"<PBIO:data field_name=\"string field\">\" \
-double=<PBIO:data field_name=\"dfield\">>\n";
+<EmbeddedRecord  ifield=<FFS:data field_name=ifield> \
+string=\"<FFS:data field_name=\"string field\">\" \
+double=<FFS:data field_name=\"dfield\">>\n";
 
 char *struct_array_xml = "\
 <StructuredArray>\n\
-<PBIO:array><PBIO:array_data_mark field_name=earray></PBIO:array>\
+<FFS:array><FFS:array_data_mark field_name=earray></FFS:array>\
 </StructuredArray>\n";
 
 char *var_array_xml = "\
 <VariableLengthArrays>\n\
 <VariableIntegerArray>\n\
-<PBIO:array><PBIO:array_data_mark field_name=var_int_array> </PBIO:array>\
+<FFS:array><FFS:array_data_mark field_name=var_int_array> </FFS:array>\
 </VariableIntegerArray>\n\
-<PBIO:array><PBIO:array_data_mark field_name=var_string_array></PBIO:array>\
+<FFS:array><FFS:array_data_mark field_name=var_string_array></FFS:array>\
 </VariableLengthArrays>\n";
 
 char *later_xml = "\
 <LaterRecord>\n\
-int=<PBIO:data field_name=\"integer field\"> str=<PBIO:data field_name=\"string field\"> dbl=<PBIO:data field_name=\"double field\">\n\
+int=<FFS:data field_name=\"integer field\"> str=<FFS:data field_name=\"string field\"> dbl=<FFS:data field_name=\"double field\">\n\
 </LaterRecord>\n";
 
 char *later2_xml = "\
 <Later2Record>\n\
-int=<PBIO:data field_name=\"integer field\"> str=<PBIO:data field_name=\"string field\"> dbl=<PBIO:data field_name=\"double field\">\n\
+int=<FFS:data field_name=\"integer field\"> str=<FFS:data field_name=\"string field\"> dbl=<FFS:data field_name=\"double field\">\n\
 </Later2Record>\n";
 
 char *nested_xml = "\
 <NestedRecord>\n\
-int=<PBIO:data field_name=\"integer field\"> \n\
+int=<FFS:data field_name=\"integer field\"> \n\
 <Nested Element>\n\
-<PBIO:data field_name=\"nested record\">\n\
+<FFS:data field_name=\"nested record\">\n\
 </Nested Element>\n\
-<String><PBIO:data field_name=\"string field\"></String>\n\
+<String><FFS:data field_name=\"string field\"></String>\n\
 </NestedRecord>\n";
 
-char *event_xml = "<EventData len=<PBIO:data field_name=len>>\
-<PBIO:array><PBIO:array_data_mark field_name=elem> </PBIO:array></EventData>\n";
+char *event_xml = "<EventData len=<FFS:data field_name=len>>\
+<FFS:array><FFS:array_data_mark field_name=elem> </FFS:array></EventData>\n";
 
 char *event_vec_xml = "\
-<EventVector num_blocks=<PBIO:data field_name=vec_length>>\n\
-<PBIO:array><PBIO:array_data_mark field_name=eventv></PBIO:array>\
+<EventVector num_blocks=<FFS:data field_name=vec_length>>\n\
+<FFS:array><FFS:array_data_mark field_name=eventv></FFS:array>\
 </EventVector>\n";
 
 int
