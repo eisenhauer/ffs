@@ -847,41 +847,54 @@ int field;
 }
 
 static int
-determine_size(FMFormat top, int index, int field)
+determine_size(FMFormat top, int index, int field, int actual)
 {
     FMFormat ioformat = top->subformats[index];
     FMVarInfoList var = &ioformat->var_list[field];
     FMTypeDesc *t = &var->type_desc;
     int size = ioformat->field_list[field].field_size;
+    int array_size = 1;
     while (t != NULL) {
 	switch (t->type) {
 	case FMType_pointer:
+	    if (actual) {
+		size= sizeof(char*);
+		return size * array_size;
+	    }
+	    break;
 	case FMType_string:
-	    return sizeof(char*);
+	    size = sizeof(char*);
+	    break;
 	case FMType_array:
-	    t = t->next;
+	    if (actual && (t->static_size > 0)) {
+		/* FFS size is only size of element, actual size is total */
+		array_size *= t->static_size;
+	    }
 	    break;
 	case FMType_subformat: {
 	    int i = 0;
 	    FMFormat subformat = ioformat->field_subformats[field];
 	    while (top->subformats[i] != subformat) i++;
-	    return top->master_struct_list[i].struct_size;
+	    size = top->master_struct_list[i].struct_size;
+	    break;
 	}
 	case FMType_simple:
 	    switch(t->data_type) {
 	    case integer_type: case unsigned_type:
 	    case enumeration_type: case boolean_type: case char_type:
-		if (size >= 0) return size;
-		return sizeof(int);
+		if (size <= 0) size = sizeof(int);
+		break;
 	    case unknown_type: case string_type:
 		assert(0);
 	    case float_type:
-		if (size >= 0) return size;
-		return sizeof(double);
+		if (size <= 0) size = sizeof(double);
+		break;
 	    }
 	    break;
 	}
+	t = t->next;
     }
+    return size * array_size;
 }
     
 
@@ -894,9 +907,6 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
     FMFieldList fl = structs[index].field_list;
     int bad_size = 0;
 
-    if (structs[index].struct_size != -1) return;
-
-    
     f = top->subformats[index];
     while (structs[index].field_list[field_count].field_name != NULL) {
 	field_count++;
@@ -919,28 +929,26 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
     i = 0;
     while (fl[i].field_name != NULL) {
 	FMTypeDesc *tmp;
-	int align_req;
+	int align_req, actual_size;
 	tmp = &f->var_list[i].type_desc;
-	while (tmp != NULL) {
-	    if (tmp->data_type == unknown_type) {
+	while (tmp->next != NULL) tmp = tmp->next;
+	if (tmp->data_type == unknown_type) {
 	    
-		int j = 0;
-		char *base_type = base_data_type(structs[index].field_list[i].field_type);
+	    int j = 0;
+	    char *base_type = base_data_type(structs[index].field_list[i].field_type);
 
-		while(structs[j].format_name) {
-		    if (strcmp(base_type, structs[j].format_name) == 0) {
-			tmp->type = FMType_subformat;
-			f->field_subformats[i] = top->subformats[j];
-		    }
-		    j++;
+	    while(structs[j].format_name) {
+		if (strcmp(base_type, structs[j].format_name) == 0) {
+		    tmp->type = FMType_subformat;
+		    f->field_subformats[i] = top->subformats[j];
 		}
-		assert(tmp->type != FMType_simple);
-		free(base_type);
+		j++;
 	    }
-	    tmp = tmp->next;
+	    assert(tmp->type != FMType_simple);
+	    free(base_type);
 	}
 	align_req = type_alignment(f, i);
-
+    
 	if (align_req > 0) {
 	    if (align_req > f->alignment) {
 		f->alignment = align_req;
@@ -948,23 +956,25 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
 	    offset = (offset + align_req - 1) & (-align_req);
 	    fl[i].field_offset = offset;
 	}
-	if (fl[i].field_size > 0) {
-	    offset += fl[i].field_size;
+	if (fl[i].field_size <= 0) {
+	    fl[i].field_size = determine_size(top, index, i, 0);
+	}
+	actual_size = determine_size(top, index, i, 1);
+	if (actual_size > 0) {
+	    offset += actual_size;
 	} else {
-	    fl[i].field_size = determine_size(top, index, i);
-	    if (fl[i].field_size > 0) {
-		offset += fl[i].field_size;
-	    } else {
-		offset++;
-		bad_size++;
-	    }
+	    offset++;
+	    bad_size++;
 	}
 	i++;
     }
     if ((bad_size == 0) && (f->alignment != -1)) {
-	int struct_size = offset + f->alignment - 1;
-	int pad = -struct_size & (f->alignment -1);  /*  only works if req_align is power of two */
-	struct_size += pad;
+	int struct_size = offset;
+	if ((struct_size % f->alignment) != 0) {
+	    struct_size = offset + f->alignment - 1;
+	    int pad = -struct_size & (f->alignment -1);  /*  only works if req_align is power of two */
+	    struct_size += pad;
+	}
 	structs[index].struct_size = struct_size;
     }
 }
@@ -988,7 +998,8 @@ FMlocalize_structs(FMStructDescList list)
 	f->subformats[j]->field_subformats = NULL;
 	f->subformats[j]->alignment = -1;
     }
-    for (j = 0; j < struct_count; j++) {
+    f->master_struct_list = list;
+    for (j = 0; j < struct_count + 1; j++) {
 	for (i=0 ; i < struct_count ; i++) {
 	    set_sizes_and_offsets(f, i, list);
 	}
