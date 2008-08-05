@@ -1729,35 +1729,35 @@ FMField compressed_mesh[] = {
   {"old_data_size", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,old_data_size)},
   {"compressed_size", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,compressed_size)},
   {"compressed_data", "integer[compressed_size]", sizeof(int), FMOffset(compressed_mesh_param_ptr,compressed_data)},
-  {"atom_type", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,atom_type)},
   {"corner1x", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,corner1x)},
   {"corner1y", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,corner1y)},
   {"corner1z", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,corner1z)},
   {"corner2x", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,corner2x)},
   {"corner2y", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,corner2y)},
   {"corner2z", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,corner2z)},
+  {"atom_type", "integer", sizeof(int), FMOffset(compressed_mesh_param_ptr,atom_type)},
   {NULL, NULL, 0 , 0}
 };
 
 FMField triangle_field[] = {
-  {"timestamp", "integer", sizeof(int), FMOffset(triangle_param_ptr,timestamp)},
-  {"nonce", "integer", sizeof(int), FMOffset(triangle_param_ptr, nonce)},
   //  {"num_ints", "integer", sizeof(int), FMOffset(triangle_param_ptr,num_ints)},
   //  {"triangle_data", "integer[num_ints]", sizeof(int), FMOffset(triangle_param_ptr,triangle_data)},
-  {"num_meshes", "integer", sizeof(int), FMOffset(triangle_param_ptr,num_meshes)},
-  {"mesh_data", "compressed_mesh_param[num_meshes]", sizeof(compressed_mesh_param), FMOffset(triangle_param_ptr,mesh_data)},
-
-  {"compression_type", "integer", sizeof(int), FMOffset(triangle_param_ptr, compression_type)},
-
-  {"codebook_size", "integer", sizeof(int), FMOffset(triangle_param_ptr,codebook_size)},
-  {"codebook_data", "integer[codebook_size]", sizeof(int), FMOffset(triangle_param_ptr,codebook_data)},
-
   {"corner1x", "integer", sizeof(int), FMOffset(triangle_param_ptr, corner1x)},
   {"corner1y", "integer", sizeof(int), FMOffset(triangle_param_ptr, corner1y)},
   {"corner1z", "integer", sizeof(int), FMOffset(triangle_param_ptr, corner1z)},
   {"corner2x", "integer", sizeof(int), FMOffset(triangle_param_ptr, corner2x)},
   {"corner2y", "integer", sizeof(int), FMOffset(triangle_param_ptr, corner2y)},
   {"corner2z", "integer", sizeof(int), FMOffset(triangle_param_ptr, corner2z)},
+
+  {"compression_type", "integer", sizeof(int), FMOffset(triangle_param_ptr, compression_type)},
+
+  {"codebook_size", "integer", sizeof(int), FMOffset(triangle_param_ptr,codebook_size)},
+  {"codebook_data", "integer[codebook_size]", sizeof(int), FMOffset(triangle_param_ptr,codebook_data)},
+
+  {"timestamp", "integer", sizeof(int), FMOffset(triangle_param_ptr,timestamp)},
+  {"nonce", "integer", sizeof(int), FMOffset(triangle_param_ptr, nonce)},
+  {"num_meshes", "integer", sizeof(int), FMOffset(triangle_param_ptr,num_meshes)},
+  {"mesh_data", "compressed_mesh_param[num_meshes]", sizeof(compressed_mesh_param), FMOffset(triangle_param_ptr,mesh_data)},
 
   {NULL, NULL, 0 , 0}
 };
@@ -1774,12 +1774,12 @@ FMField add_field_list[] =
      sizeof(int), FMOffset(add_rec_ptr, action)},
     {"in_format_name", "string",
      sizeof(char*), FMOffset(add_rec_ptr, in_format_name)},
+    {"func_str", "string",
+     sizeof(char*), FMOffset(add_rec_ptr, func_str)},
     {"format_count", "integer",
      sizeof(int), FMOffset(add_rec_ptr, format_count)},
     {"out_formats", "XMLFormatList[format_count]",
      sizeof(msg_format_list_element), FMOffset(add_rec_ptr, out_formats)},
-    {"func_str", "string",
-     sizeof(char*), FMOffset(add_rec_ptr, func_str)},
     {NULL, NULL, 0, 0}
 };
 
