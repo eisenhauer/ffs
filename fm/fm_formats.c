@@ -827,6 +827,7 @@ int field;
 	    switch(t->data_type) {
 	    case integer_type: case unsigned_type:
 	    case enumeration_type: case boolean_type: case char_type:
+		if (size == -1) return -1;
 		if (size == 1) return 1;
 		if ((size == sizeof(short)) || (size < sizeof(int)))
 		    return FMOffset(ss, s);
@@ -971,7 +972,6 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
     if ((bad_size == 0) && (f->alignment != -1)) {
 	int struct_size = offset;
 	if ((struct_size % f->alignment) != 0) {
-	    struct_size = offset + f->alignment - 1;
 	    int pad = -struct_size & (f->alignment -1);  /*  only works if req_align is power of two */
 	    struct_size += pad;
 	}

@@ -54,10 +54,14 @@ do_test(FMStructDescList list)
 	tmp[i].struct_size = -1;
 	tmp[i].opt_info = NULL;
 	while(tmp[i].field_list[j].field_name != NULL) {
-	    char *typ = tmp[i].field_list[j].field_type;
+	    const char *typ = tmp[i].field_list[j].field_type;
 	    tmp[i].field_list[j].field_offset = -1;
 	    if (strncmp(typ, "integer", 7) == 0) {
 		if (tmp[i].field_list[j].field_size == sizeof(int)) {
+		    tmp[i].field_list[j].field_size = -1;
+		}
+	    } else if (strncmp(typ, "unsigned integer", 16) == 0) {
+		if (tmp[i].field_list[j].field_size == sizeof(unsigned)) {
 		    tmp[i].field_list[j].field_size = -1;
 		}
 	    } else if (strncmp(typ, "double", 6) == 0) {
