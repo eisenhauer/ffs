@@ -923,6 +923,7 @@ set_sizes_and_offsets(FMFormat top, int index, FMStructDescList structs)
 	while (fl[i].field_name != NULL) {
 	    desc = gen_type_desc(f, i, structs[index].field_list[i].field_type);
 	    f->var_list[i].type_desc = *desc;
+	    free(desc);
 	    i++;
 	}
     }
