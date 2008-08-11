@@ -22,7 +22,7 @@ char **argv;
     FFSFile file = NULL;
     FFSContext c;
     FFSTypeHandle first_ioformat = NULL, later_ioformat = NULL;
-    FFSTypeHandle nested_ioformat = NULL, structured_ioformat = NULL;
+    FFSTypeHandle nested_ioformat = NULL;
     FFSTypeHandle sixth_ioformat = NULL;
     int check_only = 0;
     int finished = 0;
@@ -62,9 +62,6 @@ char **argv;
     sixth_ioformat = FFSset_fixed_target(c, variant_format_list);
 
     while (!finished) {
-	char *comment;
-	FFSTypeHandle new_format;
-	char *format_name;
 
 	if (FFSnext_type_handle(file) == first_ioformat) {
 	    first_rec read_data;

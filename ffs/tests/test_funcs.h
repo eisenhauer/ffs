@@ -222,6 +222,10 @@ typedef struct visit_table {
     void *nodes[100];
 } *visit_table;
 
+typedef struct pointer_to_static_array {
+    int (*int_array)[4][4];
+} *pointer_to_static_array_ptr;
+
 extern int calc_signature(node_ptr n, visit_table v);
 
 extern FMField field_list[];
@@ -248,6 +252,7 @@ extern FMField triangle_field[];
 extern FMField xml_format_list_flds[];
 extern FMField add_field_list[];
 extern FMField node_field_list[];
+extern FMField pointer_to_static_field_list[];
 
 extern FMStructDescRec first_format_list[];
 extern FMStructDescRec string_format_list[];
@@ -265,6 +270,7 @@ extern FMStructDescRec multi_array_format_list[];
 extern FMStructDescRec triangle_format_list[];
 extern FMStructDescRec add_action_format_list[];
 extern FMStructDescRec node_format_list [];
+extern FMStructDescRec pointer_to_static_format_list [];
 
 extern void init_written_data();
 extern void free_written_data();
@@ -302,6 +308,8 @@ extern multi_array_rec fortran_array;
 extern triangle_param triangle;
 
 extern add_rec add_action_record;
+
+extern struct pointer_to_static_array psa;
 
 extern int first_rec_eq(first_rec *r1, first_rec *r2);
 extern int second_rec_eq(second_rec *r1, second_rec *r2);

@@ -1049,11 +1049,11 @@ gen_var_dimens(FMFormat ioformat, int field)
     tmp = &new_var_list[field].type_desc;
     last = NULL;
     while(tmp->next != NULL) {
-	last = tmp;
-	tmp = tmp->next;
 	if (tmp->type == FMType_pointer) {
 	    ioformat->variant = 1;
 	}
+	last = tmp;
+	tmp = tmp->next;
     }
     if (new_var_list[field].data_type == string_type) {
 	tmp->type = FMType_string;
@@ -2414,11 +2414,11 @@ str_to_data_type(str)
 const char *str;
 {
     const char *end;
-    while (isspace((int)*str)) {	/* skip preceeding space */
+    while (isspace((int)*str) || (*str == '*') || (*str == '(')) {	/* skip preceeding space */
 	str++;
     }
     end = str + strlen(str) - 1;
-    while (isspace((int)*end)) {	/* test trailing space */
+    while (isspace((int)*end) || (*end == ')')) {  /* test trailing space */
 	end--;
     }
     end++;
@@ -3999,8 +3999,9 @@ fill_derived_format_values(FMContext fmc, FMFormat format)
 	    format->variant = 1;
 	} else {
 	    char *base_type =
-	    base_data_type(field_list[field].field_type);
+		base_data_type(field_list[field].field_type);
 	    FMFormat subformat = NULL;
+	    FMTypeDesc* desc = NULL;
 
 	    /* if field is of another record format, fill that in */
 	    if (str_to_data_type(base_type) == unknown_type) {
@@ -4022,6 +4023,11 @@ fill_derived_format_values(FMContext fmc, FMFormat format)
 		if (subformat != NULL) {
 		    format->variant |= subformat->variant;
 		}
+	    }
+	    desc = &format->var_list[field].type_desc;
+	    while (desc != NULL) {
+		if (desc->type == FMType_pointer) format->variant = 1;
+		desc = desc->next;
 	    }
 	    free(base_type);
 	}

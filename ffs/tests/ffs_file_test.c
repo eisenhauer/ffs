@@ -109,7 +109,6 @@ int (*read_func) ();
 {
     FFSFile iofile;
     int finished = 0;
-    int comment_count = 0;
     int first_rec_count = 0;
     int second_rec_count = 0;
     int third_rec_count = 0;
@@ -130,7 +129,6 @@ int (*read_func) ();
 
     while (!finished) {
 	char *comment;
-	char *format_name;
 
 	switch (FFSnext_record_type(iofile)) {
 	case FFScomment:

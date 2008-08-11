@@ -54,6 +54,8 @@ triangle_param triangle;
 
 add_rec add_action_record;
 
+struct pointer_to_static_array psa;
+
 char *first_xml = "\
 <FirstRecord integer_attribute=<FFS:data field_id=0> double_attribute=<FFS:data field_id=1> character_attribute=<FFS:data field_id=2>>\n";
 
@@ -858,19 +860,20 @@ void
 add_rec_dump(add_rec_ptr r)
 {
     int i;
-    printf("in_format_name %p \"%s\"\n", (char*)r->in_format_name - (char*)r,
-	   r->in_format_name);
-    printf("func_str %p \"%s\"\n", (char*)r->func_str - (char*)r, r->func_str);
-    printf("out_formats %p \n", (char*)r->out_formats - (char*)r);
+    printf("in_format_name \"%s\"\n", r->in_format_name);
+    printf("func_str \"%s\"\n", r->func_str);
+    printf("out_formats  \n");
     for (i = 0; i < r->format_count; i++) {
 	int j;
-	printf("out[%d].format_name %p \"%s\"\n", i, (char*)r->out_formats[i].format_name - (char*)r, r->out_formats[i].format_name);
+	printf("out[%d].format_name \"%s\"\n", i, r->out_formats[i].format_name);
 	if (r->out_formats[i].xml_markup != NULL)
-	    printf("out[%d].xml_markup %p \"%s\"\n", i, (char*)r->out_formats[i].xml_markup - (char*)r, r->out_formats[i].xml_markup);
-	printf("out[%d].field_list %p \n", i, (char*)r->out_formats[i].field_list - (char*)r);
+	    printf("out[%d].xml_markup \"%s\"\n", i, r->out_formats[i].xml_markup);
+	printf("out[%d].field_list \n", i);
 	for (j = 0; j < r->out_formats[i].field_list_len; j++) {
-	    printf("out[%d].field_list[%d].field_name %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_name - (char*)r, r->out_formats[i].field_list[j].field_name);
-	    printf("out[%d].field_list[%d].field_type %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_type - (char*)r, r->out_formats[i].field_list[j].field_type);
+	    printf("out[%d].field_list[%d].field_name \"%s\"\n", i, j,
+		   r->out_formats[i].field_list[j].field_name);
+	    printf("out[%d].field_list[%d].field_type \"%s\"\n", i, j,
+		   r->out_formats[i].field_list[j].field_type);
 	}
     }
 }
@@ -908,6 +911,28 @@ add_rec_eq(add_rec_ptr r1, add_rec_ptr r2)
     for (i=0; i<r1->format_count; i++) {
 	if (xml_format_list_eq(&r1->out_formats[i], &r2->out_formats[i]) == 0)
 	    return 0;
+    }
+    return 1;
+}
+
+int
+pointer_to_static_rec_eq(pointer_to_static_array_ptr r1, pointer_to_static_array_ptr r2)
+{
+    if ((r1->int_array != NULL) || (r2->int_array != NULL)) {
+	if ((r1->int_array != NULL) && (r2->int_array != NULL)) {
+	    int i, j;
+	    for (i = 0; i< 4; i++) {
+		for (j=0; j < 4 ; j++) {
+		    if ((*r1->int_array)[i][j] != (*r2->int_array)[i][j]) {
+			printf("int_array element [%d][%d] differs\n", i, j);
+			return 0;
+		    }
+		}
+	    }
+	} else {
+	    printf("int_array pointers differ, null non-null");
+	    return 0;
+	}
     }
     return 1;
 }
@@ -1364,6 +1389,13 @@ init_written_data()
     add_action_record.out_formats[1].field_list[2].field_size = 0; 
     add_action_record.out_formats[1].field_list[2].field_offset = 0;
     add_action_record.func_str = "{ la la la }";
+
+    psa.int_array = malloc(4 * 4 * sizeof(int));
+    for (i=0; i < 4; i++) {
+	for (j=0; j < 4; j++) {
+	    (*psa.int_array)[i][j] = (i+1) * (j + 10);
+	}
+    }
 }
 
 void
@@ -1814,6 +1846,18 @@ FMField node_field_list[] =
 
 FMStructDescRec node_format_list [] = {
     {"node", node_field_list, sizeof(struct node), NULL},
+    {NULL, NULL, 0, NULL}
+};
+
+FMField pointer_to_static_field_list[] = 
+{
+    {"int_array", "*(integer[4][4])", sizeof(struct pointer_to_static_array),
+      FMOffset(pointer_to_static_array_ptr, int_array)},
+    {(char *) 0, (char *) 0, 0, 0}
+};
+
+FMStructDescRec pointer_to_static_format_list [] = {
+    {"pointer_to_static", pointer_to_static_field_list, sizeof(struct pointer_to_static_array), NULL},
     {NULL, NULL, 0, NULL}
 };
 
