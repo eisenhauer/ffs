@@ -12,7 +12,7 @@
 #include <malloc.h>
 #endif
 #include <string.h>
-#include "ffs.h"
+#include "fm.h"
 
 #include "test_funcs.h"
 
