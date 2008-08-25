@@ -683,14 +683,14 @@ new_FMTypeDesc()
 	*(integer[35])[10]	10 pointers to 35 integers
 */
 
-static FMTypeDesc *
-gen_type_desc(FMFormat f, int field, const char *typ)
+extern FMTypeDesc*
+gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
 {
     char *first_open = strchr(typ, '(');
     char *last_close = strrchr(typ, ')');
     if ((first_open && !last_close) || (!first_open && last_close)) {
 	fprintf(stderr, "Mismatched parenthesis in type spec \"%s\" .\n",
-		f->field_list[field].field_type);
+		fl[field].field_type);
 	return NULL;
     }
     if (first_open) {
@@ -700,9 +700,9 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	char *first = strchr(t, '(');
 	char *last = strrchr(t, ')');
 	*last = 0;
-	base = gen_type_desc(f, field, first +1);
+	base = gen_FMTypeDesc(fl, field, first +1);
 	while (first <= last) *(first++) = 'a';   /* wash it out */
-	tmp = root = gen_type_desc(f, field, t);
+	tmp = root = gen_FMTypeDesc(fl, field, t);
 	while (tmp->next) tmp = tmp->next;
 	*tmp = *base;   /* wipe out Simple */
 	free(t);
@@ -741,11 +741,9 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	}
 
 	while (!done) {
-	    FMFieldList field_list = f->field_list;
 	    int control_val;
 	    FMTypeDesc *tmp;
-	    int static_size = IOget_array_size_dimen(typ,
-						     field_list, dimen_count, 
+	    int static_size = IOget_array_size_dimen(typ, fl, dimen_count, 
 						     &control_val);
 	    if (static_size == 0) {
 		done++;
@@ -772,6 +770,12 @@ gen_type_desc(FMFormat f, int field, const char *typ)
 	}
 	return root;
     }
+}
+
+static FMTypeDesc *
+gen_type_desc(FMFormat f, int field, const char *typ)
+{
+    return gen_FMTypeDesc(f->field_list, field, typ);
 }
 
 typedef struct {
@@ -3225,47 +3229,35 @@ int char_limit;
 	    dump_value(field_type, field_size, field_offset, top_format, data,
 		       string_base, byte_reversal, float_format, encode, 
 		       verbose, char_limit);
-    } else if (strchr(left_paren + 1, '[') == NULL) {
+    } else {
 	/* single dimen array */
 	long dimension = 0;
 	char sub_type[64];
-	int sub_field_size;
-	int offset = fmfield->field_offset;
-	printf("{ ");
 	*left_paren = 0;
 	strcpy(sub_type, field_type);
 	*left_paren = '[';
-	dimension = strtol(left_paren + 1, NULL, 10);
+	int sub_field_size;
+	int offset = fmfield->field_offset;
+	printf("{ ");
+	dimension = FMget_array_element_count(format, iovar, data, encode);
 
-	if ((dimension == LONG_MIN) || (dimension == LONG_MAX) ||
-	    (dimension == 0)) {
-	    if (iovar->var_array != 1) {
-		fprintf(stderr, "Couldn't parse array size in \"%s\"\n",
-			field_type);
-		return char_count;
+	if (iovar->var_array == 1) {
+	    FMgetFieldStruct descr;  /* OK */
+	    long tmp_offset;
+
+	    descr.offset = fmfield->field_offset;
+	    descr.size = format->pointer_size;
+	    descr.data_type = integer_type;
+	    descr.byte_swap = byte_reversal;
+	    tmp_offset = get_FMlong(&descr, data);
+	    if (encode) {
+		data = (char *) string_base + tmp_offset;
 	    } else {
-		FMgetFieldStruct descr;  /* OK */
-		long tmp_offset;
-
-		dimension = FMget_array_element_count(format, iovar, data, encode);
-
-		descr.offset = fmfield->field_offset;
-		descr.size = format->pointer_size;
-		descr.data_type = integer_type;
-		descr.byte_swap = byte_reversal;
-		tmp_offset = get_FMlong(&descr, data);
-		if (encode) {
-		    data = (char *) string_base + tmp_offset;
-		} else {
-		    data = (void *) tmp_offset;
-		}
-		offset = 0;
+		data = (void *) tmp_offset;
 	    }
-	    sub_field_size = fmfield->field_size;
-	} else {
-	    /* normal internal array */
-	    sub_field_size = fmfield->field_size;
+	    offset = 0;
 	}
+	sub_field_size = fmfield->field_size;
 	for (; dimension > 0; dimension--) {
 	    char_count +=
 		dump_value(sub_type, sub_field_size, offset, top_format, data,
@@ -3280,55 +3272,8 @@ int char_limit;
 		printf(", ");
 	}
 	printf("}");
-    } else {
-	/* double dimen array */
-	long dimension1 = 0;
-	long dimension2 = 0;
-	char sub_type[64];
-	int sub_field_size, offset = fmfield->field_offset;
-	printf("{ ");
-	*left_paren = 0;
-	strcpy(sub_type, field_type);
-	dimension1 = strtol(left_paren + 1, &temp_ptr, 10);
-	dimension2 = strtol(temp_ptr + 2, &temp_ptr, 10);
-
-	if ((dimension2 == LONG_MIN) || (dimension2 == LONG_MAX) ||
-	    (dimension2 == 0) || (dimension1 == 0)) {
-	    *left_paren = '[';
-	    fprintf(stderr, "Couldn't parse array size in \"%s\"\n",
-		    field_type);
-	    return char_count;
-	}
-	*left_paren = '[';
-	sub_field_size = fmfield->field_size;
-	for (; dimension2 > 0; dimension2--) {
-	    int i = 0;
-	    printf("\n\t{ ");
-	    for (; i < dimension1; i++) {
-		char_count +=
-		    dump_value(sub_type, sub_field_size, offset, top_format,
-			       data, string_base, byte_reversal, float_format,
-			       encode, verbose, char_limit);
-		offset += sub_field_size;
-		if ((char_limit != -1) && (char_count > char_limit)) {
-		    printf(" ... ");
-		    return char_count;
-		}
-		if (i != dimension1 - 1)
-		    printf(", ");
-	    }
-	    printf("}");
-	}
-	printf("}");
     }
-    if (verbose)
-	printf("; ");
-    else
-	printf(" ");
-
-    return char_count;
 }
-
 
 extern int
 sdump_value_as_XML(str, field_type, field_size, field_offset, top_format, data,
