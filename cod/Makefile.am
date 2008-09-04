@@ -16,9 +16,8 @@ noinst_HEADERS = assert.h config.h cod.tab.h cod_internal.h structs.h
 DCG_LIBS=@DCG_LIBS@
 
 libcod_la_SOURCES = cod.c cod_node.c cg.c standard.c
-libcod_la_LIBADD = $(DCG_LIBS) $(KERNEL_OBJS) 
+libcod_la_LIBADD = ../fm/libfm.la $(DCG_LIBS) $(KERNEL_OBJS) 
 libcod_la_DEPENDENCIES = ../fm/libfm.la $(KERNEL_OBJS)
-libcod_la_LIBADD =  ../fm/libfm.la
 libcod_la_LDFLAGS =
 
 EXTRA_libcod_la_SOURCES = kcod.c
