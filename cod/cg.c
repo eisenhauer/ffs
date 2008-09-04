@@ -1152,7 +1152,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    dill_reg offset = dill_getreg(s, DILL_UL);	    
 
 	    /* Figure out which arg is ptr and which is integral */
-	    if(typ = get_complex_type(NULL, expr->node.operator.left)) {
+	    if((typ = get_complex_type(NULL, expr->node.operator.left))) {
 		if(typ->node_type == cod_reference_type_decl) {
 		    ptr = expr->node.operator.left;  opPtr = left;
 		    arg = expr->node.operator.right; opArg = right;
@@ -1229,7 +1229,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    int size;
 	    
 	    /* Figure out if left arg is a pointer or integral */
-	    if(ltyp = get_complex_type(NULL, expr->node.operator.left)) {
+	    if((ltyp = get_complex_type(NULL, expr->node.operator.left))) {
 		if(ltyp->node_type == cod_reference_type_decl) {
 		    lIsPtr = 1;
 		} else {
@@ -1244,7 +1244,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 
 	    /* Figure out if right arg is a pointer or integral */
-	    if(rtyp = get_complex_type(NULL, expr->node.operator.right)) {
+	    if((rtyp = get_complex_type(NULL, expr->node.operator.right))) {
 		if(rtyp->node_type == cod_reference_type_decl) {
 		    rIsPtr = 1;
 		} else {
@@ -2186,7 +2186,6 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     }
     case cod_field_ref: {
 	operand base = cg_expr(s, expr->node.field_ref.struct_ref, 1, descr);
-	sm_ref typ = get_complex_type(NULL, expr->node.field_ref.struct_ref);
 	sm_ref field = expr->node.field_ref.sm_field_ref;
 	base.offset += field->node.field.cg_offset;
 	if (is_var_array(field) && (need_assignable == 0)) {
