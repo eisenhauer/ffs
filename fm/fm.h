@@ -237,10 +237,10 @@ FMdump_data(FMFormat format, void *data, int character_limit);
 extern int
 FMdump_encoded_data(FMFormat format, void *data, int character_limit);
 
-extern int
+extern void
 FMdump_XML(FMFormat format, void *data, int encoded);
 
-extern int
+extern void
 FMdump_encoded_XML(FMContext c, void *data, int character_limit);
 
 extern char*
@@ -252,6 +252,9 @@ FMfree_var_rec_elements(FMFormat format, void *data);
 extern long
 FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data, 
 			  int encode);
+
+extern FMTypeDesc*
+gen_FMTypeDesc(FMFieldList fl, int field, const char *typ);
 
 typedef struct _FMgetFieldStruct {
     int offset;

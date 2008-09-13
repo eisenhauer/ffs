@@ -316,7 +316,7 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
     }
 }
 
-extern int
+extern void
 FMdump_XML(FMFormat format, void *data, int encoded)
 {
     internal_dump_XML_record(format, data, data, encoded);

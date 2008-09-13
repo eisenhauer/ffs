@@ -1731,12 +1731,13 @@ va_dcl
 
     va_list ap;
     char *tmp = malloc(10240); /* arbitrarily large */
-    srcpos lx_srcpos = cod_get_srcpos(expr);
+    srcpos lx_srcpos = {0,0};
 #ifdef STDC_HEADERS
     va_start(ap, format);
 #else
     va_start(ap);
 #endif
+    if (expr) lx_srcpos = cod_get_srcpos(expr);
     context->error_func(context->client_data, "## Ecode Error:  ");
     vsprintf(tmp, format, ap);
     context->error_func(context->client_data, tmp);
@@ -1833,6 +1834,9 @@ cod_print_operator_t(operator_t o)
 	break;
     case  op_address:
 	printf("ADDRESS");
+	break;
+    case op_sizeof:
+	printf("SIZEOF");
 	break;
     }
 }
@@ -1995,7 +1999,8 @@ resolve(char *id, scope_ptr scope)
 {
     sm_ref tmp;
     if (scope == NULL) return NULL;
-    if ((tmp = resolve_local(id, scope)) != NULL) {
+    tmp = resolve_local(id, scope);
+    if (tmp != NULL) {
 	return tmp;
     }
     return resolve(id, scope->containing_scope);
@@ -2269,7 +2274,6 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
     int spec_count = 0;
     int prefix_end = 0;
     int type_found = 0;
-    sm_ref complex_return_type = NULL;
     int cg_type;
 
     cg_type = DILL_ERR;
@@ -2460,7 +2464,6 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
      while(tmp != NULL) {
 	sm_ref node = tmp->node;
 	sm_list typ;
-	int cg_type = DILL_ERR;
 	sm_list new_elem;
 	new_elem = malloc(sizeof(*new_elem));
 	new_elem->next = NULL;
@@ -2601,7 +2604,6 @@ build_format_list(cod_parse_context context, sm_ref expr)
     sm_ref typ = get_complex_type(context, expr);
     FMStructDescList formats = malloc(sizeof(formats[0]) * 2);
     int format_count = 0;
-    sm_list fields;
     if (typ == NULL) {
 	cod_src_error(context, expr->node.field_ref.struct_ref, 
 		      "Reference must be structured type", 
@@ -3102,7 +3104,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    sm_list tmp_args = malloc(sizeof(struct list_struct));
 		    FMStructDescList list = build_format_list(context,  arg);
 		    char tmp[30];
-		    sprintf(&tmp[0], "%ld", list);
+		    sprintf(&tmp[0], "%p", list);
 		    tmp_args->node = cod_new_constant();
 		    tmp_args->node->node.constant.token = integer_constant;
 		    tmp_args->node->node.constant.const_val = strdup(tmp);
@@ -3657,8 +3659,8 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
     return 1;	
 }
 
-static int semanticize_type_node(cod_parse_context context, sm_ref decl, 
-				 scope_ptr scope);
+static int semanticize_struct_type_node(cod_parse_context context, sm_ref decl, 
+					scope_ptr scope);
 
 static int semanticize_decl(cod_parse_context context, sm_ref decl, 
 			    scope_ptr scope)
@@ -3739,7 +3741,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		sm_ref arr = decl->node.declaration.sm_complex_type;
 		if ((arr != NULL) && 
 		    (arr->node_type == cod_array_type_decl)) {
-		    typ == reduce_type_list(context, 
+		    typ = reduce_type_list(context, 
 					    arr->node.array_type_decl.type_spec, 
 					    &cg_type, scope, NULL);
 		}
@@ -3769,7 +3771,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	return 1;
 	break;
     case cod_struct_type_decl:
-	return semanticize_type_node(context, decl, scope);
+	return semanticize_struct_type_node(context, decl, scope);
 	break;
     case cod_array_type_decl:
 	return semanticize_array_type_node(context, decl, scope);
@@ -3983,14 +3985,15 @@ char *str;
 int size;
 {
     char *tmp = malloc(strlen(str) + 1);
+    char *free_str = tmp;
     strcpy(tmp, str);
     str = tmp;			/* make a copy of str parameter */
 
-    while (isspace((int)*str)) {	/* skip preceeding space */
+    while (isspace((int)*str) || (*str == '*') || (*str == '(')) {	/* skip preceeding space */
 	str++;
     }
     tmp = str + strlen(str) - 1;
-    while (isspace((int)*tmp)) {	/* kill trailing space */
+    while (isspace((int)*tmp) || (*tmp == ')')) {  /* test trailing space */
 	*tmp = 0;
 	tmp--;
     }
@@ -4000,7 +4003,7 @@ int size;
 	tmp++;
     }
     if ((strcmp(str, "integer") == 0) || (strcmp(str, "enumeration") == 0)) {
-	free(str);
+	free(free_str);
 	if (size == sizeof(long)) {
 	    return DILL_L;
 	} else if (size == sizeof(int)) {
@@ -4013,7 +4016,7 @@ int size;
 	    return DILL_L;
 	}
     } else if (strcmp(str, "unsigned integer") == 0) {
-	free(str);
+	free(free_str);
 	if (size == sizeof(long)) {
 	    return DILL_UL;
 	} else if (size == sizeof(int)) {
@@ -4026,7 +4029,7 @@ int size;
 	    return DILL_UL;
 	}
     } else if ((strcmp(str, "float") == 0) || (strcmp(str, "double") == 0)) {
-	free(str);
+	free(free_str);
 	if (size == sizeof(double)) {
 	    return DILL_D;
 	} else if (size == sizeof(float)) {
@@ -4036,14 +4039,14 @@ int size;
 	    return DILL_D;
 	}
     } else if (strcmp(str, "char") == 0) {
-	free(str);
+	free(free_str);
 	assert(size == 1);
 	return DILL_C;
     } else if (strcmp(str, "string") == 0) {
-	free(str);
+	free(free_str);
 	return DILL_P;
     } else {
-	free(str);
+	free(free_str);
 	return DILL_ERR;
     }
 }
@@ -4132,139 +4135,120 @@ int *control_field;
 }
 
 static sm_ref
-build_array_decl_list(context, str, fields, cg_type, cg_size, complex_type, err)
-cod_parse_context context;
-char *str;
-FMFieldList fields;
-int cg_type;
-int cg_size;
-sm_ref complex_type;
-int *err;
-{
-    sm_ref ret = cod_new_array_type_decl();
-    int static_size;
-    int control_field;
-    char *rparen;
-    static_size = ECLget_array_size_dimen(str, fields, 0, &control_field);
-    if (static_size == 0) {
-	if (*str == 0) {
-	    return NULL;
-	} else {
-	    cod_src_error(context, NULL, 
-			  "Failed to parse or find array dimension in \"%s\" not found.", str);
-	    *err = 1;
-	    return NULL;
-	}
-    }
-    ret->node.array_type_decl.cg_static_size = static_size;
-    if (static_size != -1) {
-	ret->node.array_type_decl.sm_dynamic_size = NULL;
-    } else {	
-	sm_ref cf = (sm_ref)(fields[control_field].field_type);
-	switch (str_to_data_type(cf->node.field.string_type, 
-				 (int)sizeof(int))) {
-	case DILL_C: case DILL_UC: case DILL_S: case DILL_US: 
-	case DILL_I: case DILL_U: case DILL_L: case DILL_UL:
-	    break;
-	default:
-	    cod_src_error(context, NULL, 
-			  "Variable length control field \"%s\"not of integer type.", str);
-	    *err = 1;
-	    return NULL;
-	    break;
-	}
-	ret->node.array_type_decl.sm_dynamic_size = 
-	    (sm_ref)fields[control_field].field_type;
-    }
-    rparen = strchr(str, ']');
-    rparen++;
-    if (*rparen == 0) {
-	/* we're at the end, fill in other fields */
-	ret->node.array_type_decl.cg_element_type = cg_type;
-	ret->node.array_type_decl.sm_complex_element_type = complex_type;
-	ret->node.array_type_decl.cg_element_size = cg_size;
-    } else {
-	sm_ref sub_type = build_array_decl_list(context, rparen, fields, 
-						cg_type, cg_size,
-						complex_type, err);
-	int sub_size;
-	if (*err == 1) {
-	    free(ret);
-	    return NULL;
-	}
-	ret->node.array_type_decl.cg_element_type = DILL_B;
-	ret->node.array_type_decl.sm_complex_element_type = sub_type;
-	sub_size = sub_type->node.array_type_decl.cg_static_size;
-	if (sub_size == -1) {
-	    /* element of *this* array has varying elements */
-	    ret->node.array_type_decl.cg_element_size = -1;
-	} else {
-	    ret->node.array_type_decl.cg_element_size = 
-		sub_size * sub_type->node.array_type_decl.cg_element_size;;
-	}
-    }
-    return ret;
-}
-
-
-
-static int
-is_var_array(context, decl, f, fields, cg_size, cg_type, complex_type, err)
+build_subtype_nodes(context, decl, f, desc, err, scope)
 cod_parse_context context;
 sm_ref decl;
-sm_ref f;
+field* f;
+FMTypeDesc *desc;
+int *err;
+scope_ptr scope;
+{
+    sm_ref ret;
+    sm_ref subtype = NULL;
+    if (desc->next != NULL) {
+	subtype = build_subtype_nodes(context, decl, f, desc->next, err, scope);
+	if (*err != 0) {
+	    return NULL;
+	}
+    }
+    switch (desc->type) {
+    case FMType_array: {
+	sm_list fields = decl->node.struct_type_decl.fields;
+	sm_ref cf;
+	int i;
+	ret = cod_new_array_type_decl();
+	ret->node.array_type_decl.cg_static_size = desc->static_size;
+	if (desc->static_size == 0) {
+	    ret->node.array_type_decl.cg_static_size = -1;
+	}
+	ret->node.array_type_decl.cg_element_type = DILL_B;
+	ret->node.array_type_decl.sm_complex_element_type = subtype;
+	if (subtype == NULL) {
+	    ret->node.array_type_decl.cg_element_type = 
+		array_str_to_data_type(f->string_type, f->cg_size);
+	    ret->node.array_type_decl.cg_element_size = f->cg_size;
+	} else {
+	    if (subtype->node_type == cod_array_type_decl) {
+		int sub_size = subtype->node.array_type_decl.cg_static_size;
+		if (sub_size == -1) {
+		    /* element of *this* array has varying elements */
+		    ret->node.array_type_decl.cg_element_size = -1;
+		} else {
+		    ret->node.array_type_decl.cg_element_size = 
+			sub_size * subtype->node.array_type_decl.cg_element_size;;
+		}
+	    } else {
+		ret->node.array_type_decl.cg_element_size = f->cg_size;
+	    }
+	}
+	    
+	if (ret->node.array_type_decl.cg_static_size != -1) {
+	    ret->node.array_type_decl.sm_dynamic_size = NULL;
+	} else {
+	    for (i=0; i < desc->control_field_index; i++) {
+		fields = fields->next;
+	    }
+	    cf = fields->node;
+	    switch (str_to_data_type(cf->node.field.string_type, 
+				     (int)sizeof(int))) {
+	    case DILL_C: case DILL_UC: case DILL_S: case DILL_US: 
+	    case DILL_I: case DILL_U: case DILL_L: case DILL_UL:
+		break;
+	    default:
+		cod_src_error(context, NULL, 
+			      "Variable length control field \"%s\"not of integer type.", cf->node.field.string_type);
+		*err = 1;
+		return NULL;
+		break;
+	    }
+	    ret->node.array_type_decl.sm_dynamic_size = cf;
+	}
+	break;
+    }
+    case FMType_pointer:
+/*	if ((subtype != NULL) && (subtype->node_type == cod_array_type_decl)) {
+	    if (subtype->node.array_type_decl.cg_static_size == -1) {
+		ret = subtype;
+		break;
+	    }
+	    }*/
+	ret = cod_new_reference_type_decl();
+	ret->node.reference_type_decl.name = gen_anon();
+	ret->node.reference_type_decl.cg_referenced_type = DILL_ERR;
+	ret->node.reference_type_decl.sm_complex_referenced_type = subtype;
+	ret->node.reference_type_decl.cg_referenced_size = -1;
+	break;
+    case FMType_subformat: {
+	char *tmp_str = base_data_type(f->string_type);
+	ret = resolve(tmp_str, scope);
+	if (ret == NULL) {
+	    *err = 1;
+	}
+	break;
+    }
+    case FMType_simple:
+    case FMType_string:
+	ret = NULL;
+	break;
+    }
+    return ret;
+
+}
+
+static void
+build_type_nodes(context, decl, f, fields, cg_size, cg_type, desc, err, scope)
+cod_parse_context context;
+sm_ref decl;
+field* f;
 sm_list fields;
 int cg_size;
 int cg_type;
-sm_ref complex_type;
+FMTypeDesc* desc;
 int *err;
+scope_ptr scope;
 {
-    char *str = f->node.field.string_type;
-    char *lparen;
-    *err = 0;
-
-    if ((lparen = strchr(str, '[')) == NULL) {
-	return 0;
-    } else {
-	int cg_type;
-	int field_count = 0;
-	sm_ref arr;
-	FMFieldList list = malloc(2*sizeof(list[0]));
-	while (fields != NULL) {
-	    list = realloc(list, (field_count + 2) * sizeof(list[0]));
-	    list[field_count].field_name = fields->node->node.field.name;
-	    list[field_count].field_type = (char*) fields->node; /* cheap trick */
-	    field_count++;
-	    fields = fields->next;
-	}
-	list[field_count].field_name = list[field_count].field_type = NULL;
-	cg_type = array_str_to_data_type(str, cg_size);
-	if (complex_type && 
-	    (complex_type->node_type ==cod_reference_type_decl)) {
-	    cg_type = DILL_P;
-	    cg_size = sizeof(char*);
-	}
-	arr = build_array_decl_list(context, lparen, list, cg_type, cg_size, 
-				    complex_type, err);
-	free(list);
-	if (*err == 1) {
-	    return 0;
-	}
-	if ((arr->node.array_type_decl.cg_static_size == -1) ||
-	    (arr->node.array_type_decl.cg_element_size == -1)) {
-	    /* this array is varying */
-	    /* GSE create anon-type */
-	    sm_ref ref = cod_new_reference_type_decl();
-	    ref->node.reference_type_decl.name = gen_anon();
-	    ref->node.reference_type_decl.cg_referenced_type = DILL_ERR;
-	    ref->node.reference_type_decl.sm_complex_referenced_type = arr;
-	    ref->node.reference_type_decl.cg_referenced_size = -1;
-	    f->node.field.sm_complex_type = ref;
-	    return 1;
-	}
-	f->node.field.sm_complex_type = arr;
-    }
-    return 0;
+    sm_ref complex_type = build_subtype_nodes(context, decl, f, desc, err, scope);
+    f->sm_complex_type = complex_type;
 }
 
 static int
@@ -4310,7 +4294,7 @@ scope_ptr scope;
 	    sm_ref arr = decl->node.declaration.sm_complex_type;
 	    if ((arr != NULL) && 
 		(arr->node_type == cod_array_type_decl)) {
-		typ == reduce_type_list(context, 
+		typ = reduce_type_list(context, 
 					arr->node.array_type_decl.type_spec, 
 					&cg_type, scope, NULL);
 	    }
@@ -4342,52 +4326,61 @@ scope_ptr scope;
 
 #define Max(i,j) ((i<j) ? j : i)
 
+extern FMTypeDesc*
+gen_FMTypeDesc(FMFieldList fl, int field, const char *typ);
+
 static int
-semanticize_type_node(cod_parse_context context, sm_ref decl, 
+semanticize_struct_type_node(cod_parse_context context, sm_ref decl, 
 		      scope_ptr scope)
 {
+    FMFieldList fl = malloc(sizeof(fl[0]));
+    int field_num = 0;
     int ret = 1;
     int struct_size = 0;
     sm_list fields = decl->node.struct_type_decl.fields;
     add_decl(decl->node.struct_type_decl.id, decl, scope);
     while(fields != NULL) {
 	field *f = &fields->node->node.field;
-	int err;
-	int cg_type;
-	sm_ref complex_type = NULL;
+	fl[field_num].field_name = f->name;
+	fl[field_num].field_type = f->string_type;
+	fl = realloc(fl, sizeof(fl[0]) * (field_num + 2));
+	field_num++;
+	fields = fields->next;
+    }
+    fl[field_num].field_name = NULL;
+    fl[field_num].field_type = NULL;
+    field_num = 0;
+    fields = decl->node.struct_type_decl.fields;
+    while(fields != NULL) {
+	field *f = &fields->node->node.field;
+	int err = 0;
 	int field_size = f->cg_size;
 
 	if (f->string_type != NULL) {
 	    /* FFS-compatible field type */
-	    cg_type = array_str_to_data_type(f->string_type, f->cg_size);
-	    if (cg_type == DILL_ERR) {
-		char *tmp_str = strdup(f->string_type);
-		char *rbracket = strchr(tmp_str, '[');
-		if (rbracket != NULL) *rbracket = 0;
-		complex_type = resolve(tmp_str, scope);
-		if (complex_type == NULL) {
-		    cod_src_error(context, decl, 
-				  "Field \"%s\" has unknown type \"%s\".",
-				  f->name, tmp_str);
-		    ret = 0;
-		}
-		if (rbracket != NULL) *rbracket = '[';
-		free(tmp_str);	    
+	    FMTypeDesc* desc = gen_FMTypeDesc(fl, field_num, f->string_type);
+	    if (desc == NULL) {
+		cod_src_error(context, decl, 
+			      "Field \"%s\" has unknown type \"%s\".",
+			      f->name, f->string_type);
+		ret = 0;
 	    }
-	    if (is_var_array(context, decl, fields->node,
-			     decl->node.struct_type_decl.fields, 
-			     f->cg_size, cg_type, complex_type, &err)) {
-		field_size = sizeof(char*);
-	    } else {
-		if ((f->sm_complex_type != NULL) &&
-		    (f->sm_complex_type->node_type == cod_array_type_decl)) {
-		    array_type_decl *arr =
-			&f->sm_complex_type->node.array_type_decl;
-		    field_size = arr->cg_element_size * arr->cg_static_size;
-		} else {
-		    /* not a var array, or a simple array */
-		    f->sm_complex_type = complex_type;
-		    f->cg_type = cg_type;
+	    build_type_nodes(context, decl, f, fields, f->cg_size, f->cg_type,
+			     desc, &err, scope);
+	    
+	    f->cg_type = str_to_data_type(f->string_type, f->cg_size);
+	    field_size = f->cg_size;
+	    if (f->sm_complex_type) {
+		if (f->sm_complex_type->node_type == cod_reference_type_decl) {
+		    field_size = sizeof(char*);
+		} else if (f->sm_complex_type->node_type == cod_array_type_decl) {
+		    sm_ref arr = f->sm_complex_type;
+		    while (arr && (arr->node_type == cod_array_type_decl)) {
+			if (arr->node.array_type_decl.cg_static_size != -1) {
+			    field_size *= arr->node.array_type_decl.cg_static_size;
+			}
+			arr = arr->node.array_type_decl.sm_complex_element_type;
+		    }
 		}
 	    }
 	} else {
@@ -4405,7 +4398,7 @@ semanticize_type_node(cod_parse_context context, sm_ref decl,
 	struct_size = Max(struct_size,
 			  (f->cg_offset + field_size));
 	fields = fields->next;
-	    
+	field_num++;
     }
     decl->node.struct_type_decl.cg_size = struct_size;
     return ret;

@@ -678,8 +678,8 @@ new_FMTypeDesc()
 	integer			an integer
 	*integer		a pointer to an integer
 	integer[35]		35 integers
-	*integer[35]		35 pointers to integers
-	*(integer[35])		a pointer to 35 integers
+	*integer[35]		a pointer to 35 integers
+	*integer[35][10]	a pointer to 
 	*(integer[35])[10]	10 pointers to 35 integers
 */
 
@@ -710,13 +710,14 @@ gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
     } else {
 	int dimen_count = 0;
 	FMTypeDesc *root = new_FMTypeDesc();
-	FMTypeDesc *simple = root;
-	int done = 0;
+	FMTypeDesc *pointer_root = NULL;
+	const char *tmp_typ;
 	int var_array = 0;
 	long junk;
 	root->type = FMType_simple;
 	root->next = NULL;
 	root->field_index = field;
+	root->data_type = array_str_to_data_type(typ, &junk);
 	while (isspace((int)*typ)) {	/* skip preceeding space */
 	    typ++;
 	}
@@ -724,31 +725,35 @@ gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
 	    FMTypeDesc *tmp = new_FMTypeDesc();
 	    tmp->type = FMType_pointer;
 	    tmp->field_index = field;
-	    tmp->next = root;
-	    root = tmp;
+	    tmp->next = pointer_root;
+	    pointer_root = tmp;
 	    typ++;
 	    while (isspace((int)*typ)) {	/* skip preceeding space */
 		typ++;
 	    }
 	}
 	/* now we've handled any pointer specs */
-	root->data_type = array_str_to_data_type(typ, &junk);
 	if (strncmp(typ, "string", 6) == 0) {
 	    if ((*(typ + 6) == 0) || (*(typ + 6) == '[') ||
 		(isspace(*(typ+6)))) {
 		root->type = FMType_string;
 	    }
 	}
+	if (root->data_type == unknown_type) {
+	    root->type = FMType_subformat;
+	}
 
-	while (!done) {
+	tmp_typ = typ;
+	while ((tmp_typ = strchr(tmp_typ, '[')) != NULL) {
+	    dimen_count++;
+	    tmp_typ++;
+	}
+	dimen_count--;
+	while(dimen_count >= 0) {
 	    int control_val;
 	    FMTypeDesc *tmp;
 	    int static_size = IOget_array_size_dimen(typ, fl, dimen_count, 
 						     &control_val);
-	    if (static_size == 0) {
-		done++;
-		continue;
-	    }
 	    tmp = new_FMTypeDesc();
 	    tmp->type = FMType_array;
 	    tmp->field_index = field;
@@ -760,13 +765,21 @@ gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
 	    tmp->control_field_index = control_val;
 	    tmp->next = root;
 	    root = tmp;
-	    dimen_count++;
+	    dimen_count--;
 	}
 	if (var_array) {
 	    FMTypeDesc *tmp = new_FMTypeDesc();
 	    tmp->type = FMType_pointer;
 	    tmp->next = root;
 	    root = tmp;
+	}
+	if (pointer_root) {
+	    FMTypeDesc *last_pointer = pointer_root;
+	    while (last_pointer->next != NULL) {
+		last_pointer = last_pointer->next;
+	    }
+	    last_pointer->next = root;
+	    root = pointer_root;
 	}
 	return root;
     }
@@ -849,6 +862,7 @@ int field;
 	    break;
 	}
     }
+    return -1;
 }
 
 static int
@@ -1103,7 +1117,6 @@ extern void
 set_alignment(ioformat)
 FMFormat ioformat;
 {
-    int align = 0;
     int field_align;
     int field;
     if (ioformat->alignment != 0) return;
@@ -1139,7 +1152,6 @@ FMFormat *formats;
     ioformat->var_list = new_var_list;
     for (field = 0; field < field_count; field++) {
 	long elements;
-	int type_align;
 	new_var_list[field].string = 0;
 	new_var_list[field].var_array = 0;
 	new_var_list[field].byte_vector = 0;
@@ -1282,7 +1294,6 @@ int *super_rep_size;
     {
 	char *info_base;
 	struct _opt_info_wire_format tmp_base;
-	int pad;
 
 	/* fill in opt info fields */
 	while ((cur_offset & 0x3) != 0) {
@@ -2932,12 +2943,11 @@ int character_limit;
     return ((character_limit > 0) && (char_count > character_limit));
 }
 
-extern int
+extern void
 FMdump_encoded_XML(FMContext c, void *data, int limit)
 {
     int index;
     FMFormat format = FMformat_from_ID(c, data);
-    int char_count = 0;
     int header_size = format->server_ID.length;
     if (format->variant) {
 	header_size += sizeof(INT4);
@@ -3216,7 +3226,6 @@ int char_limit;
     int byte_reversal = format->byte_reversal;
     int float_format = format->float_format;
     char *left_paren = NULL;
-    char *temp_ptr = 0;
 
     if (encode == 0) byte_reversal = 0;
 
@@ -3273,6 +3282,7 @@ int char_limit;
 	}
 	printf("}");
     }
+    return 0;
 }
 
 extern int
@@ -3881,7 +3891,6 @@ format_rep rep;
 
     struct _subformat_wire_format *subrep = (struct _subformat_wire_format*)
 	(((char*)rep ) + sizeof(struct _format_wire_format_0));
-    int byte_reversal = ((rep->record_byte_order & 0x1) != OUR_BYTE_ORDER);
     format_count = rep->subformat_count;
     top_format = expand_subformat_from_rep(subrep);
     subformats = malloc(sizeof(subformats[0]) * (format_count + 1));
