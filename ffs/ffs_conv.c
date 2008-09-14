@@ -1217,7 +1217,9 @@ transpose_array(int *dimens, char *src, char *dest, int source_column_major,
 
     if (dimen_count <= 1) return;
     index = malloc(sizeof(int) * dimen_count);
-    for(i = 0; i< dimen_count; i++) index[i] = 0;
+    for(i = 0; i< dimen_count; i++) {
+	index[i] = 0;
+    }
     cur_index = 0;
     jump = 1;
     for (i = 0; i < dimen_count-1; i++) {
@@ -1511,7 +1513,7 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 		(conv->rc_swap == swap_source_column_major);
 	    int dimen_count = conv->iovar->dimen_count;
 	    int *dimens = malloc(sizeof(int) * (dimen_count + 1));
-	    int i = dimen_count -1;
+	    int i = 0;
 	    FMdata_type dest_type = conv->src_field.data_type;
 	    int dest_size = conv->dest_size;
 	    void *dest_base = (void *) new_dest;
@@ -1525,7 +1527,7 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 		} else {
 		    dimens[i] = conv_status->control_value[next->control_field_index];
 		}
-		i--;
+		i++;
 		next = next->next;
 	    }
 	    dimens[dimen_count] = 0;
@@ -2888,7 +2890,7 @@ int data_already_copied;
 	    dill_virtual_lea(c, dimen_reg, dimens);
 	    dill_virtual_lea(c, spec_reg, spec);
 	    FMTypeDesc *next = type_desc;
-	    int i = dimen_count - 1;
+	    int i = 0;
 	    while (next->type == FMType_array) {
 		if (next->static_size != 0) {
 		    dill_seti(c, tmp, next->static_size);
@@ -2898,7 +2900,7 @@ int data_already_copied;
 		    dill_ldii(c, tmp, addr_reg, field*sizeof(int));
 		}
 		dill_stii(c, tmp, dimen_reg, i * sizeof(int));
-		i--;
+		i++;
 		next = next->next;
 	    }
 	    dill_seti(c, tmp, 0);
