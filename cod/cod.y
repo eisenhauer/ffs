@@ -4206,12 +4206,6 @@ scope_ptr scope;
 	break;
     }
     case FMType_pointer:
-/*	if ((subtype != NULL) && (subtype->node_type == cod_array_type_decl)) {
-	    if (subtype->node.array_type_decl.cg_static_size == -1) {
-		ret = subtype;
-		break;
-	    }
-	    }*/
 	ret = cod_new_reference_type_decl();
 	ret->node.reference_type_decl.name = gen_anon();
 	ret->node.reference_type_decl.cg_referenced_type = DILL_ERR;
@@ -4219,7 +4213,7 @@ scope_ptr scope;
 	ret->node.reference_type_decl.cg_referenced_size = -1;
 	break;
     case FMType_subformat: {
-	char *tmp_str = base_data_type(f->string_type);
+	char *tmp_str = FMbase_type(f->string_type);
 	ret = resolve(tmp_str, scope);
 	if (ret == NULL) {
 	    *err = 1;

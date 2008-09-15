@@ -2424,6 +2424,13 @@ const char *str;
     return typ;
 }
 
+extern char *
+FMbase_type(str)
+const char *str;
+{
+    return base_data_type(str);
+}
+
 extern FMdata_type
 str_to_data_type(str)
 const char *str;

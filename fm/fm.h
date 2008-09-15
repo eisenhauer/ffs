@@ -256,6 +256,8 @@ FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data,
 extern FMTypeDesc*
 gen_FMTypeDesc(FMFieldList fl, int field, const char *typ);
 
+extern char *FMbase_type(char *field_type);
+
 typedef struct _FMgetFieldStruct {
     int offset;
     int size;
