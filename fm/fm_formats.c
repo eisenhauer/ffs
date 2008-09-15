@@ -2425,10 +2425,10 @@ const char *str;
 }
 
 extern char *
-FMbase_type(str)
-const char *str;
+FMbase_type(field_type)
+const char *field_type;
 {
-    return base_data_type(str);
+    return base_data_type(field_type);
 }
 
 extern FMdata_type
