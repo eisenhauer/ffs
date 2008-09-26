@@ -3104,7 +3104,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    sm_list tmp_args = malloc(sizeof(struct list_struct));
 		    FMStructDescList list = build_format_list(context,  arg);
 		    char tmp[30];
-		    sprintf(&tmp[0], "%p", list);
+		    sprintf(&tmp[0], "0x%p", list);
 		    tmp_args->node = cod_new_constant();
 		    tmp_args->node->node.constant.token = integer_constant;
 		    tmp_args->node->node.constant.const_val = strdup(tmp);
