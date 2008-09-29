@@ -58,12 +58,8 @@ main(int argc, char **argv)
 
 	context2 = cod_copy_context(context);
 
-	set_attr_atom_and_string("test_value", 
-				 ATL_CHAR_CONS('A','T','t','v'));
-	set_attr_atom_and_string("test_value", 
-				 ATL_CHAR_CONS('A','T','t','v'));
 	l = create_attr_list();
-	set_attr(l, ATL_CHAR_CONS('A','T','t','v'), Attr_Int4, (attr_value)15);
+	set_attr(l, attr_atom_from_string("test_value"), Attr_Int4, (attr_value)15);
 
 	cod_subroutine_declaration("int proc(attr_list l)", context);
 	gen_code = cod_code_gen(code, context);
@@ -122,11 +118,7 @@ main(int argc, char **argv)
 
 	context2 = cod_copy_context(context);
 
-	set_attr_atom_and_string("test_value", 
-				 ATL_CHAR_CONS('A','T','t','v'));
-	set_attr_atom_and_string("test_value", 
-				 ATL_CHAR_CONS('A','T','t','v'));
-	set_attr(l, ATL_CHAR_CONS('A','T','t','v'), Attr_Int4, (attr_value)15);
+	set_attr(l, attr_atom_from_string("test_value"), Attr_Int4, (attr_value)15);
 
 	cod_subroutine_declaration("int proc()", context);
 	gen_code = cod_code_gen(code, context);
@@ -172,12 +164,10 @@ main(int argc, char **argv)
 	gen_code = cod_code_gen(code, context);
 	func = (int (*)(attr_list*, int))(long)gen_code->func;
 
-	set_attr_atom_and_string("test_value", 
-				 ATL_CHAR_CONS('A','T','t','v'));
 	l[0] = create_attr_list();
-	set_attr(l[0], ATL_CHAR_CONS('A','T','t','v'), Attr_Int4, (attr_value)15);
+	set_attr(l[0], attr_atom_from_string("test_value"), Attr_Int4, (attr_value)15);
 	l[1] = create_attr_list();
-	set_attr(l[1], ATL_CHAR_CONS('A','T','t','v'), Attr_Int4, (attr_value)25);
+	set_attr(l[1], attr_atom_from_string("test_value"), Attr_Int4, (attr_value)25);
 
 	if ((func)(&l[0], 0) != 15) {
 	    printf("Function didn't return 15\n");
