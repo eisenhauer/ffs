@@ -25,7 +25,7 @@
 #include "fm_internal.h"
 #include "cercs_env.h"
 
-extern int (*establish_server_connection_ptr)(FMContext fmc, int do_fallback);
+extern int (*establish_server_connection_ptr)(FMContext fmc, action_t action);
 
 static int
 serverAtomicWrite(fd, buffer, length)
@@ -101,7 +101,7 @@ char **argv;
 	format_server_host = FORMAT_SERVER_HOST;	/* from configure */
     }
 
-    if (establish_server_connection_ptr(context, 0) == 0) {
+    if (establish_server_connection_ptr(context, host_only) == 0) {
 	printf("Failed to contact format server on host %s\n",
 	       format_server_host);
 	return 0;

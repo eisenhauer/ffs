@@ -21,7 +21,7 @@ extern int sleep();
 #endif
 
 #include "fm_internal.h"
-extern int (*establish_server_connection_ptr)(FMContext fmc, int do_fallback);
+extern int (*establish_server_connection_ptr)(FMContext fmc, action_t action);
 
 static int
 serverAtomicWrite(fd, buffer, length)

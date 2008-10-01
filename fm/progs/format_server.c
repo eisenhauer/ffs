@@ -66,6 +66,8 @@ int sig;
 
 extern int serverAtomicWrite(void *fd, const void *buffer, int length);
 
+static int slave = 0;
+
 int
 main(argc, argv)
 int argc;
@@ -87,6 +89,8 @@ char **argv;
 	    no_fork++;
 	} else if (strcmp(argv[i], "-quiet") == 0) {
 	    quiet++;
+	} else if (strcmp(argv[i], "-slave") == 0) {
+	    slave++;
 	} else if (strcmp(argv[i], "-restart") == 0) {
 	    do_restart++;
 	} else {
@@ -105,7 +109,7 @@ char **argv;
     if (!quiet) {
 	putenv(strdup("FORMAT_SERVER_VERBOSE=1"));
     }
-    establish_server_connection(test, /* nofallback */ 0);
+    establish_server_connection(test, host_only);
     if (serverAtomicWrite(test->server_fd, &testing_char, 1)
 	== 1) {
 	/* already running */

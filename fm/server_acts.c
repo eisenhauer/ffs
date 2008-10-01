@@ -167,9 +167,9 @@ extern int
 server_write_header(FMContext fmc, int enc_len, unsigned char *enc_buffer);
 
 extern int
-establish_server_connection(iofile, do_fallback)
+establish_server_connection(iofile, action)
 FMContext iofile;
-int do_fallback;
+action_t action;
 {
     int sock;
     int ret;
@@ -276,7 +276,7 @@ int do_fallback;
 	    if (format_server_verbose) {
 		printf("failed\n");
 	    }
-	    if (!do_fallback) return 0;
+	    if (action != host_and_fallback) return 0;
 
 	    /* fallback */
 #ifdef MODULE
@@ -491,7 +491,7 @@ FFS_gen_authentication (unsigned char *outbuf)
 #endif
 
 
-extern int (*establish_server_connection_ptr)(FMContext iofile, int do_fallback);
+extern int (*establish_server_connection_ptr)(FMContext iofile, action_t action);
 extern int ffs_fixed_format_ids;
 extern INT4 FFS_self_server_IP_addr;  /* declared in io_formats.c */
 

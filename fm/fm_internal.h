@@ -186,7 +186,11 @@ extern void server_read_header(FSClient fsc);
 extern void
 add_format_to_iofile(FMContext fmc, FMFormat ioformat, int id_size, 
 		     void *id_buffer, int index);
-extern int establish_server_connection(FMContext iofile, int do_fallback);
+typedef enum {
+    local_only, host_only, host_and_fallback
+} action_t;
+
+extern int establish_server_connection(FMContext iofile, action_t action);
 extern void general_format_server(int port, int do_restart, int verbose);
 extern void dump_FMFormat(FMFormat ioformat);
 extern int format_server_restarted(FMContext context);

@@ -70,7 +70,7 @@ static int field_type_eq(const char *str1, const char *str2);
  * the user program.  This avoids requiring the user to always link 
  * with -lnsl, -lsocket, etc when he might not otherwise need to.
  */
-int (*establish_server_connection_ptr)(FMContext fmc, int do_fallback);
+int (*establish_server_connection_ptr)(FMContext fmc, action_t action);
 
 FMfloat_format fm_my_float_format = Format_Unknown;
 /* 
@@ -3562,8 +3562,8 @@ FMFormat format;
     if (establish_server_connection_ptr == NULL) {
 	assert(0);
     }
-    if (establish_server_connection_ptr(fmc, 1) == 0) {
-	if (establish_server_connection_ptr(fmc, 1) == 0) {
+    if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
+	if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
 	    dump_server_error("Failed to contact format server\n", fmc);
 	    return 0;
 	}
@@ -4085,8 +4085,8 @@ void *buffer;
     if (establish_server_connection_ptr == NULL) {
 	assert(0);
     }
-    if (establish_server_connection_ptr(fmc, 1) == 0) {
-	if (establish_server_connection_ptr(fmc, 1) == 0) {
+    if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
+	if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
 	    printf("Failed to contact format server\n");
 	    exit(1);
 	}
@@ -4500,7 +4500,7 @@ char *server_rep;
 extern int
 format_server_restarted(FMContext context)
 {
-    int ret = establish_server_connection_ptr((FMContext)context, 1);
+    int ret = establish_server_connection_ptr((FMContext)context, host_and_fallback);
     return (ret == 0);
 }
 
