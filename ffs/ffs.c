@@ -272,6 +272,7 @@ fixup_output_vector(FFSBuffer b, estate s)
 	}
     }
     ret[s->iovcnt].iov_base = NULL;
+    ret[s->iovcnt].iov_len = 0;
     if (!s->iovec_is_stack) {
 	free(s->iovec);
 	s->iovec = NULL;
