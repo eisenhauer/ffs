@@ -1,5 +1,8 @@
 #include "ecl.h"
+#include <stdlib>
+#ifdef HAVE_MALLOC_H
 #include "malloc.h"
+#endif
 #include "assert.h"
 #include <stdio.h>
 #include <string.h>

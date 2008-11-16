@@ -1,5 +1,8 @@
 #include "cod.h"
+#include <stdlib.h>
+#ifdef HAVE_MALLOC_H
 #include "malloc.h"
+#endif
 #include "assert.h"
 #include <stdio.h>
 #include <string.h>
