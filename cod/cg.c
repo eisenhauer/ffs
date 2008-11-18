@@ -1648,24 +1648,6 @@ next_formal_is_drisc_exec_ctx(sm_list formals)
 }
 
 static int
-next_format_is_cod_closure_data(sm_list formals)
-{
-    sm_ref formal, ct;
-    if (formals == NULL) return 0;
-    formal = formals->node;
-    ct = formal->node.declaration.sm_complex_type;
-    if (ct == NULL) return 0;
-    if ((ct->node_type == cod_reference_type_decl) &&
-	(ct->node.reference_type_decl.name != NULL) &&
-	(strcmp(ct->node.reference_type_decl.name, "cod_closure_data") == 0)) {
-	return 1;
-    }
-    return 0;
-}
-
-
-
-static int
 next_formal_is_cod_type_spec(sm_list formals)
 {
     sm_ref formal, ct;

@@ -3025,16 +3025,14 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
                     } else if (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") == 0) {
                         sm_list tmp_args = malloc(sizeof(struct list_struct));
                         char tmp[30];
-                        tmp_args->next = args;
-
+                        tmp_args->next = args->next;
+			tmp_args->node = args->node;
+			args->next = tmp_args;
                         sprintf(tmp, "%d", func_ref->node.declaration.closure_id);
 
-                        tmp_args->node = cod_new_constant();
-                        tmp_args->node->node.constant.token = integer_constant;
-                        tmp_args->node->node.constant.const_val = strdup(tmp);
-                        if (args == expr->node.subroutine_call.arguments)
-                            expr->node.subroutine_call.arguments = tmp_args;
-                        args = tmp_args;
+                        args->node = cod_new_constant();
+                        args->node->node.constant.token = integer_constant;
+                        args->node->node.constant.const_val = strdup(tmp);
                     }
                 }
 	    }
