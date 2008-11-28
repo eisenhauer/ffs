@@ -9,6 +9,6 @@
  * when there are no objects that we're linking at the top level.  So,
  * this file is introduced simply to avoid that error.  Sigh.
  */
-extern void
+static void
 evpath_not_used()
 {}
