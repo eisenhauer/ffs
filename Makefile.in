@@ -51,13 +51,13 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libcod_la_DEPENDENCIES = cod/libcod.la
-am_libcod_la_OBJECTS =
+am_libcod_la_OBJECTS = empty.lo
 libcod_la_OBJECTS = $(am_libcod_la_OBJECTS)
 libffs_la_DEPENDENCIES = ffs/libffs.la
-am_libffs_la_OBJECTS =
+am_libffs_la_OBJECTS = empty.lo
 libffs_la_OBJECTS = $(am_libffs_la_OBJECTS)
 libfm_la_DEPENDENCIES = fm/libfm.la
-am_libfm_la_OBJECTS =
+am_libfm_la_OBJECTS = empty.lo
 libfm_la_OBJECTS = $(am_libfm_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp =
@@ -213,15 +213,16 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 ACLOCAL_AMFLAGS = -I config
 SUBDIRS = fm cod ffs .
 noinst_LTLIBRARIES = libfm.la libcod.la libffs.la
-libfm_la_SOURCES = 
+libfm_la_SOURCES = empty.c
 libfm_la_LIBADD = fm/libfm.la
-libcod_la_SOURCES = 
+libcod_la_SOURCES = empty.c
 libcod_la_LIBADD = cod/libcod.la
-libffs_la_SOURCES = 
+libffs_la_SOURCES = empty.c
 libffs_la_LIBADD = ffs/libffs.la
 all: all-recursive
 
 .SUFFIXES:
+.SUFFIXES: .c .lo .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -276,6 +277,15 @@ mostlyclean-compile:
 
 distclean-compile:
 	-rm -f *.tab.c
+
+.c.o:
+	$(COMPILE) -c $<
+
+.c.obj:
+	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+.c.lo:
+	$(LTCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo
