@@ -265,6 +265,7 @@ test_sub = @test_sub@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
+INCLUDES = -I../../fm
 t1_SOURCES = t1.c data_funcs.c
 t2_SOURCES = t2.c data_funcs.c
 t5_SOURCES = t5.c data_funcs.c
