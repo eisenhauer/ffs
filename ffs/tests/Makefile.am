@@ -56,7 +56,7 @@ context_check:  context_test @OUTPUT_TARGET@
 	test "$$failed" -eq 0
 
 
-file_check:  ffs_file_test ../output_dir/file_output.@ARCH@.bin
+file_check:  ffs_file_test @OUTPUT_TARGET@
 	@failed=0;\
 	for i in ../output_dir/file*.bin; do \
 	    if ./ffs_file_test $$i; then\
