@@ -127,6 +127,12 @@ sub arith_insn {
 		    $range_decl ="double range = 0.000001 * (fabs((double)source1_$t1 $c_op (double)source2_$t2));";
 		}
 	    }
+	    if (($t1 eq "uc") || ($t1 eq "us") || ($t1 eq "u") || ($t1 eq "ul")) {
+		my @masks = split(' ', $type_masks{$t1});
+		$type_mask = pop(@masks);
+		$type_mask = $type_mask . $type_mask;
+		$result_if = "if ((expected_result != 0) && (expected_result != ($c_type1) 0x$type_mask) && (expected_result != result))";
+	    }
 	    if (($t1 eq "uc") && ($c_op eq "/")) {
 		$range_decl .= "\n	    unsigned int expect_int;";
 		$div_continue .= "\n	    expect_int = (unsigned int) $expected_value;";
