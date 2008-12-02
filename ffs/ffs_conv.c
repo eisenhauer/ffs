@@ -530,18 +530,22 @@ int converted_strings;
 	if (in_data_type == unknown_type) {
 	    FFSTypeHandle format = src_ioformat->field_subformats[input_index];
 	    if ((format != NULL) && (format->conversion != NULL)) {
-		IOConversionPtr subconv;
-		int struct_size = format->conversion->base_size_delta +
-		format->body->record_length;
-		subconv =
-		    create_conversion(format,
-				      format->conversion->native_field_list,
-				      struct_size, pointer_size,
-				      byte_reversal, target_fp_format,
-				      conv, target_column_major,
-				      string_offset_size,
-				      converted_strings);
-		conv_ptr->conversions[conv_index].subconversion = subconv;
+	        if (format == src_ioformat) {
+		    conv_ptr->conversions[conv_index].subconversion = conv_ptr;
+		} else {
+		    IOConversionPtr subconv;
+		    int struct_size = format->conversion->base_size_delta +
+		      format->body->record_length;
+		    subconv =
+		      create_conversion(format,
+					format->conversion->native_field_list,
+					struct_size, pointer_size,
+					byte_reversal, target_fp_format,
+					conv, target_column_major,
+					string_offset_size,
+					converted_strings);
+		    conv_ptr->conversions[conv_index].subconversion = subconv;
+		}
 	    } else if (format == src_ioformat) {
 		conv_ptr->conversions[conv_index].subconversion = conv_ptr;
 	    } else {
@@ -670,7 +674,7 @@ static void
 link_conversion_sets(FFSTypeHandle ioformat)
 {
     dill_extern_entry* externs;
-    int i, subformat_count;
+    int i, subformat_count = 0;
     while (ioformat->subformats && ioformat->subformats[subformat_count])
 	subformat_count++;
     externs = malloc(sizeof(externs[0]) * (subformat_count + 2));
