@@ -283,6 +283,7 @@ write_format_to_file(FFSFile f, FMFormat format)
 	printf("Write failed errno %d\n", errno);
 	return 0;
     }
+    f->info[format->format_index].written_to_file = 1;
     return 1;
 }
 
