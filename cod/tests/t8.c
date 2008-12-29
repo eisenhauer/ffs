@@ -4,10 +4,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static int verbose = 0;
+
 int
-main()
+main(int argc, char** argv)
 {
-    {
+    int test_num = 0;
+    int run_only = -1;
+    while (argc > 1) {
+	if (strcmp(argv[1], "-v") == 0) {
+	    verbose++;
+	} else if (strcmp(argv[1], "-o") == 0) {
+	    sscanf(argv[2], "%d", &run_only);
+	    argc--; argv++;
+	}
+	argc--; argv++;
+    }
+
+    if ((run_only == -1) || (run_only == test_num)) {
 	/* test pointer basics */
 	char code_string[] = "\
 {\n\
@@ -34,7 +48,8 @@ main()
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 1 */
 	/* test cast of complex type (&j) to basic type (long) */
 	char code_string[] = "\
 {\n\
@@ -65,7 +80,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 2 */
 	/*
 	 * Testing of pointer assignments and conversions:
 	 * DR_P -> DR_L/DR_UL
@@ -114,7 +130,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 3 */
 	/*
 	 * Test op_inc pointer arithmetic on pointers
 	 */
@@ -130,6 +147,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("int *proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -142,7 +160,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 4 */
 	/*
 	 * Test op_dec pointer arithmetic on pointers
 	 */
@@ -158,6 +177,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("int *proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -170,7 +190,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 5 */
 	/*
 	 * Test op_inc pointer arithmetic on pointers to pointers
 	 */
@@ -198,7 +219,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 6 */
 	/*
 	 * Test op_plus pointer arithmetic on pointers
 	 */
@@ -228,7 +250,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 7 */
 	/*
 	 * Test op_plus pointer arithmetic on pointers to pointers
 	 */
@@ -257,7 +280,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 8 */
 	/*
 	 * Test op_minus pointer arithmetic between pointers
 	 */
@@ -287,7 +311,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 9 */
 	/*
 	 * Test op_minus pointer arithmetic between pointers
 	 */
@@ -305,6 +330,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("long proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -317,7 +343,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 10 */
 	/*
 	 * Test op_minus pointer arithmetic between pointers to pointers
 	 */
@@ -335,6 +362,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("long proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -350,7 +378,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 11 */
 	/*
 	 * Test op_minus pointer arithmetic between pointers to pointers
 	 */
@@ -368,6 +397,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("long proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -383,7 +413,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 12 */
 	/*
 	 * Test op_minus pointer arithmetic on a pointer and an integral
 	 */
@@ -401,6 +432,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("int *proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -413,7 +445,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 13 */
 	/*
 	 * Test op_minus pointer arithmetic on a pointer to pointer and an integral
 	 */
@@ -430,6 +463,7 @@ main()
 	long (*func)();
 	long result;
 
+	cod_subroutine_declaration("int *proc()", context);
 	gen_code = cod_code_gen(code_string, context);
 	if(!gen_code) {
 	  printf("Code generation failed!\n");
@@ -441,7 +475,8 @@ main()
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 14 */
 	/*
 	 * Test pointer casting
 	 */
@@ -471,7 +506,8 @@ main()
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 15 */
 	/*
 	 * Test postincrement to a pointer dereference
 	 */
@@ -500,7 +536,8 @@ main()
 	cod_free_parse_context(context);
     }
 
-    {
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {  /* 16 */
 	/*
 	 * Test preincrement to a pointer dereference
 	 */
