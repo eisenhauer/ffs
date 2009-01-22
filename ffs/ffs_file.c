@@ -8,6 +8,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "unistd.h"
 #include "errno.h"
 
 #include "io_interface.h"
@@ -23,6 +24,19 @@ typedef enum {
 typedef struct format_info {
     int written_to_file;
 } format_info;
+
+typedef struct write_index_info {
+    off_t base_file_pos;
+    int data_index_start;
+    int data_index_end;
+    int index_block_size;
+    int next_item_offset;
+    unsigned char *index_block;
+} write_index_info;
+
+typedef union {
+    write_index_info write_info;
+} *FFSIndexType;
 
 struct _FFSFile {
     FFSContext c;
@@ -43,6 +57,10 @@ struct _FFSFile {
     FFSTypeHandle next_data_handle;
     FFSTypeHandle next_actual_handle;
 
+    off_t fpos;
+    FFSIndexType cur_index;
+    int expose_index;
+
     Status status;
     IOinterface_func write_func;
     IOinterface_func read_func;
@@ -52,6 +70,15 @@ struct _FFSFile {
     IOinterface_close close_func;
 
 };
+
+#define INDEX_BLOCK_SIZE 256
+
+static void
+update_fpos(FFSFile f)
+{
+    int fd = (int)(long)f->file_id;
+    f->fpos = lseek(fd, 0, SEEK_CUR);
+}
 
 extern
 void
@@ -155,6 +182,7 @@ open_FFSfd(void *fd, const char *flags)
 	    printf("write headers failed\n");
 	    return NULL;
 	}
+	update_fpos(f);
     }
     f->fmc = create_local_FMcontext();
     f->c = create_FFSContext_FM(f->fmc);
@@ -218,14 +246,14 @@ IOinterface_close close_func;
     f->close_func = close_func;
 }
 
+static void dump_index_block(FFSFile f);
+
 extern void
 close_FFSfile(FFSFile file)
 {
+    if (file->file_org == Indexed) dump_index_block(file);
     file->close_func(file->file_id);
 }
-
-extern FFSFile
-create_FFSfile();
 
 void
 init_format_info(FFSFile f, int index)
@@ -241,6 +269,122 @@ init_format_info(FFSFile f, int index)
 	       sizeof(f->info[0]) * ((index+1) - f->info_size));
 	f->info_size = index + 1;
     }
+}
+
+static void
+init_write_index_block(FFSFile f)
+{
+    int data_index_start = 0;
+    int fd = (int)(long)f->file_id;
+    off_t end_of_index = lseek(fd, INDEX_BLOCK_SIZE, SEEK_CUR);
+    if (f->cur_index) {
+	data_index_start = f->cur_index->write_info.data_index_end;
+    } else {
+	f->cur_index = malloc(sizeof(*(f->cur_index)));
+    }
+    
+    f->cur_index->write_info.base_file_pos = end_of_index - INDEX_BLOCK_SIZE;
+    f->cur_index->write_info.data_index_start = data_index_start;
+    f->cur_index->write_info.data_index_end = f->cur_index->write_info.data_index_start;
+    f->cur_index->write_info.index_block_size = INDEX_BLOCK_SIZE;
+    f->cur_index->write_info.index_block = malloc(INDEX_BLOCK_SIZE);
+    f->cur_index->write_info.next_item_offset = 16;   /* number of bytes written below */
+    f->fpos = end_of_index;
+}
+
+static void
+dump_index_block(FFSFile f)
+{
+    int fd = (int)(long)f->file_id;
+    off_t end = lseek(fd, 0, SEEK_CUR);
+    int ret;
+    int size =  f->cur_index->write_info.index_block_size;
+    unsigned char *index_base = f->cur_index->write_info.index_block;
+    lseek(fd, f->cur_index->write_info.base_file_pos, SEEK_SET);
+    /*
+     * next_data indicator is a 2 4-byte chunks in network byte order.
+     * In the first chunk, 
+     *    the top byte is 0x4, next three are length of the index block.
+     */
+    
+    *((int*)index_base) = htonl((0x4<<24) | size);
+    *((int*)(index_base+4)) = htonl(end);  /* link to next index */
+    *((int*)(index_base+8)) = htonl(0); /* data_index_start); */
+    *((int*)(index_base+12)) = htonl(0); /* data_index_end); */
+    ret = f->write_func(f->file_id, index_base, size, NULL, NULL);
+    if (ret != size) {
+	printf("Index write failed errno %d\n", errno);
+    }
+    lseek(fd, end, SEEK_SET);
+    init_write_index_block(f);
+}
+
+static void
+prepare_index_item(FFSFile f, int item_len)
+{
+    int next_item_end_offset;
+    if (!f->cur_index) {
+	init_write_index_block(f);
+    }
+    FFSIndexType a;
+    (void)a->write_info;
+    (void)f->cur_index->write_info;
+    next_item_end_offset = f->cur_index->write_info.next_item_offset + item_len;
+    if (next_item_end_offset >= f->cur_index->write_info.index_block_size) {
+	dump_index_block(f);
+    }
+}
+
+typedef enum {
+    Format_Item, Data_Item
+} IndexItems;
+
+/*
+ *  Format item in Index is:
+ *  int4   Format_Item + id_size << 8;  (Top 2 bytes reserved, network byte order)
+ *  char format_id;
+ */
+
+static void
+output_format_index(FFSFile f, char *server_id, int id_len)
+{
+    unsigned char *item_base;
+    if (f->file_org != Indexed) return;
+    prepare_index_item(f, 4 + id_len);
+    item_base = f->cur_index->write_info.index_block;
+    item_base += f->cur_index->write_info.next_item_offset;
+    
+    *(unsigned int *) item_base= htonl(Format_Item + (id_len << 8));
+    f->cur_index->write_info.next_item_offset += 4;
+    item_base += 4;
+
+    memcpy(item_base, server_id, id_len);
+    f->cur_index->write_info.next_item_offset += id_len;
+    item_base += id_len;
+}
+
+/*
+ *  Format item in Index is:
+ *  int4   Data_Item + id_size << 8;  (Top 2 bytes reserved, network byte order)
+ *  char format_id;
+ */
+
+static void
+output_data_index(FFSFile f, char *server_id, int id_len)
+{
+    unsigned char *item_base;
+    if (f->file_org != Indexed) return;
+    prepare_index_item(f, 4 + id_len);
+    item_base = f->cur_index->write_info.index_block;
+    item_base += f->cur_index->write_info.next_item_offset;
+    
+    *(unsigned int *) item_base= htonl(Data_Item + (id_len << 8));
+    f->cur_index->write_info.next_item_offset += 4;
+    item_base += 4;
+
+    memcpy(item_base, server_id, id_len);
+    f->cur_index->write_info.next_item_offset += id_len;
+    item_base += id_len;
 }
 
 static
@@ -259,6 +403,8 @@ write_format_to_file(FFSFile f, FMFormat format)
 
     server_id = get_server_ID_FMformat(format, &id_len);
     server_rep = get_server_rep_FMformat(format, &rep_len);
+
+    output_format_index(f, server_id, id_len);
 
     /*
      * next_data indicator is a 2 4-byte chunks in network byte order.
@@ -284,6 +430,7 @@ write_format_to_file(FFSFile f, FMFormat format)
 	return 0;
     }
     f->info[format->format_index].written_to_file = 1;
+    update_fpos(f);
     return 1;
 }
 
@@ -307,6 +454,7 @@ write_comment_FFSfile(FFSFile f, const char *comment)
 	printf("Write failed errno %d\n", errno);
 	return 0;
     }
+    update_fpos(f);
     return 1;
 }
 
@@ -331,6 +479,7 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
 	if (write_format_to_file(f, f2) != 1) return 0;
     }
 
+    output_data_index(f, id, id_len);
     /*
      * next_data indicator is two 4-byte chunks in network byte order.
      * The top byte is 0x3.  The next 3 bytes are reserved for future use.
@@ -350,6 +499,7 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
+    update_fpos(f);
     return 1;
 }
 
@@ -362,12 +512,15 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     int vec_count;
     FFSEncodeVector vec;
     int indicator[2];
+    int id_len = 0;
+    char *id = get_server_ID_FMformat(format, &id_len);
 
     init_format_info(f, index);
     if (!f->info[index].written_to_file) {
 	if (write_format_to_file(f, format) != 1) return 0;
     }
 
+    output_data_index(f, id, id_len);
     vec = FFSencode_vector(f->buf, format, data);
 
     vec_count = 0;
@@ -412,6 +565,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
+    update_fpos(f);
     return 1;
 }
 
@@ -566,8 +720,6 @@ FFSnext_record_type(ffsfile)
 FFSFile ffsfile;
 {
     FILE_INT indicator_chunk;
-    FILE_INT count = 1;
-    FILE_INT struct_size = 0;
  restart:
     if (ffsfile->status != OpenForRead) {
 	return FFSerror;
@@ -645,6 +797,15 @@ FFSFile ffsfile;
 		    }
 		}
 		break;
+	case 0x4: /* index */
+		ffsfile->next_record_type = FFSindex;
+		ffsfile->next_data_len = indicator_chunk & 0xffffff;
+		if (!ffsfile->expose_index) {
+		    lseek((int)(long)ffsfile->file_id, INDEX_BLOCK_SIZE-4, SEEK_CUR);
+		    ffsfile->read_ahead = FALSE;
+		    return FFSnext_record_type(ffsfile);
+		}
+		break;
 	default:
 	    printf("CORRUPT FFSFILE\n");
 	    exit(0);
@@ -658,11 +819,6 @@ FFSFile ffsfile;
 extern int
 FFSnext_data_length(FFSFile file)
 {
-    FFSTypeHandle f;
-    int header_size;
-    int read_size;
-    char *tmp_buf;
-
     if (file->status != OpenForRead)
 	return 0;
 

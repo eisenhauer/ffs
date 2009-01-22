@@ -17,10 +17,10 @@
 #include "test_funcs.h"
 
 int
-main()
+main(int argc, char **argv)
 {
     FMContext src_context;
-    FFSFile ffsfile = open_FFSfile("test_output", "w");
+    FFSFile ffsfile;
     FMFormat first_rec_ioformat, second_rec_ioformat, third_rec_ioformat;
     FMFormat fourth_rec_ioformat, later_ioformat, nested_ioformat;
     FMFormat embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
@@ -40,6 +40,28 @@ main()
     int i, j;
     FMStructDescRec str_list[5];
     FMOptInfo opt_info[2], opt_info2[2];
+    int verbose = 0, indexed = 0;
+    char *output_file = "test_output";
+    for (i = 1; i < argc; i++) {
+	if (argv[i][0] == '-') {
+	    /* argument */
+	    if (argv[i][1] == 'v') {
+		verbose++;
+	    } else if (argv[i][1] == 'i') {
+		indexed++;
+	    } else {
+		printf("Unknown argument \"%s\"\n", argv[i]);
+	    }
+	} else {
+	    output_file = argv[i];
+	}
+    }
+
+    if (!indexed) {
+	ffsfile = open_FFSfile(output_file, "w");
+    } else {
+	ffsfile = open_FFSfile(output_file, "wi");
+    }
 
     src_context = create_local_FMcontext();
 
