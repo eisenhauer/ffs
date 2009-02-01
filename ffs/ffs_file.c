@@ -918,7 +918,7 @@ FFSread_raw(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
     }
 
     f = file->next_actual_handle;
-    *fp = FMFormat_of_original(f);
+    *fp = f;
     header_size = FFSheader_size(f);
     read_size = file->next_data_len - header_size;
     tmp_buf = file->tmp_buffer->tmp_buffer;

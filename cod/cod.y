@@ -4473,7 +4473,7 @@ cod_add_encoded_param(const char *id, char *data, int param_num,
 		      FMContext c, cod_parse_context context)
 {
     int i = 0;
-    FMFormat format = get_local_format_IOcontext(c, data);
+    FMFormat format = FMformat_from_ID(c, data);
     FMFormat *formats = format->subformats;
     sm_ref top_type, param_node;
     while (formats[i] != NULL) {
