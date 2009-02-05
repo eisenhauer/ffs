@@ -328,6 +328,7 @@ free_addr_list(estate s)
 {
     if (s->addr_list_is_stack == 0) {
 	free(s->addr_list);
+	s->addr_list = NULL;
     }
 }
 
