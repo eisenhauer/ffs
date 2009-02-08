@@ -680,10 +680,10 @@ declaration:
 	init_declarator 
 	    {  /* stop here if we're just doing a proc decl */
 		if (parsing_param_spec) {
-		    $$ = $3;
-		    if ($$->node_type == cod_declaration) {
-			if  ($$->node.declaration.type_spec == NULL) {
-			    $$->node.declaration.type_spec = $1;
+		    $<reference>$ = $3;
+		    if ($<reference>$->node_type == cod_declaration) {
+			if  ($<reference>$->node.declaration.type_spec == NULL) {
+			    $<reference>$->node.declaration.type_spec = $1;
 			} else {
 			    /* 
 			     * the pointer type list (with the declarator)
@@ -693,12 +693,12 @@ declaration:
 			    while (tmp->next != NULL) {
 				tmp = tmp->next;
 			    }
-			    tmp->next = $$->node.declaration.type_spec;
-			    $$->node.declaration.type_spec = $1;
+			    tmp->next = $<reference>$->node.declaration.type_spec;
+			    $<reference>$->node.declaration.type_spec = $1;
 			}
 		    } else {
 		        printf("unexpected node in init_declarator\n");
-			cod_print($$);
+			cod_print($<reference>$);
 		    }
 		    yyparse_value = $3;
 		    YYACCEPT;
