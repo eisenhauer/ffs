@@ -2463,7 +2463,7 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
     
      while(tmp != NULL) {
 	sm_ref node = tmp->node;
-	sm_list typ;
+	sm_list typ = NULL;
 	sm_list new_elem;
 	new_elem = malloc(sizeof(*new_elem));
 	new_elem->next = NULL;
@@ -4141,7 +4141,7 @@ FMTypeDesc *desc;
 int *err;
 scope_ptr scope;
 {
-    sm_ref ret;
+    sm_ref ret = NULL;
     sm_ref subtype = NULL;
     if (desc->next != NULL) {
 	subtype = build_subtype_nodes(context, decl, f, desc->next, err, scope);
@@ -4475,7 +4475,7 @@ cod_add_encoded_param(const char *id, char *data, int param_num,
     int i = 0;
     FMFormat format = FMformat_from_ID(c, data);
     FMFormat *formats = format->subformats;
-    sm_ref top_type, param_node;
+    sm_ref top_type = NULL, param_node;
     while (formats[i] != NULL) {
 	sm_ref node = cod_build_type_node_FMformat(formats[i], context);
 	cod_add_decl_to_parse_context(name_of_FMformat(formats[i]), node, context); 
