@@ -217,8 +217,8 @@ FMFormat body;
 	free((char*)body->field_list[i].field_type);
 	if (body->var_list != NULL) {
 	    if (body->var_list[i].dimens != NULL) {
-		int j;
-/*		for (j = 0; j < body->var_list[i].dimen_count; j++) {
+/*		int j;
+		for (j = 0; j < body->var_list[i].dimen_count; j++) {
 		    if (body->var_list[i].dimens[j].control_field_index != -1)
 			free(body->var_list[i].dimens[j].control_field);
 		}*/
@@ -2919,6 +2919,7 @@ int character_limit;
 	char_count += dump_limited_FMfield(format, format, index, data, 
 					   data, 0, 1, 
 					   character_limit - char_count);
+	printf("\n");
     }
     printf("\n");
     return ((character_limit > 0) && (char_count > character_limit));
