@@ -2889,6 +2889,7 @@ typedef struct dump_state {
     int output_limit;
     int use_XML;
     int indent;
+    char *offset_base;
 
     int malloc_addr_size;
     int addr_list_is_stack;
@@ -3007,6 +3008,7 @@ int character_limit;
 {
     struct dump_state state;
     init_dump_state(&state);
+    state.encoded = 0;
     state.output_limit = character_limit;
     internal_dump_data(format, data, &state);
     return 0;
@@ -3294,7 +3296,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    printf("%p", ptr_value);
 	}
 	if (s->encoded) {
-	    ptr_value = (long)ptr_value + (char*)base;
+	    ptr_value = (long)ptr_value + s->offset_base;
 	}
 	if (f->recursive) {
 	    int previous_offset = search_addr_list(s, ptr_value);
@@ -3321,7 +3323,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    printf("NULL");
 	} else {
 	    if (s->encoded) {
-		ptr_value = (long)ptr_value + (char*)base;
+		ptr_value = (long)ptr_value + s->offset_base;
 	    }
 	    printf("\"%s\"", ptr_value);
 	}
@@ -3449,7 +3451,8 @@ void *data;
 	printf("Record type %s :", format->format_name);
     init_dump_state(&state);
     state.output_limit = -1;
-    state.encoded = 0;
+    state.encoded = 1;
+    state.offset_base = data;
     internal_dump_data(format, data, &state);
     printf("\n");
     return 0;
@@ -3474,6 +3477,7 @@ int character_limit;
     init_dump_state(&state);
     state.output_limit = character_limit;
     state.encoded = 1;
+    state.offset_base = data;
     internal_dump_data(format, data, &state);
     printf("\n");
     return 0;
@@ -3501,6 +3505,7 @@ FMdump_encoded_XML(FMContext c, void *data, int limit)
     init_dump_state(&state);
     state.output_limit = -1;
     state.encoded = 1;
+    state.offset_base = data;
     state.use_XML = 1;
     internal_dump_data(format, data, &state);
     printf("</%s>\n", format->format_name);
