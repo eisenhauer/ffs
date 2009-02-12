@@ -99,8 +99,6 @@ char **argv;
     buffer_size = 1024;
 
     while (1) {
-	FFSTypeHandle format;
-
 	switch (FFSnext_record_type(iofile)) {
 	case FFScomment: {
 	    char *comment = FFSread_comment(iofile);
@@ -112,22 +110,26 @@ char **argv;
 	    break;
 	}
 	case FFSformat:
-	    format = FFSread_format(iofile);
+	{
+	    FFSTypeHandle format = FFSread_format(iofile);
 	    dump_formats = 1;
 	    if (dump_formats) {
 		dump_FMFormat(FMFormat_of_original(format));
 	    }
 	    break;
-	case FFSdata:
+	}
+	case FFSdata:{
+	    FFSTypeHandle format;
 	    if (buffer_size < FFSnext_data_length(iofile)) {
 		buffer_size = FFSnext_data_length(iofile);
 		buffer = realloc(buffer, buffer_size);
 	    }
 	    FFSread_raw(iofile, buffer, buffer_size, &format);
 	    if (dump_data) {
-		dump_raw_FMrecord(iofile, format, buffer);
+		dump_raw_FMrecord(iofile, FMFormat_of_original(format), buffer);
 	    }
 	    break;
+	}
 	case FFSerror:
 	case FFSend:
 	    close_FFSfile(iofile);
