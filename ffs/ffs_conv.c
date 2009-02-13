@@ -1427,8 +1427,8 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	new_convert_address_field(offset, &new_src, dest_field_addr, 
 			      &new_dest, conv_status, 8);
 	if (new_dest == NULL) break;
-	if ((offset != 0) && type_desc->pointer_recursive) {
-	    /* GSE */
+	if (offset != 0) {
+	    /* if the offset is smaller than where we were working, we went backwards because of recursion */
 	    if (offset <= conv_status->cur_offset) {
 		break;
 	    }
