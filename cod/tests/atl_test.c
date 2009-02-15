@@ -222,8 +222,8 @@ main(int argc, char **argv)
 	gen_code = cod_code_gen(code, context);
 	func = (double (*)(int))(long)gen_code->func;
 
-	big = (func)(200000);
-	little = (func)(2000);
+	big =  (func)(1000000);
+	little = (func)(10000);
 
 	if (verbose) {
 	    printf("200K autoincrements took %g milliseconds\n", big);
