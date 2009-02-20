@@ -55,8 +55,6 @@ static FMFormat server_get_format(FMContext iocontext, void *buffer);
 static char *stringify_field_type(const char *type, 
 					FMFormat base_format,
 					char *buffer, int size);
-static int get_host_port_format_ID(void *format_ID);
-static int get_host_IP_format_ID(void *format_ID);
 static int is_self_server(FMContext fmc);
 static void expand_FMContext(FMContext fmc);
 static int IOget_array_size_dimen(const char *str, FMFieldList fields,
@@ -292,6 +290,7 @@ void *block;
     format->opt_info[count + 1].info_type = -1;
 }
 
+#ifdef NOT_DEF
 static FMFormat
 copy_fmformat_to_fmc(format, fmc)
 FMFormat format;
@@ -325,6 +324,7 @@ FMContext fmc;
 
     return new_format;
 }
+#endif
 
 extern FMcompat_formats
 FMget_compat_formats(FMFormat ioformat)
@@ -2684,9 +2684,10 @@ dump_FMFormat(ioformat)
 FMFormat ioformat;
 {
     int index, i;
-    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
-	   ioformat->format_name, ioformat->record_length,
-	   ioformat->field_count, ioformat->byte_reversal,
+    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Flost format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
+	   ioformat->format_name, ioformat->record_length, 
+	   ioformat->field_count, ioformat->byte_reversal, 
+	   float_format_str[ioformat->float_format],
 	   ioformat->pointer_size, ioformat->column_major_arrays,
 	   ioformat->alignment, ioformat->IOversion);
     printf("Server ID = ");
@@ -4401,6 +4402,7 @@ FMFormat format;
     print_server_ID( (unsigned char *) format->server_ID.value);
 }
 
+#ifdef NOT_DEF
 static int
 get_host_IP_format_ID(format_ID)
 void *format_ID;
@@ -4424,6 +4426,7 @@ void *format_ID;
     }
     return 0;
 }
+#endif
 
 extern int
 get_rep_len_format_ID(format_ID)
@@ -4451,6 +4454,7 @@ void *format_ID;
     return 0;
 }
 
+#ifdef NOT_DEF
 static int
 get_host_port_format_ID(format_ID)
 void *format_ID;
@@ -4475,6 +4479,7 @@ void *format_ID;
     /* not reached */
     return 0;
 }
+#endif
 
 /* write header information to the format server */
 extern int

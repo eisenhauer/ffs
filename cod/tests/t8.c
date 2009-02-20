@@ -586,7 +586,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (int(*)(int *)) (long) gen_code->func;
+	func = (int*(*)(int *)) (long) gen_code->func;
 	result = func(&i);
 	if (result != (&i + 1)) printf("result was %lx, not %lx\n", result,
 		&i + 1);

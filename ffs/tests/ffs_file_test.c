@@ -130,8 +130,9 @@ int (*read_func) ();
 
     while (!finished) {
 	char *comment;
+	FFSRecordType next = FFSnext_record_type(iofile);
 
-	switch (FFSnext_record_type(iofile)) {
+	switch (next) {
 	case FFScomment:
 	    comment = FFSread_comment(iofile);
 	    break;
