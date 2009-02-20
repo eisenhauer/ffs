@@ -38,6 +38,12 @@ typedef union {
     write_index_info write_info;
 } *FFSIndexType;
 
+typedef struct _FFSIndexItem {
+    long next_index_offset;
+    int start_data_count;
+    int last_data_count;
+} FFSIndexItemStruct;
+
 struct _FFSFile {
     FFSContext c;
     FMContext fmc;
@@ -59,7 +65,7 @@ struct _FFSFile {
 
     off_t fpos;
     FFSIndexType cur_index;
-    int expose_index;
+    int visible_items_bitmap;
 
     Status status;
     IOinterface_func write_func;
@@ -72,6 +78,8 @@ struct _FFSFile {
 };
 
 #define INDEX_BLOCK_SIZE 256
+
+static FFSRecordType next_record_type(FFSFile ffsfile);
 
 static void
 update_fpos(FFSFile f)
@@ -153,6 +161,8 @@ open_FFSfd(void *fd, const char *flags)
     f = malloc(sizeof(struct _FFSFile));
     memset(f, 0, sizeof(*f));
     f->file_id = file;
+    f->visible_items_bitmap = FFSend|FFSerror|FFSdata|FFSformat|FFScomment;
+
     parse_flags(flags, &allow_input, &allow_output, &raw, &index);
 
     f->file_org = Simple;
@@ -317,6 +327,17 @@ dump_index_block(FFSFile f)
     }
     lseek(fd, end, SEEK_SET);
     init_write_index_block(f);
+}
+
+FFSIndexItem
+parse_index_block(char *index_base)
+{
+    FFSIndexItem item;
+    item = malloc(sizeof(*item));
+    item->next_index_offset = htonl(*((int*)(index_base+4)));
+    item->start_data_count = htonl(*((int*)(index_base+8)));
+    item->last_data_count = htonl(*((int*)(index_base+12)));
+    return item;
 }
 
 static void
@@ -521,6 +542,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     }
 
     output_data_index(f, id, id_len);
+
     vec = FFSencode_vector(f->buf, format, data);
 
     vec_count = 0;
@@ -576,7 +598,7 @@ FFSread_format(FFSFile ffsfile)
     char *rep;
     FMFormat format;
     if (ffsfile->read_ahead == FALSE) {
-	(void) FFSnext_record_type(ffsfile);
+	(void) next_record_type(ffsfile);
     }
     while (ffsfile->next_record_type != FFSformat) {
 	switch (ffsfile->next_record_type) {
@@ -585,14 +607,14 @@ FFSread_format(FFSFile ffsfile)
 		ffsfile->tmp_buffer = create_FFSBuffer();
 	    }
 	    (void) FFSread_comment(ffsfile);
-	    (void) FFSnext_record_type(ffsfile);
+	    (void) next_record_type(ffsfile);
 	    break;
 	case FFSdata:
 	    if (ffsfile->tmp_buffer == NULL) {
 		ffsfile->tmp_buffer = create_FFSBuffer();
 	    }
 	    (void) FFSread(ffsfile, NULL);
-	    (void) FFSnext_record_type(ffsfile);
+	    (void) next_record_type(ffsfile);
 	    break;
 	default:
 	    return NULL;
@@ -619,6 +641,69 @@ FFSread_format(FFSFile ffsfile)
     return FFSTypeHandle_by_index(ffsfile->c, format->format_index);
 }
 
+static int
+FFSconsume_next_item(FFSFile ffsfile)
+{
+    switch(next_record_type(ffsfile)) {
+    case FFScomment:
+	if (ffsfile->tmp_buffer == NULL) {
+	    ffsfile->tmp_buffer = create_FFSBuffer();
+	}
+	(void) FFSread_comment(ffsfile);
+	(void) next_record_type(ffsfile);
+	return 1;
+    case FFSdata:
+	if (ffsfile->tmp_buffer == NULL) {
+	    ffsfile->tmp_buffer = create_FFSBuffer();
+	}
+	(void) FFSread(ffsfile, NULL);
+	(void) next_record_type(ffsfile);
+	return 1;
+    case FFSformat:
+	(void) FFSread_format(ffsfile);
+	(void) next_record_type(ffsfile);
+	return 1;
+    case FFSindex:
+	(void) FFSread_index(ffsfile);
+	(void) next_record_type(ffsfile);
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+extern FFSIndexItem
+FFSread_index(FFSFile ffsfile)
+{
+    char *index_data;
+    FFSIndexItem index_item;
+    if (ffsfile->read_ahead == FALSE) {
+	(void) next_record_type(ffsfile);
+    }
+    while (ffsfile->next_record_type != FFSindex) {
+	if (!FFSconsume_next_item(ffsfile)) return NULL;
+    }
+    index_data = malloc(ffsfile->next_data_len);
+    if (ffsfile->read_func(ffsfile->file_id, index_data+4, 
+			   ffsfile->next_data_len-4, NULL, NULL)
+	!= ffsfile->next_data_len-4) {
+	printf("Read failed, errno %d\n", errno);
+	return NULL;
+    }
+    ffsfile->read_ahead = FALSE;
+    index_item = parse_index_block(index_data);
+    return index_item;
+}
+
+extern void
+FFSdump_index(FFSIndexItem index_item)
+{
+    printf("Index item : %p\n", index_item);
+    printf(" Next index offset : %ld\n", index_item->next_index_offset);
+    printf("  Start data count : %d\n", index_item->start_data_count);
+    printf("  End data count   : %d\n", index_item->last_data_count);
+}
+
 extern
 FFSTypeHandle
 FFSnext_type_handle(ffsfile)
@@ -628,21 +713,10 @@ FFSFile ffsfile;
 	return NULL;
 
     if (ffsfile->read_ahead == FALSE) {
-	(void) FFSnext_record_type(ffsfile);
+	(void) next_record_type(ffsfile);
     }
     while (ffsfile->next_record_type != FFSdata) {
-	switch (ffsfile->next_record_type) {
-	case FFScomment:
-	    (void) FFSread_comment(ffsfile);
-	    (void) FFSnext_record_type(ffsfile);
-	    break;
-	case FFSformat:
-	    (void) FFSread_format(ffsfile);
-	    (void) FFSnext_record_type(ffsfile);
-	    break;
-	default:
-	    return NULL;
-	}
+	if (!FFSconsume_next_item(ffsfile)) return NULL;
     }
     return ffsfile->next_data_handle;
 }
@@ -666,21 +740,10 @@ FFSFile ffsfile;
 	return NULL;
 
     if (ffsfile->read_ahead == FALSE) {
-	(void) FFSnext_record_type(ffsfile);
+	(void) next_record_type(ffsfile);
     }
     while (ffsfile->next_record_type != FFScomment) {
-	switch (ffsfile->next_record_type) {
-	case FFSdata:
-	    (void) FFSread(ffsfile, NULL);
-	    (void) FFSnext_record_type(ffsfile);
-	    break;
-	case FFSformat:
-	    (void) FFSread_format(ffsfile);
-	    (void) FFSnext_record_type(ffsfile);
-	    break;
-	default:
-	    return NULL;
-	}
+	if (!FFSconsume_next_item(ffsfile)) return NULL;
     }
     if (ffsfile->tmp_buffer == NULL) ffsfile->tmp_buffer = create_FFSBuffer();
     make_tmp_buffer(ffsfile->tmp_buffer, ffsfile->next_data_len);
@@ -714,9 +777,27 @@ FILE_INT *file_int_ptr;
 }
 
 
-extern
 FFSRecordType
 FFSnext_record_type(ffsfile)
+FFSFile ffsfile;
+{
+    FFSRecordType next = next_record_type(ffsfile);
+    while ((next & ffsfile->visible_items_bitmap) != next) {
+	FFSconsume_next_item(ffsfile);
+    }
+    return next;
+} 
+
+extern void
+FFSset_visible(FFSFile ffsfile, int bitmap)
+{
+    bitmap |= FFSerror | FFSend;  /* always visible */
+    ffsfile->visible_items_bitmap = bitmap;
+}
+
+static
+FFSRecordType
+next_record_type(ffsfile)
 FFSFile ffsfile;
 {
     FILE_INT indicator_chunk;
@@ -800,11 +881,11 @@ FFSFile ffsfile;
 	case 0x4: /* index */
 		ffsfile->next_record_type = FFSindex;
 		ffsfile->next_data_len = indicator_chunk & 0xffffff;
-		if (!ffsfile->expose_index) {
+/*		if (!ffsfile->expose_index) {
 		    lseek((int)(long)ffsfile->file_id, INDEX_BLOCK_SIZE-4, SEEK_CUR);
 		    ffsfile->read_ahead = FALSE;
-		    return FFSnext_record_type(ffsfile);
-		}
+		    return next_record_type(ffsfile);
+		    }*/
 		break;
 	default:
 	    printf("CORRUPT FFSFILE\n");
@@ -823,21 +904,10 @@ FFSnext_data_length(FFSFile file)
 	return 0;
 
     if (file->read_ahead == FALSE) {
-	(void) FFSnext_record_type(file);
+	(void) next_record_type(file);
     }
     while (file->next_record_type != FFSdata) {
-	switch (file->next_record_type) {
-	case FFScomment:
-	    (void) FFSread_comment(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	case FFSformat:
-	    (void) FFSread_format(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	default:
-	    return 0;
-	}
+	if (!FFSconsume_next_item(file)) return 0;
     }
     return file->next_data_len;
 }
@@ -854,21 +924,10 @@ FFSread(FFSFile file, void *dest)
 	return 0;
 
     if (file->read_ahead == FALSE) {
-	(void) FFSnext_record_type(file);
+	(void) next_record_type(file);
     }
     while (file->next_record_type != FFSdata) {
-	switch (file->next_record_type) {
-	case FFScomment:
-	    (void) FFSread_comment(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	case FFSformat:
-	    (void) FFSread_format(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	default:
-	    return 0;
-	}
+	if (!FFSconsume_next_item(file)) return 0;
     }
 
     f = file->next_data_handle;
@@ -900,21 +959,10 @@ FFSread_raw(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
 	return 0;
 
     if (file->read_ahead == FALSE) {
-	(void) FFSnext_record_type(file);
+	(void) next_record_type(file);
     }
     while (file->next_record_type != FFSdata) {
-	switch (file->next_record_type) {
-	case FFScomment:
-	    (void) FFSread_comment(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	case FFSformat:
-	    (void) FFSread_format(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	default:
-	    return 0;
-	}
+	if (!FFSconsume_next_item(file)) return 0;
     }
 
     f = file->next_actual_handle;
@@ -947,21 +995,10 @@ FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest)
 	return 0;
 
     if (file->read_ahead == FALSE) {
-	(void) FFSnext_record_type(file);
+	(void) next_record_type(file);
     }
     while (file->next_record_type != FFSdata) {
-	switch (file->next_record_type) {
-	case FFScomment:
-	    (void) FFSread_comment(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	case FFSformat:
-	    (void) FFSread_format(file);
-	    (void) FFSnext_record_type(file);
-	    break;
-	default:
-	    return 0;
-	}
+	if (!FFSconsume_next_item(file)) return 0;
     }
 
     f = file->next_data_handle;

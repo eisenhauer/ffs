@@ -27,12 +27,13 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-    FFSFile iofile = NULL;
+    FFSFile ffsfile = NULL;
     int buffer_size = 1024;
     char *buffer = NULL;
     int i;
     char *filename = NULL;
-    int dump_formats = 0, dump_header = 1, dump_comments = 1, dump_data = 1;
+    int dump_formats = 0, dump_index = 0, dump_header = 1, dump_comments = 1, dump_data = 1;
+    int bitmap;
 #ifdef HAVE_WINDOWS_H
     /* set up a scrolling console screen */
     HANDLE hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
@@ -57,8 +58,8 @@ char **argv;
 	    int value = (argv[i][0] == '-') ? 0 : 1;
 	    if (strcmp(&argv[i][1], "formats") == 0) {
 		dump_formats = value;
-	    } else if (strcmp(&argv[i][1], "formats") == 0) {
-		dump_formats = value;
+	    } else if (strcmp(&argv[i][1], "index") == 0) {
+		dump_index = value;
 	    } else if (strcmp(&argv[i][1], "header") == 0) {
 		dump_header = value;
 	    } else if (strcmp(&argv[i][1], "comments") == 0) {
@@ -84,24 +85,37 @@ char **argv;
 	fprintf(stderr, "%s", usage);
 	exit(1);
     }
-    iofile = open_FFSfile(filename, "R");
+    ffsfile = open_FFSfile(filename, "R");
 
-    if (iofile == NULL) {
+    if (ffsfile == NULL) {
 	printf("File Open Failure \"%s\"", filename);
 	perror("Opening input file");
 	exit(1);
     }
     FMdumpVerbose = 1;
+    bitmap = 0;
+    bitmap |= (dump_formats?FFSformat:0);
+    bitmap |= (dump_index?FFSindex:0);
+    bitmap |= (dump_data?FFSdata:0);
+    bitmap |= (dump_comments?FFScomment:0);
+
+    FFSset_visible(ffsfile, bitmap);
+
     if (dump_header)
-/*	dump_FFSFile(iofile);*/
+/*	dump_FFSFile(ffsfile);*/
 
     buffer = malloc(1024);
     buffer_size = 1024;
 
     while (1) {
-	switch (FFSnext_record_type(iofile)) {
+	switch (FFSnext_record_type(ffsfile)) {
+	case FFSindex: {
+	    FFSIndexItem item = FFSread_index(ffsfile);
+	    FFSdump_index(item);
+	    break;
+	}
 	case FFScomment: {
-	    char *comment = FFSread_comment(iofile);
+	    char *comment = FFSread_comment(ffsfile);
 	    printf("Got a comment\n");
 	    if (dump_comments) {
 		if (comment)
@@ -111,7 +125,7 @@ char **argv;
 	}
 	case FFSformat:
 	{
-	    FFSTypeHandle format = FFSread_format(iofile);
+	    FFSTypeHandle format = FFSread_format(ffsfile);
 	    dump_formats = 1;
 	    if (dump_formats) {
 		dump_FMFormat(FMFormat_of_original(format));
@@ -120,19 +134,19 @@ char **argv;
 	}
 	case FFSdata:{
 	    FFSTypeHandle format;
-	    if (buffer_size < FFSnext_data_length(iofile)) {
-		buffer_size = FFSnext_data_length(iofile);
+	    if (buffer_size < FFSnext_data_length(ffsfile)) {
+		buffer_size = FFSnext_data_length(ffsfile);
 		buffer = realloc(buffer, buffer_size);
 	    }
-	    FFSread_raw(iofile, buffer, buffer_size, &format);
+	    FFSread_raw(ffsfile, buffer, buffer_size, &format);
 	    if (dump_data) {
-		dump_raw_FMrecord(iofile, FMFormat_of_original(format), buffer);
+		dump_raw_FMrecord(ffsfile, FMFormat_of_original(format), buffer);
 	    }
 	    break;
 	}
 	case FFSerror:
 	case FFSend:
-	    close_FFSfile(iofile);
+	    close_FFSfile(ffsfile);
 	    exit(0);
 	}
     }

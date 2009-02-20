@@ -42,6 +42,8 @@ typedef struct _IOContextStruct *FFSContext;
 
 typedef struct _FFSTypeHandle *FFSTypeHandle;
 
+typedef struct _FFSIndexItem *FFSIndexItem;
+
 #define create_FFSContext() create_FFSContext_FM(create_FMcontext())
 extern FFSContext create_FFSContext_FM(FMContext fmc);
 
@@ -129,8 +131,11 @@ extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data);
 
 typedef enum {
-    FFSerror, FFSend, FFSdata, FFSformat, FFScomment, FFSindex
+    FFSerror=1, FFSend=2, FFSdata=4, FFSformat=8, FFScomment=16, FFSindex=32
 } FFSRecordType;
+
+extern void
+FFSset_visible(FFSFile ffsfile, int bitmap);
 
 extern FFSRecordType
 FFSnext_record_type(FFSFile ffsfile);
@@ -149,6 +154,9 @@ FFSread(FFSFile ffsfile, void *dest);
 
 extern FFSTypeHandle
 FFSread_format(FFSFile ffsfile);
+
+extern FFSIndexItem
+FFSread_index(FFSFile ffsfile);
 
 extern FFSContext
 FFSContext_of_file(FFSFile f);
