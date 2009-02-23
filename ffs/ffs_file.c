@@ -52,6 +52,8 @@ typedef struct _FFSIndexItem {
     int last_data_count;
     int elem_count;
     struct _FFSIndexElement *elements;
+    struct _FFSIndexItem *next;
+    struct _FFSIndexItem *prev;
 } FFSIndexItemStruct;
 
 struct _FFSFile {
@@ -74,8 +76,12 @@ struct _FFSFile {
     FFSTypeHandle next_actual_handle;
 
     off_t fpos;
+    int data_count;
     FFSIndexType cur_index;
     int visible_items_bitmap;
+
+    FFSIndexItem index_head;
+    FFSIndexItem index_tail;
 
     Status status;
     IOinterface_func write_func;
@@ -98,15 +104,33 @@ update_fpos(FFSFile f)
     f->fpos = lseek(fd, 0, SEEK_CUR);
 }
 
+static void
+free_FFSIndexItem(FFSIndexItemStruct *item)
+{
+    int i;
+    for (i = 0; i < item->elem_count; i++) {
+	if (item->elements[i].format_id) 
+	    free(item->elements[i].format_id);
+    }
+    free(item);
+}
+
 extern
 void
 free_FFSfile(FFSFile f)
 {
+    FFSIndexItemStruct *i;
     free(f->info);
     f->info = NULL;
     f->info_size = 0;
     free_FFSBuffer(f->buf);
     f->buf = NULL;
+    i = f->index_head;
+    while (i != NULL) {
+	FFSIndexItemStruct *next = i->next;
+	free_FFSIndexItem(i);
+	i = next;
+    }
 }
 
 
@@ -320,10 +344,12 @@ dump_index_block(FFSFile f)
     int fd = (int)(long)f->file_id;
     off_t end = lseek(fd, 0, SEEK_CUR);
     int ret;
+    static int last_data_count = -1;
+
     int size =  f->cur_index->write_info.index_block_size;
     unsigned char *index_base = f->cur_index->write_info.index_block;
-    output_index_end(f);
 
+    output_index_end(f);
     lseek(fd, f->cur_index->write_info.base_file_pos, SEEK_SET);
     /*
      * next_data indicator is a 2 4-byte chunks in network byte order.
@@ -333,8 +359,9 @@ dump_index_block(FFSFile f)
     
     *((int*)index_base) = htonl((0x4<<24) | size);
     *((int*)(index_base+4)) = htonl(end);  /* link to next index */
-    *((int*)(index_base+8)) = htonl(0); /* data_index_start); */
-    *((int*)(index_base+12)) = htonl(0); /* data_index_end); */
+    *((int*)(index_base+8)) = htonl(last_data_count + 1); /* data_index_start); */
+    *((int*)(index_base+12)) = htonl(f->data_count); /* data_index_end); */
+    last_data_count = f->data_count;
     ret = f->write_func(f->file_id, index_base, size, NULL, NULL);
     if (ret != size) {
 	printf("Index write failed errno %d\n", errno);
@@ -379,7 +406,6 @@ output_index_end(FFSFile f)
     item_base += f->cur_index->write_info.next_item_offset;
     
     *(unsigned int *) item_base = htonl(End_Item);
-    printf("Output index end is at offset %d\n", f->cur_index->write_info.next_item_offset);
 }
 
 static void
@@ -387,7 +413,7 @@ output_format_index(FFSFile f, char *server_id, int id_len)
 {
     unsigned char *item_base;
     if (f->file_org != Indexed) return;
-    prepare_index_item(f, 4 + id_len);
+    prepare_index_item(f, 12 + id_len);
     item_base = f->cur_index->write_info.index_block;
     item_base += f->cur_index->write_info.next_item_offset;
     
@@ -422,7 +448,7 @@ output_data_index(FFSFile f, char *server_id, int id_len)
 {
     unsigned char *item_base;
     if (f->file_org != Indexed) return;
-    prepare_index_item(f, 4 + id_len);
+    prepare_index_item(f, 12 + id_len);
     item_base = f->cur_index->write_info.index_block;
     item_base += f->cur_index->write_info.next_item_offset;
     
@@ -452,11 +478,9 @@ parse_index_block(char *index_base)
     int item_count = 0, block_size;
     int cur_offset;
     int done = 0;
-    printf("In parse index_block\n");
     item = malloc(sizeof(FFSIndexItemStruct));
     block_size = htonl(*((int*)(index_base+4))) & 0xffffff;
     item->next_index_offset = htonl(*((int*)(index_base+4)));
-    printf("Done half heaader\n");
     item->start_data_count = htonl(*((int*)(index_base+8)));
     item->last_data_count = htonl(*((int*)(index_base+12)));
     item->elements = malloc(sizeof(item->elements[0]));
@@ -475,7 +499,6 @@ parse_index_block(char *index_base)
 	    fpos += htonl(ielem[2]);
 	    item->elements[item_count-1].type = FFSformat;
 	    item->elements[item_count-1].fpos = fpos;
-	    printf("Parsing format element\n");
 	    item->elements[item_count-1].format_id = malloc(id_len);
 	    item->elements[item_count-1].fid_len = id_len;
 	    memcpy(item->elements[item_count-1].format_id,
@@ -499,17 +522,16 @@ parse_index_block(char *index_base)
 	    break;
 	}
 	case End_Item:
-	    printf("Parsing end element\n");
 	    done++;
 	    break;
 	default:
 	    printf("Unknown format element\n");
+	    /* hope for the best, recovery.... */
 	    cur_offset++;
 	}
 	
     }
     item->elem_count = item_count;
-    printf("Exit index block\n");
     return item;
 }
 
@@ -625,6 +647,7 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
+    f->data_count++;
     update_fpos(f);
     return 1;
 }
@@ -692,6 +715,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
+    f->data_count++;
     update_fpos(f);
     return 1;
 }
@@ -797,6 +821,18 @@ FFSread_index(FFSFile ffsfile)
     }
     ffsfile->read_ahead = FALSE;
     index_item = parse_index_block(index_data);
+    free(index_data);
+    if (ffsfile->index_head == NULL) {
+	ffsfile->index_head = index_item;
+	ffsfile->index_tail = index_item;
+	index_item->prev = NULL;
+	index_item->next = NULL;
+    } else {
+	ffsfile->index_tail->next = index_item;
+	index_item->prev = ffsfile->index_tail;
+	index_item->next = NULL;
+	ffsfile->index_tail = index_item;
+    }
     return index_item;
 }
 
