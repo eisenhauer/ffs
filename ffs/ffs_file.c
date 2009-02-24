@@ -422,7 +422,11 @@ output_format_index(FFSFile f, char *server_id, int id_len)
     item_base += 4;
 
     /* upper 32 bits */
+#if SIZEOF_OFF_T == 4
+    *(unsigned int *) item_base= 0;
+#else
     *(unsigned int *) item_base= htonl((f->fpos >> 32));
+#endif
     f->cur_index->write_info.next_item_offset += 4;
     item_base += 4;
 
@@ -457,7 +461,11 @@ output_data_index(FFSFile f, char *server_id, int id_len)
     item_base += 4;
 
     /* upper 32 bits */
+#if SIZEOF_OFF_T == 4
+    *(unsigned int *) item_base= 0;
+#else
     *(unsigned int *) item_base= htonl((f->fpos >> 32));
+#endif
     f->cur_index->write_info.next_item_offset += 4;
     item_base += 4;
 
@@ -495,7 +503,11 @@ parse_index_block(char *index_base)
 	case Format_Item: {
 	    unsigned int *ielem = (unsigned int *)((char*) index_base + cur_offset);
 	    int id_len = htonl(ielem[0]) >> 8;
+#if SIZEOF_OFF_T == 4
+	    off_t fpos = 0;
+#else
 	    off_t fpos = ((off_t)htonl(ielem[1])) << 32;
+#endif
 	    fpos += htonl(ielem[2]);
 	    item->elements[item_count-1].type = FFSformat;
 	    item->elements[item_count-1].fpos = fpos;
@@ -510,7 +522,11 @@ parse_index_block(char *index_base)
 	case Data_Item: {
 	    unsigned int *ielem = (unsigned int *)((char*) index_base + cur_offset);
 	    int id_len = htonl(*(unsigned int *)elem) >> 8;
+#if SIZEOF_OFF_T == 4
+	    off_t fpos = 0;
+#else
 	    off_t fpos = ((off_t)htonl(ielem[1])) << 32;
+#endif
 	    fpos += htonl(ielem[2]);
 	    item->elements[item_count-1].type = FFSdata;
 	    item->elements[item_count-1].fpos = fpos;
