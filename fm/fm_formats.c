@@ -3175,9 +3175,10 @@ int float_format;
 int encode;
 {
     FMgetFieldStruct descr;  /*OK */
+    long junk;
     descr.offset = field_offset;
     descr.size = field_size;
-    descr.data_type = str_to_data_type(field_type);
+    descr.data_type = array_str_to_data_type(field_type, &junk);
     descr.byte_swap = byte_reversal;
     descr.src_float_format = float_format ;
     descr.target_float_format = fm_my_float_format;
@@ -3352,7 +3353,6 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    next = next->next;
 	}
 	element_size = determine_dump_size(f, base, parent_base, next);
-	if (field_is_flat(f, next)) return 1;
 	for (i = 0; i < elements ; i++) {
 	    int element_offset = data_offset + i * element_size;
 	    if (!dump_subfield(base, f, s, element_offset, parent_base, next)) return 0;
@@ -3381,7 +3381,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	int float_format = f->float_format;
 	sdump_value(buf, field_type, field_size, field_offset, NULL, base,
 		    base, byte_reversal, float_format, s->encoded);
-	printf("%s", buf);
+	printf("%s, ", buf);
 	s->output_len = strlen(buf);
 	break;
     }
