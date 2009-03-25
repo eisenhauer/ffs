@@ -480,11 +480,27 @@ int requested_id_version;
     format_list *list = fs->lists[0];
     format_list *last = NULL, *new = NULL;
     /* always, search list for this hosts byte order */
+    if (ioformat->server_ID.value) {
+	if ( version_of_format_ID(ioformat->server_ID.value) !=
+	     requested_id_version) {
+	    printf("Mismatched versions in request\n");
+	}
+    }
+
     while (list != NULL) {
 	int server_ID_version =
-	version_of_format_ID(list->format->server_ID.value);
+	    version_of_format_ID(list->format->server_ID.value);
 	if (format_eq(ioformat, list->format) &&
 	    (requested_id_version == server_ID_version)) {
+	    if (ioformat->server_ID.value) {
+		if (list->format->server_ID.length != ioformat->server_ID.length) {
+		    printf("Version 2 IDs differ in length\n");
+		}
+		if (memcmp(list->format->server_ID.value, ioformat->server_ID.value,
+			   list->format->server_ID.length) != 0) {
+		    printf("Version 2 ID values differ\n");
+		}
+	    }
 	    if (ioformat->server_ID.value != NULL) free(ioformat->server_ID.value);
 	    if (ioformat->server_format_rep != NULL) free(ioformat->server_format_rep);
 	    free(ioformat);
@@ -533,7 +549,20 @@ int requested_id_version;
 	    ((version_1_format_ID *) ioformat->server_ID.value)->format_identifier = server_format_count;
 	    break;
 	case 2:
-	    generate_format2_server_ID(&ioformat->server_ID, ioformat->server_format_rep);
+	    if (!ioformat->server_ID.value) {
+		generate_format2_server_ID(&ioformat->server_ID, ioformat->server_format_rep);
+	    } else {
+		server_ID_type tmp;
+		generate_format2_server_ID(&tmp, ioformat->server_format_rep);
+		if (tmp.length != ioformat->server_ID.length) {
+		    printf("Version 2 IDs differ in length\n");
+		}
+		if (memcmp(tmp.value, ioformat->server_ID.value,
+			   tmp.length) != 0) {
+		    printf("Version 2 ID values differ\n");
+		}
+		free(tmp.value);
+	    }
 	    break;
 	}
 	new->next = NULL;
@@ -701,6 +730,7 @@ FSClient fsc;
 	    UINT2 length;
 
 	    format_rep rep;
+	    IOFormatRep ioformat;
 	    char *format_ID;
 	    int format_ID_len;
 	    if (fs->stdout_verbose) {
@@ -712,7 +742,7 @@ FSClient fsc;
 		return;
 	    }
 	    fsc->input_bytes++;
-	    if (block_version > 1) {
+	    if (block_version <= 1) {
 		fprintf(stderr, "Unknown version in block registration\n");
 		FSClient_close(fsc);
 		return;
@@ -724,9 +754,10 @@ FSClient fsc;
 		return;
 	    }
 	    fsc->input_bytes += sizeof(length);
-	    format_ID_len = ntohs(length);
+	    format_ID_len = length = ntohs(length);
 	    format_ID = malloc(format_ID_len);
-	    if (serverAtomicRead(fsc->fd, ((char *) format_ID), length) != length) {
+	    if (serverAtomicRead(fsc->fd, ((char *) format_ID), format_ID_len)
+		!= format_ID_len) {
 		FSClient_close(fsc);
 		return;
 	    }
@@ -741,41 +772,28 @@ FSClient fsc;
 	    fsc->input_bytes += sizeof(length);
 	    length = ntohs(length);
 	    rep = malloc(length);
-	    rep->format_rep_length = htons((short)length);
-	    if (serverAtomicRead(fsc->fd, ((char *) rep) + sizeof(length),
-				 length - sizeof(length)) !=
-		(length - sizeof(length))) {
+	    rep->format_rep_length = htons(length);
+	    if (serverAtomicRead(fsc->fd, ((char *) rep), length) != length) {
 		FSClient_close(fsc);
 		return;
 	    }
 	    fsc->input_bytes += (length - sizeof(length));
 
-	    /* GSE create format rep */
-
+	    
 	    if (fs->stdout_verbose) {
-		printf("Returning -> ");
-		print_server_ID( (unsigned char *) format_ID);
+		printf("Got Pushed -> ");
+		print_server_ID( format_ID);
 		printf("\n");
 	    }
-	    {
-		char ret[2];
-		if (fsc->provisional != 0) {
-		    ret[0] = 'P';
-		} else {
-		    ret[0] = 'I';
-		}
-		ret[1] = format_ID_len;
-		if (os_server_write_func(fsc->fd, &ret[0], 2, NULL, NULL) != 2) {
-		    FSClient_close(fsc);
-		    return;
-		}
-		if (os_server_write_func(fsc->fd, format_ID,
-				  format_ID_len, NULL,
-			     NULL) != format_ID_len) {
-		    FSClient_close(fsc);
-		    return;
-		}
-	    }
+	    /* GSE create format rep */
+	    ioformat = malloc(sizeof(*ioformat));
+	    ioformat->server_format_rep = rep;
+	    ioformat->server_ID.length = format_ID_len;
+	    ioformat->server_ID.value = format_ID;
+	    ioformat = find_format(fs, fsc, ioformat,
+				   1 /* new format mode */ , block_version);
+
+
 	    registration_count++;
 	    fsc->formats_registered++;
 	    break;
