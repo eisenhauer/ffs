@@ -85,6 +85,10 @@ char **argv;
 
 /*    if (os_sockets_init_func != NULL) os_sockets_init_func();*/
 
+    if (strcmp(argv[0] + strlen(argv[0]) - 5, "proxy") == 0) {
+	/* if the command name ends in "proxy", assume we're should be a proxy */
+	do_proxy++;
+    }
     for (i = 1; i < argc; i++) {
 	if (strcmp(argv[i], "-no_fork") == 0) {
 	    no_fork++;
