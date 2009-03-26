@@ -574,7 +574,7 @@ register_format_to_master(format_server fs, IOFormatRep ioformat)
 	if (ret != ntohs(rep->format_rep_length)) {
 	    close((int)(long)server_fd);
 	    fs->proxy_context_to_master->server_fd = (void*)-1;
-	    LOG(fs, "Write failed4\n");
+	    LOG(fs, "Write failed\n");
 	    return;
 	}
 
@@ -598,8 +598,87 @@ register_all_to_master(format_server fs)
 static IOFormatRep
 get_format_from_master(format_server fs, IOFormatRep ioformat)
 {
+    char get[2] = {'g', 8};		/* format get, size */
+    char block_version;
+    UINT2 length;
+    char return_char = 0;
+    format_rep rep;
+    void* server_fd;
+    int errno, id_size;
+    char *errstr;
+    int ret;
+
     if (fs->stdout_verbose) printf("Trying to get from master\n");
     if (!try_master_connect(fs)) return NULL;
+
+    server_fd = fs->proxy_context_to_master->server_fd;
+    id_size = get[1] = ioformat->server_ID.length;
+    if ((ret = os_server_write_func(server_fd, &get[0], 2, &errno, &errstr)) != 2) {
+	close((int)(long)server_fd);
+	fs->proxy_context_to_master->server_fd = (void*)-1;
+	LOG(fs, "Write failed2.1, ret is %d\n", ret);
+	return NULL;
+    }
+    if (os_server_write_func(server_fd, ioformat->server_ID.value, id_size, &errno, &errstr) != id_size) {
+	close((int)(long)server_fd);
+	fs->proxy_context_to_master->server_fd = (void*)-1;
+	LOG(fs, "Write failed3\n");
+	return NULL;
+    }
+    if (serverAtomicRead(server_fd, &return_char, 1) != 1) {
+	close((int)(long)server_fd);
+	fs->proxy_context_to_master->server_fd = (void*)-1;
+	LOG(fs, "Read failed4\n");
+	return NULL;
+    }
+    if (return_char == 'P') {
+	if (serverAtomicRead(server_fd, &return_char, 1) != 1) {
+	    close((int)(long)server_fd);
+	    fs->proxy_context_to_master->server_fd = (void*)-1;
+	    LOG(fs, "Read failed4\n");
+	    return NULL;
+	}
+    }
+    if (return_char != 'f') {
+	close((int)(long)server_fd);
+	fs->proxy_context_to_master->server_fd = (void*)-1;
+	LOG(fs, "Bad character\n");
+	return NULL;
+    }
+    if (serverAtomicRead(server_fd, &block_version, 1) != 1) {
+	close((int)(long)server_fd);
+	fs->proxy_context_to_master->server_fd = (void*)-1;
+	LOG(fs, "Bad character\n");
+	return NULL;
+    }
+    if (block_version != 1) {
+	fprintf(stderr, "Unknown version \"%d\"in block registration\n", block_version);
+	return NULL;
+    }
+    if (serverAtomicRead(server_fd, &length, sizeof(length)) !=
+	sizeof(length)) {
+	close((int)(long)server_fd);
+	fs->proxy_context_to_master->server_fd = (void*)-1;
+	LOG(fs, "Read failed\n");
+	return NULL;
+    }
+    length = ntohs(length);
+    if (length == 0) {
+	return NULL;
+    } else {
+	rep = malloc(length);
+	rep->format_rep_length = htons((short)length);
+	if (serverAtomicRead(server_fd, ((char *) rep) + sizeof(length),
+			     length - sizeof(length)) != (length - sizeof(length))) {
+	    close((int)(long)server_fd);
+	    fs->proxy_context_to_master->server_fd = (void*)-1;
+	    LOG(fs, "Read failed\n");
+	    return NULL;
+	}
+	ioformat->server_format_rep = rep;
+	return ioformat;
+    }
+	
     return NULL;
 }
 

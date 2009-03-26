@@ -25,6 +25,7 @@ char **argv;
     FMFormat first_rec_ioformat;
     int continuous_test = 0;
     int restart_test = 0;
+    int get_test = 0;
     int XML_test = 0;
     FMStructDescRec str_list[5];
 
@@ -37,12 +38,22 @@ char **argv;
 	    restart_test++;
 	    printf("Doing restart test\n");
 	}
+	if (strcmp(argv[1], "-g") == 0) {
+	    get_test++;
+	}
 	if (strcmp(argv[1], "-x") == 0) {
 	    XML_test++;
 	    printf("Doing XML test\n");
 	}
     }
     
+    if (get_test) {
+	char id[] = {02, 00, 00, 37, 103, 189, 231, 165, 33, 254, 42, 32};
+	printf("Doing get test\n");
+	first_rec_ioformat = FMformat_from_ID(context, (char *) &id[0]);
+	printf("format is %lx\n", (long)first_rec_ioformat);
+	return;
+    }
     if (XML_test) {
 	FMOptInfo opt_info[2];
 	opt_info[0].info_type = 0x584D4C20;
@@ -66,10 +77,15 @@ char **argv;
 	first_rec_ioformat = register_data_format(context, str_list);
 	printf("format is %lx\n", (long)first_rec_ioformat);
 	if (first_rec_ioformat != NULL) {
-	    int id_len;
+	    int id_len, i;
 	    char *id =get_server_ID_FMformat(first_rec_ioformat, &id_len);
 	    printf("Remote context ID is : ");
 	    print_server_ID((unsigned char*)id);
+	    printf("Hex is : ");
+	    for (i=0; i < id_len; i++) {
+		printf("0x%02d, ", ((unsigned char*)id)[i]);
+	    }
+	    printf("\n");
 	}
 	first_rec_ioformat = register_data_format(local_context, str_list);
 	if (first_rec_ioformat != NULL) {
