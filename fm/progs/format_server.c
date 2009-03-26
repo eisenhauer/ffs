@@ -81,6 +81,7 @@ char **argv;
     char testing_char = 'T';
     char format_server_pid[] = "/tmp/format_server_pid";
     int do_restart = 0;
+    int do_proxy = 0;
 
 /*    if (os_sockets_init_func != NULL) os_sockets_init_func();*/
 
@@ -93,12 +94,16 @@ char **argv;
 	    slave++;
 	} else if (strcmp(argv[i], "-restart") == 0) {
 	    do_restart++;
+	} else if (strcmp(argv[i], "-proxy") == 0) {
+	    do_proxy++;
 	} else {
 	    fprintf(stderr, "Unknown argument \"%s\"\n", argv[i]);
 	    fprintf(stderr, "Usage:  format_server [-no_fork] [-quiet] [-restart]\n");
 	    exit(1);
 	}
     }
+
+    if (do_proxy && !no_fork) quiet++;
 
     /* test to see if format server is running */
     test = create_FMcontext();
@@ -109,7 +114,11 @@ char **argv;
     if (!quiet) {
 	putenv(strdup("FORMAT_SERVER_VERBOSE=1"));
     }
-    establish_server_connection(test, host_only);
+    if (do_proxy) {
+	establish_server_connection(test, local_only);
+    } else {
+	establish_server_connection(test, host_only);
+    }
     if (serverAtomicWrite(test->server_fd, &testing_char, 1)
 	== 1) {
 	/* already running */
@@ -192,7 +201,7 @@ char **argv;
 #ifndef HAVE_WINDOWS_H
     alarm(0);
 #endif
-    general_format_server(fs_port, do_restart, no_fork);
+    general_format_server(fs_port, do_restart, no_fork, do_proxy);
     return 0;
 }
 

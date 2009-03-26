@@ -81,6 +81,8 @@ typedef struct _format_server {
     fd_set fdset;		/* bitmap of those conns */
     char *data_buffer;		/* buffer for data */
     int buffer_size;
+    FMContext proxy_context_to_master;
+    int pending_unregistered;
     format_list *lists[1];	/* first dimension float format */
 } _fsserver;
 
@@ -98,6 +100,7 @@ static FMContext stats_context = NULL;
 static IOFormatRep fetch_format(format_server fs, FSClient fsc, 
 				      const unsigned char *format_id,
 				      int format_id_length);
+static int try_master_connect(format_server fs);
 
 #ifndef SELECT_DEFINED
 extern int select(int width, fd_set * readfds, fd_set * writefds,
@@ -189,10 +192,13 @@ static INT4 my_IP_addr = 0;
 #endif
 
 void
-general_format_server(int port, int do_restart, int verbose)
+general_format_server(int port, int do_restart, int verbose, int do_proxy)
 {
     format_server fs = format_server_create();
     fs->stdout_verbose = verbose;
+    if (do_proxy) {
+	fs->proxy_context_to_master = create_FMcontext();
+    }
     if (format_server_listen(fs, port) != -1) {
 	if (do_restart) read_formats_from_file(fs);
 	while (1) {
@@ -202,14 +208,8 @@ general_format_server(int port, int do_restart, int verbose)
     return;
 }
 
-void
-run_format_server(int port)
-{
-    general_format_server(port, 0, 0);
-}
-
 static void FSClient_close(FSClient fsc);
-#define CONN_TIMEOUT_INTERVAL 3600
+#define CONN_TIMEOUT_INTERVAL 300
 
 static int
 format_server_poll_and_handle(format_server fs)
@@ -270,6 +270,7 @@ format_server_poll_and_handle(format_server fs)
 	return -1;
     } else if (res == 0) {
 	timeout_old_conns(fs);
+	if (fs->pending_unregistered) try_master_connect(fs);
 	return 0;
     }
     if ((long) fs->conn_sock_inet >= 0 &&
@@ -291,6 +292,7 @@ format_server_poll_and_handle(format_server fs)
 
     }
     timeout_old_conns(fs);
+    if (fs->pending_unregistered) try_master_connect(fs);
     return res;
 }
 
@@ -469,6 +471,140 @@ read_formats_from_file(format_server fs)
     }
 }
 
+
+static void
+register_all_to_master(format_server fs);
+
+static int
+try_master_connect(format_server fs)
+{
+    static time_t last_try = 0;
+    struct timeval now;
+    int try_connection = 0;
+    if (fs->proxy_context_to_master->server_fd != (void*)-1) {
+	/* assume connection still good */
+	if (fs->stdout_verbose) printf("Master connection still good\n");
+	return 1;
+    }
+    gettimeofday(&now, NULL);
+    if (last_try == 0) try_connection++;
+    if ((now.tv_sec - last_try) > 300) try_connection++;
+    if (!try_connection) {
+	if (fs->stdout_verbose) printf("Master connection dead, too soon to retry\n");
+	return 0;
+    }
+    last_try = now.tv_sec;
+    if (fs->stdout_verbose) printf("Master connection dead, try reconnect\n");
+    establish_server_connection(fs->proxy_context_to_master, host_only);
+    if (fs->proxy_context_to_master->server_fd != (void*)-1) {
+	int s = (int)(long)fs->proxy_context_to_master->server_fd;
+	int optval;
+	socklen_t optlen = sizeof(optval);
+	if (fs->stdout_verbose) printf("Master connection dead, reconnect successful!\n");
+	/* Set the option active */
+	optval = 1;
+	optlen = sizeof(optval);
+	if(setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &optval, optlen) < 0) {
+	    perror("setsockopt()");
+	    close(s);
+	    exit(EXIT_FAILURE);
+	}
+	register_all_to_master(fs);
+	return 1;
+    } 
+    if (fs->stdout_verbose) printf("Master connection dead, reconnect failed\n");
+    return 0;
+}
+
+static void
+register_format_to_master(format_server fs, IOFormatRep ioformat)
+{
+    
+    if (fs->stdout_verbose) printf("Trying to register to master\n");
+    if (!try_master_connect(fs)) {
+	fs->pending_unregistered++;
+	return;
+    } else {
+	struct {
+	    char reg[2];
+	    unsigned short len;
+	} tmp = {{'P', 2}, 0 };	/* format push, version 2 */
+	int ret;
+	void* server_fd = fs->proxy_context_to_master->server_fd;
+	int errno;
+	char *errstr;
+
+	format_rep rep = ioformat->server_format_rep;
+
+	tmp.len = ntohs(ioformat->server_ID.length);
+	ret = os_server_write_func(server_fd, &tmp, sizeof(tmp),
+				   &errno, &errstr);
+	if (ret != sizeof(tmp)) {
+	    close((int)(long)server_fd);
+	    fs->proxy_context_to_master->server_fd = (void*)-1;
+	    LOG(fs, "Write failed1\n");
+	    return;
+	}
+	ret = os_server_write_func(server_fd, 
+				   ioformat->server_ID.value,
+				   ioformat->server_ID.length,
+				   &errno, &errstr);
+	if (ret != ioformat->server_ID.length) {
+	    close((int)(long)server_fd);
+	    fs->proxy_context_to_master->server_fd = (void*)-1;
+	    LOG(fs, "Write failed2\n");
+	    return;
+	}
+
+	if (fs->stdout_verbose) {
+	    printf("Pushing ");
+	    print_server_ID( (unsigned char *) ioformat->server_ID.value);
+	    printf("Writing %d bytes of format rep\n", ntohs(rep->format_rep_length));
+	}
+	ret = os_server_write_func(server_fd, &rep->format_rep_length, 2, &errno, &errstr);
+	if (ret != 2)  {
+	    close((int)(long)server_fd);
+	    fs->proxy_context_to_master->server_fd = (void*)-1;
+	    LOG(fs, "Write failed3\n");
+	    return;
+	}
+	ret = os_server_write_func(server_fd, (char*) rep,
+				   ntohs(rep->format_rep_length),
+				   &errno, &errstr);
+	if (ret != ntohs(rep->format_rep_length)) {
+	    close((int)(long)server_fd);
+	    fs->proxy_context_to_master->server_fd = (void*)-1;
+	    LOG(fs, "Write failed4\n");
+	    return;
+	}
+
+	if (fs->stdout_verbose) printf("Done\n");
+    }
+}
+
+static void
+register_all_to_master(format_server fs)
+{
+    if (fs->stdout_verbose) printf("Trying to register all master\n");
+    if (!try_master_connect(fs)) return;
+    format_list *list = fs->lists[0];
+    while (list != NULL) {
+	register_format_to_master(fs, list->format);
+	list = list->next;
+    }
+    fs->pending_unregistered = 0;
+}
+
+static IOFormatRep
+get_format_from_master(format_server fs, IOFormatRep ioformat)
+{
+    if (fs->stdout_verbose) printf("Trying to get from master\n");
+    if (!try_master_connect(fs)) return NULL;
+    return NULL;
+}
+
+
+
 static IOFormatRep
 find_format(fs, fsc, ioformat, new_format_mode, requested_id_version)
 format_server fs;
@@ -483,7 +619,7 @@ int requested_id_version;
     if (ioformat->server_ID.value) {
 	if ( version_of_format_ID(ioformat->server_ID.value) !=
 	     requested_id_version) {
-	    printf("Mismatched versions in request\n");
+	    LOG(fs, "Mismatched versions in request\n");
 	}
     }
 
@@ -494,11 +630,11 @@ int requested_id_version;
 	    (requested_id_version == server_ID_version)) {
 	    if (ioformat->server_ID.value) {
 		if (list->format->server_ID.length != ioformat->server_ID.length) {
-		    printf("Version 2 IDs differ in length\n");
+		    LOG(fs, "Version 2 IDs differ in length\n");
 		}
 		if (memcmp(list->format->server_ID.value, ioformat->server_ID.value,
 			   list->format->server_ID.length) != 0) {
-		    printf("Version 2 ID values differ\n");
+		    LOG(fs, "Version 2 ID values differ\n");
 		}
 	    }
 	    if (ioformat->server_ID.value != NULL) free(ioformat->server_ID.value);
@@ -555,11 +691,11 @@ int requested_id_version;
 		server_ID_type tmp;
 		generate_format2_server_ID(&tmp, ioformat->server_format_rep);
 		if (tmp.length != ioformat->server_ID.length) {
-		    printf("Version 2 IDs differ in length\n");
+		    LOG(fs, "Version 2 IDs differ in length\n");
 		}
 		if (memcmp(tmp.value, ioformat->server_ID.value,
 			   tmp.length) != 0) {
-		    printf("Version 2 ID values differ\n");
+		    LOG(fs, "Version 2 ID values differ\n");
 		}
 		free(tmp.value);
 	    }
@@ -572,8 +708,20 @@ int requested_id_version;
 	} else {
 	    last->next = new;
 	}
+	register_format_to_master(fs, ioformat);
 	return ioformat;
     } else {
+	if (fs->proxy_context_to_master != NULL) {
+	    /* we're a proxy, perhaps the master knows this format */
+	    IOFormatRep tmp = get_format_from_master(fs, ioformat);
+	    if (tmp == NULL) return NULL;
+
+	    /* we got a format, free the local version */
+	    if (ioformat->server_ID.value != NULL) free(ioformat->server_ID.value);
+	    if (ioformat->server_format_rep != NULL) free(ioformat->server_format_rep);
+	    free(ioformat);
+	    return tmp;
+	}
 	return NULL;
     }
 }
@@ -782,7 +930,7 @@ FSClient fsc;
 	    
 	    if (fs->stdout_verbose) {
 		printf("Got Pushed -> ");
-		print_server_ID( format_ID);
+		print_server_ID( (unsigned char *) format_ID);
 		printf("\n");
 	    }
 	    /* GSE create format rep */
@@ -1188,6 +1336,8 @@ format_server_create()
     FD_ZERO(&fs->fdset);
     fs->data_buffer = (char *) malloc(1);
     fs->buffer_size = 1;
+    fs->proxy_context_to_master = NULL;
+    fs->pending_unregistered = 0;
     /* 
      * ignore SIGPIPE's  (these pop up when ports die.  we catch the
      * failed writes)

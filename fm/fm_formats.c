@@ -1841,7 +1841,7 @@ generate_format2_server_ID(server_ID_type *server_ID,
     hashlittle2((int*)server_format_rep, 
 		ntohs(server_format_rep->format_rep_length),
 		&hash1, &hash2);
-    if (format_server_verbose) {
+    if (format_server_verbose == 1) {
 	unsigned char *tmp = (unsigned char*)server_format_rep;
 	int size = ntohs(server_format_rep->format_rep_length);
 	int i;

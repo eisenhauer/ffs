@@ -181,9 +181,13 @@ action_t action;
     struct socket *socket;	
 #endif
 
-/*    if (os_sockets_init_func) {
-	 os_sockets_init_func();
-	 }*/
+    if (format_server_verbose == -1) {
+	if (getenv("FORMAT_SERVER_VERBOSE") == NULL) {
+	    format_server_verbose = 0;
+	} else {
+	    format_server_verbose = 1;
+	}
+    }
 
     if (iofile->server_fd != (void*)-1) {
 #ifndef MODULE
@@ -207,6 +211,7 @@ action_t action;
     if ((iofile->server_fd == (void*)-1) || (conn_is_dead)) {
 	/* reestablish connection, name_str is the machine name */
 	struct sockaddr_in sock_addr;
+	char *tmp_server_host;
 
 	if (format_server_host == NULL) {
 	    char *format_server_port = NULL;
@@ -253,18 +258,22 @@ action_t action;
 	
 	sock_addr.sin_family = AF_INET;
 		
-	if (fill_hostaddr(&sock_addr.sin_addr, format_server_host, 
+	tmp_server_host = format_server_host;
+	if (action == local_only) {
+	    tmp_server_host = "localhost";
+	}
+	if (fill_hostaddr(&sock_addr.sin_addr, tmp_server_host, 
 			  &protocol) == 0) {
 	    fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
-		    format_server_host);
+		    tmp_server_host);
 	    return 0;
+	}
+	if (format_server_verbose == 1) {
+	    printf("Trying connection to format server on %s ...  ",
+		   tmp_server_host);
 	}
 	sock_addr.sin_port = htons(ffs_format_server_port);
 
-	if (format_server_verbose) {
-	    printf("Trying connection to format server on %s ...  ",
-		   format_server_host);
-	}
 #ifdef MODULE
         if (socket->ops->connect(socket, (struct sockaddr *) &sock_addr,
 		    sizeof sock_addr, O_RDWR ) < 0) {
@@ -302,7 +311,7 @@ action_t action;
 		return 0;
 	    }
 	    sock_addr.sin_port = htons(ffs_format_server_port);
-	    if (format_server_verbose) {
+	    if (format_server_verbose == 1) {
 		printf("Trying fallback connection to format server on %s ...  ",
 		       format_server_host);
 	    }
@@ -317,7 +326,7 @@ action_t action;
 	        return 0;
 	    }
 	}
-	if (format_server_verbose) {
+	if (format_server_verbose == 1) {
 	    printf("succeeded\n");
 	}
 #ifndef MODULE
