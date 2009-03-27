@@ -140,11 +140,9 @@ if test "x$FORMAT_SERVER_HOST" = "x"; then
       FORMAT_SERVER_HOST="formathost.cercs.gatech.edu";
       FORMAT_SERVICE_DOMAIN=".edu:.com:.gov:.mil:.net:.org:.us";
    else
-      if test "x$domainname" != "x"; then
-          FORMAT_SERVER_HOST=$hostname.$domainname
-      else
-          FORMAT_SERVER_HOST=$hostname
-      fi
+      # They didn't specify a format host, they're not in a Tech domain
+      # use a local proxy, or fallback to formathost.cercs.gatech.edu
+      FORMAT_SERVER_HOST=localhost
    fi
 fi
 AC_ARG_WITH(service_domain, [  --with-service-domain=DOMAINNAME	What domain the server will serve.],FORMAT_SERVICE_DOMAIN=$withval)
