@@ -41,12 +41,23 @@ int argc;
 char **argv;
 {
     FMContext context = create_FMcontext();
-    FMFormat ioformat;
+    FMFormat ioformat = NULL;
+    char *colon;
     if (argc <= 1) {
 	printf("Usage:   format_info <global_format_name>\n");
 	return 1;
     }
-    ioformat = FMformat_from_ID(context, argv[1]);
+    colon = strchr(argv[1], ':');
+    if (colon) {
+	int i, len = strlen(++colon);
+	unsigned char *tmp = malloc(len/2);
+	for (i=0; i< len/2; i++) {
+	    int tmpi;
+	    sscanf(&colon[i*2], "%02x", &tmpi);
+	    tmp[i] = tmpi;
+	}
+	ioformat = FMformat_from_ID(context, tmp);
+    }
     if (ioformat == NULL) {
 	printf("Format_info:  \"%s\" is not an ioformat name\n",
 	       argv[1]);
