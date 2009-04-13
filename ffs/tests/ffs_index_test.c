@@ -109,6 +109,8 @@ int (*size_func) (FFSFile, int);
 int (*read_func) ();
 {
     FFSFile iofile;
+    int item_count = 0;
+    int data_count = 0;
     int finished = 0;
     int first_rec_count = 0;
     int second_rec_count = 0;
@@ -124,14 +126,29 @@ int (*read_func) ();
     int unknown_rec_count = 0;
     iofile = open_FFSfile(input_file, "r");
 
+    if (!iofile) {
+	printf("Open of file \"%s\" failed.  Exitting.\n", input_file);
+	exit(1);
+    }
+
     init_written_data();
 
-    set_targets(FFSContext_of_file(iofile));
+    //FFSseek(iofile, 3);
+    //printf("Seeked to 3\n");
 
+    set_targets(FFSContext_of_file(iofile));
     while (!finished) {
 	char *comment;
-	FFSRecordType next = FFSnext_record_type(iofile);
+	FFSRecordType next;
 
+	if (data_count == 5) {
+	    FFSseek(iofile, 0);  /* seek backwards to first data item */
+	    first_rec_count = 0;
+	    second_rec_count = 0;
+	    fifth_rec_count = 0;
+	}
+
+	next = FFSnext_record_type(iofile);
 	switch (next) {
 	case FFScomment:
 	    comment = FFSread_comment(iofile);
@@ -153,7 +170,8 @@ int (*read_func) ();
 			   sizeof(first_rec)) != 0) {
 		    if (read_data[0].integer_field != 
 			rec1_array[first_rec_count-1].integer_field) {
-			printf("read integer = %d (0x%x), exp integer = %d (0x%x)\n",
+			printf("read integer = %d (0x%x), exp integer = %d"
+                               " (0x%x)\n",
 			       read_data[0].integer_field, 
 			       read_data[0].integer_field, 
 			       rec1_array[first_rec_count-1].integer_field,
@@ -180,7 +198,8 @@ int (*read_func) ();
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
 		    printf("read second data failed\n");
-		if (!second_rec_eq(read_data, &rec2_array[second_rec_count++])) {
+		if (!second_rec_eq(read_data,
+                                   &rec2_array[second_rec_count++])) {
 		    printf("Rec2 failure\n");
 		    exit(1);
 		}
@@ -241,7 +260,8 @@ int (*read_func) ();
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
 		    printf("read variant format");
-		if (!nested_rec_eq(read_data, &rec7_array[nested_rec_count++])) {
+		if (!nested_rec_eq(read_data,
+                                   &rec7_array[nested_rec_count++])) {
 		    printf("Rec7 failure\n");
 		    exit(1);
 		}
@@ -274,7 +294,8 @@ int (*read_func) ();
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
 		    printf("read variant format");
-		if (!string_array_eq(read_data, &string_array_array[string_array_rec_count++])) {
+		if (!string_array_eq(read_data, &string_array_array
+                                     [string_array_rec_count++])) {
 		    printf("string_array failure\n");
 		    exit(1);
 		}
@@ -287,14 +308,20 @@ int (*read_func) ();
 		FFSread(iofile, NULL);
 		unknown_rec_count++;
 	    }
+	    data_count++;
 	    break;
 	case FFSerror:
 	case FFSend:
-	default:
 	    finished++;
 	    break;
 	}
+	item_count++;
     }
+
+    //FFSseek(iofile, 0);
+    //FFSseek(iofile, 3);
+    //FFSseek(iofile, -45);
+    //FFSseek(iofile, 1001);
 
     close_FFSfile(iofile);
     free_FFSfile(iofile);

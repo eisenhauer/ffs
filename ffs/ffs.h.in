@@ -32,6 +32,10 @@ extern "C" {
 #define COMPAT_OPT_INFO 0x45564F4C
 #define COMPAT_OPT_INFO_IOFILE 0x45564F4D
 
+#ifndef ATL_H
+#include "atl.h"
+#endif
+
 
 
 typedef struct _FFSBuffer *FFSBuffer;
@@ -130,6 +134,9 @@ free_FFSfile(FFSFile file);
 extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data);
 
+extern int
+write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs);
+
 typedef enum {
     FFSerror=1, FFSend=2, FFSdata=4, FFSformat=8, FFScomment=16, FFSindex=32
 } FFSRecordType;
@@ -151,6 +158,12 @@ FFSread_comment(FFSFile ffsfile);
 
 extern int
 FFSread(FFSFile ffsfile, void *dest);
+
+extern int
+FFSread_attr(FFSFile file, void *dest, attr_list *attr);
+
+extern int
+FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest);
 
 extern FFSTypeHandle
 FFSread_format(FFSFile ffsfile);

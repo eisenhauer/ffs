@@ -40,8 +40,21 @@ main(int argc, char **argv)
     int i, j;
     FMStructDescRec str_list[5];
     FMOptInfo opt_info[2], opt_info2[2];
-    int verbose = 0, indexed = 0;
+    int verbose = 0, indexed = 0, attributes = 0;
     char *output_file = "test_output";
+
+    atom_t level_atom = -1, iteration_atom = -1;
+    level_atom = attr_atom_from_string("level");
+    iteration_atom = attr_atom_from_string("iteration");
+    attr_list a1 = NULL;
+    attr_list a2 = NULL;
+
+    a1 = create_attr_list();
+    a2 = create_attr_list();
+    set_int_attr(a1, level_atom, 5);
+    set_int_attr(a1, iteration_atom, 1);
+    set_int_attr(a2, iteration_atom, 4);
+
     for (i = 1; i < argc; i++) {
 	if (argv[i][0] == '-') {
 	    /* argument */
@@ -49,6 +62,8 @@ main(int argc, char **argv)
 		verbose++;
 	    } else if (argv[i][1] == 'i') {
 		indexed++;
+	    } else if (argv[i][1] == 'a') {
+		attributes++;
 	    } else {
 		printf("Unknown argument \"%s\"\n", argv[i]);
 	    }
@@ -161,8 +176,13 @@ main(int argc, char **argv)
     emb_array.earray[3].ifield = 1;
     emb_array.earray[3].string = (char *) malloc(10);
     sprintf(emb_array.earray[3].string, "string%d", emb_array.earray[3].ifield * 5);
-    if (!write_FFSfile(ffsfile, fifth_rec_ioformat, &emb_array))
-	printf("write failed\n");
+    if (attributes) {
+	if (!write_FFSfile_attrs(ffsfile, fifth_rec_ioformat, &emb_array, a1))
+	    printf("write failed\n");
+    } else {
+	if (!write_FFSfile(ffsfile, fifth_rec_ioformat, &emb_array))
+	    printf("write failed\n");
+    }
     free(emb_array.earray[0].string);
     free(emb_array.earray[1].string);
     free(emb_array.earray[2].string);
@@ -175,7 +195,7 @@ main(int argc, char **argv)
     rec2.string = "testing";
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a2))
 	printf("write failed\n");
     rec2.integer_field = 14;
     rec2.short_field = 27;

@@ -221,7 +221,6 @@ const char *flag_str;
 {
     int flags;
     int file_id;
-    long tmp_flags = (long)flag_str;
 
     if (strcmp(flag_str, "r") == 0) {
 	flags = O_RDONLY;

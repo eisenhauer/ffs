@@ -38,7 +38,7 @@ TESTS = context_test$(EXEEXT) context_test2$(EXEEXT) \
 bin_PROGRAMS =
 noinst_PROGRAMS = context_test$(EXEEXT) context_test2$(EXEEXT) \
 	ffs_write$(EXEEXT) io_dyn_read$(EXEEXT) fortran_test$(EXEEXT) \
-	ffs_file_test$(EXEEXT)
+	ffs_file_test$(EXEEXT) ffs_index_test$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -72,6 +72,11 @@ am_ffs_file_test_OBJECTS = ffs_file_test.$(OBJEXT) \
 ffs_file_test_OBJECTS = $(am_ffs_file_test_OBJECTS)
 ffs_file_test_LDADD = $(LDADD)
 ffs_file_test_DEPENDENCIES = ../libffs.la
+am_ffs_index_test_OBJECTS = ffs_index_test.$(OBJEXT) \
+	test_funcs.$(OBJEXT)
+ffs_index_test_OBJECTS = $(am_ffs_index_test_OBJECTS)
+ffs_index_test_LDADD = $(LDADD)
+ffs_index_test_DEPENDENCIES = ../libffs.la
 am_ffs_write_OBJECTS = ffs_write.$(OBJEXT) test_funcs.$(OBJEXT)
 ffs_write_OBJECTS = $(am_ffs_write_OBJECTS)
 ffs_write_LDADD = $(LDADD)
@@ -80,6 +85,10 @@ am_fortran_test_OBJECTS = fortran_test.$(OBJEXT) test_funcs.$(OBJEXT)
 fortran_test_OBJECTS = $(am_fortran_test_OBJECTS)
 fortran_test_LDADD = $(LDADD)
 fortran_test_DEPENDENCIES = ../libffs.la
+fuseffs_indexdump_SOURCES = fuseffs_indexdump.c
+fuseffs_indexdump_OBJECTS = fuseffs_indexdump.$(OBJEXT)
+fuseffs_indexdump_LDADD = $(LDADD)
+fuseffs_indexdump_DEPENDENCIES = ../libffs.la
 am_io_dyn_read_OBJECTS = io_dyn_read.$(OBJEXT) test_funcs.$(OBJEXT)
 io_dyn_read_OBJECTS = $(am_io_dyn_read_OBJECTS)
 io_dyn_read_LDADD = $(LDADD)
@@ -97,11 +106,13 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(ffs_file_test_SOURCES) $(ffs_write_SOURCES) \
-	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES)
+	$(ffs_file_test_SOURCES) $(ffs_index_test_SOURCES) \
+	$(ffs_write_SOURCES) $(fortran_test_SOURCES) \
+	$(io_dyn_read_SOURCES)
 DIST_SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(ffs_file_test_SOURCES) $(ffs_write_SOURCES) \
-	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES)
+	$(ffs_file_test_SOURCES) $(ffs_index_test_SOURCES) \
+	$(ffs_write_SOURCES) $(fortran_test_SOURCES) \
+	$(io_dyn_read_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -247,6 +258,7 @@ fortran_test_SOURCES = fortran_test.c test_funcs.c
 xml_test_SOURCES = xml_test.c test_funcs.c
 compat_test_SOURCES = compat_test.c test_funcs.c
 ffs_file_test_SOURCES = ffs_file_test.c test_funcs.c
+ffs_index_test_SOURCES = ffs_index_test.c test_funcs.c
 io_default_test_SOURCES = io_default_test.c test_funcs.c
 ffs_write_SOURCES = ffs_write.c test_funcs.c
 io_dyn_read_SOURCES = io_dyn_read.c test_funcs.c
@@ -327,12 +339,18 @@ context_test2$(EXEEXT): $(context_test2_OBJECTS) $(context_test2_DEPENDENCIES)
 ffs_file_test$(EXEEXT): $(ffs_file_test_OBJECTS) $(ffs_file_test_DEPENDENCIES) 
 	@rm -f ffs_file_test$(EXEEXT)
 	$(LINK) $(ffs_file_test_OBJECTS) $(ffs_file_test_LDADD) $(LIBS)
+ffs_index_test$(EXEEXT): $(ffs_index_test_OBJECTS) $(ffs_index_test_DEPENDENCIES) 
+	@rm -f ffs_index_test$(EXEEXT)
+	$(LINK) $(ffs_index_test_OBJECTS) $(ffs_index_test_LDADD) $(LIBS)
 ffs_write$(EXEEXT): $(ffs_write_OBJECTS) $(ffs_write_DEPENDENCIES) 
 	@rm -f ffs_write$(EXEEXT)
 	$(LINK) $(ffs_write_OBJECTS) $(ffs_write_LDADD) $(LIBS)
 fortran_test$(EXEEXT): $(fortran_test_OBJECTS) $(fortran_test_DEPENDENCIES) 
 	@rm -f fortran_test$(EXEEXT)
 	$(LINK) $(fortran_test_OBJECTS) $(fortran_test_LDADD) $(LIBS)
+fuseffs_indexdump$(EXEEXT): $(fuseffs_indexdump_OBJECTS) $(fuseffs_indexdump_DEPENDENCIES) 
+	@rm -f fuseffs_indexdump$(EXEEXT)
+	$(LINK) $(fuseffs_indexdump_OBJECTS) $(fuseffs_indexdump_LDADD) $(LIBS)
 io_dyn_read$(EXEEXT): $(io_dyn_read_OBJECTS) $(io_dyn_read_DEPENDENCIES) 
 	@rm -f io_dyn_read$(EXEEXT)
 	$(LINK) $(io_dyn_read_OBJECTS) $(io_dyn_read_LDADD) $(LIBS)
@@ -623,7 +641,12 @@ write_output: context_test
 	rm -f ../output_dir/file_output.@ARCH@.bin
 	mv test_output ../output_dir/file_output.@ARCH@.bin
 
-check-local: context_check file_check
+check-local: context_check file_check index_check
+
+index_check: ffs_index_test ffs_write
+	./ffs_write -i
+	./ffs_index_test test_output
+	rm -f ./test_output
 
 context_check:  context_test @OUTPUT_TARGET@
 	@failed=0;\

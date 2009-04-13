@@ -2,6 +2,7 @@
 #include "config.h"
 
 #include "assert.h"
+#include "atl.h"
 #include "ffs.h"
 #include "ffs_internal.h"
 #include "cercs_env.h"
@@ -12,6 +13,12 @@
 #include "errno.h"
 
 #include "io_interface.h"
+
+typedef struct _CDLLnode {
+    void *data;
+    struct _CDLLnode *next;
+    struct _CDLLnode *prev;
+}CDLLnode;
 
 typedef enum {
     OpenForRead, Closed
@@ -43,7 +50,7 @@ typedef struct _FFSIndexElement {
     long fpos;
     char *format_id;
     int fid_len;
-    /* attr_list attrs */
+    attr_list attrs;
 } FFSIndexElement;
 
 typedef struct _FFSIndexItem {
@@ -75,6 +82,9 @@ struct _FFSFile {
     FFSTypeHandle next_data_handle;
     FFSTypeHandle next_actual_handle;
 
+    CDLLnode *attr_list;
+    long data_block_no;
+
     off_t fpos;
     int data_count;
     FFSIndexType cur_index;
@@ -95,6 +105,221 @@ struct _FFSFile {
 
 #define INDEX_BLOCK_SIZE 256
 
+#define NUM_OFFSETS 10
+
+typedef struct _offset_node {
+    int data_offset[NUM_OFFSETS];
+}offset_node;
+
+typedef struct _attr_node {
+    char *attr;
+    CDLLnode *offsetLL;
+    int len_offsetLL;
+    int num_offsets;
+}attr_node;
+
+
+/*
+ * Generic circular doubly linked list routine
+ * returns 0 on success and 1 otherwise
+ */
+int
+CDLLadd(CDLLnode **start, void *data, unsigned int data_size)
+{
+    CDLLnode *nodeP;
+    CDLLnode *startP = *start;
+    int ret = 1;
+
+    nodeP = (CDLLnode *)malloc(sizeof(CDLLnode));
+    if (!nodeP)
+        goto exit;
+
+    nodeP->data = malloc(data_size);
+    if (!(nodeP->data))
+        goto free_nodeP;
+
+    memcpy(nodeP->data, data, data_size);
+    nodeP->prev = NULL;
+    nodeP->next = NULL;
+
+    if (!startP) {
+        nodeP->next = nodeP;
+        nodeP->prev = nodeP;
+        *start = nodeP;
+    }
+    else {
+        nodeP->next = startP;
+        startP->prev->next = nodeP;
+        nodeP->prev = startP->prev;
+        startP->prev = nodeP;
+    }
+
+    ret = 0;
+    goto exit;
+
+free_nodeP:
+    free(nodeP);
+
+exit:
+    return ret;
+}
+
+
+/*
+ * Generic circular doubly linked list routine
+ * returns 0 on success and 1 otherwise
+ */
+int
+CDLLremove(CDLLnode **start, CDLLnode *remove_nodeP)
+{
+    CDLLnode *startP = *start;
+    CDLLnode *prev_rem_nodeP = remove_nodeP->prev;
+    CDLLnode *next_rem_nodeP = remove_nodeP->next;
+
+    if (!startP || !remove_nodeP)
+        goto exit;
+
+    if (remove_nodeP->data)
+        free(remove_nodeP->data);
+
+    if (startP == remove_nodeP) {
+        if (startP->next == startP) {
+            free(remove_nodeP);
+            *start = NULL;
+        }
+        else {
+            free(remove_nodeP);
+            prev_rem_nodeP->next = next_rem_nodeP;
+            next_rem_nodeP->prev = prev_rem_nodeP;
+            *start = next_rem_nodeP;
+        }
+    }
+    else {
+        free(remove_nodeP);
+        prev_rem_nodeP->next = next_rem_nodeP;
+        next_rem_nodeP->prev = prev_rem_nodeP;
+    }
+
+exit:
+    return 0;
+}
+
+
+/*
+ * 
+ * returns 1 if attribute is present in index structure
+ * and 0 otherwise
+ */
+static CDLLnode *
+attr_in_reverse_index(FFSFile f, char *attr)
+{
+    CDLLnode *attrLLP = f->attr_list;
+    attr_node *attr_nodeP = NULL;
+
+    if (!attrLLP || !attr) {
+        return NULL;
+    }
+
+    do {
+        attr_nodeP = (attr_node *)(attrLLP->data);
+
+        if (!strcmp(attr, attr_nodeP->attr)) {
+            return attrLLP;
+        }
+
+        attrLLP = attrLLP->next;
+
+    }while(attrLLP != f->attr_list);
+
+    return NULL;
+}
+
+
+static int
+build_reverse_index(FFSFile f, char *attr_list, int attr_len)
+{
+    if (f->file_org != Indexed) return;
+
+    int ret = 1;
+    char *attr_startP = attr_list;
+    char *attr_endP = index(attr_list, '=');
+    char *attr = NULL;
+
+    for (attr_startP = attr_list - 1, attr_endP = index(attr_list, '=');
+         attr_startP; attr_startP = index(attr_endP, ';'),
+             attr_endP = index(attr_endP, '=')) {
+
+        CDLLnode *attrLLP;
+//        attr = strndup(attr_startP + 1, attr_endP - attr_startP - 1);
+        attr_endP++;
+
+        if (!attr)
+            goto exit;
+
+        attrLLP = attr_in_reverse_index(f, attr);
+        if (!attrLLP) {
+            // attribute not found in index
+            // add a new attribute node to index
+            attr_node tmp, *current_nodeP;
+            offset_node tmp_offset_node;
+
+            tmp.attr = attr;
+            tmp.offsetLL = NULL;
+            tmp.len_offsetLL = 0;
+            tmp.num_offsets = 0;
+
+            if (CDLLadd(&(f->attr_list), &tmp, sizeof(tmp)))
+                goto free_attr;
+
+            current_nodeP = (attr_node *)f->attr_list->data;
+            tmp_offset_node.data_offset[0] = f->fpos;
+
+            if (CDLLadd(&((attr_node *)f->attr_list->data)->offsetLL,
+                        tmp_offset_node.data_offset, NUM_OFFSETS*sizeof(int)))
+                goto free_attr;
+
+            current_nodeP->num_offsets = 1;
+            current_nodeP->len_offsetLL = 1;
+        }
+        else {
+            // attribute node is already in index
+            // add the offset of data block in the attribute offset list
+            attr_node *attr_nodeP = (attr_node *)attrLLP->data;
+
+            if (!(attr_nodeP->num_offsets) % NUM_OFFSETS) {
+                // need to add new node in the attribute LL
+                offset_node tmp_offset_node;
+                tmp_offset_node.data_offset[0] = f->fpos;
+
+                if (CDLLadd(&(attr_nodeP->offsetLL), &tmp_offset_node,
+                            sizeof(tmp_offset_node)))
+                    goto free_attr;
+
+                attr_nodeP->num_offsets++;
+                attr_nodeP->len_offsetLL++;
+            }
+            else {
+                // place the offset value in the exising block of attribute LL
+                offset_node *offset_nodeP = (offset_node *)
+                    (attr_nodeP->offsetLL->data);
+
+                offset_nodeP->data_offset[(attr_nodeP->num_offsets) %
+                                          NUM_OFFSETS] = f->fpos;
+                attr_nodeP->num_offsets++;
+                attr_nodeP->len_offsetLL++;
+            }
+        }
+    }
+
+    ret = 0;
+
+free_attr:
+    free(attr);
+
+exit:
+    return ret;
+}
+
 static FFSRecordType next_record_type(FFSFile ffsfile);
 
 static void
@@ -109,8 +334,9 @@ free_FFSIndexItem(FFSIndexItemStruct *item)
 {
     int i;
     for (i = 0; i < item->elem_count; i++) {
-	if (item->elements[i].format_id) 
+	if (item->elements[i].format_id) {
 	    free(item->elements[i].format_id);
+	}
     }
     free(item);
 }
@@ -203,9 +429,12 @@ open_FFSfd(void *fd, const char *flags)
     if (index) f->file_org = Indexed;
     if (raw) f->raw_flag = 1;
 
+    f->attr_list = NULL;
+    f->data_block_no = 0;
+
     set_interface_FFSFile(f, ffs_file_write_func, ffs_file_read_func,
-			 ffs_file_writev_func, ffs_file_readv_func, ffs_max_iov,
-			 ffs_close_func);
+                          ffs_file_writev_func, ffs_file_readv_func,
+                          ffs_max_iov, ffs_close_func);
 
     f->buf = create_FFSBuffer();
     f->status = OpenForRead;
@@ -448,15 +677,20 @@ output_format_index(FFSFile f, char *server_id, int id_len)
  */
 
 static void
-output_data_index(FFSFile f, char *server_id, int id_len)
+output_data_index(FFSFile f, char *server_id, int id_len, char *attr_list,
+    int attr_len)
 {
     unsigned char *item_base;
+    int id_len_nl = htonl(id_len);
+    int total_len = (!attr_list)?0:attr_len;
+    total_len += id_len + 4;
+
     if (f->file_org != Indexed) return;
-    prepare_index_item(f, 12 + id_len);
+    prepare_index_item(f, 12 + total_len);
     item_base = f->cur_index->write_info.index_block;
     item_base += f->cur_index->write_info.next_item_offset;
     
-    *(unsigned int *) item_base= htonl(Data_Item + (id_len << 8));
+    *(unsigned int *) item_base= htonl(Data_Item + (total_len << 8));
     f->cur_index->write_info.next_item_offset += 4;
     item_base += 4;
 
@@ -474,9 +708,19 @@ output_data_index(FFSFile f, char *server_id, int id_len)
     f->cur_index->write_info.next_item_offset += 4;
     item_base += 4;
 
-    memcpy(item_base, server_id, id_len);
-    f->cur_index->write_info.next_item_offset += id_len;
-    item_base += (id_len + 3) & -4;
+    /*
+     * Entry is organized as |id_len|server_id|attribute_list|
+     * id_len gives the length of server_id
+     * total_len - id_len gives length of attribute list
+     * length of id_length is 4 bytes
+     */
+
+    memcpy(item_base, &id_len_nl, 4);
+    memcpy(item_base + 4, server_id, id_len);
+    memcpy(item_base + 4 + id_len, attr_list, total_len - id_len - 4);
+
+    f->cur_index->write_info.next_item_offset += ((total_len+3) & -4);
+    item_base += (total_len + 3) & -4; // alligning on boundary of 4
 }
 
 FFSIndexItem
@@ -486,6 +730,7 @@ parse_index_block(char *index_base)
     int item_count = 0, block_size;
     int cur_offset;
     int done = 0;
+    int i;
     item = malloc(sizeof(FFSIndexItemStruct));
     block_size = htonl(*((int*)(index_base+4))) & 0xffffff;
     item->next_index_offset = htonl(*((int*)(index_base+4)));
@@ -516,12 +761,14 @@ parse_index_block(char *index_base)
 	    memcpy(item->elements[item_count-1].format_id,
 		   elem + 12, id_len);
 	    cur_offset += (id_len + 12 + 3) & -4;
-
 	    break;
 	}
 	case Data_Item: {
 	    unsigned int *ielem = (unsigned int *)((char*) index_base + cur_offset);
+	    int total_len = htonl(*(unsigned int *)elem) >> 8;
 	    int id_len = htonl(*(unsigned int *)elem) >> 8;
+	    int attr_len = total_len - id_len - 4 + 1;
+
 #if SIZEOF_OFF_T == 4
 	    off_t fpos = 0;
 #else
@@ -532,6 +779,11 @@ parse_index_block(char *index_base)
 	    item->elements[item_count-1].fpos = fpos;
 	    item->elements[item_count-1].format_id = malloc(id_len);
 	    item->elements[item_count-1].fid_len = id_len;
+            if (attr_len <= 1) {
+                item->elements[item_count-1].attrs = NULL;
+	    } else {
+                item->elements[item_count-1].attrs = decode_attr_from_xmit(elem + 16 + id_len);
+	    }
 	    memcpy(item->elements[item_count-1].format_id,
 		   elem + 12, id_len);
 	    cur_offset += (id_len + 12 + 3) & -4;
@@ -547,7 +799,7 @@ parse_index_block(char *index_base)
 	}
 	
     }
-    item->elem_count = item_count;
+    item->elem_count = item_count - 1;
     return item;
 }
 
@@ -623,7 +875,8 @@ write_comment_FFSfile(FFSFile f, const char *comment)
 }
 
 extern int
-write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
+write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c,
+		      attr_list attrs)
 {
     FFSTypeHandle h = FFSTypeHandle_from_encode(c, (char*)data);
     FMFormat cf = FMFormat_of_original(h);
@@ -637,13 +890,23 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
 
     struct FFSEncodeVec vec[2];
     int indicator[2];
+    int attr_len = 0;
+    char *attr_block;
+    AttrBuffer b = NULL;
+    
+    if (attrs) {
+	b = create_AttrBuffer();
+	attr_block = encode_attr_for_xmit(attrs, b, &attr_len);
+    }
+
+    attr_len = (f->file_org == Indexed)?attr_len:0;
 
     init_format_info(f, index);
     if (!f->info[index].written_to_file) {
 	if (write_format_to_file(f, f2) != 1) return 0;
     }
 
-    output_data_index(f, id, id_len);
+    output_data_index(f, id, id_len, attr_block, attr_len);
     /*
      * next_data indicator is two 4-byte chunks in network byte order.
      * The top byte is 0x3.  The next 3 bytes are reserved for future use.
@@ -652,7 +915,6 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
      */
     indicator[0] = htonl(0x3 << 24);
     indicator[1] = htonl(byte_size ); 
-
 
     vec[0].iov_len = 8;
     vec[0].iov_base = indicator;
@@ -663,6 +925,7 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
+    if (b) free_AttrBuffer(b);
     f->data_count++;
     update_fpos(f);
     return 1;
@@ -672,6 +935,12 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c)
 extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data)
 {
+    write_FFSfile_attrs(f, format, data, NULL);
+}
+
+extern int
+write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs)
+{
     int byte_size;
     int index = format->format_index;
     int vec_count;
@@ -679,14 +948,25 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
     int indicator[2];
     int id_len = 0;
     char *id = get_server_ID_FMformat(format, &id_len);
+    int attr_len = 0;
+    char *attr_block = NULL;
+    AttrBuffer b = NULL;
+
+    if (attrs) {
+	b = create_AttrBuffer();
+	attr_block = encode_attr_for_xmit(attrs, b, &attr_len);
+    }
+
+    attr_len = (f->file_org == Indexed)?attr_len:0;
 
     init_format_info(f, index);
     if (!f->info[index].written_to_file) {
 	if (write_format_to_file(f, format) != 1) return 0;
     }
 
-    output_data_index(f, id, id_len);
-
+    output_data_index(f, id, id_len, attr_block, attr_len);
+    //build_reverse_index(f, attr_list, attr_len);
+    // Above ... deepak u need to replace attr_list with attr_block
     vec = FFSencode_vector(f->buf, format, data);
 
     vec_count = 0;
@@ -703,7 +983,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
      * in a signed int.
      */
     indicator[0] = htonl(0x3 << 24);
-    indicator[1] = htonl(byte_size ); 
+    indicator[1] = htonl(byte_size); 
 
     /* 
      *  utilize the fact that we have some blank vec entries *before the 
@@ -731,6 +1011,8 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
 	printf("Write failed, errno %d\n", errno);
 	return 0;
     }
+    if (b) free_AttrBuffer(b);
+
     f->data_count++;
     update_fpos(f);
     return 1;
@@ -937,6 +1219,99 @@ FFSFile ffsfile;
     return ffsfile->tmp_buffer->tmp_buffer;
 }
 
+static int
+FFSset_fpos(FFSFile file,  off_t fpos)
+{
+    int fd = (int)(long)file->file_id;
+    /* dangerous to set FPOS if not indexed, but we'll allow it */
+    if (file->file_org == Indexed) {
+	/* 
+	 *  We count on index entries on read-side files to be accurate,
+	 *  so we don't want to set our FPOS forward past the point where 
+	 *  we've read index entries.  If we're trying, read more indexes 
+	 *  until we have indexes that cover the desired fpos.
+	 */
+	int last_element_index;
+	struct _FFSIndexElement *last_element;
+
+	last_element_index = file->index_tail->elem_count -1;
+	last_element = &file->index_tail->elements[last_element_index];
+	while(fpos > last_element->fpos) {
+	    /* don't skip forward past index blocks without reading them */
+	    if (lseek(fd, file->index_tail->next_index_offset, SEEK_SET) == -1)
+		return 0;
+	    file->read_ahead = FALSE;
+	    (void) FFSread_index(file);
+	    /* this should update file->index_tail, so continue while loop */
+	    last_element_index = file->index_tail->elem_count -1;
+	    last_element = &file->index_tail->elements[last_element_index];
+	}
+    }
+    if (lseek(fd, fpos, SEEK_SET) == -1) return 0;
+    file->read_ahead = FALSE;
+    return 1;
+}
+
+/*
+ * Return data_item if successful else returns 0
+ * This routine allows user to seek to kth data block
+ */
+extern int
+FFSseek(FFSFile file, int data_item)
+{
+    int fd = (int)(long)file->file_id;
+    struct _FFSIndexItem *index;
+    off_t fpos;
+    int index_item;
+    FFSIndexItem prev_index_tail = NULL;
+    int data_item_bak = data_item;
+
+    if (data_item < 0)
+        /* Or should it be set to 0  */
+        return 0;
+
+    if (!file->index_head)
+        FFSread_index(file);
+    if (!file->index_head)
+        // If file is not indexed then this condition will be activated.
+        return 0;
+
+    /* seek to the N'th data item in the file */
+    while (data_item > file->index_tail->last_data_count &&
+           file->index_tail != prev_index_tail) {
+	/* don't skip forward past index blocks without reading them */
+	if (lseek(fd, file->index_tail->next_index_offset, SEEK_SET) == -1)
+	    return 0;
+    	file->read_ahead = FALSE;
+        prev_index_tail = file->index_tail;
+	(void) FFSread_index(file);
+    }
+
+    if (file->index_tail->last_data_count < data_item)
+        // How can I can more than what has been written! :D
+        return 0;
+
+    index = file->index_head;
+    while (data_item > index->last_data_count)
+        index = index->next;
+
+    data_item -= index->start_data_count;
+    data_item++;
+    index_item = 0;
+    while (data_item > 0) {
+	if (index->elements[index_item].type == FFSdata) {
+	    data_item--;
+	}
+	index_item++;
+    }
+    index_item--;
+    fpos = index->elements[index_item].fpos;
+    FFSset_fpos(file, fpos);
+    file->data_block_no = data_item_bak;
+
+    return data_item_bak;
+}
+    
 static
 int
 get_AtomicInt(file, file_int_ptr)
@@ -1023,27 +1398,98 @@ FFSFile ffsfile;
 		make_tmp_buffer(ffsfile->tmp_buffer, ffsfile->next_data_len);
 		tmp_buf = ffsfile->tmp_buffer->tmp_buffer;
 		/* first get format ID, at least 8 bytes */
-		if (ffsfile->read_func(ffsfile->file_id, tmp_buf, 8, NULL, NULL) != 8) {
-		    ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		if (ffsfile->read_func(ffsfile->file_id, tmp_buf, 8, NULL,
+                                       NULL) != 8) {
+		    ffsfile->next_record_type = (ffsfile->errno_val) ?
+                        FFSerror : FFSend;
 		    return ffsfile->next_record_type;
 		}
 		ffsfile->next_fid_len = FMformatID_len(tmp_buf);
 		if (ffsfile->next_fid_len > 8) {
 		    int more = ffsfile->next_fid_len - 8;
-		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + 8, more, NULL, NULL) != more) {
-			ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + 8,
+                                           more, NULL, NULL) != more) {
+			ffsfile->next_record_type = (ffsfile->errno_val) ?
+                            FFSerror : FFSend;
 			return ffsfile->next_record_type;
 		    }
 		}
-		ffsfile->next_data_handle = 
-		    FFS_target_from_encode(ffsfile->c, tmp_buf);
+
 		ffsfile->next_actual_handle = 
 		    FFSTypeHandle_from_encode(ffsfile->c, tmp_buf);
-		if ((ffsfile->next_data_handle == NULL) && (!ffsfile->raw_flag)) {
+
+                if (!ffsfile->next_actual_handle && ffsfile->index_head) {
+
+                    struct _FFSIndexItem *index = NULL;
+                    int fd = (int)(long)ffsfile->file_id;
+                    off_t fpos_bak = lseek(fd, 0, SEEK_CUR);
+		    int fid_len = ffsfile->next_fid_len;
+		    char tmp_fid_storage[64];
+		    int done = 0;
+		    assert(sizeof(tmp_fid_storage) > fid_len);
+		    /* store away the format ID we've read */
+		    memcpy(tmp_fid_storage, tmp_buf, fid_len);
+
+                    index = ffsfile->index_head;
+                    while (!done && index) {
+			int i;
+			for (i=0 ; i < index->elem_count; i++) {
+			    struct _FFSIndexElement *elem;
+			    elem = &index->elements[i];
+			    if (elem->type == FFSformat &&
+				elem->fid_len == ffsfile->next_fid_len &&
+				!(memcmp(elem->format_id,
+					 tmp_buf, ffsfile->next_fid_len))) {
+
+				if (lseek(fd, elem->fpos, SEEK_SET) != -1) {
+				    ffsfile->read_ahead = FALSE;
+				    FFSread_format(ffsfile);
+				    lseek(fd, fpos_bak, SEEK_SET);
+				    ffsfile->read_ahead = TRUE;
+				    ffsfile->next_record_type = FFSdata;
+				    /* tmp_buf might have changed */
+				    tmp_buf = ffsfile->tmp_buffer->tmp_buffer;
+				    /* put back the format ID we read earlier */
+				    memcpy(tmp_buf, tmp_fid_storage, fid_len);
+
+				    ffsfile->next_actual_handle = 
+					FFSTypeHandle_from_encode(ffsfile->c,
+								  tmp_buf);
+				    done++;
+				    break;
+				}
+			    }
+                        }
+
+                        index = index->next;
+                    }
+                }
+		/* GSE
+		 * If ffsfile->next_actual_handle is NULL here, we have 
+		 * a problem.  The only way this should happen is if we 
+		 * have used FFSset_fpos() to seek forward in a file, 
+		 * skipping over the Format record associated with this
+		 * data item.  But now we NEED IT.  We must :
+		 *  1) Save our current FPOS
+		 *  2) find the format in the index
+		 *  3) lseek the its location (set read_ahead to false)
+		 *  4) read the format
+		 *  5) lseek back to our saved FPOS
+		 *  6) call FFSTypeHandle_from_encode() again to set
+		 *     next_actual_handle correctly.
+		 */
+		ffsfile->next_data_handle = 
+		    FFS_target_from_encode(ffsfile->c, tmp_buf);
+
+		if ((ffsfile->next_data_handle == NULL) &&
+                    (!ffsfile->raw_flag)) {
 		    /* no target for this format, discard */
 		    int more = ffsfile->next_data_len - ffsfile->next_fid_len;
-		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + ffsfile->next_fid_len, more, NULL, NULL) != more) {
-			ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf +
+                                           ffsfile->next_fid_len, more, NULL,
+                                           NULL) != more) {
+			ffsfile->next_record_type = (ffsfile->errno_val) ?
+                            FFSerror : FFSend;
 			return ffsfile->next_record_type;
 		    }
 		    ffsfile->read_ahead = FALSE;
@@ -1053,11 +1499,15 @@ FFSFile ffsfile;
 		header_size = FFSheader_size(ffsfile->next_actual_handle);
 		if (header_size > ffsfile->next_fid_len) {
 		    int more = header_size - ffsfile->next_fid_len;
-		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf + ffsfile->next_fid_len, more, NULL, NULL) != more) {
-			ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
+		    if (ffsfile->read_func(ffsfile->file_id, tmp_buf +
+                                           ffsfile->next_fid_len, more, NULL,
+                                           NULL) != more) {
+			ffsfile->next_record_type = (ffsfile->errno_val) ?
+                            FFSerror : FFSend;
 			return ffsfile->next_record_type;
 		    }
 		}
+                ffsfile->data_block_no++;
 		break;
 	case 0x4: /* index */
 		ffsfile->next_record_type = FFSindex;
@@ -1128,6 +1578,57 @@ FFSread(FFSFile file, void *dest)
     return 1;
 }
 
+/*
+ * In future can be exposed to user so that user can get attr_list
+ * of kth data block.
+ * Currently this function does not read the unread index blocks to satify
+ * the request when index item of data_item is not read.
+ *
+ * CAUTION:
+ * attr_list belongs to index and should not be manipulated/freed by user.
+ */
+static attr_list
+FFSread_data_attr(FFSFile file, int data_item)
+{
+    struct _FFSIndexItem *index;
+    int index_item;
+    attr_list atl = NULL;
+
+    if (data_item < 0 || !file->index_head ||
+        file->index_tail->last_data_count < data_item)
+        goto exit;
+
+    index = file->index_head;
+    while (data_item > index->last_data_count)
+        index = index->next;
+
+    data_item -= index->start_data_count;
+    data_item++;
+    index_item = 0;
+    while (data_item > 0) {
+	if (index->elements[index_item].type == FFSdata) {
+	    data_item--;
+	}
+	index_item++;
+    }
+    index_item--;
+
+    atl = index->elements[index_item].attrs;
+
+exit:
+    return atl;
+}
+
+extern int
+FFSread_attr(FFSFile file, void *dest, attr_list *attr)
+{
+    int ret = FFSread(file, dest);
+    attr_list atl = FFSread_data_attr(file, file->data_block_no);
+    if (attr) *attr = atl;
+
+    return ret;
+}
+
 extern int
 FFSread_raw(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
 {
@@ -1196,6 +1697,7 @@ FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest)
     }
     FFSdecode_to_buffer(file->c, file->tmp_buffer->tmp_buffer, b->tmp_buffer);
     file->read_ahead = FALSE;
+    if (dest) *dest = b->tmp_buffer;
     return 1;
 }
 
