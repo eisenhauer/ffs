@@ -251,7 +251,7 @@ libffs_la_SOURCES = ffs.c ffs_formats.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.
 lib_LTLIBRARIES = libffs.la
 EXTRA_libffs_la_SOURCES = ffs_malloc.c unix_io.c nt_io.c ffs_gen.c
 libffs_la_DEPENDENCIES = ../fm/libfm.la
-libffs_la_LIBADD = ../fm/libfm.la
+libffs_la_LIBADD = ../fm/libfm.la -latl
 libffs_la_LDFLAGS = -no-undefined @DCG_LALIB@
 LDADD = libffs.la
 include_HEADERS = ffs.h io_interface.h
@@ -371,7 +371,7 @@ install-includeHEADERS: $(include_HEADERS)
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  f=$(am__strip_dir) \
 	  echo " cmp -s '$$d$$p' '$(DESTDIR)$(includedir)/$$f' || $(includeHEADERS_INSTALL) '$$d$$p' '$(DESTDIR)$(includedir)/$$f'"; \
-	   cmp -s "$$d$$p" "$(DESTDIR)$(includedir)/$$f" || $(includeHEADERS_INSTALL) "$$d$$p" "$(DESTDIR)$(includedir)/$$f"; \
+	  cmp -s "$$d$$p" "$(DESTDIR)$(includedir)/$$f" || $(includeHEADERS_INSTALL) "$$d$$p" "$(DESTDIR)$(includedir)/$$f"; \
 	done
 
 uninstall-includeHEADERS:

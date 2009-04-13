@@ -37,6 +37,7 @@ dnl
 dnl checks for libraries
 
 FFS_CONVERSION_GENERATION_DEFAULT=0
+CERCS_REQUIRE_PACKAGE(atl,atl.h,libatl.la)
 CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
 CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
 AC_ARG_ENABLE(code_generation,AC_HELP_STRING([--enable-code-generation],
