@@ -935,7 +935,7 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c,
 extern int
 write_FFSfile(FFSFile f, FMFormat format, void *data)
 {
-    write_FFSfile_attrs(f, format, data, NULL);
+    return write_FFSfile_attrs(f, format, data, NULL);
 }
 
 extern int
