@@ -177,6 +177,9 @@ FFSContext_of_file(FFSFile f);
 extern FMContext
 FMContext_of_file(FFSFile f);
 
+extern int
+FFSseek(FFSFile file, int data_item);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
