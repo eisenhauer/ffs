@@ -573,7 +573,7 @@ dump_index_block(FFSFile f)
     int fd = (int)(long)f->file_id;
     off_t end = lseek(fd, 0, SEEK_CUR);
     int ret;
-    static int last_data_count = -1;
+    static int last_data_count = 0;
 
     int size =  f->cur_index->write_info.index_block_size;
     unsigned char *index_base = f->cur_index->write_info.index_block;
@@ -588,8 +588,8 @@ dump_index_block(FFSFile f)
     
     *((int*)index_base) = htonl((0x4<<24) | size);
     *((int*)(index_base+4)) = htonl(end);  /* link to next index */
-    *((int*)(index_base+8)) = htonl(last_data_count + 1); /* data_index_start); */
-    *((int*)(index_base+12)) = htonl(f->data_count); /* data_index_end); */
+    *((int*)(index_base+8)) = htonl(last_data_count); /* data_index_start); */
+    *((int*)(index_base+12)) = htonl(f->data_count-1); /* data_index_end); */
     last_data_count = f->data_count;
     ret = f->write_func(f->file_id, index_base, size, NULL, NULL);
     if (ret != size) {
