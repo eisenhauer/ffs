@@ -738,7 +738,7 @@ int requested_id_version;
 	case 0:
 	    tmp = (char *) ioformat;
 #ifndef WORDS_BIGENDIAN
-	    byte_swap(tmp, sizeof(tmp));
+	    byte_swap(tmp, (int)sizeof(tmp));
 #endif
 	    tmp += (0x7 & my_pid);	/* add bottom 3 bits of pid to
 					 * format id */
@@ -1932,7 +1932,7 @@ FMStructDescList str_list;
     iofr->server_format_rep = (format_rep) get_server_rep_FMformat(ioformat, &junk);
     iofr->server_ID.length = 0;
     iofr->server_ID.value = NULL;
-    iofr = find_format(fs, NULL, iofr, /* new format */1, 
+    iofr = find_format(fs, (FSClient)NULL, iofr, /* new format */1, 
 			   /* version */ 2);
     add_format_to_iofile(iocontext, ioformat,
 			     iofr->server_ID.length,

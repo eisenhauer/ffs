@@ -56,7 +56,7 @@ char **argv;
 	    sscanf(&colon[i*2], "%02x", &tmpi);
 	    tmp[i] = tmpi;
 	}
-	ioformat = FMformat_from_ID(context, tmp);
+	ioformat = FMformat_from_ID(context, (char*)tmp);
     }
     if (ioformat == NULL) {
 	printf("Format_info:  \"%s\" is not an ioformat name\n",

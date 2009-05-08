@@ -1392,6 +1392,8 @@ decode_size_delta(ConvStatus conv_status,
     case FMType_array:
 	assert(0);
     }
+    assert(0);
+    return 0;
 }
 
 static int
@@ -1410,6 +1412,7 @@ item_size(ConvStatus conv_status,
     default:
 	assert(0);
     }
+    return 0;
 }
 
 

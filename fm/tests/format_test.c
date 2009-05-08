@@ -52,7 +52,7 @@ char **argv;
 	printf("Doing get test\n");
 	first_rec_ioformat = FMformat_from_ID(context, (char *) &id[0]);
 	printf("format is %lx\n", (long)first_rec_ioformat);
-	return;
+	return 0;
     }
     if (XML_test) {
 	FMOptInfo opt_info[2];

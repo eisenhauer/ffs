@@ -411,6 +411,8 @@ field_is_flat(FMFormat f, FMTypeDesc *t)
     default:
 	assert(FALSE);
     }
+    /* notreached */
+    return FALSE;
 }
 
 static int

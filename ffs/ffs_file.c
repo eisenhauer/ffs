@@ -238,9 +238,9 @@ attr_in_reverse_index(FFSFile f, char *attr)
 static int
 build_reverse_index(FFSFile f, char *attr_list, int attr_len)
 {
-    if (f->file_org != Indexed) return;
-
     int ret = 1;
+    if (f->file_org != Indexed) return 0;
+
     char *attr_startP = attr_list;
     char *attr_endP = index(attr_list, '=');
     char *attr = NULL;
@@ -606,9 +606,6 @@ prepare_index_item(FFSFile f, int item_len)
     if (!f->cur_index) {
 	init_write_index_block(f);
     }
-    FFSIndexType a;
-    (void)a->write_info;
-    (void)f->cur_index->write_info;
     next_item_end_offset = f->cur_index->write_info.next_item_offset + item_len;
     if (next_item_end_offset >= (f->cur_index->write_info.index_block_size - 8)) {
 	dump_index_block(f);
@@ -740,7 +737,7 @@ parse_index_block(char *index_base)
     cur_offset = 16;
     while (!done) {
 	char *elem = (char*)index_base + cur_offset;
-	IndexItems item_type = 	htonl(*(unsigned int *)elem) & 0xff;
+	IndexItems item_type = 	(IndexItems) (htonl(*(unsigned int *)elem) & 0xff);
 	item_count++;
 	item->elements = realloc(item->elements,
 				 item_count * sizeof(item->elements[0]));

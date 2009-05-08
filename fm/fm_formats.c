@@ -1354,10 +1354,10 @@ FMFormat ioformat;
     if (subformat_count >= 100) return NULL;  /* no way */
 
     rep = (struct _format_wire_format *)
-	add_server_subformat_rep(ioformat, rep, &rep_size);
+	add_server_subformat_rep(ioformat, (char*)rep, &rep_size);
     for (i=0; i < subformat_count; i++) {
         rep = (struct _format_wire_format *)
-	    add_server_subformat_rep(subformats[i], rep, &rep_size);
+	    add_server_subformat_rep(subformats[i], (char*)rep, &rep_size);
     }
     
     rep->f.f0.format_rep_length = htons(rep_size);
@@ -3060,6 +3060,8 @@ field_is_flat(FMFormat f, FMTypeDesc *t)
     default:
 	assert(FALSE);
     }
+    /* notreached */
+    return FALSE;
 }
 
 static void
@@ -3298,7 +3300,16 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    printf("%p", ptr_value);
 	}
 	if (s->encoded) {
+#if defined (__INTEL_COMPILER)
+#  pragma warning (disable: 810)
+#endif
+	    new_offset = ptr_value;
+#if defined (__INTEL_COMPILER)
+#  pragma warning (default: 810)
+#endif
 	    ptr_value = (long)ptr_value + s->offset_base;
+	} else {
+	    new_offset = ptr_value - s->offset_base;
 	}
 	if (f->recursive) {
 	    int previous_offset = search_addr_list(s, ptr_value);
@@ -3379,7 +3390,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	const char *field_type = fmfield->field_type;
 	int byte_reversal = f->byte_reversal;
 	int float_format = f->float_format;
-	sdump_value(buf, field_type, field_size, field_offset, NULL, base,
+	sdump_value(buf, field_type, field_size, field_offset, (FMFormat)NULL, base,
 		    base, byte_reversal, float_format, s->encoded);
 	printf("%s, ", buf);
 	s->output_len = strlen(buf);
@@ -3861,78 +3872,6 @@ FMFormat format;
     2 * format->server_ID.length;
     char *buffer = malloc(size);
     return stringify_field_type(format->format_name, format, buffer, size);
-}
-
-extern int
-write_format_to_fd(fd, format)
-void *fd;
-FMFormat format;
-{
-    FILE_INT name_length, field_count, record_length;
-    int field;
-    int result = 1;
-    int record_byte_order;
-    int pointer_size;
-    int IOversion;
-
-    if ((!format) || (!format->format_name)) {
-	int zero = 0;
-	result = put_serverAtomicInt(fd, &zero, NULL);
-	return !result;
-    }
-    name_length = strlen(format->format_name);
-    field_count = format->field_count;
-    record_length = format->record_length;
-    pointer_size = format->pointer_size;
-    IOversion = format->IOversion;
-    if (format->byte_reversal) {
-	record_byte_order = OTHER_BYTE_ORDER;
-    } else {
-	record_byte_order = OUR_BYTE_ORDER;
-    }
-    result &= put_serverAtomicInt(fd, &name_length, NULL);
-    result &= put_serverAtomicInt(fd, &field_count, NULL);
-    result &= put_serverAtomicInt(fd, &record_length, NULL);
-    result &= put_serverAtomicInt(fd, &record_byte_order, NULL);
-    result &= put_serverAtomicInt(fd, &pointer_size, NULL);
-    result &= put_serverAtomicInt(fd, &IOversion, NULL);
-    if (!result)
-	return 0;
-    if (serverAtomicWrite(fd, format->format_name, name_length + 1) !=
-	name_length + 1)
-	return 0;
-
-    for (field = 0; field < format->field_count; field++) {
-	FILE_INT field_name_len, field_type_len, field_size, field_offset;
-	FMField *fmfield = &(format->field_list[field]);
-	char field_type_buffer[512];
-	char *ftype;
-	FMFormat subformat = NULL;
-	if (format->var_list != NULL) {
-	    subformat = format->field_subformats[field];
-	}
-	memset(field_type_buffer, 0, sizeof(field_type_buffer));
-	ftype = stringify_field_type(fmfield->field_type, subformat,
-				     field_type_buffer,
-				     (int) sizeof(field_type_buffer));
-	field_name_len = strlen(fmfield->field_name);
-	field_type_len = strlen(ftype);
-	field_size = fmfield->field_size;
-	field_offset = fmfield->field_offset;
-	result &= put_serverAtomicInt(fd, &field_name_len, NULL);
-	result &= put_serverAtomicInt(fd, &field_type_len, NULL);
-	result &= put_serverAtomicInt(fd, &field_size, NULL);
-	result &= put_serverAtomicInt(fd, &field_offset, NULL);
-	if (!result)
-	    return 0;
-	if (serverAtomicWrite(fd, fmfield->field_name, field_name_len + 1) !=
-	    field_name_len + 1)
-	    return 0;
-	if (serverAtomicWrite(fd, ftype, field_type_len + 1) !=
-	    field_type_len + 1)
-	    return 0;
-    }
-    return 1;
 }
 
 extern FMFormat
@@ -4585,9 +4524,9 @@ FSClient fsc;
 	fsc->key_len = key_len;
     }
     magic = MAGIC_NUMBER;
-    put_serverAtomicInt(fsc->fd, &magic, NULL);
+    put_serverAtomicInt(fsc->fd, &magic, (FMContext) NULL);
     if (fsc->version >= 2) {
-	put_serverAtomicInt(fsc->fd, &pid, NULL);
+	put_serverAtomicInt(fsc->fd, &pid, (FMContext) NULL);
     }
 }
 

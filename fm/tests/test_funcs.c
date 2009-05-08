@@ -858,19 +858,19 @@ void
 add_rec_dump(add_rec_ptr r)
 {
     int i;
-    printf("in_format_name %p \"%s\"\n", (char*)r->in_format_name - (char*)r,
+    printf("in_format_name %p \"%s\"\n", (char*)r->in_format_name,
 	   r->in_format_name);
-    printf("func_str %p \"%s\"\n", (char*)r->func_str - (char*)r, r->func_str);
-    printf("out_formats %p \n", (char*)r->out_formats - (char*)r);
+    printf("func_str %p \"%s\"\n", (char*)r->func_str, r->func_str);
+    printf("out_formats %p \n", (char*)r->out_formats);
     for (i = 0; i < r->format_count; i++) {
 	int j;
-	printf("out[%d].format_name %p \"%s\"\n", i, (char*)r->out_formats[i].format_name - (char*)r, r->out_formats[i].format_name);
+	printf("out[%d].format_name %p \"%s\"\n", i, (char*)r->out_formats[i].format_name, r->out_formats[i].format_name);
 	if (r->out_formats[i].xml_markup != NULL)
-	    printf("out[%d].xml_markup %p \"%s\"\n", i, (char*)r->out_formats[i].xml_markup - (char*)r, r->out_formats[i].xml_markup);
-	printf("out[%d].field_list %p \n", i, (char*)r->out_formats[i].field_list - (char*)r);
+	    printf("out[%d].xml_markup %p \"%s\"\n", i, (char*)r->out_formats[i].xml_markup, r->out_formats[i].xml_markup);
+	printf("out[%d].field_list %p \n", i, (char*)r->out_formats[i].field_list);
 	for (j = 0; j < r->out_formats[i].field_list_len; j++) {
-	    printf("out[%d].field_list[%d].field_name %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_name - (char*)r, r->out_formats[i].field_list[j].field_name);
-	    printf("out[%d].field_list[%d].field_type %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_type - (char*)r, r->out_formats[i].field_list[j].field_type);
+	    printf("out[%d].field_list[%d].field_name %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_name, r->out_formats[i].field_list[j].field_name);
+	    printf("out[%d].field_list[%d].field_type %p \"%s\"\n", i, j, (char*)r->out_formats[i].field_list[j].field_type, r->out_formats[i].field_list[j].field_type);
 	}
     }
 }

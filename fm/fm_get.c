@@ -67,19 +67,19 @@ void *data;
 	    short tmp;
 	    memcpy(&tmp, (char *) data + field->offset, sizeof(short));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(short));
+		byte_swap((char *) &tmp, (int) sizeof(short));
 	    return (long) tmp;
 	} else if (field->size == sizeof(int)) {
 	    int tmp;
 	    memcpy(&tmp, (char *) data + field->offset, sizeof(int));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(int));
+		byte_swap((char *) &tmp, (int) sizeof(int));
 	    return (long) tmp;
 	} else if (field->size == sizeof(long)) {
 	    long tmp;
 	    memcpy(&tmp, (char *) data + field->offset, sizeof(long));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(long));
+		byte_swap((char *) &tmp, (int)sizeof(long));
 	    return tmp;
 	} else if (field->size == 2 * sizeof(long)) {
 	    long tmp;
@@ -95,7 +95,7 @@ void *data;
 #endif
 	    memcpy(&tmp, (char *) data + low_bytes_offset, sizeof(long));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(long));
+		byte_swap((char *) &tmp, (int)sizeof(long));
 	    return tmp;
 	} else {
 	    if (!get_long_warn) {
@@ -138,19 +138,19 @@ void *data;
 	    unsigned short tmp;
 	    memcpy(&tmp, (char *) data + field->offset, sizeof(short));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(short));
+		byte_swap((char *) &tmp, (int)sizeof(short));
 	    return (MAX_UNSIGNED_TYPE) tmp;
 	} else if (field->size == sizeof(int)) {
 	    unsigned int tmp;
 	    memcpy(&tmp, (char *) data + field->offset, sizeof(int));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(int));
+		byte_swap((char *) &tmp, (int)sizeof(int));
 	    return (MAX_UNSIGNED_TYPE) tmp;
 	} else if (field->size == sizeof(long)) {
 	    unsigned long tmp;
 	    memcpy(&tmp, (char *) data + field->offset, sizeof(long));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(long));
+		byte_swap((char *) &tmp, (int)sizeof(long));
 	    return tmp;
 	} else if (field->size == 2 * sizeof(long)) {
 	    unsigned long tmp;
@@ -166,7 +166,7 @@ void *data;
 #endif
 	    memcpy(&tmp, (char *) data + low_bytes_offset, sizeof(long));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(long));
+		byte_swap((char *) &tmp, (int)sizeof(long));
 	    return tmp;
 	} else {
 	    if (!get_long_warn) {
@@ -233,7 +233,7 @@ void *data;
 	    MAX_FLOAT_TYPE tmp2;
 	    memcpy(&tmp, ((char *) data + field->offset), sizeof(float));
 	    if (field->byte_swap)
-		byte_swap((char *) &tmp, sizeof(float));
+		byte_swap((char *) &tmp, (int)sizeof(float));
 	    tmp2 = tmp;
 	    return tmp2;
 	} else if (field->size == sizeof(double)) {
@@ -253,7 +253,7 @@ void *data;
 		   sizeof(long double));
 	    if (field->byte_swap)
 		byte_swap((char *) &tmp,
-			  sizeof(long double));
+			  (int)sizeof(long double));
 	    tmp2 = tmp;
 	    return tmp2;
 #endif
