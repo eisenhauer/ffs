@@ -129,8 +129,8 @@ fill_hostaddr(void *addr, char *hostname, Server_Protocol *protocol)
     
     host_addr = gethostbyname(hostname);
     if (host_addr == NULL) {
-	unsigned long addr = inet_addr(hostname);
-	if (addr == -1) {
+	int _addr = inet_addr(hostname);
+	if (_addr == -1) {
 	    /* 
 	     *  not translatable as a hostname or 
 	     * as a dot-style string IP address
@@ -138,7 +138,7 @@ fill_hostaddr(void *addr, char *hostname, Server_Protocol *protocol)
 	    return 0;
 	}
 	assert(sizeof(int) == sizeof(struct in_addr));
-	*((int*)addr) = (int)addr;
+	*((int*)addr) = (int)_addr;
     } else {
 	memcpy(addr, host_addr->h_addr, host_addr->h_length);
     }
