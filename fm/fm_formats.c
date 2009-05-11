@@ -3303,7 +3303,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 #if defined (__INTEL_COMPILER)
 #  pragma warning (disable: 810)
 #endif
-	    new_offset = ptr_value;
+	  new_offset = (long) ptr_value;
 #if defined (__INTEL_COMPILER)
 #  pragma warning (default: 810)
 #endif
