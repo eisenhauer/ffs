@@ -68,20 +68,20 @@ extern int serverAtomicWrite(void *fd, const void *buffer, int length);
 
 static int slave = 0;
 
+static void check_for_running_server_and_fork();
+static int quiet = 0;
+static int do_proxy = 0;
+static int no_fork = 0;
+
 int
 main(argc, argv)
 int argc;
 char **argv;
 {
-    int no_fork = 0;
-    int quiet = 0;
     int i;
-    FMContext test;
     int fs_port = DEFAULT_FS_PORT;
-    char testing_char = 'T';
-    char format_server_pid[] = "/tmp/format_server_pid";
     int do_restart = 0;
-    int do_proxy = 0;
+    int launchd_mode = 0;
 
 /*    if (os_sockets_init_func != NULL) os_sockets_init_func();*/
 
@@ -100,6 +100,9 @@ char **argv;
 	    do_restart++;
 	} else if (strcmp(argv[i], "-proxy") == 0) {
 	    do_proxy++;
+	} else if (strcmp(argv[i], "-launchd") == 0) {
+	    launchd_mode++;
+	    do_proxy++;
 	} else {
 	    fprintf(stderr, "Unknown argument \"%s\"\n", argv[i]);
 	    fprintf(stderr, "Usage:  format_server [-no_fork] [-quiet] [-restart]\n");
@@ -109,8 +112,47 @@ char **argv;
 
     if (do_proxy && !no_fork) quiet++;
 
+    if (!launchd_mode) check_for_running_server_and_fork();
+
+    if (!launchd_mode) {
+#ifdef RLIMIT_NOFILE
+	struct rlimit lim;
+	if (getrlimit(RLIMIT_NOFILE, &lim) != 0) {
+	    perror("Getrlimit");
+	}
+	lim.rlim_cur = lim.rlim_max;
+	if (setrlimit(RLIMIT_NOFILE, &lim) != 0) {
+	    perror("Setrlimit");
+	}
+	if (getrlimit(RLIMIT_CORE, &lim) != 0) {
+	    perror("Setrlimit");
+	}
+	lim.rlim_cur = lim.rlim_max;
+	if (setrlimit(RLIMIT_CORE, &lim) != 0) {
+	    perror("Setrlimit");
+	}
+	chdir("/tmp");
+#endif
+    }
+    if (cercs_getenv("FORMAT_SERVER_PORT") != NULL) {
+	char *port_string = cercs_getenv("FORMAT_SERVER_PORT");
+	int tmp_port;
+	if (sscanf(port_string, "%d", &tmp_port) != 1) {
+	    printf("FORMAT_SERVER_PORT spec \"%s\" not understood.\n", 
+		   port_string);
+	} else {
+	    fs_port = tmp_port;
+	}
+    }
+    general_format_server(fs_port, do_restart, no_fork, do_proxy);
+    return 0;
+}
+
+void check_for_running_server_and_fork()
+{
+    char testing_char = 'T';
     /* test to see if format server is running */
-    test = create_FMcontext();
+    FMContext test = create_FMcontext();
 #ifndef HAVE_WINDOWS_H
     signal(SIGALRM, die_with_error);
     alarm(30);
@@ -132,6 +174,8 @@ char **argv;
 	}
 	exit(0);
     } else {
+	char format_server_pid[] = "/tmp/format_server_pid";
+
 	/* make really, really certain there's no format_server running */
 	FILE *format_server_pid_file = fopen(format_server_pid, "r");
 	alarm(0);
@@ -171,41 +215,7 @@ char **argv;
 	    }
 	}
     }
-
-    {
-#ifdef RLIMIT_NOFILE
-	struct rlimit lim;
-	if (getrlimit(RLIMIT_NOFILE, &lim) != 0) {
-	    perror("Getrlimit");
-	}
-	lim.rlim_cur = lim.rlim_max;
-	if (setrlimit(RLIMIT_NOFILE, &lim) != 0) {
-	    perror("Setrlimit");
-	}
-	if (getrlimit(RLIMIT_CORE, &lim) != 0) {
-	    perror("Setrlimit");
-	}
-	lim.rlim_cur = lim.rlim_max;
-	if (setrlimit(RLIMIT_CORE, &lim) != 0) {
-	    perror("Setrlimit");
-	}
-	chdir("/tmp");
-#endif
-    }
-    if (cercs_getenv("FORMAT_SERVER_PORT") != NULL) {
-	char *port_string = cercs_getenv("FORMAT_SERVER_PORT");
-	int tmp_port;
-	if (sscanf(port_string, "%d", &tmp_port) != 1) {
-	    printf("FORMAT_SERVER_PORT spec \"%s\" not understood.\n", 
-		   port_string);
-	} else {
-	    fs_port = tmp_port;
-	}
-    }
 #ifndef HAVE_WINDOWS_H
     alarm(0);
 #endif
-    general_format_server(fs_port, do_restart, no_fork, do_proxy);
-    return 0;
 }
-
