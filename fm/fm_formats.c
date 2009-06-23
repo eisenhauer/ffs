@@ -3297,7 +3297,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    printf("NULL");
 	    return 1;
 	} else {
-	    printf("%p", ptr_value);
+	    printf("%p - ", ptr_value);
 	}
 	if (s->encoded) {
 #if defined (__INTEL_COMPILER)
@@ -3385,7 +3385,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
     case FMType_simple: {
 	char buf[1024];	/* surely big enough for a single value? */
 	FMFieldList fmfield = &f->field_list[t->field_index];
-	int field_offset = fmfield->field_offset;
+	int field_offset = data_offset;
 	int field_size = fmfield->field_size;
 	const char *field_type = fmfield->field_type;
 	int byte_reversal = f->byte_reversal;
