@@ -4,15 +4,15 @@
 {WrapCode}{Verbatim}{fontsize=\small,samepage=true,xleftmargin=0in}
 \section{Introduction}
 
-PBIO (Portable Binary Input/Output)/JIX (Just In time XML) is a system for
-efficiently marshalling data for communication in a heterogeneous computing
-environment.  This manual servers as both an introduction to using PBIO/JIX
-and as a reference manual for the API.
+FFS (Fast Flexible Serialization) is a system for efficiently marshalling
+data for communication in a heterogeneous computing environment.  This
+manual servers as both an introduction to using FFS and as a reference
+manual for the API.
 
-\section{PBIO Basics}
+\section{FFS Basics}
 
-The basic approach of the Portable Binary I/O library is relatively simple.
-PBIO is record-oriented.  Writers (or encoders) of data must provide a
+The basic approach of the FFS library is relatively simple.
+FFS is record-oriented.  Writers (or encoders) of data must provide a
 description of the names, types, sizes and positions of the fields in the
 records they are writing.  On the writer's side this is done by ``registering
 a format.''  Readers (or decoders) must provide similar information for the
@@ -22,73 +22,73 @@ is, establishing a correspondence between the fields in the incoming records
 and the fields in the local data structure into which the information is to
 be placed.  No translation is done on the writer's end.  On the reader's
 end, the format of the incoming record is compared with the format that the
-program expects.  If there are discrepancies the PBIO read routine performs
+program expects.  If there are discrepancies the FFS read routine performs
 the appropriate translations (conversions).
-\paragraph{How does XML fit into the picture?}  PBIO record decoding semantics
-are much like what you would get from using XML for data communication.  PBIO
-transparently ignores extra fields that the decoder isn't expecting and
-removes any dependence upon field ordering.  PBIO-encoded records can also be
-queried to determine what fields and types they contain.  These features are
-some of the most important advantages that drive the adoption of XML in
-communication.  
+\paragraph{FFS semantics resemble XML-based data transfer} FFS record
+decoding semantics are much like what you would get from using XML for data
+communication.  FFS transparently ignores extra fields that the decoder
+isn't expecting and removes any dependence upon field ordering.  FFS-encoded
+records can also be queried to determine what fields and types they contain.
+These features are some of the most important advantages that drive the
+adoption of XML in communication.
 
 However, XML uses an inefficient character-based data encoding to provide
-these semantics.   The PBIO/JIX approach is quite different.  Instead of every
+these semantics.  The FFS approach is quite different.  Instead of every
 record containing the complete data and structure definition, as in an XML
-document.  We separate the structure (XML markup) from the data.   The markup
-is associated with the PBIO format and is only used if the record is to be
-converted into XML.  This leverages the fact that most XML-producing
+document.  We separate the structure (XML markup) from the data.  The markup
+is associated with the {\em FFS format} and is only used if the record is to
+be converted into XML.  This leverages the fact that most XML-producing
 applications operate on their data in binary forms and only create XML just
-before the data is to be transmitted.  In the PBIO approach, we register the
-XML markup with the format.  The application then encodes the data with PBIO
+before the data is to be transmitted.  In the FFS approach, we register the
+XML markup with the format.  The application then encodes the data with FFS
 instead of turning it into XML.  This process will be detailed in
-Section~\ref{XML}. 
+Section~\ref{XML}.
 
-Because of the PBIO/JIX focus on high-performance applications, this document
+Because of the FFS focus on high-performance applications, this document
 is written using examples in C to transmit C structs.  In C++, the examples
 work equally well using classes without methods instead of structs.
 
 \subsection{High-level Constructs}
-PBIO/JIX supports both file-oriented and online (network-based) data
-interchange.  File-oriented PBIO is the most straightforward.  In this case
-the highest-level PBIO construct is the \routine{IOFile}.  PBIO files are always
-either read-only or write-only.  In writing a PBIO file, the application must
+FFS supports both file-oriented and online (network-based) data
+interchange.  File-oriented FFS is the most straightforward.  In this case
+the highest-level FFS construct is the \routine{IOFile}.  FFS files are always
+either read-only or write-only.  In writing a FFS file, the application must
 first register a format for records to be written and then may write records. 
-In reading a PBIO file, an application must specify a conversion for records
+In reading a FFS file, an application must specify a conversion for records
 in the file before they are read.  The \routine{IOFile} also controls the scope of
 name resolution.  That is, the name ``Item'' may be associated with a
 particular structure in one \routine{IOFile} and with a different structure in another
 \routine{IOFile} without any conflict.
 
-In some situations, such as when using PBIO as a data encoding mechanism for
+In some situations, such as when using FFS as a data encoding mechanism for
 network communication, a file-oriented abstraction is unworkable.  To handle
-these situations, PBIO provides an abstraction called an \routine{IOContext}.
+these situations, FFS provides an abstraction called an \routine{IOContext}.
 \routine{IOContext}s are very similar to \routine{IOFile}s except for two key differences:
 \begin{itemize}
 \item Instead of \routine{IOFile} read/write operations that take/put data directly
 to/from a filesystem, \routine{IOContext}s have encode/decode operations.  In
-encode/decode, PBIO plays no role in actual data storage or transmission.
+encode/decode, FFS plays no role in actual data storage or transmission.
 Instead, the application is responsible for actually moving the encoded data
 from place to place.
 \item While \routine{IOFile}s are either read-only or write-only, a single \routine{IOContext}
 can be used for both encoding and decoding.
 \end{itemize}
 
-Internally to PBIO, \routine{IOFile} and \routine{IOContext} are the same data structure.
-Because PBIO operations like registering formats and setting conversions are
-common to both, the PBIO API generally provides similar routines for
+Internally to FFS, \routine{IOFile} and \routine{IOContext} are the same data structure.
+Because FFS operations like registering formats and setting conversions are
+common to both, the FFS API generally provides similar routines for
 \routine{IOFile}s and \routine{IOContext}s.  In {\it some} more unusual situations only one
 routine is provided and an application can safely cast between the two data
 types.
 
 Because the \routine{IOFile} interface is somewhat conceptually easier and files are
 a handy storage mechanism, the remainder of this section will describe the
-basics of PBIO in the context of \routine{IOFile}s.  The \routine{IOContext} functionality
+basics of FFS in the context of \routine{IOFile}s.  The \routine{IOContext} functionality
 will next appear in Section~\ref{iocontext}.
 
 \subsection{Supported Data Types\label{sec:datatypes}}
 
-The PBIO routines support record formats consisting of fields of the following
+The FFS routines support record formats consisting of fields of the following
 basic data types: ``integer'', ``unsigned integer'', ``float'', ``char'',
 ``enumeration'' and ``string''.  Note that {\em field type} here is separate
 from {\em field size} so that both the native C types ``int'' and ``long'' are
@@ -135,14 +135,14 @@ in a structure with an entry in the field list. Unspecified fields at the end
 of the structure may not be written to the IO file.  Unspecified fields
 at the beginning or in the middle of a structure will be written to the IO
 file, but no information about them will be available.\footnote{{\it Nota
-Bene:} This behavior results because PBIO treats base data records (not
+Bene:} This behavior results because FFS treats base data records (not
 strings or other dynamically sized elements) as a contiguous memory block
 for efficiency.  The compiler may leave ``holes'' in the data block to
-preserve the required alignment for some data types.  Because PBIO puts the
+preserve the required alignment for some data types.  Because FFS puts the
 data on the wire as a contiguous block, the values in these ``holes'' are put
-on the wire as well.  Fields in the record that are not described to PBIO
+on the wire as well.  Fields in the record that are not described to FFS
 via the field list are simply treated as larger ``holes''.  Note that
-relying on the behavior of PBIO with respect to values in these ``holes''
+relying on the behavior of FFS with respect to values in these ``holes''
 is erroneous and can have unpredictable results.  For example, ``hole
 values'' may appear to be transmitted along with the data in an exchange
 between homogeneous systems, yet not in other cases.}
@@ -157,13 +157,13 @@ call specifies a name to be associated with the record format in the file and
 returns a handle, of the type \routine{IOFormat}.  The returned \routine{IOFormat} is used in
 the 
 \routine{write\_IOfile()} call and specifies the format of the data to be written to the
-file.  The names of record formats must be unique within a PBIO file and are
+file.  The names of record formats must be unique within a FFS file and are
 used on the reading end to identify specific record format within the file.
-Because there is no translation upon write in the PBIO scheme, the field list
+Because there is no translation upon write in the FFS scheme, the field list
 which governs the writing \routine{IOFormat} becomes the {\it file record format} in
 the written file.
 
-In the case of reading a PBIO file, IOConversions facilitate the common case
+In the case of reading a FFS file, IOConversions facilitate the common case
 where the reading program knows, for the records in which it interested, the
 names of both the record format and the fields within those format which it
 requires.  For reading, the subroutine \routine{set\_IOconversion()} serves a
@@ -176,7 +176,7 @@ The record format in the file must contain {\it at least} all the fields
 specified in the conversion field list.  If there are more fields in the file
 record format than the reader specifies in the conversion, those additional
 fields in file records are ignored.  For the fields that are common between
-the formats, the PBIO library will perform any data rearrangement or conversion
+the formats, the FFS library will perform any data rearrangement or conversion
 that is required to convert the incoming binary file record into a native
 record.  Reading programs {\it must} set a conversion for incoming data they
 wish to have converted into comprehensible form.  
@@ -237,7 +237,7 @@ The source program supplies the complete specification of the data being
 written.  The destination program specifies the fields that it is interested
 in and their locations and sizes in the data structure in which it would like
 them placed. Fields are matched by name.  If there are differences in
-structure specifications, the PBIO routines perform the appropriate
+structure specifications, the FFS routines perform the appropriate
 conversions at the time of the read operation.  The reader program will read
 the binary files produced by the writer program, despite potential difference
 in: 
@@ -273,13 +273,13 @@ including ``string'', but it leaves open some questions about memory
 management.  The principal complication in handling variable-length strings
 is that exact storage requirements aren't known beforehand.  This isn't an
 issue on the writing end, but on the reading end either the user must
-provide memory for strings or it must be allocated by the PBIO library.  It
-is possible to use either approach with PBIO.  In particular, if records
+provide memory for strings or it must be allocated by the FFS library.  It
+is possible to use either approach with FFS.  In particular, if records
 containing string datatypes are read using the \routine{read\_IOfile()}
 routine, memory for the strings is allocated in a temporary buffer internal
-to the PBIO library and the {\tt char*} fields in the record given to the
+to the FFS library and the {\tt char*} fields in the record given to the
 user point into this internal buffer.  There is one buffer per IOfile and
-its contents remain valid only until the next PBIO call.  In this
+its contents remain valid only until the next FFS call.  In this
 circumstance, it is the users responsibility to ensure that $char*$ pointers
 in input records are only used while buffer contents are still valid.
 
@@ -307,13 +307,13 @@ string.\label{string_mem}}
 \end{figure}
 \subsection{Complex Data Types}
 
-PBIO also offers some facilities for constructing records which consist of
+FFS also offers some facilities for constructing records which consist of
 more than just the simple data types described in Section~\ref{sec:datatypes}.
 The simplest is a mechanism for declaring a field in a record to be an array
 of atomic data types.  For example, a type specification of ``integer[5]'' is
 understood to be an single dimensional array of 5 integers.  ``float[3][3]''
 is a $3\times 3$ two dimensional array floating point numbers.  At present,
-PBIO supports these fixed array sizes with one or two dimensions.  The field
+FFS supports these fixed array sizes with one or two dimensions.  The field
 size specified should be the size of a single array element, {\bf not} the
 size of entire array.  (This convention was different in earlier versions of
 this library.)  When reading a record containing array fields, the
@@ -323,7 +323,7 @@ was written, though the size of the elements may differ.
 It is sometimes useful to use a {\tt \#define}-style constant in array
 declarations, but it is awkward to construct the field type string for such
 elements because the C preprocessor doesn't expand macros which appear
-inside string constants.  To help avoid this awkwardness, the PBIO header
+inside string constants.  To help avoid this awkwardness, the FFS header
 file defines two macros, \routine{IOArrayDecl()} and
 \routine{IOArrayDecl2()} that can construct the IOField type string for an
 array whose size is fixed by a compile-time constant.  
@@ -346,7 +346,7 @@ IOField rec_field_list[] = {
 \caption{A record with a compile-time constant as the array size\label{fig:fixarray}}
 \end{figure}
 For example, the code
-in Figure~\ref{fig:fixarray} gives correct PBIO field lists for fixed size
+in Figure~\ref{fig:fixarray} gives correct FFS field lists for fixed size
 one- and two-dimensional arrays.  For example, the {\tt IOArrayDecl(float,
 ARRAY\_SIZE)} macro expanding to the string ``float[20]''.
 
@@ -375,7 +375,7 @@ IOField dyn_field_list[] = {
 \index{IOField}
 \end{wrapfigure}
 
-In addition to fixed array sizes, PBIO supports dynamically sized
+In addition to fixed array sizes, FFS supports dynamically sized
 one-dimensional arrays.  In this case, the size in the array type
 specification must be the string name of an integer field in the record.
 The value of that integer field gives the array size.  The actual data type
@@ -384,7 +384,7 @@ Figure~\ref{fig:dynarray} gives an example of a dynamic array declaration.
 For the purposes of memory allocation (as discussed in
 Section~\ref{stringmem}), the dynamic arrays are treated like strings on
 reads.  That is, \routine{read\_IOfile()} leaves the arrays in temporary
-memory that will remain valid until the next PBIO operation and
+memory that will remain valid until the next FFS operation and
 \routine{read\_to\_buffer\_IOfile()} copies the arrays into a user-supplied
 buffer.  In the case of a record which contains a dynamic array,
 \routine{next\_IOrecord\_length()} still returns the number of bytes
@@ -435,13 +435,13 @@ static IOField particle_field_list[] = {
 The programs in Section~\ref{sec:simple} are simplistic in that only known
 number records of a single type are written and read.  When multiple formats
 or unknown numbers of records are involved, the reading program needs to know
-what, if anything, is coming next.  PBIO allows access to this information via
+what, if anything, is coming next.  FFS allows access to this information via
 the \routine{next\_IOrecord\_format()} call.  This subroutine returns a value of the
 type \routine{IOFormat}.  If this value is NULL, an end of file or error condition has
 been encountered.  If non-NULL, the value can be passed to the subroutine
 \routine{name\_of\_IOformat()} to get the string name associated with the format of
 the next data record.  Additionally, for programs which wish to avoid multiple
-string comparison operations on every read operation, PBIO provides the
+string comparison operations on every read operation, FFS provides the
 \routine{get\_IOformat\_by\_name()} subroutine.  With these operations, the simple
 reader and writer programs of Section~\ref{sec:simple} can be rewritten to
 handle records written in any order.  Figures~\ref{fig:complexwrite}
@@ -522,23 +522,23 @@ use a fairly static set of record formats for I/O and have no problems
 registering all formats at the beginning.  But in some circumstances,
 a program may need to add a new record format at a later time.  Others may
 even need to change the layout or sizes of format fields on the fly.  For the
-writer, this isn't a significant problem.  PBIO allows new record formats to
+writer, this isn't a significant problem.  FFS allows new record formats to
 be registered to an output stream at any time.  However, reading programs
 need a way of knowing when new formats are encountered on input.  
 
-In the PBIO library, data records are just one of the types of records which
+In the FFS library, data records are just one of the types of records which
 appear in the input stream.  Data records are of principal interest to many
-programs so the PBIO interface is designed to make access to those records
+programs so the FFS interface is designed to make access to those records
 easy.  However, format descriptions are implicitly written to output streams
 whenever a new record format is registered.  In the simple programs presented
 thus far, record formats are read implicitly when encountered by the data
 input routines.  However, those descriptions are available for reading if so
-desired and constitute a second record type.  The current version of PBIO also
+desired and constitute a second record type.  The current version of FFS also
 allows {\it comments} to be embedded in the data stream.  Comments are simple
-null-terminated strings that are not interpreted by the PBIO routines but are
+null-terminated strings that are not interpreted by the FFS routines but are
 available for ``labeling'' files or data streams.  Comments are written with
 the \routine{write\_IOcomment()} function and are the third  type of record which can
-appear in  a PBIO input stream.  The function \routine{next\_IOrecord\_type()} returns
+appear in  a FFS input stream.  The function \routine{next\_IOrecord\_type()} returns
 the type of the next record in an input stream.  Its return value is one of an
 enumeration consisting of the values {\tt \{IOdata, IOformat, IOcomment, IOend,}
 and {\tt IOerror\}}.  
@@ -606,16 +606,16 @@ new program is careful to set conversions for formats only after they have
 been read.  Trying to set a conversion for a record format which has not yet
 been seen is an error.  The new program also demonstrates how to handle
 comments and unwanted records in the input stream.  In the case of comments,
-the comment string is held in a buffer internal to PBIO and the
+the comment string is held in a buffer internal to FFS and the
 \routine{read\_comment\_IOfile()} call returns a pointer to this buffer.  The buffer
-contents are only guaranteed valid until the next PBIO operation.  Unwanted
+contents are only guaranteed valid until the next FFS operation.  Unwanted
 buffers are discarded by issuing a \routine{read\_IOfile()} call with a NULL buffer
 address.  This has the effect of consuming the next buffer on the input
 stream.  
 
 \subsection{Bulk Record Handling}
 
-PBIO offers some limited facilities for handling more than one data record at
+FFS offers some limited facilities for handling more than one data record at
 a time.  These facilities can be separated into two groups, one intended to
 support handling contiguous blocks of records and the other for writing smaller
 numbers of records.
@@ -654,10 +654,10 @@ single data buffer (of a particular format) to write, \routine{writev\_IOfile()}
 a list of data buffers and formats.  To the extent possible, all these buffers
 will be written to the output stream with a single $writev()$ system
 call.\footnote{UNIX typically restricts the number of independent memory areas
-that may be written with $writev()$.  If the number and nature of the PBIO
+that may be written with $writev()$.  If the number and nature of the FFS
 data to be written exceeds this limit, multiple calls will be performed.}
 \routine{writev\_IOfile()} imposes no restrictions on the nature of the fields in the
-records to be written.  Unfortunately, the nature of the PBIO protocol allows
+records to be written.  Unfortunately, the nature of the FFS protocol allows
 no corresponding read call.  Records written a single \routine{writev\_IOfile()} must
 be read with multiple \routine{read\_IOfile()} calls.  The prototype of
 \routine{writev\_IOfile()} is shown in Figure~\ref{fig:writev}.
@@ -682,7 +682,7 @@ generally {\tt NULL} for the routines which return pointers or opaque data
 types, like \routine{register\_IOrecord\_format()}, or $0$ for routines like
 \routine{read\_IOfile()} which normally return an integer.  Robust programs should
 always check the return values of the functions they call.  To facilitate
-error handling, PBIO provides two additional functions, {\tt IOhas\_error(IOfile)}
+error handling, FFS provides two additional functions, {\tt IOhas\_error(IOfile)}
 and {\tt IOperror(IOfile, char*)}.  \routine{IOhas\_error()} returns 0 if no error has
 occurred on the IOfile specified as its parameter and 1 if an error has
 occurred.  \routine{IOperror()} is similar to the UNIX $perror()$ function.  If an
@@ -690,45 +690,45 @@ error has occurred on the IOfile specified as its parameter, it prints a
 textual message describing the error and includes the string specified as its
 second parameter.
 
-\section{Standard Tools for PBIO Files}
-The meta-information contained in a PBIO data stream allows the construction
-of general tools to operate on PBIO files.  Two such tools are provided with
-the PBIO library, IOdump and IOsort.
+\section{Standard Tools for FFS Files}
+The meta-information contained in a FFS data stream allows the construction
+of general tools to operate on FFS files.  Two such tools are provided with
+the FFS library, IOdump and IOsort.
 
-IOdump is a ``cat'' program for PBIO files.  IOdump takes as arguments a set
+IOdump is a ``cat'' program for FFS files.  IOdump takes as arguments a set
 of options and a filename.  By default IOdump prints an ascii representation
-of all data records and comments in the PBIO file.  Dumping of record format
+of all data records and comments in the FFS file.  Dumping of record format
 information as well as header information in the file is enabled by specifying
 options of {\tt +formats} and {\tt +header} respectively.  In general,
 printing for any record type can be turned on or off by specifying options
 of the form {\tt \{+,-\}\{header, comments, formats, data\}}.
 
-IOsort is a generalized sorting program for PBIO files.  It takes three
+IOsort is a generalized sorting program for FFS files.  It takes three
 parameters, the name of the field to sort upon, the name of the input file and
-the name of the output file.  The sort field can be of any PBIO atomic data
+the name of the output file.  The sort field can be of any FFS atomic data
 type, but it must be the same basic type in all records.  Any records in which
 the sort field does not appear will not appear in the output file.
 
-\section{PBIO With Other Networks}
+\section{FFS With Other Networks}
 
-The basic PBIO routines above provide for using PBIO for I/O over file
+The basic FFS routines above provide for using FFS for I/O over file
 descriptors.  This is sufficient for normal file and TCP/IP socket uses.  But
-sometimes it is useful to use PBIO in other network circumstances as well.
-PBIO contains two types of support for transmission over networks without
+sometimes it is useful to use FFS in other network circumstances as well.
+FFS contains two types of support for transmission over networks without
 using a TCP/IP layer.  The first type of support is designed for networks
 which still provide a TCP-like reliable, in-order, two-ended connection.  The
 second provides a broader kind of support which makes no assumptions about the
 underlying network.
 
-\subsection{Customizing PBIO Low-Level I/O}
+\subsection{Customizing FFS Low-Level I/O}
 
-To support binary I/O over networks providing a TCP-like interface, PBIO
+To support binary I/O over networks providing a TCP-like interface, FFS
 allows the substitution of user-supplied low-level I/O routines for those
 normally used to operate on the network interface.  To support the full range
-of PBIO operations, the user must supply routines to read and write the
+of FFS operations, the user must supply routines to read and write the
 network interface, a function to poll the network interface for new data and a
 routine to close the network interface.  A typical call sequence to create a
-new PBIO file with a different low-level I/O interface follows:
+new FFS file with a different low-level I/O interface follows:
 
 \begin{Code}
 {
@@ -762,7 +762,7 @@ IOinterface\_func} as defined in io\_interface.h:
 typedef int (*IOinterface_func)(void *conn, void *buffer, int length,
                                 int *errno_p, char **result_p);
 \end{Code}
-When PBIO calls these routines, the value used in the \routine{set\_fd\_IOfile()}
+When FFS calls these routines, the value used in the \routine{set\_fd\_IOfile()}
 call will be supplied as the {\tt conn} parameter.  {\tt buffer} and  {\tt
 length} specify the buffer to be read or written.  Upon correct completion,
 the routines should return the number of bytes read or written.  In the event
@@ -771,11 +771,11 @@ the {\tt errno\_p} or {\tt result\_p} parameters are used to specify the nature
 of the error.  If the error is one which maps to a standard UNIX errno value,
 the integer pointed to by errno\_p should be set to that value.  If not, the
 {\tt char*} pointed to by {\tt result\_p} should be set to a string describing
-the error.  (This string will not be free()'d by PBIO.  If it is not stored
+the error.  (This string will not be free()'d by FFS.  If it is not stored
 in static memory, the user routines should ensure that it is deallocated.)
 
 The routines {\tt new\_readv\_func} and {\tt new\_writev\_func} are called by
-PBIO to read or write multiple buffers at a time.  They are of type {\tt
+FFS to read or write multiple buffers at a time.  They are of type {\tt
 IOinterface\_funcv}:
 \begin{Code}
 typedef int (*IOinterface_funcv)(void *conn, struct iovec *iov, int icount,
@@ -788,7 +788,7 @@ interface imposes a maximum size on the number of buffers which can be
 efficiently read or written in one call, that value should be specified as the
 {\tt max\_iov} value in the \routine{set\_interface\_IOfile()} call.  If the
 network interface provides no direct multi-buffer read or write primitives,
-the readv and writev functions can be specified as NULL.  In this case, PBIO
+the readv and writev functions can be specified as NULL.  In this case, FFS
 will instead generate multiple calls to the single-buffer read and write
 routines. 
 
@@ -796,14 +796,14 @@ The {\tt new\_close\_func} and {\tt new\_poll\_func} routines each take only
 the {\tt void *conn} value as a parameter.  The close function should shut
 down the network connection and free all resources associated with it.  Poll
 should return zero if there is no data currently available for reading on the
-network interface.  PBIO does not use this function except in the routine
+network interface.  FFS does not use this function except in the routine
 \routine{poll\_IOfile()}.  Consequently, if the network interface does not
 provide any 
 means of polling the network for data, this function can possibly be left NULL
 with no ill effects.  If \routine{poll\_IOfile()} is called when the poll function
 is NULL, \routine{poll\_IOfile()} arbitrarily returns 0 (I.E. no data pending).
 
-\subsection{PBIO with Arbitrary Networks\label{iocontext}}
+\subsection{FFS with Arbitrary Networks\label{iocontext}}
 
 There are many network transport mechanisms which are not TCP/IP-like in one
 way or another.  Some relax reliability or ordering characteristics to achieve
@@ -811,31 +811,31 @@ higher performance.  Others vary topology to support such things as multiple
 receivers (broadcast and multicast) or multiple senders (with incoming
 messages multiplexed over a single connection).  Different applications may
 choose to use one of these network protocols for the actual transport of data
-but would still find it useful to use PBIO to handle the heterogeneity issues.
-Unfortunately, it is difficult for PBIO to deal directly with a
-non-TCP/IP-like network interface.  In particular, the basic PBIO functions
+but would still find it useful to use FFS to handle the heterogeneity issues.
+Unfortunately, it is difficult for FFS to deal directly with a
+non-TCP/IP-like network interface.  In particular, the basic FFS functions
 assume that the input appearing at the ``read'' port of an IOfile should be
 exactly what is written from the ``write'' side of a single IOfile.  This is a
 natural assumption for TCP/IP like transports, but it breaks down if the
 underlying transport mechanism allows multiplexing of writers or readers or if
-it does not guarantee reliable, in-order delivery.  PBIO could theoretically
+it does not guarantee reliable, in-order delivery.  FFS could theoretically
 tolerate the loss or misordering of complete data records, but multiplexing of
 streams, delivery partial data records or any disruption affecting record
 format information would render some data uninterpretable. 
 
-In order to allow applications to gain the functional benefits of PBIO while
-using network transport mechanisms which PBIO can not directly support, we
+In order to allow applications to gain the functional benefits of FFS while
+using network transport mechanisms which FFS can not directly support, we
 have defined an interface that allows separating the processes of data
 transport and format delivery.  With this interface, instead of using
 \routine{write\_IOfile()} to transmit data, applications can {\em encode} the data in
-a form that can be interpreted by another PBIO library.  The application can
+a form that can be interpreted by another FFS library.  The application can
 then transmitted this encoded buffer via any mechanism at its disposal.  Once
-at its destination, the encoded buffer can then be passed to PBIO for decoding.
+at its destination, the encoded buffer can then be passed to FFS for decoding.
 Throughout this process, the transmission of format information from the
-encoder to the decoder is handled transparently by PBIO.  Formats still need
+encoder to the decoder is handled transparently by FFS.  Formats still need
 to be registered on the encoding side and conversions need to be set on the
 decoding side, but record format information travels from the encoder to the
-decoder via private reliable connections established by PBIO.
+decoder via private reliable connections established by FFS.
 Section~\ref{sec:formats} will discuss format communication in more detail.
 
 The programs below show a simple use of these functions to transfer data.
@@ -902,10 +902,10 @@ interface.  However, unlike the \routine{IOFile}, the \routine{IOContext} is not
 directly associated with a file, socket or other transmission or storage
 mechanism.  It only serves as a placeholder to hold registration and
 conversion information.
-\item The example uses files as a ``transport'' mechanism, but PBIO isn't
+\item The example uses files as a ``transport'' mechanism, but FFS isn't
 involved in the movement of the encoded data.  Actual transmission from
 encoder to decoder could be via TCP, UDP or paper-tape clutched by a carrier
-pigeon.  All that matters to PBIO is that the block of data presented to
+pigeon.  All that matters to FFS is that the block of data presented to
 \routine{decode\_IOcontext()} must be one that resulted from a call to
 \routine{encode\_IOcontext()}.
 \end{itemize}
@@ -925,7 +925,7 @@ otherwise.
 subformats such as the record described in Figure~\ref{fig:part}, the use of
 an additional functions.  In particular, \routine{get\_format\_IOcontext()}
 returns only the top-level format of the record.  But conversions must be set
-for any nested formats before a top-level conversion can be set.  The PBIO
+for any nested formats before a top-level conversion can be set.  The FFS
 routine \routine{get\_subformats\_IOcontext()} (prototype below) returns a
 NULL-terminated list of IOFormat values corresponding to any nested formats
 contained within the record.  The last entry in the list is the format of the
@@ -957,7 +957,7 @@ interface require documentation.
 
 \paragraph{Transmitting/encoding side}
 On the encoding side, the encoded data block is stored in temporary memory
-internal to PBIO and specific to the IOContext value used to encode the data.
+internal to FFS and specific to the IOContext value used to encode the data.
 The memory will remain valid until the next encode or decode operation
 associated with that IOContext value.  
 
@@ -968,7 +968,7 @@ example, the routine \routine{encode\_IOcontext\_bufferB()} encodes into a
 contiguous memory block, but instead of using temporary memory associated
 with the \routine{IOContext}, it uses memory associated with an
 \routine{IOBuffer} variable.  \routine{IOBuffer}s exist solely as a handle
-to temporary memory space that can be used by PBIO.  Using memory associated
+to temporary memory space that can be used by FFS.  Using memory associated
 with an \routine{IOBuffer} instead of an \routine{IOContext} decouples the
 memory use from the IOcontext so that a following encode does not
 automatically destroy the data in memory occupied by a prior encode.
@@ -986,12 +986,12 @@ extern char *encode_IOcontext_bufferB(IOContext iocontext, IOFormat ioformat, IO
                                       void *data, int *buf_size);
 \end{WrapCode}
 
-Two additional variations of the PBIO encode routines are
+Two additional variations of the FFS encode routines are
 \routine{encode\_IOcontext\_to\_vector()} and
 \routine{encode\_IOcontext\_to\_vectorB()}.  The vector-based encode can be
 somewhat more efficient than the routines that return a contiguous block of
 encoded data because the contiguous-buffer routines necessarily copy all of
-the data from its original location to the final buffer.  Since PBIO tries
+the data from its original location to the final buffer.  Since FFS tries
 to transmit all data in its original representation, some copy overhead can
 be eliminated by representing the return value from an encode operation as a
 list of memory blocks to be transmitted, rather than a single contiguous
@@ -1050,13 +1050,13 @@ encode_IOcontext_vectorB(IOContext iocontext, IOBuffer tmp_buffer, IOFormat iofo
 \end{WrapCode}
 
 \paragraph{Receiving/decoding side}
-On the receiving end, PBIO offers three different decode operations.  The
+On the receiving end, FFS offers three different decode operations.  The
 operations \routine{decode\_IOcontext()} and \routine{decode\_to\_buffer\_IOcontext()}
 are analogous to \routine{read\_IOfile()} and \routine{read\_to\_buffer\_IOfile()}.
 In both cases, the encoded data is preserved and the base record structure
 (excluding strings and dynamic arrays) in placed in memory provided by the
 user.  In \routine{decode\_IOcontext()} (as in \routine{read\_IOfile()}), strings and
-dynamic arrays are copied into PBIO temporary memory associated with the
+dynamic arrays are copied into FFS temporary memory associated with the
 decoding IOContext.  The contents of that memory will remain valid until the
 next encode or decode operation performed in that context.  However, in
 \routine{decode\_to\_buffer\_IOcontext()}, all data is placed in
@@ -1072,7 +1072,7 @@ This call requires the length of the encoded record block as a parameter and
 returns a conservative estimate of the number of bytes required to decode the
 record.  
 
-The third decode option offered by PBIO is
+The third decode option offered by FFS is
 \routine{decode\_in\_place\_IOcontext()}.  The first two calls,
 \routine{decode\_IOcontext()} and \routine{decode\_to\_buffer\_IOcontext()},
 always leave 
@@ -1088,7 +1088,7 @@ sometimes it isn't possible to decode the buffer in place.  Sometimes the
 fields in the current and the desired structure overlap in ways that make it
 difficult to rearrange them in place.  When this kind of conflict happens,
 \routine{decode\_in\_place\_IOcontext()} must copy the encoded buffer into a
-temporary location (managed by PBIO), and then do a normal
+temporary location (managed by FFS), and then do a normal
 \routine{decode\_IOcontext()} with the source being the temporary buffer and
 the 
 destination being where the data used to sit.
@@ -1116,7 +1116,7 @@ demonstrates its use.
          * decoded structure is probably not at byte 0 of the encoded
          * buffer.  Therefore, msg_start is probably a few bytes into
          * the buffer msg.  The precise relationship between msg and
-         * msg_start is a PBIO implementation detail.
+         * msg_start is a FFS implementation detail.
          */
         process_message(msg_start);
     } else {
@@ -1131,25 +1131,25 @@ demonstrates its use.
 \subsubsection{Communication of Format Information\label{sec:formats}}
 While the actual communication of record format information from the
 encoding context to the decoding context is generally handled entirely
-within PBIO, the manner in which this communication is accomplished may
+within FFS, the manner in which this communication is accomplished may
 influence the behavior of the application in some ways.
 
-PBIO does have mechanisms and APIs through which applications can directly
+FFS does have mechanisms and APIs through which applications can directly
 participate and manage the exchange of format information.  However, those
 mechanisms are complex and their use is a topic beyond the bounds of this
 manual.  Therefore we describe the one standard mechanism for managing
 format informat, the use of a third party {\it format server}.  When a
-\routine{register\_IOcontext\_format()} is done, PBIO synchronously and
+\routine{register\_IOcontext\_format()} is done, FFS synchronously and
 reliably transmits record format information to a {\it format server},
-running on a known host and listening at a known port.  Then, PBIO waits for
+running on a known host and listening at a known port.  Then, FFS waits for
 the format server to return to it a 64-bit format ID.  The
 \routine{register\_IOcontext\_format()} operation returns only when the
 format ID has been received at the encoding side and stored with the
-IOContext value.  When data for that format is encoded, PBIO appends the
+IOContext value.  When data for that format is encoded, FFS appends the
 format ID to the data to identify the format.  On the receiving side,
 \routine{get\_format\_IOcontext()} extracts the 64-bit format ID from the
 data and looks in the decoding IOContext to see if that particular format ID
-has been seen before.  If not, PBIO synchronously queries the format server
+has been seen before.  If not, FFS synchronously queries the format server
 and retrieves the format of record.  Thereafter, the format information is
 associated with the format ID in the IOContext value and no further contact
 with the format server is necessary to process records of this
@@ -1177,22 +1177,22 @@ format server does have a checkpoint/restart mechanism that allows format
 IDs to remain valid across multiple server instances.
 
 At this time the location (host and IP port) of the format server is a
-compile-time parameter to PBIO.  The host value in particular is encoded in
+compile-time parameter to FFS.  The host value in particular is encoded in
 the file \routine{config.h} by the \routine{configure} script.  The
 actual value placed in \routine{config.h} is controlled by the optional {\tt
 --with-format-server=HOST} argument to {\tt configure}.  
 \index{configure!--with-format-server}
 If this argument is specified at build time, it is used as the default host
-for the PBIO library to attempt to contact a format server.  If that
+for the FFS library to attempt to contact a format server.  If that
 argument is not specified at build time, the default format server host will
 be the host upon which the configure script is running.\footnote{Except when
 the script is running in the ``gatech.edu'' network domain.  Then the
 default format server host will be marquesas.cc.gatech.edu.}  The format
-server host which was specified at build time for the PBIO library may be
+server host which was specified at build time for the FFS library may be
 overridden at run-time through the use of the \routine{FORMAT\_SERVER\_HOST}
 environment variable.\index{environment variables!FORMAT\_SERVER\_HOST}
 
-If no format server responds at the default host, PBIO will attempt to
+If no format server responds at the default host, FFS will attempt to
 contact a ``fallback'' format server.  At the present time, this is always
 the format server on marquesas.cc.gatech.edu.  Because we don't want the
 format server on marquesas to be the default server for the world, there is
@@ -1211,7 +1211,7 @@ use.''\index{format server!temporary use}  Connections from IP addresses
 that have expired will be rejected.  The list of expired IP address is 
 {\it not} part of the checkpoint/restore format server functionality, so
 restarting the format server will reset the list to empty.  The actual
-service domain used is a build-time parameter to PBIO and is controlled by
+service domain used is a build-time parameter to FFS and is controlled by
 the the optional {\tt --with-service-domain=DOMAINLIST} argument to {\tt
 configure}.\index{configure!--with-service-domain}  DOMAINLIST is a list of
 domain names separated with ':' characters.  If the argument is not given,
@@ -1221,16 +1221,16 @@ gatech.edu domain.  In this case the default DOMAINLIST is
 ``gt.atl.ga.us:gatech.edu''.} 
 
 
-\section{XML and PBIO/JIX\label{XML}}
+\section{XML and FFS\label{XML}}
 
-PBIO's XML support had its origins in the observation that PBIO and XML both
+FFS's XML support had its origins in the observation that FFS and XML both
 provide similar semantics to the receivers of data.  Both formats are
 self-describing and allow third-parties to interpret and process data about
 which they have no {\it a priori} knowledge.  Both formats also allow
 readers to be relatively robust to changes in the data that is sent.  In
 particular, most mechanisms for reading XML (parsers, DOM interfaces, etc.)
 do not depend upon the ordering of fields in the XML document and are not
-affected if the XML document contains extra fields are attributes.  PBIO is
+affected if the XML document contains extra fields are attributes.  FFS is
 similar because of the semantics of the \routine{set\_IOConversion()} and
 \routine{set\_conversion\_IOcontext()} routines.  In particular, the
 \routine{IOFieldList} supplied in the conversion call specifies the order
@@ -1240,12 +1240,12 @@ differences are resolved in the conversion process.  Fields are reordered
 and extraneous fields are dropped.
 
 \subsection{Operating on Unknown Data}
-Our experience with PBIO has shown that most programs do not operate upon
-data that they have no prior knowledge about.  While PBIO
+Our experience with FFS has shown that most programs do not operate upon
+data that they have no prior knowledge about.  While FFS
 \routine{IOFieldList}s can be created and used dynamically, it is a rare
 practice because it is only necessary if the structures to be manipulated
 are dynamic and that is not a semantic that is directly supported by common
-programming environments.  Therefore, PBIOs routines that query and
+programming environments.  Therefore, FFSs routines that query and
 manipulate field lists will not be described in detail here.  Instead we
 will just enumerate them below:
 \begin{description}
@@ -1275,9 +1275,9 @@ implicit in format registration and not carried with the field list.
 
 \subsection{Just-In-Time Expansion to XML}
 
-Because PBIO records are completely self-describing, it is possible to
+Because FFS records are completely self-describing, it is possible to
 ``print'' them into XML (or virtually any ASCII form) at any point.  Two
-subroutines in PBIO specifically support the production of XML.  One,
+subroutines in FFS specifically support the production of XML.  One,
 \routine{IOencoded\_to\_XML\_string()} operates on data in its encoded form
 (as produced by \routine{encode\_IOcontext\_buffer()} for example).  The
 second, \routine{IOunencoded\_to\_XML\_string()} operates on unencoded data.
@@ -1289,7 +1289,7 @@ extern char *IOencoded_to_XML_string(IOContext iocontext, void *data);
 
 extern char *IOunencoded_to_XML_string(IOContext iocontext, IOFormat ioformat, void *data));
 \end{WrapCode}
-By default, the XML expansion of PBIO data is relatively simple and is
+By default, the XML expansion of FFS data is relatively simple and is
 governed by the format that describes the data.  The
 ``format\_name'' string provided in the original
 \routine{register\_IOcontext\_format()} call is used as the name in the
@@ -1323,8 +1323,8 @@ buffer.
 \subsection{Customizing the XML Representation}
 Note that in the default XML representation, all data is presented as an XML
 element without use of XML attributes.  In practice, users may require more
-control of the manner in which PBIO-based records are expanded as XML.
-In PBIO's model of XML support, additional XML markup information can be
+control of the manner in which FFS-based records are expanded as XML.
+In FFS's model of XML support, additional XML markup information can be
 associated with \routine{IOFormat}s at the time of
 registration.\footnote{Note that this approach means that XML formatting is
 controlled at the time of encoding of data, not at the point at which it is
@@ -1360,10 +1360,10 @@ sections.
 \subsubsection{Basic XML Markup}
 The XML markup string is essentially a template into which the values from
 the actual data will be substituted.  The substitution points are marked by
-XML-like {\tt PBIO:data} tags.  Those tags contain as an attribute the
+XML-like {\tt FFS:data} tags.  Those tags contain as an attribute the
 identity of the particular data field that is to be substituted, specified
 by either {\tt field\_name} or {\tt field\_id} (a zero-based index into the
-field list).  Except for {\tt PBIO:*} tags, {\it all} elements of the XML
+field list).  Except for {\tt FFS:*} tags, {\it all} elements of the XML
 markup string are copied directly from the template into the hydrated XML.
 Thus, any non-variant elements in the XML, including tags, constant
 attributes, or whitespace, can be supplied with the XML markup.  For example,
@@ -1371,13 +1371,13 @@ an XML markup string that will produce exactly the default output for the
 example above is:
 \begin{verbatim}
 "<dynamic format>
-<string field><PBIO:data field_name="string field"></string field>
-<icount><PBIO:data field_name=icount></icount>
+<string field><FFS:data field_name="string field"></string field>
+<icount><FFS:data field_name=icount></icount>
 <double_array>
-<PBIO:data field_id=2></double_array>
+<FFS:data field_id=2></double_array>
 </dynamic format>"
 \end{verbatim}
-Note the variations in the attribute associated with each {\tt PBIO:data}
+Note the variations in the attribute associated with each {\tt FFS:data}
 tag.  Field names are used for the first two tags, and in the case of {\tt
 string field} the name must be surrounded by quotes because it contains a
 space character.  The last field is specified by its zero-based index in the
@@ -1393,9 +1393,9 @@ field list (``double\_array'' is field 2).
         <!ELEMENT doublearray (#PCDATA)>
 ]>
 <dynamic>
-        <strfield><PBIO:data field_name="string field"></strfield>
-        <icount><PBIO:data field_name=icount></icount>
-        <doublearray><PBIO:data field_name=double_array></doublearray>
+        <strfield><FFS:data field_name="string field"></strfield>
+        <icount><FFS:data field_name=icount></icount>
+        <doublearray><FFS:data field_name=double_array></doublearray>
 </dynamic>"
 \end{verbatim}
 A program that demonstrates this facility and its output appear in
@@ -1416,44 +1416,44 @@ information in format registration.\label{xml_fig}}
 \subsubsection{XML Markup for Arrays}
 The simple template mechanism discussed is perfectly adequate for simple
 and nested structures, but doesn't allow complete control of how arrays are
-hydrated into XML.  In particular, the use of a simple {\tt PBIO:data} tag
+hydrated into XML.  In particular, the use of a simple {\tt FFS:data} tag
 doesn't allow control of the text that is to appear before and after each
 array element.  In order to attain that control, we again follow an XML
-style in the template and introduce two new tags, {\tt PBIO:array} and {\tt
-PBIO:array\_data\_mark}.  Essentially, where the basic use of {\tt PBIO:data}
+style in the template and introduce two new tags, {\tt FFS:array} and {\tt
+FFS:array\_data\_mark}.  Essentially, where the basic use of {\tt FFS:data}
 produces a template with this conceptual behavior:
 \begin{quote}
 \small
-$\dots${\tt <PBIO:data field\_name=field\_a>}\\
+$\dots${\tt <FFS:data field\_name=field\_a>}\\
 {\it text between field\_a and field\_b (appears once)}\\
-{\tt <PBIO:data field\_name=field\_b>}\\
+{\tt <FFS:data field\_name=field\_b>}\\
 {\it text between field\_b and field\_c> (appears once)}\\
-{\tt <PBIO:data field\_name=field\_c>}
+{\tt <FFS:data field\_name=field\_c>}
 $\dots$
 \end{quote}
 The new tags define the text in this manner:
 \begin{quote}
 \small
-$\dots${\tt <PBIO:data field\_name=field\_a>}\\
+$\dots${\tt <FFS:data field\_name=field\_a>}\\
 {\it text between field\_a and start of array (appears once)}\\
-{\tt <PBIO:array>}\\
+{\tt <FFS:array>}\\
 {\it text that appears before every array element}\\
-{\tt <PBIO:array\_data\_tag field\_name=field\_b>}\\
+{\tt <FFS:array\_data\_tag field\_name=field\_b>}\\
 {\it text that appears after every array element}\\
-{\tt </PBIO:array>}\\
+{\tt </FFS:array>}\\
 {\it text after array and before field\_c (appears once)}\\
-{\tt <PBIO:data field\_name=field\_c>}
+{\tt <FFS:data field\_name=field\_c>}
 $\dots$
 \end{quote}
 This is sufficient to allow complete control if the representation of arrays in
 lists in XML hydration.  As an example of using this facility, consider the
 program of Figure~\ref{xml_fig} and replace the line ``{\tt
-<doublearray><PBIO:data field\_name=double\_array></doublearray>}'' with:
+<doublearray><FFS:data field\_name=double\_array></doublearray>}'' with:
 \begin{Code}
-	<doublearray><PBIO:array>
+	<doublearray><FFS:array>
 	    <list_element>
-		<PBIO:array_data_mark field_name=double_array>
-	    </list_element></PBIO:array>
+		<FFS:array_data_mark field_name=double_array>
+	    </list_element></FFS:array>
 	</doublearray>
 \end{Code}
 The modified portion of the  output of the program is shown in Figure~\ref{xml_output2}.
@@ -1523,9 +1523,9 @@ long}, representing time in seconds since 00:00:00 UTC, January 1, 1970.
 \end{description}
 
 
-\section{Deprecated PBIO/JIX Interfaces}
-PBIO and JIX have evolved considerably since their first use.  As a result,
-there are many external PBIO APIs which are either deprecated or are now
+\section{Deprecated FFS Interfaces}
+FFS and JIX have evolved considerably since their first use.  As a result,
+there are many external FFS APIs which are either deprecated or are now
 useful only under rare and highly specialized circumstances.  These routines
 remain in the external interface, but generally their use should be avoided
 in preference for the routines documented in this manual.  For example, the
@@ -1540,7 +1540,7 @@ These routines are still useful in some specialized circumstances, but
 because these routines were last widely used before arrays and
 dynamically-sized data structures were introduced, they cannot easily be
 used when those elements are present.  Users with highly specialized needs
-should seek counsel from the PBIO/JIX developers before using PBIO routines
+should seek counsel from the FFS developers before using FFS routines
 not documented here.
 
 %\bibliography{/users/c/chaos/Docs/Bibs/Master}
