@@ -21,7 +21,7 @@ typedef struct _CDLLnode {
 }CDLLnode;
 
 typedef enum {
-    OpenForRead, Closed
+    OpenForRead, OpenForWrite, Closed
 } Status;
 
 typedef enum {
@@ -204,6 +204,7 @@ exit:
     return 0;
 }
 
+static void read_all_index_and_formats(FFSFile file);
 
 /*
  * 
@@ -397,6 +398,16 @@ parse_flags(const char *flags, int *allow_input_p, int *allow_output_p,
 	    output = 1;
 	    input = 0;
 	    break;
+	case 'a':
+	    if ((input == 1) || (output == 1)) {
+		printf("Warning, append flag specified after read flag\n");
+	    }
+	    output = 1;
+	    input = 1;
+	    break;
+	default:
+	    printf("Warning, unknown flag in FFS open call, \'%c\'\n", 
+		   flags[0]);
 	}
 	flags++;
     }
@@ -438,16 +449,25 @@ open_FFSfd(void *fd, const char *flags)
 
     f->buf = create_FFSBuffer();
     f->status = OpenForRead;
+    f->fmc = create_local_FMcontext();
+    f->c = create_FFSContext_FM(f->fmc);
     if (allow_input) {
 	int magic_number;
-	if ((f->read_func(file, &magic_number, 4, NULL, NULL) != 4) ||
-	    (magic_number != htonl(MAGIC_NUMBER))) {
+	int count = f->read_func(file, &magic_number, 4, NULL, NULL);
+	if ((count <= 0) && allow_input && allow_output) {
+	    /* newly created file opened for append, just do write */
+	    allow_input = 0;
+	} else if ((count != 4) || (magic_number != htonl(MAGIC_NUMBER))) {
 	    printf("read headers failed\n");
 	    return NULL;
-	    }
+	}
 	f->status = OpenForRead;
     }
-    if (allow_output) {
+    if (allow_input && allow_output) {   /* append mode! */
+	read_all_index_and_formats(f);
+//	convert_last_index_block(f);
+	f->status = OpenForWrite;
+    } else if (allow_output) {
 	int magic_number = htonl(MAGIC_NUMBER);
 	assert(sizeof(int) == 4);	/* otherwise must do other stuff */
 
@@ -456,9 +476,8 @@ open_FFSfd(void *fd, const char *flags)
 	    return NULL;
 	}
 	update_fpos(f);
+	f->status = OpenForWrite;
     }
-    f->fmc = create_local_FMcontext();
-    f->c = create_FFSContext_FM(f->fmc);
     return f;
 }
 
@@ -472,7 +491,13 @@ open_FFSfile(const char *path, const char *flags)
 
     parse_flags(flags, &allow_input, &allow_output, &raw, &index);
 
-    if (allow_input) {
+    if (allow_input && allow_output) {
+	file = ffs_file_open_func(path, "a");
+	if (file == (void*)0) {
+	    /* if open for append failed, try creating it */
+	    file = ffs_file_open_func(path, "w");
+	}
+    } else if (allow_input) {
 	file = ffs_file_open_func(path, "r");
     } else {
 	file = ffs_file_open_func(path, "w");
@@ -1021,6 +1046,7 @@ FFSread_format(FFSFile ffsfile)
     char *id;
     char *rep;
     FMFormat format;
+    FFSTypeHandle handle;
     if (ffsfile->read_ahead == FALSE) {
 	(void) next_record_type(ffsfile);
     }
@@ -1062,7 +1088,12 @@ FFSread_format(FFSFile ffsfile)
     ffsfile->read_ahead = FALSE;
     format = load_external_format_FMcontext(ffsfile->c->fmc, id, 
 					    ffsfile->next_fid_len, rep);
-    return FFSTypeHandle_by_index(ffsfile->c, format->format_index);
+    handle = FFSTypeHandle_by_index(ffsfile->c, format->format_index);
+
+    /* in case we're in append mode, mark this as ready in the file */
+    init_format_info(ffsfile, format->format_index);
+    ffsfile->info[format->format_index].written_to_file = 1;
+    return handle;
 }
 
 static int
@@ -1328,6 +1359,58 @@ FILE_INT *file_int_ptr;
     return 1;
 }
 
+static void
+read_all_index_and_formats(FFSFile file)
+{
+    int fd = (int)(long)file->file_id;
+    struct _FFSIndexItem *index;
+    off_t fpos;
+    int index_item;
+    FFSIndexItem prev_index_tail = NULL;
+
+    if (!file->index_head)
+        FFSread_index(file);
+    if (!file->index_head) {
+        // If file is not indexed then this condition will be activated.
+	printf("File was not indexed\n");
+    }
+#ifdef NOT_DEF
+    /* seek to the N'th data item in the file */
+    while (data_item > file->index_tail->last_data_count &&
+           file->index_tail != prev_index_tail) {
+	/* don't skip forward past index blocks without reading them */
+	if (lseek(fd, file->index_tail->next_index_offset, SEEK_SET) == -1)
+	    return 0;
+    	file->read_ahead = FALSE;
+        prev_index_tail = file->index_tail;
+	(void) FFSread_index(file);
+    }
+
+    if (file->index_tail->last_data_count < data_item)
+        // How can I can more than what has been written! :D
+        return 0;
+
+    index = file->index_head;
+    while (data_item > index->last_data_count)
+        index = index->next;
+
+    data_item -= index->start_data_count;
+    data_item++;
+    index_item = 0;
+    while (data_item > 0) {
+	if (index->elements[index_item].type == FFSdata) {
+	    data_item--;
+	}
+	index_item++;
+    }
+    index_item--;
+    fpos = index->elements[index_item].fpos;
+    FFSset_fpos(file, fpos);
+    file->data_block_no = data_item_bak;
+
+    return data_item_bak;
+#endif
+}
 
 FFSRecordType
 FFSnext_record_type(ffsfile)

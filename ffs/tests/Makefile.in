@@ -38,7 +38,7 @@ TESTS = context_test$(EXEEXT) context_test2$(EXEEXT) \
 bin_PROGRAMS =
 noinst_PROGRAMS = context_test$(EXEEXT) context_test2$(EXEEXT) \
 	ffs_write$(EXEEXT) io_dyn_read$(EXEEXT) fortran_test$(EXEEXT) \
-	ffs_file_test$(EXEEXT) ffs_index_test$(EXEEXT)
+	ffs_file_test$(EXEEXT) ffs_index_test$(EXEEXT) append$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -58,6 +58,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
+append_SOURCES = append.c
+append_OBJECTS = append.$(OBJEXT)
+append_LDADD = $(LDADD)
+append_DEPENDENCIES = ../libffs.la
 am_context_test_OBJECTS = context_test.$(OBJEXT) test_funcs.$(OBJEXT)
 context_test_OBJECTS = $(am_context_test_OBJECTS)
 context_test_LDADD = $(LDADD)
@@ -101,14 +105,14 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
+SOURCES = append.c $(context_test_SOURCES) $(context_test2_SOURCES) \
 	$(ffs_file_test_SOURCES) $(ffs_index_test_SOURCES) \
 	$(ffs_write_SOURCES) $(fortran_test_SOURCES) \
 	$(io_dyn_read_SOURCES)
-DIST_SOURCES = $(context_test_SOURCES) $(context_test2_SOURCES) \
-	$(ffs_file_test_SOURCES) $(ffs_index_test_SOURCES) \
-	$(ffs_write_SOURCES) $(fortran_test_SOURCES) \
-	$(io_dyn_read_SOURCES)
+DIST_SOURCES = append.c $(context_test_SOURCES) \
+	$(context_test2_SOURCES) $(ffs_file_test_SOURCES) \
+	$(ffs_index_test_SOURCES) $(ffs_write_SOURCES) \
+	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -327,6 +331,9 @@ clean-noinstPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+append$(EXEEXT): $(append_OBJECTS) $(append_DEPENDENCIES) 
+	@rm -f append$(EXEEXT)
+	$(LINK) $(append_OBJECTS) $(append_LDADD) $(LIBS)
 context_test$(EXEEXT): $(context_test_OBJECTS) $(context_test_DEPENDENCIES) 
 	@rm -f context_test$(EXEEXT)
 	$(LINK) $(context_test_OBJECTS) $(context_test_LDADD) $(LIBS)

@@ -226,6 +226,8 @@ const char *flag_str;
 	flags = O_RDONLY;
     } else if (strcmp(flag_str, "w") == 0) {
 	flags = O_WRONLY | O_CREAT | O_TRUNC;
+    } else if (strcmp(flag_str, "a") == 0) {
+	flags = O_RDWR;
     } else {
 	fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
 		path);
