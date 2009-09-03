@@ -55,8 +55,10 @@ typedef struct _FFSIndexElement {
 
 typedef struct _FFSIndexItem {
     long next_index_offset;
+    long this_index_fpos;
     int start_data_count;
     int last_data_count;
+    int end_item_offset;
     int elem_count;
     struct _FFSIndexElement *elements;
     struct _FFSIndexItem *next;
@@ -205,6 +207,7 @@ exit:
 }
 
 static void read_all_index_and_formats(FFSFile file);
+static void convert_last_index_block(FFSFile file);
 
 /*
  * 
@@ -390,7 +393,7 @@ parse_flags(const char *flags, int *allow_input_p, int *allow_output_p,
 	    break;
 	case 'i':
 	    index = 1;
-	    /* falling through */
+	    break;
 	case 'w':
 	    if (input == 1) {
 		printf("Warning, write flag specified after read flag\n");
@@ -465,7 +468,7 @@ open_FFSfd(void *fd, const char *flags)
     }
     if (allow_input && allow_output) {   /* append mode! */
 	read_all_index_and_formats(f);
-//	convert_last_index_block(f);
+	convert_last_index_block(f);
 	f->status = OpenForWrite;
     } else if (allow_output) {
 	int magic_number = htonl(MAGIC_NUMBER);
@@ -812,6 +815,7 @@ parse_index_block(char *index_base)
 	    break;
 	}
 	case End_Item:
+	    item->end_item_offset = cur_offset;
 	    done++;
 	    break;
 	default:
@@ -1132,6 +1136,7 @@ FFSread_index(FFSFile ffsfile)
 {
     char *index_data;
     FFSIndexItem index_item;
+    off_t index_fpos;
     if (ffsfile->read_ahead == FALSE) {
 	(void) next_record_type(ffsfile);
     }
@@ -1139,6 +1144,9 @@ FFSread_index(FFSFile ffsfile)
 	if (!FFSconsume_next_item(ffsfile)) return NULL;
     }
     index_data = malloc(ffsfile->next_data_len);
+
+    update_fpos(ffsfile);
+    index_fpos = ffsfile->fpos - 4;
     if (ffsfile->read_func(ffsfile->file_id, index_data+4, 
 			   ffsfile->next_data_len-4, NULL, NULL)
 	!= ffsfile->next_data_len-4) {
@@ -1148,6 +1156,7 @@ FFSread_index(FFSFile ffsfile)
     ffsfile->read_ahead = FALSE;
     index_item = parse_index_block(index_data);
     free(index_data);
+    index_item->this_index_fpos = index_fpos;
     if (ffsfile->index_head == NULL) {
 	ffsfile->index_head = index_item;
 	ffsfile->index_tail = index_item;
@@ -1364,52 +1373,72 @@ read_all_index_and_formats(FFSFile file)
 {
     int fd = (int)(long)file->file_id;
     struct _FFSIndexItem *index;
-    off_t fpos;
+    off_t fpos = 1;
     int index_item;
     FFSIndexItem prev_index_tail = NULL;
 
     if (!file->index_head)
         FFSread_index(file);
     if (!file->index_head) {
-        // If file is not indexed then this condition will be activated.
-	printf("File was not indexed\n");
+        /* If file is not indexed then this condition will be activated.
+	   The FFSread_index() will have caused the entire file to have 
+	   been read and fpos set to the EOF.  Return and continue writing.
+	*/
+	return;
     }
-#ifdef NOT_DEF
-    /* seek to the N'th data item in the file */
-    while (data_item > file->index_tail->last_data_count &&
-           file->index_tail != prev_index_tail) {
-	/* don't skip forward past index blocks without reading them */
-	if (lseek(fd, file->index_tail->next_index_offset, SEEK_SET) == -1)
-	    return 0;
-    	file->read_ahead = FALSE;
-        prev_index_tail = file->index_tail;
-	(void) FFSread_index(file);
-    }
-
-    if (file->index_tail->last_data_count < data_item)
-        // How can I can more than what has been written! :D
-        return 0;
-
-    index = file->index_head;
-    while (data_item > index->last_data_count)
-        index = index->next;
-
-    data_item -= index->start_data_count;
-    data_item++;
-    index_item = 0;
-    while (data_item > 0) {
-	if (index->elements[index_item].type == FFSdata) {
-	    data_item--;
+    file->file_org = Indexed;
+    while (fpos != 0) {
+	/* Read all formats in this index block */
+	int i;
+	for (i = 0; i < file->index_tail->elem_count; i++) {
+	    if (file->index_tail->elements[i].type == FFSformat) {
+		fpos = file->index_tail->elements[i].fpos;
+		if (lseek(fd, fpos, SEEK_SET) == -1)
+		    return;
+		(void) FFSread_format(file);
+	    }
 	}
-	index_item++;
+	fpos = file->index_tail->elements[i].fpos;
+	if (fpos != 0) {
+	    if (lseek(fd, fpos, SEEK_SET) == -1)
+		return;
+	    FFSread_index(file);
+	}
     }
-    index_item--;
-    fpos = index->elements[index_item].fpos;
-    FFSset_fpos(file, fpos);
-    file->data_block_no = data_item_bak;
+}
 
-    return data_item_bak;
-#endif
+static void
+convert_last_index_block(FFSFile ffsfile)
+{
+    FFSIndexItem read_index = ffsfile->index_tail;
+    FFSIndexType write_index;
+    init_write_index_block(ffsfile);
+    write_index = ffsfile->cur_index;
+    unsigned char *index_data;
+
+    if (read_index == NULL) return;
+
+    FFSset_fpos(ffsfile,  read_index->this_index_fpos);
+    
+    (void) next_record_type(ffsfile);
+    assert(ffsfile->next_record_type == FFSindex);
+
+    index_data = ffsfile->cur_index->write_info.index_block;
+    if (ffsfile->read_func(ffsfile->file_id, index_data+4, 
+			   ffsfile->next_data_len-4, NULL, NULL)
+	!= ffsfile->next_data_len-4) {
+	printf("Read failed, errno %d\n", errno);
+	return;
+    }
+    write_index->write_info.base_file_pos = read_index->this_index_fpos;
+    write_index->write_info.data_index_start = read_index->start_data_count;
+    write_index->write_info.data_index_end = read_index->last_data_count;
+    write_index->write_info.next_item_offset = read_index->end_item_offset;
+    ffsfile->data_count = read_index->last_data_count + 1;
+    int fd = (int)(long)ffsfile->file_id;
+    if (lseek(fd, 0, SEEK_END) == -1)
+	return;
+    
 }
 
 FFSRecordType

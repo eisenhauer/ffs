@@ -53,10 +53,29 @@ main(int argc, char **argv)
 
     FMStructDescRec str_list[5];
     FMOptInfo opt_info[2], opt_info2[2];
-    int verbose = 0, indexed = 0;
+    int verbose = 0, indexed = 0, i;
     char *output_file = "test_output";
 
-    ffsfile = open_FFSfile(output_file, "a");
+    for (i = 1; i < argc; i++) {
+	if (argv[i][0] == '-') {
+	    /* argument */
+	    if (argv[i][1] == 'v') {
+		verbose++;
+	    } else if (argv[i][1] == 'i') {
+		indexed++;
+	    } else {
+		printf("Unknown argument \"%s\"\n", argv[i]);
+	    }
+	} else {
+	    output_file = argv[i];
+	}
+    }
+
+    if (!indexed) {
+	ffsfile = open_FFSfile(output_file, "a");
+    } else {
+	ffsfile = open_FFSfile(output_file, "ai");
+    }
 
     src_context = create_local_FMcontext();
 
