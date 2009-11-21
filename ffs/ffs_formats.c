@@ -26,7 +26,7 @@ extern char *getenv(const char *name);
 
 static int
 local_size(int field_index, FMFormat f, FMTypeDesc *type, 
-	   FMStructDescList subformats) 
+	   FMStructDescList subformats, int immediate) 
 {
     switch(type->type) {
     case FMType_string:
@@ -34,11 +34,12 @@ local_size(int field_index, FMFormat f, FMTypeDesc *type,
 	break;
     case FMType_pointer:
 	/* pointer is sizeof(char*), but we want to return size of item */
-	return local_size(field_index, f, type->next, subformats);
+	if (immediate) return (sizeof(char*));
+	return local_size(field_index, f, type->next, subformats, 0);
 	break;
     case FMType_array:
 	/* here, we always return the size of the element */
-	return local_size(field_index, f, type->next, subformats);
+	return local_size(field_index, f, type->next, subformats, immediate);
 	break;
     case FMType_subformat: {
 	char *subformat_name = f->field_subformats[field_index]->format_name;
@@ -204,14 +205,17 @@ generate_localized_subformat(FMFormat f, FMStructDescList subformats,
     int last_field_end = 0;
     int max_align = 0;
     while (fl[i].field_name != NULL) {
+	int align_size = local_size(i, f, &f->var_list[i].type_desc, 
+				    subformats+1, 1);
+
 	fl[i].field_size = local_size(i, f, &f->var_list[i].type_desc, 
-				       subformats+1);
+				      subformats+1, 0);
 	if (fl[i].field_offset < last_field_end) {
 	    fl[i].field_offset = last_field_end;
 	}
-	fl[i].field_offset = align_field(fl[i].field_size, fl[i].field_offset, 
+	fl[i].field_offset = align_field(align_size, fl[i].field_offset, 
 					 &f->var_list[i].type_desc, s, &max_align);
-	last_field_end = fl[i].field_offset + fl[i].field_size;
+	last_field_end = fl[i].field_offset + align_size;
 	i++;
     }
     subformats->format_name = strdup(f->format_name);
