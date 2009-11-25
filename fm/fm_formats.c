@@ -1553,75 +1553,68 @@ register_simple_data_format(FMContext context, char *struct_name,
 }
 
 static int
-on_list(FMFormat candidate, FMFormat *list, int list_count)
+compare_by_name_FMFormat(const void*va, const void*vb)
 {
-    int i;
-    for (i=0; i < list_count; i++) {
-	if (list[i] == candidate) return 1;
-    }
-    return 0;
+    FMFormat a = (FMFormat)va;
+    FMFormat b = (FMFormat)vb;
+    return strcmp(a->format_name, b->format_name);
 }
 
-static int
-try_add(FMFormat candidate, FMFormat *list, int list_count)
+static void
+add_subs_for_format(FMFormat f, FMFormat* list, int *list_count_p)
 {
-    int i;
-    /* we can add a format IFF
-       it's not already on the list *and*
-       if all of its field_subformats are either NULL or on the list
-    */
-    if (on_list(candidate, list, list_count)) return 0;
-
-    for (i = 0; i < candidate->field_count; i++) {
-	if (candidate->field_subformats[i] != NULL) {
-	    if (!on_list(candidate->field_subformats[i], list, list_count)) {
-		return 0;
-	    }
+    int i, j;
+    FMFormat tmp[100];
+    int count = 0;
+    for (i=0; i < f->field_count; i++) {
+	if (f->field_subformats[i] != NULL) {
+	    tmp[count++] = f->field_subformats[i];
 	}
     }
-    return 1;
+    qsort(&tmp[0], count, sizeof(tmp[0]), compare_by_name_FMFormat);
+    /* for each subformat, check to see if it is already on the list. */
+    /* if it is, skip it */
+    /* if it is not, add it to the list and increment the integer pointed to by list_count_p */
+    for (i=0; i < count; i++) {
+	int found = 0;
+	for (j=0; j < *list_count_p; j++) {
+	    if (tmp[i] == list[j]) found++;
+	}
+	if (!found) {
+	    list[*list_count_p] = tmp[i];
+	    (*list_count_p)++;
+	}
+    }
 }
+    
 
 static
-void
+int
 topo_order_subformats(super_format, format_count)
 FMFormat super_format;
 int format_count;
 {
-    FMFormat tmp[100]; /* surely large enough */
-    assert(format_count < 100);
-    FMFormat *format_list = super_format->subformats;
-    int formats = 0;
-    for (formats = 0; formats < format_count ; formats++) {
-	int i = 0;
-	// find a subformat we can add
-	tmp[formats] = NULL;
+    FMFormat tmp[100];
+    int sorted_count = 1;
+    int i = 0;
+    tmp[0] = super_format;
+    for (i = 0; i < sorted_count; i++) { /* sorted_count changes */
+	add_subs_for_format(tmp[i], &tmp[0], &sorted_count);
+    }
+
+    if ((format_count +1) > sorted_count) {
 	for (i=0; i < format_count; i++) {
-	    if (try_add(format_list[i], tmp, formats)) {
-		tmp[formats] = format_list[i];
-		break;
+	    int j, found = 0;
+	    for (j=0; j < sorted_count; j++) {
+		if (super_format->subformats[i] == tmp[j]) found++;
 	    }
-	}
-	if (tmp[formats] == NULL) {
-	    /* nothing to add?  must have circular dependency.  Break it. */
-	    if (i == (format_count - 1)) {
-		/* last thing, add top */
-		tmp[formats] = super_format;
-	    } else {
-		int j;
-		for (j = 0; j < format_count; j++) {
-		    if ((format_list[j] != super_format) &&
-			(!on_list(format_list[j], tmp, formats))) {
-			tmp[formats] = format_list[j];
-		    }
-		}
+	    if (!found) {
+		free_FMformat(super_format->subformats[i]);
 	    }
 	}
     }
-    for (formats = 0; formats < format_count; formats++) {
-	format_list[formats] = tmp[format_count - formats - 1];
-	format_list[formats]->superformat = super_format;
-    }
+    memcpy(super_format->subformats, &tmp[1], sizeof(tmp[0]) * (sorted_count-1));
+    return sorted_count;
 }
 
 extern FMFormat
@@ -1702,7 +1695,9 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     formats[0]->subformats = malloc(sizeof(FMFormat) * struct_count);
     memcpy(formats[0]->subformats, &formats[1], sizeof(FMFormat) * struct_count);
     formats[0]->subformats[struct_count-1] = NULL;
-    topo_order_subformats(formats[0], struct_count-1);
+    struct_count = topo_order_subformats(formats[0], struct_count-1);
+    memcpy(formats[0]->subformats, &formats[1], sizeof(FMFormat) * struct_count);
+    formats[0]->subformats[struct_count-1] = NULL;
     for (i=struct_count-2; i>=0; i--) {
 	set_alignment(formats[0]->subformats[i]);
     }
@@ -1879,7 +1874,11 @@ FMFormat ioformat;
 	/* registering in a master, copy it down */
 	assert(0);
     }
-    server_format_rep = build_server_format_rep(ioformat);
+    if (ioformat->server_format_rep == NULL) {
+	server_format_rep = build_server_format_rep(ioformat);
+    }
+    server_format_rep = ioformat->server_format_rep;
+
     generate_format2_server_ID(&ioformat->server_ID, server_format_rep);
     if (format_server_verbose == 1) {
 	printf("Registering %s to locally-issued format ID ",
@@ -2684,7 +2683,7 @@ dump_FMFormat(ioformat)
 FMFormat ioformat;
 {
     int index, i;
-    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Flost format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
+    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Float format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
 	   ioformat->format_name, ioformat->record_length, 
 	   ioformat->field_count, ioformat->byte_reversal, 
 	   float_format_str[ioformat->float_format],
@@ -2789,6 +2788,8 @@ FMContext c;
     c->ref_count--;
     if (c->ref_count != 0) return;
     for (i = 0; i < c->reg_format_count; i++) {
+	/* make sure all are freed, lingering refs will fail */
+	c->format_list[i]->ref_count = 1;
 	free_FMformat(c->format_list[i]);
     }
     free(c->format_list);
