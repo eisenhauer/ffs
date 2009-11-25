@@ -33,10 +33,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-TESTS = align_test$(EXEEXT)
+TESTS = align_test$(EXEEXT) compat_test$(EXEEXT)
 @NO_SOCKETS_FALSE@bin_PROGRAMS = format_test$(EXEEXT) \
 @NO_SOCKETS_FALSE@	self_format_test$(EXEEXT) \
-@NO_SOCKETS_FALSE@	align_test$(EXEEXT)
+@NO_SOCKETS_FALSE@	align_test$(EXEEXT) compat_test$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -61,6 +61,10 @@ am_align_test_OBJECTS = align_test.$(OBJEXT) test_funcs.$(OBJEXT)
 align_test_OBJECTS = $(am_align_test_OBJECTS)
 align_test_LDADD = $(LDADD)
 align_test_DEPENDENCIES = ../libfm.la
+am_compat_test_OBJECTS = compat_test.$(OBJEXT) test_funcs.$(OBJEXT)
+compat_test_OBJECTS = $(am_compat_test_OBJECTS)
+compat_test_LDADD = $(LDADD)
+compat_test_DEPENDENCIES = ../libfm.la
 am_format_test_OBJECTS = format_test.$(OBJEXT) test_funcs.$(OBJEXT)
 format_test_OBJECTS = $(am_format_test_OBJECTS)
 format_test_LDADD = $(LDADD)
@@ -82,10 +86,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(align_test_SOURCES) $(format_test_SOURCES) \
-	$(self_format_test_SOURCES)
-DIST_SOURCES = $(align_test_SOURCES) $(format_test_SOURCES) \
-	$(self_format_test_SOURCES)
+SOURCES = $(align_test_SOURCES) $(compat_test_SOURCES) \
+	$(format_test_SOURCES) $(self_format_test_SOURCES)
+DIST_SOURCES = $(align_test_SOURCES) $(compat_test_SOURCES) \
+	$(format_test_SOURCES) $(self_format_test_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -212,6 +216,7 @@ LDADD = ../libfm.la
 format_test_SOURCES = format_test.c test_funcs.c
 self_format_test_SOURCES = self_format_test.c test_funcs.c
 align_test_SOURCES = align_test.c test_funcs.c
+compat_test_SOURCES = compat_test.c test_funcs.c
 all: all-am
 
 .SUFFIXES:
@@ -276,6 +281,9 @@ clean-binPROGRAMS:
 align_test$(EXEEXT): $(align_test_OBJECTS) $(align_test_DEPENDENCIES) 
 	@rm -f align_test$(EXEEXT)
 	$(LINK) $(align_test_OBJECTS) $(align_test_LDADD) $(LIBS)
+compat_test$(EXEEXT): $(compat_test_OBJECTS) $(compat_test_DEPENDENCIES) 
+	@rm -f compat_test$(EXEEXT)
+	$(LINK) $(compat_test_OBJECTS) $(compat_test_LDADD) $(LIBS)
 format_test$(EXEEXT): $(format_test_OBJECTS) $(format_test_DEPENDENCIES) 
 	@rm -f format_test$(EXEEXT)
 	$(LINK) $(format_test_OBJECTS) $(format_test_LDADD) $(LIBS)

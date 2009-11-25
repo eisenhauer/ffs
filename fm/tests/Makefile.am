@@ -6,12 +6,12 @@ noinst_HEADERS = test_funcs.h
 
 LDADD = ../libfm.la
 
-TESTS = align_test
+TESTS = align_test compat_test
 
 if NO_SOCKETS
 bin_PROGRAMS = 
 else
-bin_PROGRAMS = format_test self_format_test align_test
+bin_PROGRAMS = format_test self_format_test align_test compat_test
 endif
 
 all-local:
@@ -20,5 +20,6 @@ install-exec-local:
 format_test_SOURCES = format_test.c test_funcs.c
 self_format_test_SOURCES = self_format_test.c test_funcs.c
 align_test_SOURCES = align_test.c test_funcs.c
+compat_test_SOURCES = compat_test.c test_funcs.c
 
 check_target:
