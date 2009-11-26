@@ -1555,8 +1555,8 @@ register_simple_data_format(FMContext context, char *struct_name,
 static int
 compare_by_name_FMFormat(const void*va, const void*vb)
 {
-    FMFormat a = (FMFormat)va;
-    FMFormat b = (FMFormat)vb;
+    FMFormat a = *(FMFormat*)va;
+    FMFormat b = *(FMFormat*)vb;
     return strcmp(a->format_name, b->format_name);
 }
 
@@ -1613,7 +1613,9 @@ int format_count;
 	    }
 	}
     }
-    memcpy(super_format->subformats, &tmp[1], sizeof(tmp[0]) * (sorted_count-1));
+    for (i=1; i< sorted_count; i++) {
+	super_format->subformats[i - 1] = tmp[i];
+    }
     return sorted_count;
 }
 
@@ -1696,7 +1698,6 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     memcpy(formats[0]->subformats, &formats[1], sizeof(FMFormat) * struct_count);
     formats[0]->subformats[struct_count-1] = NULL;
     struct_count = topo_order_subformats(formats[0], struct_count-1);
-    memcpy(formats[0]->subformats, &formats[1], sizeof(FMFormat) * struct_count);
     formats[0]->subformats[struct_count-1] = NULL;
     for (i=struct_count-2; i>=0; i--) {
 	set_alignment(formats[0]->subformats[i]);
