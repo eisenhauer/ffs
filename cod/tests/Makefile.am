@@ -39,16 +39,13 @@ general.$(OBJEXT): general.c
 
 t4.stamp:  t4@EXEEXT@
 	./t4 1>tmp.out  2>&1
-	@grep -v "lib[vi]code.a" tmp.out > tmp1.out
-	@grep -v "## Error.*error" tmp1.out > tmp.out
-	@rm tmp1.out
+	@grep -v "## Error.*error" tmp.out > tmp1.out
+	@mv tmp1.out tmp.out
 	diff -w tmp.out t4.out && touch t4.stamp
 	@rm tmp.out
 
 t2.stamp:  t2@EXEEXT@
 	./t2 1>tmp.out 2>&1
-	@grep -v "lib[vi]code.a" tmp.out > tmp1.out
-	@mv tmp1.out tmp.out
 	diff -w tmp.out t2.out && touch t2.stamp
 	@rm tmp.out
 
@@ -56,3 +53,47 @@ clean: clean-am
 	rm -f t4.stamp t2.stamp ${EXTRA_PROGRAMS} general.c
 
 LDADD = ../libcod.la
+
+VALGRIND= ../libtool --mode=execute valgrind --tool=memcheck --error-exitcode=1 --quiet --trace-children=yes
+
+valgrind: t1.valgrind t2.valgrind t3.valgrind t5.valgrind t6.valgrind t8.valgrind t9.valgrind t10.valgrind t12.valgrind gray.valgrind general.valgrind atl_test.valgrind strings.valgrind
+
+t1.valgrind:  t1@EXEEXT@
+	$(VALGRIND) ./t1 1>/dev/null  2>&1
+
+t2.valgrind:  t2@EXEEXT@
+	$(VALGRIND) ./t2 1>/dev/null  2>&1
+
+t3.valgrind:  t3@EXEEXT@
+	$(VALGRIND) ./t3 1>/dev/null  2>&1
+
+t5.valgrind:  t5@EXEEXT@
+	$(VALGRIND) ./t5 1>/dev/null  2>&1
+
+t6.valgrind:  t6@EXEEXT@
+	$(VALGRIND) ./t6 1>/dev/null  2>&1
+
+t8.valgrind:  t8@EXEEXT@
+	$(VALGRIND) ./t8 1>/dev/null  2>&1
+
+t9.valgrind:  t9@EXEEXT@
+	$(VALGRIND) ./t9 1>/dev/null  2>&1
+
+t10.valgrind:  t10@EXEEXT@
+	$(VALGRIND) ./t10 1>/dev/null  2>&1
+
+t12.valgrind:  t12@EXEEXT@
+	$(VALGRIND) ./t12 1>/dev/null  2>&1
+
+atl_test.valgrind:  atl_test@EXEEXT@
+	$(VALGRIND) ./atl_test 1>/dev/null  2>&1
+
+gray.valgrind:  gray@EXEEXT@
+	$(VALGRIND) ./gray 1>/dev/null  2>&1
+
+strings.valgrind:  strings@EXEEXT@
+	$(VALGRIND) ./strings 1>/dev/null  2>&1
+
+general.valgrind:  general@EXEEXT@
+	$(VALGRIND) ./general 1>/dev/null  2>&1
+

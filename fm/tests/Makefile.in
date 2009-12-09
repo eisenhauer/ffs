@@ -217,6 +217,7 @@ format_test_SOURCES = format_test.c test_funcs.c
 self_format_test_SOURCES = self_format_test.c test_funcs.c
 align_test_SOURCES = align_test.c test_funcs.c
 compat_test_SOURCES = compat_test.c test_funcs.c
+VALGRIND = ../libtool --mode=execute valgrind --tool=memcheck --error-exitcode=1 --quiet --trace-children=yes
 all: all-am
 
 .SUFFIXES:
@@ -581,6 +582,14 @@ all-local:
 install-exec-local:
 
 check_target:
+
+valgrind: align_test.valgrind compat_test.valgrind
+
+align_test.valgrind:  align_test@EXEEXT@
+	$(VALGRIND) ./align_test 1>/dev/null  2>&1
+
+compat_test.valgrind:  compat_test@EXEEXT@
+	$(VALGRIND) ./compat_test 1>/dev/null  2>&1
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

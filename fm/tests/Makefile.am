@@ -23,3 +23,14 @@ align_test_SOURCES = align_test.c test_funcs.c
 compat_test_SOURCES = compat_test.c test_funcs.c
 
 check_target:
+
+VALGRIND= ../libtool --mode=execute valgrind --tool=memcheck --error-exitcode=1 --quiet --trace-children=yes
+
+valgrind: align_test.valgrind compat_test.valgrind
+
+align_test.valgrind:  align_test@EXEEXT@
+	$(VALGRIND) ./align_test 1>/dev/null  2>&1
+
+compat_test.valgrind:  compat_test@EXEEXT@
+	$(VALGRIND) ./compat_test 1>/dev/null  2>&1
+
