@@ -2010,7 +2010,7 @@ static char*
 gen_anon()
 {
     static int anon_count = 0;
-    char *ret = malloc(strlen("Anonymous-xxxxx"));
+    char *ret = malloc(strlen("Anonymous-xxxxxxxxxxxxxxxxx"));
     sprintf(ret, "Anonymous-%d", anon_count++);
     return ret;
 }
