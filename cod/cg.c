@@ -172,7 +172,7 @@ add_decl_to_static_description(sm_ref decl, cod_code cd)
 	while (cd->static_formats[0].field_list[field_count].field_name != NULL) {
 	    field_count++;
 	}
-	cd->static_formats[0].field_list = malloc(sizeof(FMField) * (field_count +2));
+	cd->static_formats[0].field_list = realloc(cd->static_formats[0].field_list, sizeof(FMField) * (field_count +2));
 	cd->static_formats[0].field_list[field_count+1].field_name = NULL;
 	cd->static_formats[0].field_list[field_count+1].field_type = NULL;
 	cd->static_formats[0].field_list[field_count+1].field_size = 0;
