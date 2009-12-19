@@ -135,6 +135,8 @@ typedef struct _FMFormatBody {
     FMOptInfo *opt_info;
     xml_output_info xml_out;
     format_rep server_format_rep;    
+    void *ffs_info;
+    void (*free_ffs_info)(void*);
 } FMFormatBody;
 
 extern char *

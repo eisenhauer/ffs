@@ -243,6 +243,8 @@ FMFormat body;
     free(body->field_subformats);
     if (body->server_format_rep != NULL)
 	free(body->server_format_rep);
+    if (body->ffs_info)
+	body->free_ffs_info(body->ffs_info);
     if (body->server_ID.value != NULL)
 	free(body->server_ID.value);
     if (body->opt_info != NULL) {
@@ -614,6 +616,8 @@ new_FMFormat()
     ioformat->server_ID.value = NULL;
     ioformat->opt_info = NULL;
     ioformat->xml_out = NULL;
+    ioformat->ffs_info = NULL;
+    ioformat->free_ffs_info = NULL;
     return (ioformat);
 }
 
