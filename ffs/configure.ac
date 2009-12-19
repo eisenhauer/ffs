@@ -165,6 +165,6 @@ AC_ARG_WITH(service_domain, [  --with-service-domain=DOMAINNAME	What domain the 
 AC_DEFINE_UNQUOTED(FORMAT_SERVER_HOST, "$FORMAT_SERVER_HOST", [Define with the name of the host which will run the format server])
 AC_DEFINE_UNQUOTED(FORMAT_SERVICE_DOMAIN, "$FORMAT_SERVICE_DOMAIN", [Define with the name of the domain which the format server will service])
 
-AC_CONFIG_FILES([./Makefile tests/Makefile progs/Makefile])
+AC_CONFIG_FILES([Makefile tests/Makefile progs/Makefile])
 AC_OUTPUT
 

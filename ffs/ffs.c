@@ -8,6 +8,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "ffs_marshal.h"
 
 static void *
 quick_get_pointer(FMFieldPtr iofield, void *data);
@@ -477,10 +478,24 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	struct _FMgetFieldStruct src_spec;
 	int size, new_offset, tmp_data_loc;
 	char *ptr_value;
+	field_marshal_info marshal_info;
+
 	memset(&src_spec, 0, sizeof(src_spec));
 	src_spec.size = f->pointer_size;
 	ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
 	if (ptr_value == NULL) return 1;
+
+	/* customized marshalling */
+	if ((marshal_info = get_marshal_info(f, t)) != NULL) {
+	    if (marshal_info->type == FFSDropField) {
+		if (marshal_info->drop_row_func(ptr_value)) {
+		    /* drop the value */
+		    quick_put_ulong(&src_spec, 0,
+				    (char*)buf->tmp_buffer + data_offset);
+		}
+	    }
+	}
+
 	size = determine_size(f, buf, parent_offset, t->next);
 	if (f->recursive) {
 	    int previous_offset = search_addr_list(s, ptr_value);
