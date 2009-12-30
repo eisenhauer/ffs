@@ -34,11 +34,12 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 TESTS = context_test$(EXEEXT) context_test2$(EXEEXT) \
-	fortran_test$(EXEEXT)
+	fortran_test$(EXEEXT) marshal_test$(EXEEXT)
 bin_PROGRAMS =
 noinst_PROGRAMS = context_test$(EXEEXT) context_test2$(EXEEXT) \
 	ffs_write$(EXEEXT) io_dyn_read$(EXEEXT) fortran_test$(EXEEXT) \
-	ffs_file_test$(EXEEXT) ffs_index_test$(EXEEXT) append$(EXEEXT)
+	ffs_file_test$(EXEEXT) ffs_index_test$(EXEEXT) append$(EXEEXT) \
+	marshal_test$(EXEEXT)
 subdir = tests
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -93,6 +94,10 @@ am_io_dyn_read_OBJECTS = io_dyn_read.$(OBJEXT) test_funcs.$(OBJEXT)
 io_dyn_read_OBJECTS = $(am_io_dyn_read_OBJECTS)
 io_dyn_read_LDADD = $(LDADD)
 io_dyn_read_DEPENDENCIES = ../libffs.la
+am_marshal_test_OBJECTS = marshal_test.$(OBJEXT)
+marshal_test_OBJECTS = $(am_marshal_test_OBJECTS)
+marshal_test_LDADD = $(LDADD)
+marshal_test_DEPENDENCIES = ../libffs.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
@@ -108,11 +113,12 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 SOURCES = append.c $(context_test_SOURCES) $(context_test2_SOURCES) \
 	$(ffs_file_test_SOURCES) $(ffs_index_test_SOURCES) \
 	$(ffs_write_SOURCES) $(fortran_test_SOURCES) \
-	$(io_dyn_read_SOURCES)
+	$(io_dyn_read_SOURCES) $(marshal_test_SOURCES)
 DIST_SOURCES = append.c $(context_test_SOURCES) \
 	$(context_test2_SOURCES) $(ffs_file_test_SOURCES) \
 	$(ffs_index_test_SOURCES) $(ffs_write_SOURCES) \
-	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES)
+	$(fortran_test_SOURCES) $(io_dyn_read_SOURCES) \
+	$(marshal_test_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -263,6 +269,7 @@ ffs_index_test_SOURCES = ffs_index_test.c test_funcs.c
 io_default_test_SOURCES = io_default_test.c test_funcs.c
 ffs_write_SOURCES = ffs_write.c test_funcs.c
 io_dyn_read_SOURCES = io_dyn_read.c test_funcs.c
+marshal_test_SOURCES = marshal_test.c
 all: all-am
 
 .SUFFIXES:
@@ -355,6 +362,9 @@ fortran_test$(EXEEXT): $(fortran_test_OBJECTS) $(fortran_test_DEPENDENCIES)
 io_dyn_read$(EXEEXT): $(io_dyn_read_OBJECTS) $(io_dyn_read_DEPENDENCIES) 
 	@rm -f io_dyn_read$(EXEEXT)
 	$(LINK) $(io_dyn_read_OBJECTS) $(io_dyn_read_LDADD) $(LIBS)
+marshal_test$(EXEEXT): $(marshal_test_OBJECTS) $(marshal_test_DEPENDENCIES) 
+	@rm -f marshal_test$(EXEEXT)
+	$(LINK) $(marshal_test_OBJECTS) $(marshal_test_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
