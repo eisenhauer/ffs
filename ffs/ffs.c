@@ -41,6 +41,7 @@ typedef struct encode_state {
     addr_list_entry *addr_list;
     int malloc_addr_size;
     int saved_offset_difference;
+    void *orig_data;
 }*estate;
 
 static void free_addr_list(estate s);
@@ -203,6 +204,7 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
     state.addr_list = stack_addr_list;
     state.copy_all = 1;
     state.saved_offset_difference = 0;
+    state.orig_data = data;
 
     make_tmp_buffer(b, 0);
 
@@ -349,6 +351,7 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
     state.addr_list = stack_addr_list;
     state.copy_all = 0;
     state.saved_offset_difference = 0;
+    state.orig_data = data;
 
     make_tmp_buffer(b, 0);
 
@@ -488,10 +491,11 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	/* customized marshalling */
 	if ((marshal_info = get_marshal_info(f, t)) != NULL) {
 	    if (marshal_info->type == FFSDropField) {
-		if (marshal_info->drop_row_func(ptr_value)) {
+		if (marshal_info->drop_row_func(s->orig_data)) {
 		    /* drop the value */
 		    quick_put_ulong(&src_spec, 0,
 				    (char*)buf->tmp_buffer + data_offset);
+		    return 1;
 		}
 	    }
 	}
