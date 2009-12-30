@@ -882,7 +882,7 @@ struct_or_union_specifier
 	    $$ = cod_build_parsed_type_node(yycontext, "anon", $3);
 	}
 	| struct_or_union identifier_ref {
-	    $$ = cod_build_parsed_type_node(yycontext, $1.string, NULL);
+	    $$ = cod_build_parsed_type_node(yycontext, $2.string, NULL);
 	}
 	;
 
