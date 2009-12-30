@@ -7,7 +7,7 @@ SUBDIRS = . progs tests
 
 noinst_HEADERS = assert.h config.h ffs_gen.h ffs_internal.h 
 
-INCLUDES = -I../fm
+INCLUDES = -I../fm -I../cod
 
 libffs_la_SOURCES = ffs.c ffs_formats.c ffs_conv.c ffs_gen.c ffs_file.c unix_io.c evol.c ffs_marshal.c version.c
 
