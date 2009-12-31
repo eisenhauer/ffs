@@ -6,7 +6,7 @@
 #include "ffs.h"
 #include "ffs_internal.h"
 #include "cercs_env.h"
-#include "string.h"
+#include "strings.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "unistd.h"

@@ -13,7 +13,6 @@
 #endif
 #include <sys/types.h>
 #include <ctype.h>
-extern char *getenv(const char *name);
 
 #ifdef HAVE_DILL_H
 #include "dill.h"
@@ -769,7 +768,7 @@ void *dest;
 	    }
 	} else {
 	    char *srcc = (char *) src + src_spec->offset;
-	    memcpy(dest, srcc, dest_size);
+	    if (dest != srcc) memcpy(dest, srcc, dest_size);
 	}
 	return;
     }
@@ -2960,7 +2959,7 @@ int register_args;
 		int field = next->control_field_index;
 		struct _FMgetFieldStruct tmp_src_spec;
 		iogen_oprnd src_oprnd;
-		dill_reg addr_reg;
+		dill_reg addr_reg = -1;
 
 		memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
 		tmp_src_spec.size = f->field_list[field].field_size;

@@ -188,6 +188,8 @@ align_field(int local_size, int cur_offset, FMTypeDesc *type, dill_stream s,
     case FMType_simple: {
 	align_req = min_align_type(type->data_type, local_size);
     }
+    default:
+      align_req = -1;
     }
     if (align_req > *max_align_p) {
 	*max_align_p = align_req;

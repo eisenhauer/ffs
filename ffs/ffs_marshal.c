@@ -56,9 +56,8 @@ field_marshal_info
 add_marshal_info(FMFormat f)
 {
     format_marshal_info info = (format_marshal_info) f->ffs_info;
-    int i;
     if (info == NULL) {
-	f->ffs_info = info = malloc(sizeof(f->ffs_info[0]));
+	f->ffs_info = info = malloc(sizeof(struct marshal_info));
 	info->count = 1;
 	info->field_info = malloc(sizeof(info->field_info[0]));
     } else {
