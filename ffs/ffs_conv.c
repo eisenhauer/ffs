@@ -2947,6 +2947,7 @@ int register_args;
     dill_reg dest_addr = args[1];
     dill_reg rt_conv_status = args[2];
     int control_base = -1;
+    dill_reg addr_reg = -1;
 
     for (i = 0; i < conv->conv_count; i++) {
 	FMTypeDesc *next = &conv->conversions[i].iovar->type_desc;
@@ -2959,7 +2960,6 @@ int register_args;
 		int field = next->control_field_index;
 		struct _FMgetFieldStruct tmp_src_spec;
 		iogen_oprnd src_oprnd;
-		dill_reg addr_reg = -1;
 
 		memset(&tmp_src_spec, 0, sizeof(tmp_src_spec));
 		tmp_src_spec.size = f->field_list[field].field_size;
@@ -2995,6 +2995,7 @@ int register_args;
 		    dill_virtual_lea(c, addr_reg, control_base);
 		    conv_status->control_value = (int*)(long)addr_reg;
 	        }
+	    assert(addr_reg != -1);
 	        gen_store(c, src_oprnd, addr_reg, field*sizeof(int),
 			  sizeof(int), integer_type, TRUE /* aligned */);
 #endif
