@@ -171,25 +171,26 @@ align_field(int local_size, int cur_offset, FMTypeDesc *type, dill_stream s,
 	    align_req = sizeof(char*);
 	}
 	break;    
-    case FMType_subformat: {
-	/* realistically, should be max align of subfields, too hard */
-	if (s != NULL) {
+    case FMType_subformat:
+        /* realistically, should be max align of subfields, too hard */
+        if (s != NULL) {
 	    align_req = 0;
 	    int i;
 	    for (i = DILL_C; i <DILL_V; i++) {
-		if (align_req < dill_type_align(s, i)) {
+	        if (align_req < dill_type_align(s, i)) {
 		    align_req = dill_type_align(s, i);
 		}
 	    }
 	} else {
 	    align_req = sizeof(long);   /* just a guess */
 	}
-    }
-    case FMType_simple: {
-	align_req = min_align_type(type->data_type, local_size);
-    }
+	break;
+    case FMType_simple: 
+        align_req = min_align_type(type->data_type, local_size);
+	break;
     default:
-      align_req = -1;
+        align_req = -1;
+	break;
     }
     if (align_req > *max_align_p) {
 	*max_align_p = align_req;
