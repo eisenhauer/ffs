@@ -9,24 +9,204 @@ data for communication in a heterogeneous computing environment.  This
 manual servers as both an introduction to using FFS and as a reference
 manual for the API.
 
+FFS is more complex than the type systems built into many middleware
+environments because it was designed to operate efficiently in situations
+where {\it a priori} knowledge shared between the sender (writer) and
+receiver (reader) is limited.  In particular, FFS :
+\begin{itemize}
+\item tries to minimize copying, so as not to interfere with
+  delivering communication bandwidth and latency near what the underlying
+  network,
+\item supports system evolution through flexible matching between incoming
+  and expected data (limited {\it a priori} knowledge),
+\item allows the receipt and manipulation of data that is unknown before
+  runtime (zero {\it a priori} knowledge),
+\item has the ability to enact run-time specified functions to data types that
+  are potentially unknown until run-time, with an efficiency near native code.
+\end{itemize}
+
 \section{FFS Basics}
 
-The basic approach of the FFS library is relatively simple.
-FFS is record-oriented.  Writers (or encoders) of data must provide a
-description of the names, types, sizes and positions of the fields in the
-records they are writing.  On the writer's side this is done by ``registering
-a format.''  Readers (or decoders) must provide similar information for the
-records that they are interested in reading.  On the reading side, this is
-done for each incoming format and is called ``setting a conversion,'' that
-is, establishing a correspondence between the fields in the incoming records
-and the fields in the local data structure into which the information is to
-be placed.  No translation is done on the writer's end.  On the reader's
-end, the format of the incoming record is compared with the format that the
-program expects.  If there are discrepancies the FFS read routine performs
-the appropriate translations (conversions).
+The basic approach of the FFS library is relatively simple.  FFS supports
+both files and message-based transport, but at its core FFS is
+record-oriented.  From a data-description point of view, writers (or
+encoders) of data must provide a description of the names, types, sizes and
+positions of the fields in the records they are writing.  Readers/receivers must
+provide similar information for the records that they are interested in
+reading.
+
+FFS uses this 'format' information to establishing a correspondence between
+the fields in the incoming records and the fields in the local data
+structure into which the information is to be placed.  No translation is
+done on the writer's end.  On the reader's end, the format of the incoming
+record is compared with the format that the program expects.  If there are
+discrepancies the FFS read routine performs the appropriate translations.
+
+
+\subsection{Describing Data/Message Types\label{sec:datatypes}}
+
+The FFS routines support records consisting of fields of the following
+basic data types: ``integer'', ``unsigned integer'', ``float'', and
+``string''.  Note that {\em field type} here is separate from {\em field
+  size} so that both the native C types {\tt int} and {\tt long} are 
+``integer'' types.   Similarly, C's {\tt double} and {\tt float} are both
+declared as ``float''
+
+In order to support record-oriented structure reading and writing, FFS must
+know the exact layout of the structure, including name, type, starting
+offset and size of each field.  This information is conveyed to FFS using an
+{\tt FMFieldList}\footnote{The 'FM' prefix is associated with Format Manager
+  functioality within FFS.}  with an entry for each field.  Because the size
+and offset of fields varies from architecture to architecture (and even from
+compiler to compiler), it is good practice to use the {\tt sizeof()}
+operator to calculate field size.  FFS also provides a macro, {\tt
+  FMOffset()} that uses compile-time tricks to calculate the offset of a
+field with a structure.  Below is an example structure for a record and the
+corresponding field list:
+\begin{verbatim}
+typedef struct _first_rec {
+    int         i;
+    long        j;
+    double      d;
+    char        c;
+} first_rec, *first_rec_ptr;
+
+static FMField field_list[] = {
+    {"i", "integer", sizeof(int), FMOffset(first_rec_ptr, i)},
+    {"j", "integer", sizeof(long), FMOffset(first_rec_ptr, j)},
+    {"d", "float",   sizeof(double), FMOffset(first_rec_ptr, d)},
+    {"c", "integer", sizeof(char), FMOffset(first_rec_ptr, c)},
+    {NULL, NULL, 0, 0},
+};
+\end{verbatim}
+\index{FMField}\index{FMOffset}
+
+The order of fields in the field list is not important.  It is not even
+necessary to specify every field in a structure with an entry in the field
+list. Unspecified fields at the end of the structure may not be written to
+the IO file.  Unspecified fields at the beginning or in the middle of a
+structure will be written to the IO file, but no information about them will
+be available.\footnote{{\it Nota Bene:} This behavior results because FFS
+  treats base data records (not strings or other dynamically sized elements)
+  as a contiguous memory block for efficiency.  The compiler may leave
+  ``holes'' in the data block to preserve the required alignment for some
+  data types.  Because FFS puts the data on the wire as a contiguous block,
+  the values in these ``holes'' are put on the wire as well.  Fields in the
+  record that are not described to FFS via the field list are simply treated
+  as larger ``holes''.  Note that relying on the behavior of FFS with
+  respect to values in these ``holes'' is erroneous and can have
+  unpredictable results.  For example, ``hole values'' may appear to be
+  transmitted along with the data in an exchange between homogeneous
+  systems, yet not in other cases.  That ``hole values'' are read by FFS may
+  also confuse valgrind and other tools who detect the operation as a read
+  of uninitialized memory.}
+
+\subsection{Simple Programs}
+
+FFS supports both file-oriented and online (network-based) data
+interchange.  The various uses of FFS share a common underlying
+infrastructure with respect to type manipulation.  We'll first demonstrate
+the file interface.  FFS uses several opaque types as handles to internal
+data structures:
+\begin{description}
+\item[FMContext -] FMContext's are repositories of structure and type
+  information in FFS.   Sometimes an FMContext is used on its own and
+  sometimes in concert with other handles.
+\item[FFSFile -] a handle to a file used for reading or writing FFS data.
+  FFSFile have internal FMContext's.
+\item[FMFormat - ] an FMFormat represents a handle to a registered structure
+  type.
+\end{description}
+The code below represents a simple FFS program that writes a record to a
+file.  We use the struct declaration and FMFieldList given in the example
+above (though we left out the initialization of the written data structure
+for simplicity).
+\begin{Code}
+int main(int argc, char **argv)
+{
+    FFSFile file = open_FFSfile("test_output", "w");
+    FMContext fmc = FMContext_of_file(file);
+    FMFormat rec_ioformat;
+    first_rec rec1;
+
+    rec_ioformat = register_simple_format(fmc, "first format", field_list, sizeof(first_rec));
+    write_FFSfile(file, rec_ioformat, &rec1);
+    close_FFSfile(file);
+}
+\end{Code}
+This program creates a file named {\tt test_output}.  You can use the
+program {\tt FFSdump}, part of the FFS package to print this binary file as
+verbose text.  {\tt register_simple_format()} is one of the most basic calls
+in FFS, used to provide FFS with the detailed field layout of a structure.
+FMformats are registered with particular FMContexts, this one extracted from
+the FFSFile.  In addition to the FMFieldList, structures/types must have a
+name and you must provide its size.  The {\tt register_simple_format()} call
+can only be used if the structure contains only basic atomic types, or arrays of
+or pointers to basic atomic types.
+
+The code below is a simple FFS program that reads the file written above.
+Once again we use the struct declaration and FMFieldList given earlier and
+while we're not actually printing out the data we read.
+\begin{Code}
+int
+main(int argc, char** argv);
+{
+    FFSFile iofile = open_FFSfile("test_output", "r");
+    FFSTypeHandle first_rec_handle;
+    FFSContext context = FFSContext_of_file(iofile);
+    first_rec rec1;
+
+    first_rec_handle = FFSset_simple_target(context, "first format", field_list, sizeof(first_rec));
+    FFSread(iofile, &rec1);
+    close_FFSfile(iofile);
+}
+\end{Code}
+The code above demonstrates the basics, albeit with several simplifying
+assumptions.  Structurally it is similar to the writing program.  {\tt
+  FFSset_simple_target()} call provides FFS with a description of a
+particular structure/message type that this program can handle and is the
+read-side analogue of the {\tt register_simple_format()} call. The
+FFSTypeHandle is roughly equivalent to an FMFormat, except that it is
+associated with incoming messages/records rather than outgoing ones.
+FFSContext uses here is similar to the FMContext, except that it also stores
+the associations between the ``original'' source format (the 'wire' format)
+and the ``native'', or target format.  The {\tt FFSread()} calls
+grabs the next record in the file and puts it in the {\tt rec} variable.  In
+this case, we are relying upon the {\it a priori} knowledge that there is
+one record in the file and that it's format {\it compatible} is compatible
+with the native {\it first_rec}.
+
+\paragraph{Compatibility} The notion of format {\it compatibility} is fairly
+important in FFS.  The general idea is that the target format specifies a
+set of required fields and the physical layout that the reading program
+requires them in.  FFS matches source and target fields by name and any
+source format which contains the required target fields is potentially
+compatible.  In the example above, the reader and writer are using the same
+C-level structure declaration.  If the programs were executed on different
+architectures, their binary representations (and hence the details of the
+source and target formats) might differ in byte order, type size and
+layout.  FFS would compensate for all of these differences and deliver the
+data to the receiver in his native representation.  FFS will also ignore (or
+correct for) differences in field order and even the presence of additional
+fields not requred by the reader.  These techniques, and others which are
+described later, help FFS enable communication even when multiple versions
+of application components in complex distributed systems.
+
+\section{More Complexity in Types}
+The example structure in the previous section consisted solely of fields of
+simple atomic data types.  FFS actually supports much more complexity than
+those simple structures.  In particular, FFS supports nested structures,
+null-terminated strings, both statically- and variable-sized arrays
+\subsection{Nested structures}
+Multiple structures may make up a complete datatype.  FFS requires that the
+transitive closure of all referenced structures be declared to FFS together
+as a unified type.
+
 \paragraph{FFS semantics resemble XML-based data transfer} FFS record
 decoding semantics are much like what you would get from using XML for data
-communication.  FFS transparently ignores extra fields that the decoder
+communication.  
+If the incoming and
+FFS transparently ignores extra fields that the decoder
 isn't expecting and removes any dependence upon field ordering.  FFS-encoded
 records can also be queried to determine what fields and types they contain.
 These features are some of the most important advantages that drive the
@@ -48,104 +228,6 @@ Because of the FFS focus on high-performance applications, this document
 is written using examples in C to transmit C structs.  In C++, the examples
 work equally well using classes without methods instead of structs.
 
-\subsection{High-level Constructs}
-FFS supports both file-oriented and online (network-based) data
-interchange.  File-oriented FFS is the most straightforward.  In this case
-the highest-level FFS construct is the \routine{IOFile}.  FFS files are always
-either read-only or write-only.  In writing a FFS file, the application must
-first register a format for records to be written and then may write records. 
-In reading a FFS file, an application must specify a conversion for records
-in the file before they are read.  The \routine{IOFile} also controls the scope of
-name resolution.  That is, the name ``Item'' may be associated with a
-particular structure in one \routine{IOFile} and with a different structure in another
-\routine{IOFile} without any conflict.
-
-In some situations, such as when using FFS as a data encoding mechanism for
-network communication, a file-oriented abstraction is unworkable.  To handle
-these situations, FFS provides an abstraction called an \routine{IOContext}.
-\routine{IOContext}s are very similar to \routine{IOFile}s except for two key differences:
-\begin{itemize}
-\item Instead of \routine{IOFile} read/write operations that take/put data directly
-to/from a filesystem, \routine{IOContext}s have encode/decode operations.  In
-encode/decode, FFS plays no role in actual data storage or transmission.
-Instead, the application is responsible for actually moving the encoded data
-from place to place.
-\item While \routine{IOFile}s are either read-only or write-only, a single \routine{IOContext}
-can be used for both encoding and decoding.
-\end{itemize}
-
-Internally to FFS, \routine{IOFile} and \routine{IOContext} are the same data structure.
-Because FFS operations like registering formats and setting conversions are
-common to both, the FFS API generally provides similar routines for
-\routine{IOFile}s and \routine{IOContext}s.  In {\it some} more unusual situations only one
-routine is provided and an application can safely cast between the two data
-types.
-
-Because the \routine{IOFile} interface is somewhat conceptually easier and files are
-a handy storage mechanism, the remainder of this section will describe the
-basics of FFS in the context of \routine{IOFile}s.  The \routine{IOContext} functionality
-will next appear in Section~\ref{iocontext}.
-
-\subsection{Supported Data Types\label{sec:datatypes}}
-
-The FFS routines support record formats consisting of fields of the following
-basic data types: ``integer'', ``unsigned integer'', ``float'', ``char'',
-``enumeration'' and ``string''.  Note that {\em field type} here is separate
-from {\em field size} so that both the native C types ``int'' and ``long'' are
-``integer'' types.  ``char'' is essentially treated as a small ``integer''
-except that the {\bf IOdump} program and other data-to-text subroutines will
-print it as a character. 
-``enumeration'' is also treated as an integer and there is currently no
-mechanism to apprise the IO routines of the symbolic names associated with the
-values.  ``string'' is a C-style zero-terminated variant-length string.  Both
-NULL and zero-length strings are handled appropriately.  
-
-There is no prohibition on the use of types not listed here.  However
-translation and display are not available for other than the built-in types.
-
-\subsection{Field Lists\label{sec:fieldlist}}
-A record format is characterized by a field list.  Each field is specified by
-its name, basic data type, the field's size and offset in the record.  The
-field name and basic data type are specified with strings.  The size and
-offset are integers.  Below is an example structure for a record and the
-corresponding field list:
-\begin{verbatim}
-typedef struct _first_rec {
-    int         i;
-    long        j;
-    double      d;
-    char        c;
-} first_rec, *first_rec_ptr;
-
-static IOField field_list[] = {
-    {"i", "integer", sizeof(int), IOOffset(first_rec_ptr, i)},
-    {"j", "integer", sizeof(long), IOOffset(first_rec_ptr, j)},
-    {"d", "float",   sizeof(double), IOOffset(first_rec_ptr, d)},
-    {"c", "integer", sizeof(char), IOOffset(first_rec_ptr, c)},
-    {NULL, NULL, 0, 0},
-};
-\end{verbatim}
-\index{IOField}\index{IOOffset}
-
-The ``IOOffset'' macro simply calculates the offset of a field in a structure
-using compile-time information.  Its use is recommended to avoid
-hand-calculating and hard-coding offsets.  The order of fields in the field
-list is not important.  It is not even necessary to specify every field
-in a structure with an entry in the field list. Unspecified fields at the end
-of the structure may not be written to the IO file.  Unspecified fields
-at the beginning or in the middle of a structure will be written to the IO
-file, but no information about them will be available.\footnote{{\it Nota
-Bene:} This behavior results because FFS treats base data records (not
-strings or other dynamically sized elements) as a contiguous memory block
-for efficiency.  The compiler may leave ``holes'' in the data block to
-preserve the required alignment for some data types.  Because FFS puts the
-data on the wire as a contiguous block, the values in these ``holes'' are put
-on the wire as well.  Fields in the record that are not described to FFS
-via the field list are simply treated as larger ``holes''.  Note that
-relying on the behavior of FFS with respect to values in these ``holes''
-is erroneous and can have unpredictable results.  For example, ``hole
-values'' may appear to be transmitted along with the data in an exchange
-between homogeneous systems, yet not in other cases.}
 \subsection{Formats and Conversions}
 
 While field lists characterize the layout of records, it would be inefficient
@@ -188,8 +270,8 @@ programs are shown in Figures~\ref{writer} and \ref{reader}.
 \begin{Code}
 int main(int argc, char **argv)
 {
-    IOFile iofile = open_IOfile("test_output", "w");
-    IOFormat first_rec_ioformat;
+    FFSFile file = open_FFSfile("test_output", "w");
+    FMFormat rec_ioformat;
     first_rec rec1;
     int i;
 
