@@ -1543,15 +1543,15 @@ free_format_list(FMFormat *formats)
 }
 
 FMFormat
-register_simple_data_format(FMContext context, char *struct_name,
-			    FMFieldList struct_field_list,
-			    int struct_size, FMOptInfo *opt_info)
+register_simple_format(FMContext context, char *struct_name,
+		       FMFieldList struct_field_list,
+		       int struct_size)
 {
     FMStructDescRec str_rec[2];
     str_rec[0].format_name = struct_name;
     str_rec[0].field_list = struct_field_list;
     str_rec[0].struct_size = struct_size;
-    str_rec[0].opt_info = opt_info;
+    str_rec[0].opt_info = NULL;
     str_rec[1].format_name = NULL;
     return register_data_format(context, &str_rec[0]);
 }
