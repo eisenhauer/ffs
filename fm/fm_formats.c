@@ -1564,33 +1564,51 @@ compare_by_name_FMFormat(const void*va, const void*vb)
     return strcmp(a->format_name, b->format_name);
 }
 
-static void
-add_subs_for_format(FMFormat f, FMFormat* list, int *list_count_p)
+static int
+on_list(FMFormat f, FMFormat *list)
 {
-    int i, j;
-    FMFormat tmp[100];
-    int count = 0;
-    for (i=0; i < f->field_count; i++) {
-	if (f->field_subformats[i] != NULL) {
-	    tmp[count++] = f->field_subformats[i];
-	}
+    while(*list != NULL) {
+	if (f == *list) return 1;
+	list++;
     }
-    qsort(&tmp[0], count, sizeof(tmp[0]), compare_by_name_FMFormat);
-    /* for each subformat, check to see if it is already on the list. */
-    /* if it is, skip it */
-    /* if it is not, add it to the list and increment the integer pointed to by list_count_p */
-    for (i=0; i < count; i++) {
-	int found = 0;
-	for (j=0; j < *list_count_p; j++) {
-	    if (tmp[i] == list[j]) found++;
+    return 0;
+}
+
+static void
+add_to_list(FMFormat f, FMFormat *list)
+{
+    int count = 0;
+    while(list[count] != NULL) count++;
+    list[count] = f;
+    list[count+1] = NULL;
+}
+
+static
+void add_format(FMFormat f, FMFormat* sorted, FMFormat *visited, FMFormat* stack)
+{
+    /* if n has not been visited yet then */
+    if (!on_list(f, visited)) {
+	FMFormat tmp[100];
+	int count = 0;
+	int i;
+        /* mark n as visited */
+	add_to_list(f, visited);
+
+	/* get subfields and sort them by name for predictability */
+	for (i=0; i < f->field_count; i++) {
+	    if (f->field_subformats[i] != NULL) {
+		tmp[count++] = f->field_subformats[i];
+	    }
 	}
-	if (!found) {
-	    list[*list_count_p] = tmp[i];
-	    (*list_count_p)++;
+	qsort(&tmp[0], count, sizeof(tmp[0]), compare_by_name_FMFormat);
+
+	for (i=0; i < count; i++) {
+	    add_format(tmp[i], sorted, visited, stack);
 	}
+	add_to_list(f, sorted);
     }
 }
-    
+
 
 static
 int
@@ -1598,28 +1616,29 @@ topo_order_subformats(super_format, format_count)
 FMFormat super_format;
 int format_count;
 {
-    FMFormat tmp[100];
+    FMFormat sorted[100], visit[100], stack[100];
     int sorted_count = 1;
     int i = 0;
-    tmp[0] = super_format;
-    for (i = 0; i < sorted_count; i++) { /* sorted_count changes */
-	add_subs_for_format(tmp[i], &tmp[0], &sorted_count);
-    }
+    sorted[0] = visit[0] = stack[0] = NULL;
+    
+    add_format(super_format, sorted, visit, stack);
+    while(sorted[sorted_count] != 0) sorted_count++;
 
     if ((format_count +1) > sorted_count) {
 	for (i=0; i < format_count; i++) {
 	    int j, found = 0;
 	    for (j=0; j < sorted_count; j++) {
-		if (super_format->subformats[i] == tmp[j]) found++;
+		if (super_format->subformats[i] == sorted[j]) found++;
 	    }
 	    if (!found) {
 		free_FMformat(super_format->subformats[i]);
 	    }
 	}
     }
-    for (i=1; i< sorted_count; i++) {
-	super_format->subformats[i - 1] = tmp[i];
+    for (i=0; i< sorted_count-1; i++) {
+	super_format->subformats[i] = sorted[sorted_count - 2 - i];
     }
+
     return sorted_count;
 }
 
