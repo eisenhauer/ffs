@@ -906,7 +906,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_maintainer_mode
-with_code_gen
+with___with_authentication
 with_installed
 with_rpm_build
 with_local
@@ -1578,8 +1578,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
- --with-code-gen            Use dynamic code generation in
-                            conversion operations.
+ --with-authentication            Find gcrypt and do encrypted authenticated.
   --with-installed        Don't use local copies of CERCS packages
   --with-rpm-build        Assume necessary files in CERCS packages will be installed
   --with-local            Use only local copies of CERCS packages
@@ -2569,11 +2568,11 @@ ac_config_headers="$ac_config_headers config.h"
 #
 
 
-# Check whether --with-code-gen was given.
-if test "${with_code_gen+set}" = set; then
-  withval=$with_code_gen;
+# Check whether --with---with-authentication was given.
+if test "${with___with_authentication+set}" = set; then
+  withval=$with___with_authentication; with_authentication=yes
 else
-  with_code_gen=yes
+  with_authentication=no
 fi
 
 
@@ -2929,11 +2928,11 @@ fi
 
 search_list="$search_list /usr/include/cercs_env.h /usr/local/include/cercs_env.h /opt/cercs_env/include/cercs_env.h /opt/misc/include/cercs_env.h /opt/misc/include/$cercs_cv_archive/cercs_env.h"
 tmp_search_results=""
-echo "configure:2932: searching for $search_list " >&5
+echo "configure:2931: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:2936: first found $tmp_search_results " >&5
+	echo "configure:2935: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -3027,11 +3026,11 @@ fi
 
 search_list="$search_list /usr/lib/libcercs_env.la /usr/local/lib/libcercs_env.la /opt/cercs_env/lib/libcercs_env.la /opt/misc/lib/libcercs_env.la /opt/misc/lib/$cercs_cv_archive/libcercs_env.la"
 tmp_search_results=""
-echo "configure:3030: searching for $search_list " >&5
+echo "configure:3029: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:3034: first found $tmp_search_results " >&5
+	echo "configure:3033: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -3108,11 +3107,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:3111: searching for $search_list " >&5
+echo "configure:3110: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:3115: first found $tmp_search_results " >&5
+	echo "configure:3114: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -3150,11 +3149,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:3153: searching for $search_list " >&5
+echo "configure:3152: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:3157: first found $tmp_search_results " >&5
+	echo "configure:3156: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -5648,13 +5647,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5651: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5650: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5654: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5653: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5657: output\"" >&5)
+  (eval echo "\"\$as_me:5656: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6848,7 +6847,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6851 "configure"' > conftest.$ac_ext
+  echo '#line 6850 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8705,11 +8704,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8708: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8707: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8712: \$? = $ac_status" >&5
+   echo "$as_me:8711: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9044,11 +9043,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9047: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9046: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9051: \$? = $ac_status" >&5
+   echo "$as_me:9050: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9149,11 +9148,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9152: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9151: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9156: \$? = $ac_status" >&5
+   echo "$as_me:9155: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9204,11 +9203,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9207: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9206: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9211: \$? = $ac_status" >&5
+   echo "$as_me:9210: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12004,7 +12003,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12007 "configure"
+#line 12006 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12100,7 +12099,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12103 "configure"
+#line 12102 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12676,6 +12675,7 @@ done
 
 
 
+if test x"$with_authentication" = xyes; then
 
 
 
@@ -12902,7 +12902,7 @@ LDFLAGS=$new_flags
 fi
 
 
-
+fi
 #
 # Configuration for format server authentication
 #
@@ -12922,6 +12922,8 @@ else
 fi
 
 
+if test x"$with_authentication" = xyes; then
+echo "check authentication $with_authentication"
 #  Find OpenSSL and test it for our encryption functions
 { $as_echo "$as_me:$LINENO: checking for gcry_cipher_close() in libgcrypt" >&5
 $as_echo_n "checking for gcry_cipher_close() in libgcrypt... " >&6; }
@@ -13005,6 +13007,7 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+fi
 
 # checks for typedefs, structures and compiler characteristics
 { $as_echo "$as_me:$LINENO: checking for an ANSI C-conforming const" >&5

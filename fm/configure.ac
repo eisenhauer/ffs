@@ -10,9 +10,8 @@ AM_CONFIG_HEADER(config.h)
 
 #
 
-AC_ARG_WITH(code-gen, 
-[ --with-code-gen            Use dynamic code generation in
-                            conversion operations.],,with_code_gen=yes)
+AC_ARG_WITH(--with-authentication, 
+[ --with-authentication            Find gcrypt and do encrypted authenticated.],with_authentication=yes,with_authentication=no)
 
 IO_FILE_NAME=unix_io
 
@@ -56,8 +55,9 @@ AC_CHECK_HEADERS(string.h memory.h malloc.h sys/select.h sys/socket.h \
 		sys/un.h netdb.h netinet/in.h winsock.h sockLib.h)
 AC_SUBST(IO_FILE_NAME)
 
+if test x"$with_authentication" = xyes; then
 CERCS_REQUIRE_OTHER_PACKAGE(gcrypt,gcrypt.h,libgcrypt.a)
-
+fi
 #
 # Configuration for format server authentication
 #
@@ -70,6 +70,8 @@ case "$enableval" in
 esac
 ],[passphrase_authentication=false])
 
+if test x"$with_authentication" = xyes; then
+echo "check authentication $with_authentication"
 #  Find OpenSSL and test it for our encryption functions
 AC_MSG_CHECKING(for gcry_cipher_close() in libgcrypt)
 TMP_LIBS=$LIBS
@@ -90,6 +92,7 @@ AC_TRY_LINK([
         LIBS="$TMP_LIBS"
         ])
 AC_LANG_POP([C])
+fi
 
 # checks for typedefs, structures and compiler characteristics
 AC_C_CONST
