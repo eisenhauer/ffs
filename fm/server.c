@@ -481,6 +481,7 @@ try_master_connect(format_server fs)
     static time_t last_try = 0;
     struct timeval now;
     int try_connection = 0;
+    if (fs->proxy_context_to_master == NULL) return 0;
     if (fs->proxy_context_to_master->server_fd != (void*)-1) {
 	/* assume connection still good */
 	if (fs->stdout_verbose) printf("Master connection still good\n");
