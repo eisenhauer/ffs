@@ -123,3 +123,58 @@ install_drop_code(FMFormat f, char *field, char*code_str)
 }
 
 
+extern void
+install_subsample_code(FMFormat f, char *field, char*code_str)
+{
+    cod_code code;
+    int (*func)(void*);
+    field_marshal_info marshal_info;
+    cod_parse_context parse_context = new_cod_parse_context();
+    int i, field_num = -1;
+
+    static char extern_string[] = "\
+		int printf(string format, ...);\n\
+		void *malloc(int size);\n\
+		void free(void *pointer);";
+
+    static cod_extern_entry externs[] = {
+	{"printf", (void *) 0},
+	{"malloc", (void*) 0},
+	{"free", (void*) 0},
+	{(void *) 0, (void *) 0}
+    };
+
+    /*
+     * some compilers think it isn't a static initialization to put this
+     * in the structure above, so do it explicitly.
+     */
+    externs[0].extern_value = (void *) (long) printf;
+    externs[1].extern_value = (void *) (long) malloc;
+    externs[2].extern_value = (void *) (long) free;
+
+
+    for (i=0; i< f->field_count; i++) {
+	if (strcmp(f->field_list[i].field_name, field) == 0) field_num = i;
+    }
+    if (field_num == -1) {
+	printf("field \"%s\" not found in install subsample code\n", field);
+	return;
+    }
+    add_param(parse_context, "input", 0, f);
+    cod_assoc_externs(parse_context, externs);
+    cod_parse_for_context(extern_string, parse_context);
+
+    code = cod_code_gen(code_str, parse_context);
+    cod_free_parse_context(parse_context);
+    if (code == NULL) {
+	printf("Compilation failed, field \"%s\" in install subsample code \n", field);
+	return;
+    }
+    func = (int(*)(void *))code->func;
+    marshal_info = add_marshal_info(f);
+    marshal_info->t = &f->var_list[field_num].type_desc;
+    marshal_info->type = FFSSubsampleArrayField;
+    marshal_info->subsample_array_func = func;
+}
+
+

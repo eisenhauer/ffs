@@ -493,6 +493,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    if (marshal_info->type == FFSDropField) {
 		if (marshal_info->drop_row_func(s->orig_data)) {
 		    /* drop the value */
+		    printf("Dropping the value\n");
 		    quick_put_ulong(&src_spec, 0,
 				    (char*)buf->tmp_buffer + data_offset);
 		    return 1;
@@ -500,7 +501,6 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    }
 	}
 
-	size = determine_size(f, buf, parent_offset, t->next);
 	if (f->recursive) {
 	    int previous_offset = search_addr_list(s, ptr_value);
 	    if (previous_offset != -1) {
@@ -509,12 +509,23 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		return 1;
 	    }
 	}
-	if (!s->copy_all && field_is_flat(f, t->next)) {
-	    /* leave data where it sits */
-	    new_offset = add_data_iovec(s, buf, ptr_value, size, 8);
+	size = determine_size(f, buf, parent_offset, t->next);
+	if ((marshal_info == NULL) || (marshal_info->type != FFSSubsampleArrayField)) {
+	    if (!s->copy_all && field_is_flat(f, t->next)) {
+		/* leave data where it sits */
+		new_offset = add_data_iovec(s, buf, ptr_value, size, 8);
+	    } else {
+		new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8, &tmp_data_loc);
+		if (new_offset == -1) return 0;
+	    }
 	} else {
-	    new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8, &tmp_data_loc);
-	    if (new_offset == -1) return 0;
+	    /* can't leave data where it sits */
+	    /* 1. allocate temporary space for the destination array
+	       2. call function to fill destination with part of source
+	       3. return value is number of elements copied
+	       4. adjust size of temporary to reflect actual data copied
+	    */
+	    marshal_info->subsample_array_func(s->orig_data);
 	}
 	quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
 			(char*)buf->tmp_buffer + data_offset);

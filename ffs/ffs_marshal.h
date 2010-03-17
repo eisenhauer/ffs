@@ -1,13 +1,14 @@
 #include "fm.h"
 
 typedef enum {
-    FFSMarshalEnd, FFSDropField
+    FFSMarshalEnd, FFSDropField, FFSSubsampleArrayField
 } MarshalType;
 
 typedef struct field_marshal_info {
     FMTypeDesc *t;
     MarshalType type;
     int (*drop_row_func)(void *);
+    int (*subsample_array_func)(void *);
 }*field_marshal_info;
 
 typedef struct marshal_info {
