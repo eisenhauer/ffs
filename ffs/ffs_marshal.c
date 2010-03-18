@@ -135,12 +135,12 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
     static char extern_string[] = "\
 		int printf(string format, ...);\n\
 		void *malloc(int size);\n\
-		void free(void *pointer);";
+		void memcpy(void* dest, void* src, int size);";
 
     static cod_extern_entry externs[] = {
 	{"printf", (void *) 0},
 	{"malloc", (void*) 0},
-	{"free", (void*) 0},
+	{"memcpy", (void*) 0},
 	{(void *) 0, (void *) 0}
     };
 
@@ -150,7 +150,7 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
      */
     externs[0].extern_value = (void *) (long) printf;
     externs[1].extern_value = (void *) (long) malloc;
-    externs[2].extern_value = (void *) (long) free;
+    externs[2].extern_value = (void *) (long) memcpy;
 
 
     for (i=0; i< f->field_count; i++) {
@@ -161,6 +161,11 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
 	return;
     }
     add_param(parse_context, "input", 0, f);
+    cod_add_param("element_count", "int", 1, parse_context);
+    cod_add_param("element_size", "int", 2, parse_context);
+    cod_add_param("array_src", "char*", 3, parse_context);
+    cod_add_param("array_dest", "char*", 4, parse_context);
+
     cod_assoc_externs(parse_context, externs);
     cod_parse_for_context(extern_string, parse_context);
 

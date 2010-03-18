@@ -8,7 +8,7 @@ typedef struct field_marshal_info {
     FMTypeDesc *t;
     MarshalType type;
     int (*drop_row_func)(void *);
-    int (*subsample_array_func)(void *);
+    int (*subsample_array_func)(void *, int, int, void*, void*);
 }*field_marshal_info;
 
 typedef struct marshal_info {

@@ -525,7 +525,10 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	       3. return value is number of elements copied
 	       4. adjust size of temporary to reflect actual data copied
 	    */
-	    marshal_info->subsample_array_func(s->orig_data);
+	    int element_size = determine_size(f, buf, parent_offset, t->next->next);
+	    int element_count = size / element_size;
+	    int actual_count = marshal_info->subsample_array_func(s->orig_data, element_count, element_size, 
+								  ptr_value, new_offset - s->saved_offset_difference + buf->tmp_buffer);
 	}
 	quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
 			(char*)buf->tmp_buffer + data_offset);
