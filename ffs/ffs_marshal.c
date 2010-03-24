@@ -127,7 +127,7 @@ extern void
 install_subsample_code(FMFormat f, char *field, char*code_str)
 {
     cod_code code;
-    int (*func)(void*);
+    int (*func)(void *, int, int, void*, void*);
     field_marshal_info marshal_info;
     cod_parse_context parse_context = new_cod_parse_context();
     int i, field_num = -1;
@@ -175,7 +175,7 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
 	printf("Compilation failed, field \"%s\" in install subsample code \n", field);
 	return;
     }
-    func = (int(*)(void *))code->func;
+    func = (int(*)(void *, int, int, void*, void*))code->func;
     marshal_info = add_marshal_info(f);
     marshal_info->t = &f->var_list[field_num].type_desc;
     marshal_info->type = FFSSubsampleArrayField;
