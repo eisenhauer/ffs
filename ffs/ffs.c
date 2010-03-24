@@ -493,7 +493,6 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    if (marshal_info->type == FFSDropField) {
 		if (marshal_info->drop_row_func(s->orig_data)) {
 		    /* drop the value */
-		    printf("Dropping the value\n");
 		    quick_put_ulong(&src_spec, 0,
 				    (char*)buf->tmp_buffer + data_offset);
 		    return 1;
