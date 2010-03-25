@@ -11,6 +11,7 @@
 #include "stdlib.h"
 #include "unistd.h"
 #include "errno.h"
+#include "string.h"
 
 #include "io_interface.h"
 
@@ -880,6 +881,7 @@ extern int
 write_comment_FFSfile(FFSFile f, const char *comment)
 {
     struct iovec vec[2];
+
     int byte_size = strlen(comment) + 1;
     int indicator;
     /*
