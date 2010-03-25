@@ -75,7 +75,7 @@ char **argv;
 	    if (!FFSread(file, &read_data))
 		printf("read later format");
 	    printf("later format rec had %d, %s, %g\n",
-		   read_data.integer_field, read_data.string,
+		   (int)read_data.integer_field, read_data.string,
 		   read_data.double_field);
 	} else if (FFSnext_type_handle(file) == nested_ioformat) {
 	    nested_rec read_data;
