@@ -3,6 +3,7 @@
 
 #include "assert.h"
 #include "ffs.h"
+#include "cod.h"
 #include "ffs_internal.h"
 #include "cercs_env.h"
 #include "string.h"
@@ -107,8 +108,9 @@ ensure_writev_room(estate s, int add_count)
     }
 }
 
+
 int
-copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *tmp_data_loc)
 {
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
     int tmp_data, msg_offset;
@@ -133,6 +135,17 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
 	    s->iovcnt++;
 	}
     }
+    msg_offset = s->output_len + pad;
+    if (tmp_data_loc) *tmp_data_loc = tmp_data;
+    s->output_len += length + pad;
+    return msg_offset;
+}
+
+int
+copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+{
+    int tmp_data;
+    int msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
     if (length != 0) {
 	memcpy((char*)buf->tmp_buffer + tmp_data, data, length);
 	s->iovec[s->iovcnt].iov_len = length;
@@ -140,9 +153,7 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
 	s->iovec[s->iovcnt].iov_base = NULL;
 	s->iovcnt++;
     }
-    msg_offset = s->output_len + pad;
     if (tmp_data_loc) *tmp_data_loc = tmp_data;
-    s->output_len += length + pad;
     return msg_offset;
 }
 
@@ -437,6 +448,23 @@ handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset)
     return 1;
 }
 
+static void
+set_dynamic_array_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t, int new_value)
+{
+    struct _FMgetFieldStruct src_spec;
+    int field = t->control_field_index;
+    if ((t->type != FMType_array) || (t->static_size != 0)) {
+	printf("Set array size failed!\n");
+	return;
+    }
+    memset(&src_spec, 0, sizeof(src_spec));
+    src_spec.size = f->field_list[field].field_size;
+    src_spec.offset = f->field_list[field].field_offset;
+    quick_put_ulong(&src_spec, new_value,
+		    (char*)buf->tmp_buffer + parent_offset);
+}
+
+
 static int
 determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 {
@@ -526,8 +554,28 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    */
 	    int element_size = determine_size(f, buf, parent_offset, t->next->next);
 	    int element_count = size / element_size;
-	    int actual_count = marshal_info->subsample_array_func(s->orig_data, element_count, element_size, 
-								  ptr_value, new_offset - s->saved_offset_difference + (char*)buf->tmp_buffer);
+	    int actual_count;
+	    cod_exec_context ec = marshal_info->ec;
+	    struct subsample_marshal_data smd;
+	    new_offset = allocate_tmp_space(s, buf, size, 8, &tmp_data_loc);
+	    smd.element_count = element_count;
+	    smd.element_size = element_size;
+	    smd.src_ptr = ptr_value;
+	    smd.dst_ptr = buf->tmp_buffer + new_offset;
+	    smd.marshalled_count = 0;
+	    cod_assoc_client_data(ec,  0x534d4450, (long)&smd);
+	    marshal_info->subsample_array_func(ec, s->orig_data, element_count);
+	    /* fixup size */
+	    set_dynamic_array_size(f, buf, parent_offset, t->next, 
+				   smd.marshalled_count);
+	    if (size != 0) {
+		s->iovec[s->iovcnt].iov_len = smd.marshalled_count * element_size;
+		s->iovec[s->iovcnt].iov_offset = tmp_data_loc;
+		s->iovec[s->iovcnt].iov_base = NULL;
+		s->iovcnt++;
+	    }
+	    s->output_len -= (size - (smd.marshalled_count *element_size));
+	    buf->tmp_buffer_in_use_size -= (size - (smd.marshalled_count *element_size));
 	}
 	quick_put_ulong(&src_spec, new_offset - s->saved_offset_difference, 
 			(char*)buf->tmp_buffer + data_offset);

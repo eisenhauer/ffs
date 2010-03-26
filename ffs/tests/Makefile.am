@@ -8,11 +8,11 @@ INCLUDES = -I../../fm -I../../cod -I..
 
 LDADD = ../libffs.la
 
-TESTS = context_test context_test2 fortran_test marshal_test
+TESTS = context_test context_test2 fortran_test marshal_test marshal_test2
 
 bin_PROGRAMS = 
 #noinst_PROGRAMS = io_read io_read2 io_dyn_read io_test io_write context_test fortran_test xml_test compat_test io_default_test io_def_write 
-noinst_PROGRAMS = context_test context_test2 ffs_write io_dyn_read fortran_test ffs_file_test ffs_index_test append marshal_test
+noinst_PROGRAMS = context_test context_test2 ffs_write io_dyn_read fortran_test ffs_file_test ffs_index_test append marshal_test marshal_test2
 
 MOSTLYCLEANFILES = dcg/*
 all-local:
@@ -29,6 +29,7 @@ io_default_test_SOURCES= io_default_test.c test_funcs.c
 ffs_write_SOURCES= ffs_write.c test_funcs.c
 io_dyn_read_SOURCES= io_dyn_read.c test_funcs.c
 marshal_test_SOURCES= marshal_test.c
+marshal_test2_SOURCES= marshal_test2.c
 
 write_output: context_test
 	rm -f ../output_dir/context_test_output.@ARCH@.bin

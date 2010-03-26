@@ -123,11 +123,29 @@ install_drop_code(FMFormat f, char *field, char*code_str)
 }
 
 
+static void
+copy_array_element(cod_exec_context ec, int element)
+{
+    struct subsample_marshal_data *smd = (void*)cod_get_client_data(ec, 0x534d4450);
+    int offset;
+    char *element_src, *element_dest;
+    if ((element < 0) || (element >= smd->element_count)) return;
+    if (smd->marshalled_count == smd->element_count) {
+	printf("Already Marshalled %d elements of this array!\n", 
+	       smd->element_count);
+	return;
+    }
+    element_src = smd->src_ptr + (element * smd->element_size);
+    element_dest = smd->dst_ptr + (smd->marshalled_count * smd->element_size);
+    memcpy(element_dest, element_src, smd->element_size);
+    smd->marshalled_count++;
+}
+
 extern void
 install_subsample_code(FMFormat f, char *field, char*code_str)
 {
     cod_code code;
-    int (*func)(void *, int, int, void*, void*);
+    int (*func)(cod_exec_context, void *, int);
     field_marshal_info marshal_info;
     cod_parse_context parse_context = new_cod_parse_context();
     int i, field_num = -1;
@@ -135,12 +153,14 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
     static char extern_string[] = "\
 		int printf(string format, ...);\n\
 		void *malloc(int size);\n\
-		void memcpy(void* dest, void* src, int size);";
+		void memcpy(void* dest, void* src, int size);\n\
+        void FFSMarshalArrayElement(cod_exec_context ec, int element);";
 
     static cod_extern_entry externs[] = {
 	{"printf", (void *) 0},
 	{"malloc", (void*) 0},
 	{"memcpy", (void*) 0},
+	{"FFSMarshalArrayElement", (void*) 0},
 	{(void *) 0, (void *) 0}
     };
 
@@ -151,6 +171,7 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
     externs[0].extern_value = (void *) (long) printf;
     externs[1].extern_value = (void *) (long) malloc;
     externs[2].extern_value = (void *) (long) memcpy;
+    externs[3].extern_value = (void *) (long) copy_array_element;
 
 
     for (i=0; i< f->field_count; i++) {
@@ -160,11 +181,9 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
 	printf("field \"%s\" not found in install subsample code\n", field);
 	return;
     }
-    add_param(parse_context, "input", 0, f);
-    cod_add_param("element_count", "int", 1, parse_context);
-    cod_add_param("element_size", "int", 2, parse_context);
-    cod_add_param("array_src", "char*", 3, parse_context);
-    cod_add_param("array_dest", "char*", 4, parse_context);
+    cod_add_param("ec", "cod_exec_context", 0, parse_context);
+    add_param(parse_context, "input", 1, f);
+    cod_add_param("element_count", "int", 2, parse_context);
 
     cod_assoc_externs(parse_context, externs);
     cod_parse_for_context(extern_string, parse_context);
@@ -175,8 +194,9 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
 	printf("Compilation failed, field \"%s\" in install subsample code \n", field);
 	return;
     }
-    func = (int(*)(void *, int, int, void*, void*))code->func;
+    func = (int(*)(cod_exec_context, void *, int))code->func;
     marshal_info = add_marshal_info(f);
+    marshal_info->ec = cod_create_exec_context(code);
     marshal_info->t = &f->var_list[field_num].type_desc;
     marshal_info->type = FFSSubsampleArrayField;
     marshal_info->subsample_array_func = func;
