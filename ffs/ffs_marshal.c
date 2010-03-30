@@ -135,8 +135,8 @@ copy_array_element(cod_exec_context ec, int element)
 	       smd->element_count);
 	return;
     }
-    element_src = smd->src_ptr + (element * smd->element_size);
-    element_dest = smd->dst_ptr + (smd->marshalled_count * smd->element_size);
+    element_src = (char*)smd->src_ptr + (element * smd->element_size);
+    element_dest = (char*)smd->dst_ptr + (smd->marshalled_count * smd->element_size);
     memcpy(element_dest, element_src, smd->element_size);
     smd->marshalled_count++;
 }
