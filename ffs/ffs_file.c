@@ -1536,10 +1536,12 @@ FFSFile ffsfile;
                     off_t fpos_bak = lseek(fd, 0, SEEK_CUR);
 		    int fid_len = ffsfile->next_fid_len;
 		    char tmp_fid_storage[64];
+		    int tmp_data_len;
 		    int done = 0;
 		    assert(sizeof(tmp_fid_storage) > fid_len);
 		    /* store away the format ID we've read */
 		    memcpy(tmp_fid_storage, tmp_buf, fid_len);
+		    tmp_data_len = ffsfile->next_data_len;
 
                     index = ffsfile->index_head;
                     while (!done && index) {
@@ -1562,6 +1564,7 @@ FFSFile ffsfile;
 				    tmp_buf = ffsfile->tmp_buffer->tmp_buffer;
 				    /* put back the format ID we read earlier */
 				    memcpy(tmp_buf, tmp_fid_storage, fid_len);
+				    ffsfile->next_data_len = tmp_data_len;
 
 				    ffsfile->next_actual_handle = 
 					FFSTypeHandle_from_encode(ffsfile->c,
