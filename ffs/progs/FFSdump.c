@@ -20,7 +20,7 @@ Usage: FFSdump [<option>] <filename>\n\
        By default, record formats are not printed.  Printing for\n\
        any record type can be turned on or off with an option.\n\
           <option> is of the form {+,-}{<record type>}\n\
-       where <record type> is one of : header, comments, formats, data\n";
+       where <record type> is one of : header, comments, index, formats, data\n";
 
 int
 main(argc, argv)
