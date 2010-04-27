@@ -76,7 +76,7 @@ struct _FFSFile {
     format_info *info;
     int info_size;
     int next_fid_len;
-    int next_data_len;
+    DATA_LEN_TYPE next_data_len;
     FFSBuffer buf;
     int read_ahead;
     int errno_val;
@@ -903,7 +903,7 @@ write_comment_FFSfile(FFSFile f, const char *comment)
 }
 
 extern int
-write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c,
+write_encoded_FFSfile(FFSFile f, void *data, DATA_LEN_TYPE byte_size, FFSContext c,
 		      attr_list attrs)
 {
     FFSTypeHandle h = FFSTypeHandle_from_encode(c, (char*)data);
@@ -937,12 +937,12 @@ write_encoded_FFSfile(FFSFile f, void *data, int byte_size, FFSContext c,
     output_data_index(f, id, id_len, attr_block, attr_len);
     /*
      * next_data indicator is two 4-byte chunks in network byte order.
-     * The top byte is 0x3.  The next 3 bytes are reserved for future use.
-     * The following 4-bytes are the size of the data -- assume size fits
-     * in a signed int.
+     * The top byte is 0x3.  The next byte is reserved for future use.
+     * The following 6-bytes are the size of the data -- assume size fits
+     * in 6 bytes.
      */
-    indicator[0] = htonl(0x3 << 24);
-    indicator[1] = htonl(byte_size ); 
+    indicator[0] = htonl(0x3 << 24 + (byte_size >> 32));
+    indicator[1] = htonl(byte_size & 0xffffffff); 
 
     vec[0].iov_len = 8;
     vec[0].iov_base = indicator;
@@ -969,7 +969,7 @@ write_FFSfile(FFSFile f, FMFormat format, void *data)
 extern int
 write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs)
 {
-    int byte_size;
+    DATA_LEN_TYPE byte_size;
     int index = format->format_index;
     int vec_count;
     FFSEncodeVector vec;
@@ -1006,12 +1006,12 @@ write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs)
 
     /*
      * next_data indicator is two 4-byte chunks in network byte order.
-     * The top byte is 0x3.  The next 3 bytes are reserved for future use.
-     * The following 4-bytes are the size of the data -- assume size fits
+     * The top byte is 0x3.  The next byte is reserved for future use.
+     * The following 6-bytes are the size of the data -- assume size fits
      * in a signed int.
      */
-    indicator[0] = htonl(0x3 << 24);
-    indicator[1] = htonl(byte_size); 
+    indicator[0] = htonl(0x3 << 24 + (byte_size >> 32));
+    indicator[1] = htonl(byte_size & 0xffffffff); 
 
     /* 
      *  utilize the fact that we have some blank vec entries *before the 
@@ -1222,13 +1222,13 @@ FFSFile ffsfile;
     return ffsfile->next_data_handle;
 }
 
-extern int
+extern DATA_LEN_TYPE
 FFSfile_next_decode_length(FFSFile iofile)
 {
     FFSContext context = iofile->c;
     FFSTypeHandle th = FFSnext_type_handle(iofile);
+    DATA_LEN_TYPE len = iofile->next_data_len;
     th = iofile->next_actual_handle;
-    int len = iofile->next_data_len;
     return FFS_decode_length_format(context, th, len);
 }
 
@@ -1500,12 +1500,14 @@ FFSFile ffsfile;
 	case 0x3: /* data */ {
 		char *tmp_buf;
 		int header_size;
+		DATA_LEN_TYPE top_data_len_bytes = indicator_chunk & 0xffff;
 		ffsfile->next_record_type = FFSdata;
 		if (!get_AtomicInt(ffsfile, &indicator_chunk)) {
 		    ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
 		    return ffsfile->next_record_type;
 		}
-		ffsfile->next_data_len = ntohl(indicator_chunk);
+		ffsfile->next_data_len = ntohl(indicator_chunk) + 
+		    (top_data_len_bytes << 32);
 		make_tmp_buffer(ffsfile->tmp_buffer, ffsfile->next_data_len);
 		tmp_buf = ffsfile->tmp_buffer->tmp_buffer;
 		/* first get format ID, at least 8 bytes */
@@ -1642,7 +1644,7 @@ FFSFile ffsfile;
     return ffsfile->next_record_type;
 }
 
-extern int
+extern long
 FFSnext_data_length(FFSFile file)
 {
     if (file->status != OpenForRead)

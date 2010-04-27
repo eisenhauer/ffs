@@ -108,6 +108,15 @@ elif test $ac_cv_sizeof_size_t -eq $ac_cv_sizeof_long; then
    UIO_SIZE_T_TYPE="unsigned long";
 fi
 AC_SUBST(UIO_SIZE_T_TYPE)
+if test $ac_cv_sizeof_long -eq 8 ; then
+   DATA_LEN_TYPE="long";
+elif test $ac_cv_sizeof_long_long -eq 8 ; then
+   DATA_LEN_TYPE="long long";
+else
+   DATA_LEN_TYPE="undefined";
+fi
+AC_SUBST(DATA_LEN_TYPE)
+AC_DEFINE_UNQUOTED(DATA_LEN_TYPE,$DATA_LEN_TYPE, [Define as the 8-byte type to use for data length])
 LIBS="$LIBS -lcercs_env"
 
 if test -n "$cercs_cv_archive"; then

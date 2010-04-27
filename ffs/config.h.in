@@ -3,6 +3,9 @@
 /* Define as a string to identify the machine architecture */
 #undef ARCH
 
+/* Define as the 8-byte type to use for data length */
+#undef DATA_LEN_TYPE
+
 /* Define if ffs should do dynamic code generation */
 #undef DO_DCG
 
