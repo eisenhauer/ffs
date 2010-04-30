@@ -81,8 +81,8 @@ establish_conversion(FFSContext c, FFSTypeHandle f,
 extern int
 FFShas_conversion(FFSTypeHandle format);
 
-extern int
-FFS_est_decode_length(FFSContext context, char *encoded, int record_length);
+extern long
+FFS_est_decode_length(FFSContext context, char *encoded, long record_length);
 
 extern int
 FFSdecode_in_place(FFSContext context, char *encode, void **dest_ptr);
@@ -147,7 +147,7 @@ FFSset_visible(FFSFile ffsfile, int bitmap);
 extern FFSRecordType
 FFSnext_record_type(FFSFile ffsfile);
 
-extern int
+extern long
 FFSnext_data_length(FFSFile file);
 
 extern FFSTypeHandle
