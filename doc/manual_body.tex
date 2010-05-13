@@ -5,8 +5,8 @@
 \section{Introduction}
 
 FFS (Fast Flexible Serialization) is a system for efficiently marshalling
-data for communication in a heterogeneous computing environment.  This
-manual servers as both an introduction to using FFS and as a reference
+data for communication or storage in a heterogeneous computing environment.
+This manual servers as both an introduction to using FFS and as a reference
 manual for the API.
 
 FFS is more complex than the type systems built into many middleware
@@ -35,18 +35,20 @@ positions of the fields in the records they are writing.  Readers/receivers must
 provide similar information for the records that they are interested in
 reading.
 
-FFS uses this 'format' information to establishing a correspondence between
+FFS uses this `format' information to establishing a correspondence between
 the fields in the incoming records and the fields in the local data
 structure into which the information is to be placed.  No translation is
 done on the writer's end.  On the reader's end, the format of the incoming
 record is compared with the format that the program expects.  If there are
-discrepancies the FFS read routine performs the appropriate translations.
+discrepancies, either in the data layout or contents, or in the underlying
+machine representations, the FFS read routine performs the appropriate
+translations.
 
 
 \subsection{Describing Data/Message Types\label{sec:datatypes}}
 
-The FFS routines support records consisting of fields of the following
-basic data types: ``integer'', ``unsigned integer'', ``float'', and
+The FFS routines support records consisting of fields of basic atomic data
+types, including: ``integer'', ``unsigned integer'', ``float'', and
 ``string''.  Note that {\em field type} here is separate from {\em field
   size} so that both the native C types {\tt int} and {\tt long} are 
 ``integer'' types.   Similarly, C's {\tt double} and {\tt float} are both
@@ -56,7 +58,7 @@ In order to support record-oriented structure reading and writing, FFS must
 know the exact layout of the structure, including name, type, starting
 offset and size of each field.  This information is conveyed to FFS using an
 {\tt FMFieldList}\footnote{The 'FM' prefix is associated with Format Manager
-  functioality within FFS.}  with an entry for each field.  Because the size
+  functionality within FFS.}  with an entry for each field.  Because the size
 and offset of fields varies from architecture to architecture (and even from
 compiler to compiler), it is good practice to use the {\tt sizeof()}
 operator to calculate field size.  FFS also provides a macro, {\tt
@@ -87,7 +89,7 @@ list. Unspecified fields at the end of the structure may not be written to
 the IO file.  Unspecified fields at the beginning or in the middle of a
 structure will be written to the IO file, but no information about them will
 be available.\footnote{{\it Nota Bene:} This behavior results because FFS
-  treats base data records (not strings or other dynamically sized elements)
+  treats base data records 
   as a contiguous memory block for efficiency.  The compiler may leave
   ``holes'' in the data block to preserve the required alignment for some
   data types.  Because FFS puts the data on the wire as a contiguous block,
@@ -121,60 +123,64 @@ The code below represents a simple FFS program that writes a record to a
 file.  We use the struct declaration and FMFieldList given in the example
 above (though we left out the initialization of the written data structure
 for simplicity).
-\begin{Code}
+\begin{WrapCode}
 int main(int argc, char **argv)
 {
     FFSFile file = open_FFSfile("test_output", "w");
     FMContext fmc = FMContext_of_file(file);
-    FMFormat rec_ioformat;
+    FMFormat rec_format;
     first_rec rec1;
 
-    rec_ioformat = register_simple_format(fmc, "first format", field_list, sizeof(first_rec));
-    write_FFSfile(file, rec_ioformat, &rec1);
+    rec_format = register_simple_format(fmc, "first rec", field_list, sizeof(first_rec));
+    write_FFSfile(file, rec_format, &rec1);
     close_FFSfile(file);
 }
-\end{Code}
-This program creates a file named {\tt test_output}.  You can use the
+\end{WrapCode}
+This program creates a file named {\tt test\_output}.  You can use the
 program {\tt FFSdump}, part of the FFS package to print this binary file as
-verbose text.  {\tt register_simple_format()} is one of the most basic calls
+verbose text.  {\tt register\_simple\_format()} is one of the most basic calls
 in FFS, used to provide FFS with the detailed field layout of a structure.
 FMformats are registered with particular FMContexts, this one extracted from
 the FFSFile.  In addition to the FMFieldList, structures/types must have a
-name and you must provide its size.  The {\tt register_simple_format()} call
+name and you must provide its size.  The {\tt register\_simple\_format()} call
 can only be used if the structure contains only basic atomic types, or arrays of
-or pointers to basic atomic types.
+or pointers to basic atomic types.  Structures which contain other
+structures must be registered with {\tt register\_data\_format()} as
+described in Section~\ref{sec:nested}.
 
 The code below is a simple FFS program that reads the file written above.
 Once again we use the struct declaration and FMFieldList given earlier and
-while we're not actually printing out the data we read.
-\begin{Code}
+while we've left the print statements out of this code for simplicity, you
+can find them in the actual programs in the ffs/doc/examples directory in
+the FFS source code distribution. 
+\begin{WrapCode}
 int
 main(int argc, char** argv);
 {
-    FFSFile iofile = open_FFSfile("test_output", "r");
+    FFSFile file = open_FFSfile("test_output", "r");
     FFSTypeHandle first_rec_handle;
-    FFSContext context = FFSContext_of_file(iofile);
+    FFSContext context = FFSContext_of_file(file);
     first_rec rec1;
 
-    first_rec_handle = FFSset_simple_target(context, "first format", field_list, sizeof(first_rec));
-    FFSread(iofile, &rec1);
-    close_FFSfile(iofile);
+    first_rec_handle = FFSset_simple_target(context, "first rec", field_list, sizeof(first_rec));
+    FFSread(file, &rec1);
+    close_FFSfile(file);
 }
-\end{Code}
+\end{WrapCode}
 The code above demonstrates the basics, albeit with several simplifying
 assumptions.  Structurally it is similar to the writing program.  {\tt
-  FFSset_simple_target()} call provides FFS with a description of a
+  FFSset\_simple\_target()} call provides FFS with a description of a
 particular structure/message type that this program can handle and is the
-read-side analogue of the {\tt register_simple_format()} call. The
+read-side analogue of the {\tt register\_simple\_format()} call. The
 FFSTypeHandle is roughly equivalent to an FMFormat, except that it is
 associated with incoming messages/records rather than outgoing ones.
 FFSContext uses here is similar to the FMContext, except that it also stores
-the associations between the ``original'' source format (the 'wire' format)
+the associations between the ``original'' source format (the `wire' format)
 and the ``native'', or target format.  The {\tt FFSread()} calls
-grabs the next record in the file and puts it in the {\tt rec} variable.  In
+grabs the next record in the file and puts it in the {\tt rec1} variable.  In
 this case, we are relying upon the {\it a priori} knowledge that there is
-one record in the file and that it's format {\it compatible} is compatible
-with the native {\it first_rec}.
+one record in the file and that its format {\it compatible} is compatible
+with the native {\it first\_rec}.
 
 \paragraph{Compatibility} The notion of format {\it compatibility} is fairly
 important in FFS.  The general idea is that the target format specifies a
@@ -185,22 +191,327 @@ compatible.  In the example above, the reader and writer are using the same
 C-level structure declaration.  If the programs were executed on different
 architectures, their binary representations (and hence the details of the
 source and target formats) might differ in byte order, type size and
-layout.  FFS would compensate for all of these differences and deliver the
+layout, but FFS would compensate for all of these differences and deliver the
 data to the receiver in his native representation.  FFS will also ignore (or
 correct for) differences in field order and even the presence of additional
 fields not requred by the reader.  These techniques, and others which are
 described later, help FFS enable communication even when multiple versions
 of application components in complex distributed systems.
 
+\begin{wrapfigure}[10]{R}{2.2in}
+\vspace*{-0.25in}
+\begin{WrapCode}
+ typedef struct R3vector_struct { 
+     double x, y, z;
+ } R3vector;
+
+ typedef struct particle_struct { 
+     R3vector   loc;
+     R3vector   deriv1;
+     R3vector   deriv2;
+ } particle;
+\end{WrapCode}
+\caption{A nested record format\label{fig:part}}
+\index{FMField}
+\end{wrapfigure}
 \section{More Complexity in Types}
 The example structure in the previous section consisted solely of fields of
 simple atomic data types.  FFS actually supports much more complexity than
 those simple structures.  In particular, FFS supports nested structures,
-null-terminated strings, both statically- and variable-sized arrays
-\subsection{Nested structures}
+null-terminated strings, both statically- and variable-sized arrays,
+pointers to simple and complex objects and  tree-
+and graph-based structures.
+
+\subsection{Nested structures\label{sec:nested}}
 Multiple structures may make up a complete datatype.  FFS requires that the
 transitive closure of all referenced structures be declared to FFS together
 as a unified type.
+
+For example, the structure {\tt particle\_struct} declared as in
+Figure~\ref{fig:part} could be described to FFS through the following field
+lists and a new element, the {\tt FMStructDescRec} :
+field lists:
+\begin{verbatim}
+static FMField R3field_list[] = {
+    {"x", "float", sizeof(double), FMOffset(R3vector*, x)},
+    {"y", "float", sizeof(double), FMOffset(R3vector*, y)},
+    {"z", "float", sizeof(double), FMOffset(R3vector*, z)},
+    {NULL, NULL, 0, 0},
+};
+
+static FMField particle_field_list[] = {
+    {"loc", "R3vector", sizeof(R3vector), FMOffset(particle*, loc)},
+    {"deriv1", "R3vector", sizeof(R3vector), FMOffset(particle*, deriv1)},
+    {"deriv2", "R3vector", sizeof(R3vector), FMOffset(particle*, deriv2)},
+    {NULL, NULL, 0, 0},
+};
+
+FMStructDescRec particle_format_list[] = {
+    {"particle", particle_field_list, sizeof(particle), NULL},
+    {"R3vector", R3field_list, sizeof(R3vector), NULL},
+    {NULL, NULL, 0, NULL}};
+
+\end{verbatim}
+There are a couple of things to note here.  First, the {\tt FMStructDescRec}
+essentially contains, for each of the structures, the elements passed to
+describe a single structure in {\tt register\_simple\_format()}.  (Ignore
+the fourth, {\tt NULL}, element in each entry for the moment.)  Second, the
+first entry in each {\tt FMStructDescRec} is the structure name and it is
+that name that is used as a {\em field type} in the field lists of
+containing structures.  Lastly, the first element in the {\tt
+  FMStructDescRec} list must be top-level structure.  The remaining
+structure entries can appear in any order, but they together they must
+constitute the transitive closure of all structures referenced.
+
+Once the appropriate {\tt FMStructDescRec} list has been assembled, the
+structure can be substituted into the reader and writer programs above by
+substituting {\tt register\_data\_format()} and {\tt FFSset\_fixed\_target()}
+calls for {\tt register\_simple\_format()} and {\tt FFSset\_simple\_target()},
+respectively. 
+\begin{Code}
+extern FMFormat
+register_data_format(FMContext context, FMStructDescList struct_list);
+
+extern FFSTypeHandle
+FFSset_fixed_target(FFSContext c, FMStructDescList struct_list);
+\end{Code}
+\begin{wrapfigure}[10]{R}{2.2in}
+\vspace*{-0.25in}
+\begin{WrapCode}
+struct { 
+     float	a[5];
+     unsigned int b[10];
+     float      c[2][12];
+ }
+\end{WrapCode}
+\caption{Simple Array fields\label{fig:array1}}
+\index{FMField}
+\end{wrapfigure}
+\subsection{Array types}
+In previous examples, the {\em field type} entry in field lists is always
+the name of an atomic type or of a structure listed in the
+FMStructDescList, however FFS allows more complex field types to be
+represented.  Fields of which are arrays of other elements are specified by
+adding an array size declaration to the the {\em field type} entry.  For
+example, {\tt "float[5]"} and {\tt "unsigned integer[10]"} both declare
+fields which are statically sized arrays.  Multiple size declarations can be
+supplied in order to declare multiply dimensioned arrays, such as {\tt
+  "float[2][12]"}.  These field types match the C declarations in
+Figure~\ref{fig:array1}.   Note that when declaring array fields to FFS, the
+{\em field size} element in the FMField list must be the {\em element} size,
+not the total array size.  When reading a record containing array fields, the
+dimensionality of each field must match that which was used when the record
+was written, though the size of the elements may differ.
+
+\begin{wrapfigure}[17]{R}{3.21in}
+%\vspace*{-0.25in}
+\begin{WrapCode}
+typedef struct _dyn_rec {
+    char        *string;
+    long        count;
+    double      *double_array;
+} dyn_rec, *dyn_rec_ptr;
+
+FMField dyn_field_list[] = {
+    {"string field", "string", sizeof(char *), 
+      FMOffset(dyn_rec_ptr, string)},
+    {"count", "integer", sizeof(long), 
+      FMOffset(dyn_rec_ptr, count)},
+    {"double_array", "float[count]", sizeof(double), 
+      FMOffset(dyn_rec_ptr, double_array)},
+    { NULL, NULL, 0, 0}
+};
+\end{WrapCode}
+\caption{A dynamic array record format\label{fig:dynarray}}
+\index{FMField}
+\end{wrapfigure}
+
+In addition to fixed array sizes, FFS supports dynamically sized
+arrays, where the array size is controlled by data values at run-time.  In
+this case, the size in the array type specification must be the string name
+of an integer field in the record.  The value of that integer field gives
+the array size.  The actual data type in the record should be a pointer to
+the element type.  Figure~\ref{fig:dynarray} gives an example of a dynamic
+array declaration.  Dynamic arrays may also be multiply dimensioned,
+including the use of a mix of static and dynamic sizes.
+
+\subsection{Pointer-based Types}
+Unlike its predecessor PBIO, FFS supports pointer-based declarations in
+field types.  These are declared by using a {\tt *} in the field type
+string.  For example, the field type {\tt "*integer"} declares a pointer to
+a single integer and {\tt "*integer[5]"} declares a pointer to a fixed size
+array of 5 integers.  These basic features can be combined, using
+parenthesis to control association.  For example, while {\tt "*integer[5]"}
+is a pointer to 5 integers, {\tt "(*integer)[5]"} is a fixed size array of 5
+pointers to integers.  Note that the use of a dynamic array bound ({\it as
+  in {\tt "float[count]"}}) implies a pointer-based type.  In fact, {\tt
+  "float[count]"} and {\tt "*float[count]"} specify identical types to
+FFS.\footnote{There is no way to specify a non-pointer-based dynamically
+  sized type to FFS.  Only statically-sized arrays may have storage in-line
+  with the other fields in a structure.}  Note:  For all the pointer-based
+types, the {\em field size} element in the FMField list must be the size of
+item pointed-to, or the element size if the final item is an array.
+
+Of course, in addition to pointers to atomic data types and arrays of those
+types, FFS allows pointers to structures, including recursively-defined
+structures.  This allows FFS to represent and transport pointer-based
+structures such as linked lists, graphs and trees.
+Figure~\ref{fig:recursive} shows the FFS declaration of a structure that
+implements a binary tree.
+\begin{figure}
+%\begin{wrapfigure}[19]{R}{4in}
+%\vspace*{-0.25in}
+\begin{WrapCode}
+typedef struct node {
+    int node_num;
+    struct node *link1;
+    struct node *link2;
+} *node_ptr;
+
+FMField node_field_list[] = 
+{
+    {"node_num", "integer", sizeof(int), FMOffset(node_ptr, node_num)},
+    {"link1", "*node", sizeof(struct node), FMOffset(node_ptr, link1)},
+    {"link2", "*node", sizeof(struct node), FMOffset(node_ptr, link2)},
+    {(char *) 0, (char *) 0, 0, 0}
+};
+
+FMStructDescRec node_format_list [] = {
+    {"node", node_field_list, sizeof(struct node), NULL},
+    {NULL, NULL, 0, NULL}
+};
+\end{WrapCode}
+\caption{An example of a recursively-defined type\label{fig:recursive}}
+\index{FMField}
+\end{figure}
+When working with recursively-defined types, FFS will write/encode the
+transitive closure of all data blocks pointed to in the structure
+presented.  It keeps a visit table to ensure each block is only processed
+once, even if its address appears in multiple pointers.  When the message is
+read/decoded, pointers which originally targeted the same block will still
+point to the same block in the decoded message.
+
+\section{Using FFS Over Networks or Other Transport}
+
+The simple example programs given above use the FFSfile interface to FFS,
+but FFS was designed to operate in message-oriented mode with fully-typed
+messages being exchanged in a heterogeneous environment.  The FFS APIs used
+in this environment use the terms {\em encoding} and {\tt decoding}, but
+marshalling and unmarshalling would be just as appropriate.  Because
+network-based applications can be a bit tricky to setup and require multiple
+programs to run simultaneously, we're going to demonstrate these APIs with
+simple programs that write the encoded messages to files.  The principles
+are the same and the reader should be able to work the the programs more
+easily.
+
+\subsection{Simple Encode Program}
+
+The non-file-oriented FFS programs use the same basic types as the
+file-based programs: FMContext, FFSContext, FMFormat and FFSTypeHandle.
+
+The code below represents a simple FFS program that encodes a record of the
+type used in the first examples and writes the encoded data to a file.  
+(Once again, we've left out the initialization of the written data structure
+for simplicity.)
+\begin{Code}
+int main(int argc, char **argv)
+{
+    FMContext fmc = create_FMContext();
+    FFSBuffer buf = create_FFSBuffer();
+    FMFormat rec_format;
+    first_rec rec1;
+    char *output;
+    int fd, output_size;
+
+    rec_format = register_simple_format(fmc, "first rec", field_list, sizeof(first_rec));
+    output = FFSencode(buf, rec_format, &rec1, &output_size);
+
+    /* write the encoded data */
+    fd = open("bin_output", O_WRONLY|O_CREAT);
+    write(fd, output, output_size);
+    close(fd);
+}
+\end{Code}
+There are several differences between this encode sample and the
+{\tt write\_FFSfile()} example above.  Instead of extracting the FMContext value
+that was created with the {\tt FFSFile}, this example creates an FMContext value
+directly.  The {\tt FMContext} data structure is the principal repository of
+structure and type information in FFS.  Section~\ref{sec:formats} describes
+{\tt FMContext}s and how they operate in more detail.
+
+This sample code also uses an {\tt FFSBuffer}.  {\tt FFSBuffer}s are simply
+a convenient mechanism for reusing memory from one {\tt FFSencode} to the
+next.  Each {\tt FFSBuffer} wraps a malloc'd data block, tracking its
+allocated size and current usage.  {\tt FFSencode} places the encoded data
+is placed in the malloc'd block, realloc'ing it if necessary depending 
+upon the size of the encoded block.  The data within the block remains
+valid until the {\tt FFSBuffer} is used in another FFS call.
+
+The principal routine here is the {\tt FFSencode()}.  Like the {\tt
+write\_FFSfile()}, {\tt FFSencode} takes an {\tt FMFormat} and a pointer
+to the data to be encoded.  The {\tt FFSBuffer} fills in for the FFSFile
+pointer as the destination.  However, it also takes an integer pointer that
+is filled in with the actual size of the encoded data.  The return value is
+a pointer to beginning of the block of encoded data (which may not
+correspond to the beginning of the FFSBuffer's data block.)  Generally the
+length of the data block is necessary for decoding the data, so it is
+usually transmitted, explicitly or implicitly, along with the data itself.
+Here, since there is a single message stored in the file, we are implicitly
+using the file length as a means of communicating the block length to the
+receiver.
+
+\begin{Code}
+int main(int argc, char **argv)
+{
+    FMContext fmc = create_FMContext();
+    FFSBuffer buf = create_FFSBuffer();
+    FMFormat rec_format;
+    first_rec rec1;
+    char *output;
+    int fd, output_size;
+
+    rec_format = register_simple_format(fmc, "first rec", field_list, sizeof(first_rec));
+    output = FFSencode(buf, rec_format, &rec1, &output_size);
+
+    /* write the encoded data */
+    fd = open("bin_output", O_WRONLY|O_CREAT);
+    write(fd, output, output_size);
+    close(fd);
+}
+\end{Code}
+
+\subsection{Simple Decode Program}
+
+The code below is a simple FFS program that reads the data written into the
+file above.  
+\begin{Code}
+int main()     /* receiving program */
+{
+    FFSTypeHandle first_rec_handle;
+    FFSContext context = create_FFSContext();
+    first_rec rec1;
+    int fd, size;
+    char encoded_buffer[2048];  /* big enough for this example */
+
+    fd = open("enc_file", O_RDONLY, 0777);
+    size = read(fd, encoded_buffer, sizeof(encoded_buffer));
+
+    first_rec_handle = FFSset_simple_target(context, "first rec", field_list, sizeof(first_rec));
+    FFSdecode(context, encoded_buffer, (void*)&rec1);
+}
+\end{Code}
+
+Just as the encoding program created an FMContext rather than using one
+associated with an FFSFile, this decoding program creates its own
+FFSContext.  It also uses {\tt FFSset\_simple\_target()} to tell FFS the
+details of the structure it wants the data converted to.  Then it uses {\tt
+  FFSdecode()} to extract the data from the encoded block and fill in the
+{\tt first\_rec} value. 
+\section{Using FFS With Many Message Types}
+\section{Memory Handling}
+\section{On Format Compatibility}
+\section{Working with Formats\label{sec:formats}}
+\section{FFS and XML}
 
 \paragraph{FFS semantics resemble XML-based data transfer} FFS record
 decoding semantics are much like what you would get from using XML for data
@@ -473,22 +784,6 @@ buffer.  In the case of a record which contains a dynamic array,
 required to hold the entire record including the memory required for the
 dynamic array.
 
-\begin{wrapfigure}[5]{R}{2.2in}
-\vspace*{-0.25in}
-\begin{WrapCode}
- typedef struct R3vector_struct { 
-     double x, y, z;
- } R3vector;
-
- typedef struct particle_struct { 
-     R3vector   loc;
-     R3vector   deriv1;
-     R3vector   deriv2;
- } particle;
-\end{WrapCode}
-\caption{A nested record format\label{fig:part}}
-\index{IOField}
-\end{wrapfigure}
 
 Finally, a field type may be the name of a previously registered record
 format.  This facility can be used to define record formats in a hierarchical
@@ -1210,7 +1505,7 @@ demonstrates its use.
     }
 
 \end{Code}
-\subsubsection{Communication of Format Information\label{sec:formats}}
+\subsubsection{Communication of Format Information }
 While the actual communication of record format information from the
 encoding context to the decoding context is generally handled entirely
 within FFS, the manner in which this communication is accomplished may
