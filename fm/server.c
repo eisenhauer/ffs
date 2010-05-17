@@ -157,13 +157,19 @@ LOG(format_server fs, char *format,...)
     va_start(ap);
 #endif
     vfprintf(log, format, ap);
-    if (fs->stdout_verbose) {
-	vfprintf(stdout, format, ap);
-	fprintf(stdout, "\n");
-    }
     va_end(ap);
     fprintf(log, "\n");
     fflush(log);
+    if (fs->stdout_verbose) {
+#ifdef STDC_HEADERS
+	va_start(ap, format);
+#else
+	va_start(ap);
+#endif
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+	fprintf(stdout, "\n");
+    }
     stat(format_server_log, &stat_buf);
 
     if (log_count++ >= 100) {
