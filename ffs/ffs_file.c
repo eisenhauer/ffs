@@ -1467,7 +1467,7 @@ FFSRecordType
 next_record_type(ffsfile)
 FFSFile ffsfile;
 {
-    FILE_INT indicator_chunk;
+    FILE_INT indicator_chunk = 0;
  restart:
     if (ffsfile->status != OpenForRead) {
 	return FFSerror;
@@ -1500,8 +1500,9 @@ FFSFile ffsfile;
 	case 0x3: /* data */ {
 		char *tmp_buf;
 		int header_size;
-		DATA_LEN_TYPE top_data_len_bytes = indicator_chunk & 0xffff;
+		DATA_LEN_TYPE top_data_len_bytes;
 		ffsfile->next_record_type = FFSdata;
+		top_data_len_bytes = (indicator_chunk & 0xffff);
 		if (!get_AtomicInt(ffsfile, &indicator_chunk)) {
 		    ffsfile->next_record_type = (ffsfile->errno_val) ? FFSerror : FFSend;
 		    return ffsfile->next_record_type;
