@@ -129,7 +129,6 @@ dnl    /opt/misc/{include,lib}.
 dnl
 AC_DEFUN([CERCS_FIND_FILE],
 [
-echo "Entering cercs_find_file for $1 $2"
 AC_REQUIRE([CERCS_HAS_CSH])
 AC_REQUIRE([CERCS_SET_ARCHIVE])
 $3=""
@@ -191,19 +190,16 @@ fi
 if test -n "$with_deb_build_specified"; then
 dnl test build directories
    if test -d "../$1"; then
-	echo found
-      tmp_search_results=../$1;
+      tmp_search_results=`pwd`/../$1;
    fi
    if test -d "../../$1"; then
-	echo found
-      tmp_search_results=../../$1;
+      tmp_search_results=`pwd`../../$1;
    fi
   dnl srcdir presence overrides
    if test -f "$srcdir/../$1/$2"; then
       tmp_search_results=$srcdir/../$1;
    fi
    if test -f "$srcdir/../../$1/$2"; then
-	echo found
       tmp_search_results=$srcdir/../../$1;
    fi
 fi
