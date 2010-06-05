@@ -11850,7 +11850,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../atl;
    fi
    if test -d "../../atl"; then
-      tmp_search_results=`pwd`../../atl;
+      tmp_search_results=`pwd`/../../atl;
    fi
      if test -f "$srcdir/../atl/atl.h"; then
       tmp_search_results=$srcdir/../atl;
@@ -11962,7 +11962,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../atl;
    fi
    if test -d "../../atl"; then
-      tmp_search_results=`pwd`../../atl;
+      tmp_search_results=`pwd`/../../atl;
    fi
      if test -f "$srcdir/../atl/libatl.la"; then
       tmp_search_results=$srcdir/../atl;
@@ -12225,7 +12225,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../cercs_env;
    fi
    if test -d "../../cercs_env"; then
-      tmp_search_results=`pwd`../../cercs_env;
+      tmp_search_results=`pwd`/../../cercs_env;
    fi
      if test -f "$srcdir/../cercs_env/cercs_env.h"; then
       tmp_search_results=$srcdir/../cercs_env;
@@ -12337,7 +12337,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../cercs_env;
    fi
    if test -d "../../cercs_env"; then
-      tmp_search_results=`pwd`../../cercs_env;
+      tmp_search_results=`pwd`/../../cercs_env;
    fi
      if test -f "$srcdir/../cercs_env/libcercs_env.la"; then
       tmp_search_results=$srcdir/../cercs_env;
@@ -12600,7 +12600,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../dill;
    fi
    if test -d "../../dill"; then
-      tmp_search_results=`pwd`../../dill;
+      tmp_search_results=`pwd`/../../dill;
    fi
      if test -f "$srcdir/../dill/dill.h"; then
       tmp_search_results=$srcdir/../dill;
@@ -12712,7 +12712,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../dill;
    fi
    if test -d "../../dill"; then
-      tmp_search_results=`pwd`../../dill;
+      tmp_search_results=`pwd`/../../dill;
    fi
      if test -f "$srcdir/../dill/libdill.la"; then
       tmp_search_results=$srcdir/../dill;

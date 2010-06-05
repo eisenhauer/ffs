@@ -2993,7 +2993,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../cercs_env;
    fi
    if test -d "../../cercs_env"; then
-      tmp_search_results=`pwd`../../cercs_env;
+      tmp_search_results=`pwd`/../../cercs_env;
    fi
      if test -f "$srcdir/../cercs_env/cercs_env.h"; then
       tmp_search_results=$srcdir/../cercs_env;
@@ -3105,7 +3105,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../cercs_env;
    fi
    if test -d "../../cercs_env"; then
-      tmp_search_results=`pwd`../../cercs_env;
+      tmp_search_results=`pwd`/../../cercs_env;
    fi
      if test -f "$srcdir/../cercs_env/libcercs_env.la"; then
       tmp_search_results=$srcdir/../cercs_env;
@@ -12862,7 +12862,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../gcrypt;
    fi
    if test -d "../../gcrypt"; then
-      tmp_search_results=`pwd`../../gcrypt;
+      tmp_search_results=`pwd`/../../gcrypt;
    fi
      if test -f "$srcdir/../gcrypt/gcrypt.h"; then
       tmp_search_results=$srcdir/../gcrypt;
@@ -12974,7 +12974,7 @@ if test -n "$with_deb_build_specified"; then
       tmp_search_results=`pwd`/../gcrypt;
    fi
    if test -d "../../gcrypt"; then
-      tmp_search_results=`pwd`../../gcrypt;
+      tmp_search_results=`pwd`/../../gcrypt;
    fi
      if test -f "$srcdir/../gcrypt/libgcrypt.a"; then
       tmp_search_results=$srcdir/../gcrypt;

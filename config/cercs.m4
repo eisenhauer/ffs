@@ -193,7 +193,7 @@ dnl test build directories
       tmp_search_results=`pwd`/../$1;
    fi
    if test -d "../../$1"; then
-      tmp_search_results=`pwd`../../$1;
+      tmp_search_results=`pwd`/../../$1;
    fi
   dnl srcdir presence overrides
    if test -f "$srcdir/../$1/$2"; then
