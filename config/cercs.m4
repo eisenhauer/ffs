@@ -188,7 +188,12 @@ if test "$5" == "include"; then
 fi
 fi
 if test -n "$with_deb_build_specified"; then
-   tmp_search_results=../$1;
+   if test -d "../$1"; then
+      tmp_search_results=../$1;
+   fi
+   if test -d "../../$1"; then
+      tmp_search_results=../../$1;
+   fi
 fi
 if test -n "$tmp_search_results"; then
 $3=$tmp_search_results
