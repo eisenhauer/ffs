@@ -911,6 +911,7 @@ enable_maintainer_mode
 with___with_authentication
 with_installed
 with_rpm_build
+with_deb_build
 with_local
 with_cercs_env
 enable_dependency_tracking
@@ -1583,6 +1584,7 @@ Optional Packages:
  --with-authentication            Find gcrypt and do encrypted authenticated.
   --with-installed        Don't use local copies of CERCS packages
   --with-rpm-build        Assume necessary files in CERCS packages will be installed
+  --with-deb-build        Assume necessary files in CERCS packages will be installed
   --with-local            Use only local copies of CERCS packages
   --with-cercs_env=DIR	Where to find cercs_env package
   --with-pic              try to use only PIC/non-PIC objects [default=use
@@ -2777,6 +2779,12 @@ if test "${with_rpm_build+set}" = set; then
 fi
 
 
+# Check whether --with-deb-build was given.
+if test "${with_deb_build+set}" = set; then
+  withval=$with_deb_build; with_deb_build_specified=1
+fi
+
+
 # Check whether --with-local was given.
 if test "${with_local+set}" = set; then
   withval=$with_local; with_local_specified=1
@@ -2820,6 +2828,7 @@ else
   { $as_echo "$as_me:$LINENO: result: no" >&5
 $as_echo "no" >&6; }
 fi
+
 
 
 
@@ -2962,11 +2971,11 @@ fi
 
 search_list="$search_list /usr/include/cercs_env.h /usr/local/include/cercs_env.h /opt/cercs_env/include/cercs_env.h /opt/misc/include/cercs_env.h /opt/misc/include/$cercs_cv_archive/cercs_env.h"
 tmp_search_results=""
-echo "configure:2965: searching for $search_list " >&5
+echo "configure:2974: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:2969: first found $tmp_search_results " >&5
+	echo "configure:2978: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -2978,6 +2987,9 @@ fi
 if test "include" == "include"; then
    tmp_search_results=$incdir;
 fi
+fi
+if test -n "$with_deb_build_specified"; then
+   tmp_search_results=../cercs_env;
 fi
 if test -n "$tmp_search_results"; then
 cercs_tmp=$tmp_search_results
@@ -3060,11 +3072,11 @@ fi
 
 search_list="$search_list /usr/lib/libcercs_env.la /usr/local/lib/libcercs_env.la /opt/cercs_env/lib/libcercs_env.la /opt/misc/lib/libcercs_env.la /opt/misc/lib/$cercs_cv_archive/libcercs_env.la"
 tmp_search_results=""
-echo "configure:3063: searching for $search_list " >&5
+echo "configure:3075: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:3067: first found $tmp_search_results " >&5
+	echo "configure:3079: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -3076,6 +3088,9 @@ fi
 if test "lib" == "include"; then
    tmp_search_results=$incdir;
 fi
+fi
+if test -n "$with_deb_build_specified"; then
+   tmp_search_results=../cercs_env;
 fi
 if test -n "$tmp_search_results"; then
 cercs_tmp=$tmp_search_results
@@ -3141,11 +3156,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:3144: searching for $search_list " >&5
+echo "configure:3159: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:3148: first found $tmp_search_results " >&5
+	echo "configure:3163: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -3183,11 +3198,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:3186: searching for $search_list " >&5
+echo "configure:3201: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:3190: first found $tmp_search_results " >&5
+	echo "configure:3205: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -5700,13 +5715,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5703: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5718: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5706: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5721: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5709: output\"" >&5)
+  (eval echo "\"\$as_me:5724: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6900,7 +6915,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6903 "configure"' > conftest.$ac_ext
+  echo '#line 6918 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8757,11 +8772,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8760: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8775: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8764: \$? = $ac_status" >&5
+   echo "$as_me:8779: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9096,11 +9111,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9099: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9114: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9103: \$? = $ac_status" >&5
+   echo "$as_me:9118: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9201,11 +9216,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9204: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9219: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9208: \$? = $ac_status" >&5
+   echo "$as_me:9223: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9256,11 +9271,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9259: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9274: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9263: \$? = $ac_status" >&5
+   echo "$as_me:9278: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12056,7 +12071,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12059 "configure"
+#line 12074 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12152,7 +12167,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12155 "configure"
+#line 12170 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12803,11 +12818,11 @@ fi
 
 search_list="$search_list /usr/include/gcrypt.h /usr/local/include/gcrypt.h /opt/gcrypt/include/gcrypt.h /opt/misc/include/gcrypt.h /opt/misc/include/$cercs_cv_archive/gcrypt.h"
 tmp_search_results=""
-echo "configure:12806: searching for $search_list " >&5
+echo "configure:12821: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12810: first found $tmp_search_results " >&5
+	echo "configure:12825: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -12819,6 +12834,9 @@ fi
 if test "include" == "include"; then
    tmp_search_results=$incdir;
 fi
+fi
+if test -n "$with_deb_build_specified"; then
+   tmp_search_results=../gcrypt;
 fi
 if test -n "$tmp_search_results"; then
 cercs_tmp=$tmp_search_results
@@ -12901,11 +12919,11 @@ fi
 
 search_list="$search_list /usr/lib/libgcrypt.a /usr/local/lib/libgcrypt.a /opt/gcrypt/lib/libgcrypt.a /opt/misc/lib/libgcrypt.a /opt/misc/lib/$cercs_cv_archive/libgcrypt.a"
 tmp_search_results=""
-echo "configure:12904: searching for $search_list " >&5
+echo "configure:12922: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12908: first found $tmp_search_results " >&5
+	echo "configure:12926: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -12917,6 +12935,9 @@ fi
 if test "lib" == "include"; then
    tmp_search_results=$incdir;
 fi
+fi
+if test -n "$with_deb_build_specified"; then
+   tmp_search_results=../gcrypt;
 fi
 if test -n "$tmp_search_results"; then
 cercs_tmp=$tmp_search_results
