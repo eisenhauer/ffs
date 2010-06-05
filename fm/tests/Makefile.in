@@ -216,6 +216,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 noinst_HEADERS = test_funcs.h
+INCLUDES = $(srcdir)/..
 LDADD = ../libfm.la
 format_test_SOURCES = format_test.c test_funcs.c
 self_format_test_SOURCES = self_format_test.c test_funcs.c

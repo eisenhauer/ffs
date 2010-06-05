@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 LDADD = ../libfm.la
 
+INCLUDES = -I$(srcdir)/..
+
 if !NO_SOCKETS
 bin_PROGRAMS = format_server format_dump format_cmd format_info
 endif

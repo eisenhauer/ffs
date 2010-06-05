@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 noinst_HEADERS = test_funcs.h
 
+INCLUDES = $(srcdir)/..
+
 LDADD = ../libfm.la
 
 TESTS = align_test compat_test

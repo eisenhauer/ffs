@@ -217,6 +217,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 LDADD = ../libfm.la
+INCLUDES = -I$(srcdir)/..
 format_cmd_LDFLAGS = -static-libtool-libs
 format_dump_LDFLAGS = -static-libtool-libs
 format_server_LDFLAGS = -static-libtool-libs
