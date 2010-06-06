@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 noinst_HEADERS = test_funcs.h
 
-INCLUDES = $(srcdir)/..
+INCLUDES = -I$(srcdir)/..
 
 LDADD = ../libfm.la
 
