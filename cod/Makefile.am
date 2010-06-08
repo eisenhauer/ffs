@@ -32,7 +32,7 @@ cod.tab.h cod.c: $(srcdir)/cod.y
 	mv y.tab.c cod.c
 
 structs.h : $(srcdir)/struct.pl $(srcdir)/cod.structs
-	@PERL@ $(srcdir)/struct.pl < $(srcdir)/cod.structs
+	@PERL@ $(srcdir)/struct.pl $(srcdir)/cod.structs
 
 cod_node.c : struct.pl cod.structs
 

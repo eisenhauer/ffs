@@ -1,5 +1,6 @@
 #! /bin/perl
-open IN_FILE, "<cod.structs";
+$filename = $ARGV[0];
+open (IN_FILE, "< $filename") or die "Failed to open $filename";
 sub read_structs {
     while (<IN_FILE>) {
 	if (/(\w*):/) {
