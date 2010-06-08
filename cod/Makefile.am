@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I ../config
 
 SUBDIRS = . tests
 
-INCLUDES = -I../fm
+INCLUDES = -I$(srcdir)/../fm
 include_HEADERS = cod.h
 all-local:
 check-local:
