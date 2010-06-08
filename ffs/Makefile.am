@@ -19,7 +19,7 @@ libffs_la_LDFLAGS = -no-undefined @DCG_LALIB@
 
 LDADD = libffs.la
 ffs.h: ffs.h.in
-	$(SED) 's/UIO_SIZE_T_TYPE/@UIO_SIZE_T_TYPE@/g;s/DATA_LEN_TYPE/@DATA_LEN_TYPE@/g' < ffs.h.in > ffs.h
+	$(SED) 's/UIO_SIZE_T_TYPE/@UIO_SIZE_T_TYPE@/g;s/DATA_LEN_TYPE/@DATA_LEN_TYPE@/g' < $(srcdir)/ffs.h.in > ffs.h
 
 include_HEADERS = ffs.h io_interface.h
 MOSTLYCLEANFILES = dcg/*
