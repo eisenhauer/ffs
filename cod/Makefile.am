@@ -23,16 +23,16 @@ libcod_la_LDFLAGS =
 
 EXTRA_libcod_la_SOURCES = kcod.c
 
-lex.yy.c: cod.l
-	@LEX@ $(SPECIAL_LEX_ARGS) cod.l
+lex.yy.c: $(srcdir)/cod.l
+	@LEX@ $(SPECIAL_LEX_ARGS) $(srcdir)/cod.l
 
-cod.tab.h cod.c: cod.y
-	$(YACC) -d cod.y
+cod.tab.h cod.c: $(srcdir)/cod.y
+	$(YACC) -d $(srcdir)/cod.y
 	mv y.tab.h cod.tab.h
 	mv y.tab.c cod.c
 
-structs.h : struct.pl cod.structs
-	@PERL@ struct.pl < cod.structs
+structs.h : $(srcdir)/struct.pl $(srcdir)/cod.structs
+	@PERL@ $(srcdir)/struct.pl < $(srcdir)/cod.structs
 
 cod_node.c : struct.pl cod.structs
 
