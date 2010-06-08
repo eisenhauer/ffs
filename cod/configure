@@ -13193,8 +13193,8 @@ if test -n "$cercs_cv_atl_link_dir" -o -n "$with_local_specified"; then
     LIBS="$LIBS -latl"
 fi
 LIBS="$LIBS \$(top_builddir)/../fm/libfm.la"
-if test -n "$with_local_specified"; then
-   cercs_cv_dill_include_arg="-I../dill";
+if test -n "$with_local_specified" -o -n "$with_rpm_build_specified -o -n "$with_deb_build_specified; then
+   cercs_cv_dill_include_arg='-I${abs_top_srcdir}../dill';
    ac_cv_header_dill_h=yes
 fi
 
