@@ -24,7 +24,7 @@ ffs.h: ffs.h.in
 include_HEADERS = ffs.h io_interface.h
 MOSTLYCLEANFILES = dcg/*
 
-$(libffs_la_SOURCES) : ffs.h
+$(am_libffs_la_OBJECTS) : ffs.h
 
 all-local:
 install-exec-local:
