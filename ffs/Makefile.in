@@ -880,7 +880,7 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 ffs.h: ffs.h.in
 	$(SED) 's/UIO_SIZE_T_TYPE/@UIO_SIZE_T_TYPE@/g;s/DATA_LEN_TYPE/@DATA_LEN_TYPE@/g' < $(srcdir)/ffs.h.in > ffs.h
 
-$(libffs_la_SOURCES) : ffs.h
+$(am_libffs_la_OBJECTS) : ffs.h
 
 all-local:
 install-exec-local:
