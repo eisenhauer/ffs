@@ -763,8 +763,8 @@ uninstall-am:
 
 all:
 	rm -f fm.h cod.h ffs.h
-	$(LN_S) fm/fm.h
-	$(LN_S) cod/cod.h
+	$(LN_S) $(srcdir)/fm/fm.h
+	$(LN_S) $(srcdir)/cod/cod.h
 	$(LN_S) ffs/ffs.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -7,8 +7,8 @@ SUBDIRS= fm cod ffs .
 
 all:
 	rm -f fm.h cod.h ffs.h
-	$(LN_S) fm/fm.h
-	$(LN_S) cod/cod.h
+	$(LN_S) $(srcdir)/fm/fm.h
+	$(LN_S) $(srcdir)/cod/cod.h
 	$(LN_S) ffs/ffs.h
 
 noinst_LTLIBRARIES = libfm.la libcod.la libffs.la
