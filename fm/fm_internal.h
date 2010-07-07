@@ -187,7 +187,7 @@ extern void
 add_format_to_iofile(FMContext fmc, FMFormat ioformat, int id_size, 
 		     void *id_buffer, int index);
 typedef enum {
-    local_only, host_only, host_and_fallback
+    local_only, never_local, host_only, host_and_fallback
 } action_t;
 
 extern int establish_server_connection(FMContext iofile, action_t action);

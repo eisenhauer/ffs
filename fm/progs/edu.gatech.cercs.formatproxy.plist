@@ -11,5 +11,7 @@
 		<string>/Users/eisen/bin/format_server</string>
 		<string>-launchd</string>
 	</array>
+	<key>Disabled</key>
+	<false/>
 </dict>
 </plist>

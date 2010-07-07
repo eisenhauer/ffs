@@ -502,7 +502,7 @@ try_master_connect(format_server fs)
     }
     last_try = now.tv_sec;
     if (fs->stdout_verbose) printf("Master connection dead, try reconnect\n");
-    establish_server_connection(fs->proxy_context_to_master, host_only);
+    establish_server_connection(fs->proxy_context_to_master, never_local);
     if (fs->proxy_context_to_master->server_fd != (void*)-1) {
 	int s = (int)(long)fs->proxy_context_to_master->server_fd;
 	int optval;

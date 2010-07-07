@@ -175,6 +175,7 @@ action_t action;
     int ret;
     Server_Protocol protocol;
     int conn_is_dead = 0;
+    int connected = 0;
 #ifndef MODULE
     int delay_value = 1;
 #else
@@ -241,20 +242,10 @@ action_t action;
 	if (format_server_verbose && conn_is_dead) {
 	    printf("detected dead link to format server, restarting\n");
 	}
-#ifdef MODULE
-        if ((sock = sock_create(AF_INET, SOCK_STREAM, 0, &socket)) < 0) {
-	    printk("Failed to create socket for FFS format server connection.  Not enough File Descriptors?\n");
-	    return 0;
-	}
-	//make_rt_sock(socket);
-	sock = get_pseudofd(socket, 
-	    (struct socket **)current->artemis->fdartemis);
-#else
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	    fprintf(stderr, "Failed to create socket for FFS format server connection.  Not enough File Descriptors?\n");
 	    return 0;
 	}
-#endif
 	
 	sock_addr.sin_family = AF_INET;
 		
@@ -262,68 +253,56 @@ action_t action;
 	if (action == local_only) {
 	    tmp_server_host = "localhost";
 	}
-	if (fill_hostaddr(&sock_addr.sin_addr, tmp_server_host, 
-			  &protocol) == 0) {
-	    fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
-		    tmp_server_host);
-	    return 0;
-	}
-	if (format_server_verbose == 1) {
-	    printf("Trying connection to format server on %s ...  ",
-		   tmp_server_host);
-	}
-	sock_addr.sin_port = htons(ffs_format_server_port);
-
-#ifdef MODULE
-        if (socket->ops->connect(socket, (struct sockaddr *) &sock_addr,
-		    sizeof sock_addr, O_RDWR ) < 0) {
-#else
-	if (connect(sock, (struct sockaddr *) &sock_addr,
-		    sizeof sock_addr) < 0) {
-#endif
-
-	    if (format_server_verbose) {
-		printf("failed\n");
-	    }
-	    if (action != host_and_fallback) return 0;
-
-	    /* fallback */
-#ifdef MODULE
-            if ((sock = sock_create(AF_INET, SOCK_STREAM, 0, &socket)) < 0) {
-		printk("Failed to create socket for FFS format server connection.  Not enough File Descriptors?\n");
-	       return 0;
-	    }
-	    //make_rt_sock(socket);
-	    sock = get_pseudofd(socket, 
-		(struct socket **)current->artemis->fdartemis);
-#else
-	    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		fprintf(stderr, "Failed to create socket for FFS format server connection.  Not enough File Descriptors?\n");
-	       return 0;
-	    }
-#endif
-	    format_server_host = "formathost.cercs.gatech.edu";
-	    sock_addr.sin_family = AF_INET;
-	    if (fill_hostaddr(&sock_addr.sin_addr, format_server_host, 
+	if ((action != never_local) || (strcmp(tmp_server_host, "localhost") != 0)) {
+	    if (fill_hostaddr(&sock_addr.sin_addr, tmp_server_host, 
 			      &protocol) == 0) {
 		fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
-			format_server_host);
+			tmp_server_host);
 		return 0;
 	    }
-	    sock_addr.sin_port = htons(ffs_format_server_port);
 	    if (format_server_verbose == 1) {
-		printf("Trying fallback connection to format server on %s ...  ",
-		       format_server_host);
+		printf("Trying connection to format server on %s ...  ",
+		       tmp_server_host);
 	    }
-#ifdef MODULE
-            if (socket->ops->connect(socket, (struct sockaddr *) &sock_addr,
-			sizeof sock_addr, O_RDWR) < 0) {
-#else
+	    sock_addr.sin_port = htons(ffs_format_server_port);
+	    
 	    if (connect(sock, (struct sockaddr *) &sock_addr,
 			sizeof sock_addr) < 0) {
-#endif
-		fprintf(stderr, "Failed to connect to primary or fallback format servers.\n");
-	        return 0;
+
+		if (format_server_verbose) {
+		    printf("failed\n");
+		}
+	    } else {
+		connected++;
+	    }
+
+	    if ((action == local_only) || (action == host_only)) return 0;
+
+	    if (!connected) {
+		/* fallback */
+		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		    fprintf(stderr, "Failed to create socket for FFS format server connection.  Not enough File Descriptors?\n");
+		    return 0;
+		}
+		
+		format_server_host = "formathost.cercs.gatech.edu";
+		sock_addr.sin_family = AF_INET;
+		if (fill_hostaddr(&sock_addr.sin_addr, format_server_host, 
+				  &protocol) == 0) {
+		    fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
+			    format_server_host);
+		    return 0;
+		}
+		sock_addr.sin_port = htons(ffs_format_server_port);
+		if (format_server_verbose == 1) {
+		    printf("Trying fallback connection to format server on %s ...  ",
+			   format_server_host);
+		}
+		if (connect(sock, (struct sockaddr *) &sock_addr,
+			    sizeof sock_addr) < 0) {
+		    fprintf(stderr, "Failed to connect to primary or fallback format servers.\n");
+		    return 0;
+		}
 	    }
 	}
 	if (format_server_verbose == 1) {
@@ -336,7 +315,7 @@ action_t action;
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &delay_value, sizeof(delay_value));
 #endif
 	iofile->server_fd = (void*) (long) sock;
-
+	
 	if (protocol == Authenticated) {
 	    unsigned char outbuf[CIPHER_BUF_SIZE];
 	    int enc_len = FFS_gen_authentication(&outbuf[0]);
@@ -351,7 +330,7 @@ action_t action;
 	} else {
 	    ret = server_write_header(iofile, 0, NULL);
 	}	    
-
+	
 	/* 
 	 * ignore SIGPIPE's  (these pop up when ports die.  we catch the 
 	 * failed writes) 
@@ -367,6 +346,7 @@ action_t action;
 	     */
 	    return 0;
 	}
+    
     }
     return 1;
 }
