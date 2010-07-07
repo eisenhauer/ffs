@@ -3689,7 +3689,7 @@ unsigned char *ID;
 {
     char buffer[256];
     stringify_server_ID(ID, buffer, sizeof(buffer));
-    printf(buffer);
+    printf("%s", buffer);
 }
 
 extern void
