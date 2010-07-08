@@ -898,6 +898,19 @@ FFSset_fixed_target(FFSContext c, FMStructDescList struct_list)
     return handle;
 }
 
+extern FFSTypeHandle
+FFSset_simple_target(FFSContext c, char *format_name, FMFieldList field_list, int struct_size)
+{
+    FMStructDescRec struct_list[2];
+    struct_list[0].format_name = format_name;
+    struct_list[0].field_list = field_list;
+    struct_list[0].struct_size = struct_size;
+    struct_list[0].opt_info = NULL;
+    struct_list[1].format_name = NULL;
+    struct_list[1].field_list = NULL;
+    return FFSset_fixed_target(c, &struct_list[0]);
+}
+
 /* 
  * inputs:
  *  1.  maybe --> where data is now, base & variant
@@ -1298,6 +1311,9 @@ FFSTypeHandle ioformat;
 {
     if (ioformat->conversion == NULL) {
 	if (ioformat->status == not_checked) {
+	    FFS_determine_conversion(ioformat->context, ioformat);
+	}
+	if (ioformat->status == none_available) {
 	    fprintf(stderr, "FFS Warning:  Attempting to decode when no conversion has been set.  \n  Record is of type \"%s\", ioformat 0x%lx.\n  No data returned.\n",
 		    ioformat->body->format_name, (long) ioformat);
 	    ioformat->status = none_available;
@@ -1366,6 +1382,7 @@ char *data;			/* incoming data to be decoded */
     FFSTypeHandle f;
     /* first element in encoded buffer is format ID */
     f = FFSTypeHandle_from_encode(c, data);
+    if (f == NULL) return NULL;
     if (f->status == not_checked) {
 	FFS_determine_conversion(c, f);
     }
