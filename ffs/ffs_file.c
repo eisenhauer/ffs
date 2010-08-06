@@ -1690,7 +1690,9 @@ FFSread(FFSFile file, void *dest)
 	file->next_record_type = (file->errno_val) ? FFSerror : FFSend;
 	return 0;
     }
-    FFSdecode(file->c, file->tmp_buffer->tmp_buffer, dest);
+    if (dest != NULL) {
+	FFSdecode(file->c, file->tmp_buffer->tmp_buffer, dest);
+    }
     file->read_ahead = FALSE;
     return 1;
 }
