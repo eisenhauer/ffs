@@ -1219,6 +1219,10 @@ FFSFile ffsfile;
     while (ffsfile->next_record_type != FFSdata) {
 	if (!FFSconsume_next_item(ffsfile)) return NULL;
     }
+    if (ffsfile->next_actual_handle->status == not_checked) {
+	FFS_determine_conversion(ffsfile->c, ffsfile->next_actual_handle);
+	ffsfile->next_data_handle = ffsfile->next_actual_handle->conversion_target;
+    }
     return ffsfile->next_data_handle;
 }
 
