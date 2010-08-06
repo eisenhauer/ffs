@@ -886,6 +886,17 @@ free_FFSContext(FFSContext c)
     free(c);
 }
 
+static void
+reset_prior_conversions(FFSContext c)
+{
+    int i;
+    for (i=0; i < c->handle_list_size; i++) {
+	if (c->handle_list[i] != NULL) {
+	    c->handle_list[i]->status = not_checked;
+	}
+    }
+}
+
 extern FFSTypeHandle
 FFSset_fixed_target(FFSContext c, FMStructDescList struct_list)
 {
@@ -895,6 +906,8 @@ FFSset_fixed_target(FFSContext c, FMStructDescList struct_list)
     index = fmf->format_index;
     handle = FFSTypeHandle_by_index(c, index);
     handle->is_fixed_target = 1;
+    /* any new target may invalidate prior conversion decisions */
+    reset_prior_conversions(c);
     return handle;
 }
 
@@ -1331,6 +1344,9 @@ char *dest;			/* area to hold decoded data */
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
+    if (ioformat == NULL) {
+	return 0;
+    }
     if (!check_conversion(ioformat)) {
 	return 0;
     }
@@ -1368,6 +1384,9 @@ void *dest;			/* area to hold decoded data */
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
+    if (ioformat == NULL) {
+	return 0;
+    }
     if (!check_conversion(ioformat)) {
 	return 0;
     }
