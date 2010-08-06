@@ -22,6 +22,9 @@ Usage: FFSdump [<option>] <filename>\n\
           <option> is of the form {+,-}{<record type>}\n\
        where <record type> is one of : header, comments, index, formats, data\n";
 
+extern char *
+dump_raw_FMrecord_to_string(FMContext fmc, FMFormat format, void *data);
+
 int
 main(argc, argv)
 int argc;
@@ -108,46 +111,49 @@ char **argv;
     buffer_size = 1024;
 
     while (1) {
-	switch (FFSnext_record_type(ffsfile)) {
-	case FFSindex: {
-	    FFSIndexItem item = FFSread_index(ffsfile);
-	    FFSdump_index(item);
-	    break;
-	}
-	case FFScomment: {
-	    char *comment = FFSread_comment(ffsfile);
-	    printf("Got a comment\n");
-	    if (dump_comments) {
-		if (comment)
-		    printf("Comment -> \"%s\"\n", comment);
-	    }
-	    break;
-	}
-	case FFSformat:
-	{
-	    FFSTypeHandle format = FFSread_format(ffsfile);
-	    dump_formats = 1;
-	    if (dump_formats) {
-		dump_FMFormat(FMFormat_of_original(format));
-	    }
-	    break;
-	}
-	case FFSdata:{
-	    FFSTypeHandle format;
-	    if (buffer_size < FFSnext_data_length(ffsfile)) {
-		buffer_size = FFSnext_data_length(ffsfile);
-		buffer = realloc(buffer, buffer_size);
-	    }
-	    FFSread_raw(ffsfile, buffer, buffer_size, &format);
-	    if (dump_data) {
-		dump_raw_FMrecord(ffsfile, FMFormat_of_original(format), buffer);
-	    }
-	    break;
-	}
-	case FFSerror:
-	case FFSend:
-	    close_FFSfile(ffsfile);
-	    exit(0);
-	}
+        switch (FFSnext_record_type(ffsfile)) {
+        case FFSindex: {
+            FFSIndexItem item = FFSread_index(ffsfile);
+            FFSdump_index(item);
+            break;
+        }
+        case FFScomment: {
+            char *comment = FFSread_comment(ffsfile);
+            printf("Got a comment\n");
+            if (dump_comments) {
+                if (comment)
+                    printf("Comment -> \"%s\"\n", comment);
+            }
+            break;
+        }
+        case FFSformat:
+        {
+            FFSTypeHandle format = FFSread_format(ffsfile);
+            dump_formats = 1;
+            if (dump_formats) {
+                dump_FMFormat(FMFormat_of_original(format));
+            }
+            break;
+        }
+        case FFSdata:{
+            FFSTypeHandle format;
+            if (buffer_size < FFSnext_data_length(ffsfile)) {
+                buffer_size = FFSnext_data_length(ffsfile);
+                buffer = realloc(buffer, buffer_size);
+            }
+            FFSread_raw(ffsfile, buffer, buffer_size, &format);
+            if (dump_data) {
+/*              dump_raw_FMrecord(ffsfile, FMFormat_of_original(format), buffer);*/
+                char *str = dump_raw_FMrecord_to_string(NULL, FMFormat_of_original(format), buffer);
+                printf("%s", str);
+                free(str);
+            }
+            break;
+        }
+        case FFSerror:
+        case FFSend:
+            close_FFSfile(ffsfile);
+            exit(0);
+        }
     }
 }
