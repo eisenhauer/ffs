@@ -384,83 +384,83 @@ int encode;
     if (descr.data_type == integer_type) {
 	if (field_size <= sizeof(long)) {
 	    long tmp = get_FMlong(&descr, data);
-	    dump_output(s, 25, "%ld", tmp);
+	    dump_output(s, 25, "%ld ", tmp);
 	} else if (field_size == 2 * sizeof(long) && field_size == 8) {
 	    unsigned long low_long;
 	    long high_long;
 	    get_FMlong8(&descr, data, &low_long, &high_long);
 	    if (high_long == 0) {
-		dump_output(s, 12, "%ld", low_long);
+		dump_output(s, 12, "%ld ", low_long);
 	    } else {
-		dump_output(s, 20, "0x%lx%08lx", high_long, low_long);
+		dump_output(s, 20, "0x%lx%08lx ", high_long, low_long);
 	    }
 	} else if (field_size > sizeof(long)) {
-	    dump_output(s, 10, "+long int+");
+	    dump_output(s, 10, "+long int+ ");
 	} else {
-	    dump_output(s, 20, "+int size %d+", field_size);
+	    dump_output(s, 20, "+int size %d+ ", field_size);
 	}
     } else if (descr.data_type == unsigned_type) {
 	if (field_size <= sizeof(unsigned long)) {
 	    unsigned long tmp = get_FMulong(&descr, data);
-	    dump_output(s, 25, "%lu", tmp);
+	    dump_output(s, 25, "%lu ", tmp);
 	} else if (field_size == 2 * sizeof(long) && field_size == 8) {
 	    unsigned long low_long, high_long;
 	    get_FMulong8(&descr, data, &low_long, &high_long);
 	    if (high_long == 0) {
-		dump_output(s, 12, "%lu", low_long);
+		dump_output(s, 12, "%lu ", low_long);
 	    } else {
-		dump_output(s, 20, "0x%lx%08lx", high_long, low_long);
+		dump_output(s, 20, "0x%lx%08lx ", high_long, low_long);
 	    }
 	} else if (field_size > sizeof(long)) {
-	    dump_output(s, 12, "+ulong int+");
+	    dump_output(s, 12, "+ulong int+ ");
 	} else {
-	    dump_output(s, 20, "+uint size %u+", field_size);
+	    dump_output(s, 20, "+uint size %u+ ", field_size);
 	}
     } else if (descr.data_type == enumeration_type) {
 	unsigned long tmp = get_FMulong(&descr, data);
-	dump_output(s, 25, "%lu", tmp);
+	dump_output(s, 25, "%lu ", tmp);
     } else if (descr.data_type == boolean_type) {
 	unsigned long tmp = get_FMulong(&descr, data);
-	dump_output(s, 25, "%lu", tmp);
+	dump_output(s, 25, "%lu ", tmp);
 	if (tmp == 0) {
-	    dump_output(s, 5, "false");
+	    dump_output(s, 5, "false ");
 	} else {
-	    dump_output(s, 4, "true");
+	    dump_output(s, 4, "true ");
 	}
     } else if (descr.data_type == float_type) {
 	if (field_size == sizeof(float)) {
 	    float tmp = get_FMfloat(&descr, data);
-	    dump_output(s, 20, "%g", tmp);
+	    dump_output(s, 20, "%g ", tmp);
 	} else if (field_size == sizeof(double)) {
 	    double tmp = get_FMdouble(&descr, data);
-	    dump_output(s, 20, "%g", tmp);
+	    dump_output(s, 20, "%g ", tmp);
 #if SIZEOF_LONG_DOUBLE != 0 && SIZEOF_LONG_DOUBLE != SIZEOF_DOUBLE
 	} else if (field_size == sizeof(long double)) {
 	    long double tmp;
 	    memcpy(&tmp, (float *) ((char *) data + field_offset),
 		   sizeof(double));
-	    dump_output(s, 30, "%Lg", tmp);
+	    dump_output(s, 30, "%Lg ", tmp);
 #endif
 	} else {
 	    if (field_size < sizeof(float)) {
-		dump_output(s, 12, "+tiny float+");
+		dump_output(s, 12, "+tiny float+ ");
 	    } else if (field_size > sizeof(double)) {
-		dump_output(s, 12, "+big float+");
+		dump_output(s, 12, "+big float+ ");
 	    } else {
-		dump_output(s, 20, "+float size %u+", field_size);
+		dump_output(s, 20, "+float size %u+ ", field_size);
 	    }
 	}
     } else if (descr.data_type == char_type) {
-	dump_output(s, 1, "%c", *(char *) ((char *) data + field_offset));
+	dump_output(s, 1, "%c ", *(char *) ((char *) data + field_offset));
     } else if (descr.data_type == string_type) {
 	char *tmp_str = (char *) get_FMaddr(&descr, data, string_base, encode);
 	if (tmp_str == 0) {
-	    dump_output(s, 4, "\"\"");
+	    dump_output(s, 4, "\" \"");
 	} else {
-	    dump_output(s, strlen(tmp_str) + 3, "\"%s\"", tmp_str);
+	    dump_output(s, strlen(tmp_str) + 3, "\"%s \"", tmp_str);
 	}
     } else if (strcmp(field_type, "R3vector") == 0) {
-	dump_output(s, 60, "(%g, %g, %g)", *(double *) ((char *) data + field_offset),
+	dump_output(s, 60, "(%g, %g, %g) ", *(double *) ((char *) data + field_offset),
 	     *(double *) ((char *) data + field_offset + sizeof(double)),
 	*(double *) ((char *) data + field_offset + 2 * sizeof(double)));
     } else {
@@ -488,7 +488,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    dump_output(s, 4, "NULL");
 	    return 1;
 	} else {
-	    dump_output(s, 20, "%p", ptr_value);
+	    dump_output(s, 20, "%p ", ptr_value);
 	}
 	if (s->encoded) {
 #if defined (__INTEL_COMPILER)
@@ -524,7 +524,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	src_spec.size = f->pointer_size;
 	ptr_value = quick_get_pointer(&src_spec, (char*)base + data_offset);
 	if (ptr_value == NULL) {
-	    dump_output(s, 4, "NULL");
+	    dump_output(s, 5, "NULL ");
 	} else {
 	    if (s->encoded) {
 		ptr_value = (long)ptr_value + s->offset_base;
