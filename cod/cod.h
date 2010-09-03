@@ -175,6 +175,8 @@ typedef struct _cod_code_struct {
     void *data;
     /*! the size of the static data block referenced by the generated function */
     int static_size_required;
+    /*! the virtual register that holds the address of the static data block  */
+    int static_block_address_register;
     /*! the IOFormats that describe the static data block */
     FMStructDescList static_formats;
     /*! a pointer to the DRISC context used to generate the function \internal 

@@ -1567,6 +1567,7 @@ cod_parse_context context;
     ret_code->code_memory_block = NULL;
     ret_code->data = NULL;
     ret_code->has_exec_ctx = context->has_exec_context;
+    ret_code->static_block_address_register = -1;
     func = cod_cg_net(tmp, context->return_cg_type, &offset, ret_code);
     tmp->node.compound_statement.decls = NULL;
     tmp2->node.compound_statement.decls = NULL;
@@ -3772,6 +3773,15 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	return semanticize_struct_type_node(context, decl, scope);
 	break;
     case cod_array_type_decl:
+	if (decl->node.array_type_decl.type_spec != NULL) {
+	    sm_list l = decl->node.array_type_decl.type_spec;
+	    if ((l->node->node_type == cod_type_specifier) && 
+		(l->node->node.type_specifier.token == STATIC)) {
+		decl->node.array_type_decl.type_spec = l->next;
+		decl->node.array_type_decl.element_ref->node.declaration.static_var = 1;
+		free(l);
+	    }
+	}
 	return semanticize_array_type_node(context, decl, scope);
 	break;
     case cod_reference_type_decl:
