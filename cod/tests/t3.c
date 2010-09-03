@@ -51,6 +51,7 @@ main(int argc, char **argv)
 	    {(void*)0, (void*)0}
 	};
 	cod_code gen_code;
+	long ret;
 	long (*func)();
 
 	GEN_PARSE_CONTEXT(context);
@@ -59,9 +60,12 @@ main(int argc, char **argv)
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
 	func = (long(*)()) (long) gen_code->func;
-	assert(func(EC_param0) == 23);
-	assert(func(EC_param0) == 29);
-	assert(func(EC_param0) == 35);
+	ret = func(EC_param0);
+	assert(ret == 23);
+	ret = func(EC_param0);
+	assert(ret == 29);
+	ret = func(EC_param0);
+	assert(ret == 35);
 	cod_exec_context_free(ec);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
@@ -145,7 +149,7 @@ main(int argc, char **argv)
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
-    {
+    if ((test_to_run == 4) || (test_to_run == -1)) {
 	/* structured types */
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
@@ -205,7 +209,7 @@ char code_string[] = {"\
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
-    if ((test_to_run == 4) || (test_to_run == -1)) {
+    if ((test_to_run == 5) || (test_to_run == -1)) {
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
@@ -264,7 +268,7 @@ char code_string[] = {"\
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
-    if ((test_to_run == 5) || (test_to_run == -1)) {
+    if ((test_to_run == 6) || (test_to_run == -1)) {
 	static char extern_string[] = "int printf(string format, ...);\
 					double testd();";
 	static cod_extern_entry externs[] = 
@@ -300,6 +304,50 @@ char code_string[] = {"\
 	if (result != 1.0) {
 	    printf("Expected %g, got %g\n", 1.0, result);
 	}
+	cod_exec_context_free(ec);
+	cod_code_free(gen_code);
+	cod_free_parse_context(context);
+    }
+
+    if ((test_to_run == 7) || (test_to_run == -1)) {
+	/* test static arrays */
+	char code_string[] = "\
+{\n\
+    static int n[4];\n\
+    if (n[0] + n[1] + n[2] + n[3] == 0) {\n\
+        /* first time */\n\
+        n[0] = 4;\n\
+        n[1] = 10;\n\
+        n[2] = 3;\n\
+        n[3] = 0;\n\
+    }\n\
+    n[0] = n[0] + 1;\n\
+    n[1] = n[1] + 2;\n\
+    n[2] = n[2] + 3;\n\
+    return n[0] + n[1] + n[2] + n[3];\n\
+}";
+
+	cod_parse_context context;
+	cod_exec_context ec;
+	static char extern_string[] = "int printf(string format, ...);";
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {(void*)0, (void*)0}
+	};
+	cod_code gen_code;
+	long (*func)();
+	int ret;
+
+	GEN_PARSE_CONTEXT(context);
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+	gen_code = cod_code_gen(code_string, context);
+	ec = cod_create_exec_context(gen_code);
+	func = (long(*)()) (long) gen_code->func;
+	assert(func(EC_param0) == 23);
+	assert(func(EC_param0) == 29);
+	assert(func(EC_param0) == 35);
 	cod_exec_context_free(ec);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
