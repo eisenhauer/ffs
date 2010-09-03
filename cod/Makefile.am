@@ -34,7 +34,7 @@ cod.tab.h cod.c: $(srcdir)/cod.y
 structs.h : $(srcdir)/struct.pl $(srcdir)/cod.structs
 	@PERL@ $(srcdir)/struct.pl $(srcdir)/cod.structs
 
-cod_node.c : struct.pl cod.structs
+cod_node.c : $(srcdir)/struct.pl $(srcdir)/cod.structs
 
 cod.lo: structs.h lex.yy.c
 cod_node.lo: structs.h
