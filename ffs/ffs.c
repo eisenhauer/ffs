@@ -1020,8 +1020,13 @@ IOConversionPtr conv;
 }
 
 extern int
-decode_in_place_possible(format)
-FFSTypeHandle format;
+decode_in_place_possible(FFSTypeHandle format)
+{
+    return FFSdecode_in_place_possible(format);
+}
+
+extern int
+FFSdecode_in_place_possible(FFSTypeHandle format)
 {
     if (format->conversion != NULL) {
 	if (format->body->variant) {

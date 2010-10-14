@@ -66,7 +66,7 @@ typedef struct FFSEncodeVec {
 extern FFSEncodeVector
 FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data);
 
-extern int decode_in_place_possible(FFSTypeHandle);
+extern int FFSdecode_in_place_possible(FFSTypeHandle);
 
 extern FFSTypeHandle FFSTypeHandle_from_encode(FFSContext c, char *b);
 
