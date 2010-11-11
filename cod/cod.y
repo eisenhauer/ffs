@@ -112,6 +112,22 @@ char *strdup(const char *s)
 #define yynerrs cod_yynerrs
 #define yyout cod_yyout
 #define yytext cod_yytext
+#define yyset_out cod_yyset_out
+#define yyset_lineno cod_yyset_lineno
+#define yyset_in cod_yyset_in
+#define yyset_debug cod_yyset_debug
+#define yyrealloc cod_yyrealloc
+#define yyalloc cod_yyalloc
+#define yyfree cod_yyfree
+#define yypush_buffer_state cod_yypush_buffer_state
+#define yypop_buffer_state cod_yypop_buffer_state
+#define yylex_destroy cod_yylex_destroy
+#define yyget_out cod_yyget_out
+#define yyget_lineno cod_yyget_lineno
+#define yyget_in cod_yyget_in
+#define yyget_debug cod_yyget_debug
+#define yyget_text cod_yyget_text
+#define yyget_leng cod_yyget_leng
 
 static char *create_string_from_yytext();
 extern int yylex();
