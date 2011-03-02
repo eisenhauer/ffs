@@ -128,6 +128,7 @@ return			{RETURN(RETURN_TOKEN);}
 "{"			{RETURN(LCURLY);}
 "}"			{RETURN(RCURLY);}
 "!"			{RETURN(BANG);}
+":"			{RETURN(COLON);}
 [A-Za-z][A-Za-z0-9_]*	{
 				yylval.info.string = create_string_from_yytext();
 				if (is_defined_type(yylval.info.string)) {

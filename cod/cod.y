@@ -168,6 +168,7 @@ cod_dup_list(sm_list list)
 %token <info> RPAREN
 %token <info> LCURLY
 %token <info> RCURLY
+%token <info> COLON
 %token <info> LBRACKET
 %token <info> RBRACKET
 %token <info> DOT
@@ -227,6 +228,7 @@ cod_dup_list(sm_list list)
 
 %type <info> struct_or_union;
 %type <reference> compound_statement;
+%type <reference> labeled_statement;
 %type <list> declaration_list statement_list;
 %type <reference> declaration;
 %type <reference> statement;
@@ -1319,7 +1321,8 @@ statement_list:
 
 /* missing labeled statement */
 statement:
-	  compound_statement
+	labeled_statement
+	| compound_statement
 	| expression_statement
 	| selection_statement
 	| iteration_statement
@@ -1328,6 +1331,13 @@ statement:
 	      $$ = NULL;
 	  }
 	;
+
+labeled_statement:
+	identifier_ref COLON statement {
+	    $$ = cod_new_label_statement();
+	    $$->node.label_statement.name =  $1.string;
+	    $$->node.label_statement.statement = $3;
+	};
 
 compound_statement:
 	LCURLY declaration_list statement_list RCURLY {
@@ -3916,6 +3926,9 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 				stmt->node.return_statement.expression,
 				scope);
     }	
+    case cod_label_statement:{
+	return semanticize_statement(context, stmt->node.label_statement.statement, scope);
+    }
     default:
 	printf("unhandled case in semanticize statement\n");
 	return 1;

@@ -20,6 +20,10 @@ declaration:
 	int  closure_id;
 	void *cg_address;
 
+label_statement:
+	char *name;
+	sm_ref statement;
+
 return_statement:
 	sm_ref expression;
 	int cg_func_type;

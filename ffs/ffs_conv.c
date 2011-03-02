@@ -2166,7 +2166,7 @@ int dest_alignment;
 	    mask = 0;
 	}
 	if (mask != 0) {
-	    int zero_target = dill_alloc_label(c);
+	    int zero_target = dill_alloc_label(c, NULL);
 	    dill_anduli(c, tmp, args[0], mask);
 	    dill_beqli(c, tmp, 0, zero_target);
 	    dill_scallv(c, (void*)printf, "printf", "%P%P%p%I",
@@ -2585,7 +2585,7 @@ int data_already_copied;
     case FMType_pointer: {
 	dill_reg actual_src_reg, actual_dest_reg;
 	struct _FMgetFieldStruct tmp_spec = conv->src_field;
-	int null_target = dill_alloc_label(c);
+	int null_target = dill_alloc_label(c, NULL);
 	tmp_spec.offset = 0;
 	tmp_spec.size = conv_status->src_pointer_size;
 	
@@ -2638,7 +2638,7 @@ int data_already_copied;
 	dill_reg actual_src_reg, actual_dest_reg;
 	struct _FMgetFieldStruct tmp_spec = conv->src_field;
 	tmp_spec.offset = 0;
-	int null_target = dill_alloc_label(c);
+	int null_target = dill_alloc_label(c, NULL);
 	gen_convert_address_field(c, tmp_spec, 0, src_addr, src_offset,
 				  conv->dest_size, dest_addr, dest_offset, 
 				  conv_status->src_offset_adjust, 
@@ -2788,8 +2788,8 @@ int data_already_copied;
 	    dill_addpi(c, dest_addr, dest_addr, dest_offset);
 
 	    /* gen conversion loop */
-	    loop_head = dill_alloc_label(c);
-	    loop_end = dill_alloc_label(c);
+	    loop_head = dill_alloc_label(c, NULL);
+	    loop_end = dill_alloc_label(c, NULL);
 	    dill_seti(c, loop_var, static_elements);
 	    next = type_desc;
 	    while (next->type == FMType_array) {
