@@ -1168,7 +1168,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     ret_op.offset = 0;
 
     if (is_comparison_operator(expr)) {
-	dill_mark_label_type false_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type false_label = dill_alloc_label(s, "compare start");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	cg_branch_if_false(s, expr, false_label, descr);
 	dill_seti(s, result, 1);	/* op_i_seti */
@@ -1402,7 +1402,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	ret_op.reg = result;
 	return ret_op;
     case  op_leq:{
-	dill_mark_label_type true_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type true_label = dill_alloc_label(s, "true");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	switch (op_type) {
 	case DILL_I:
@@ -1431,7 +1431,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	break;
     }
     case  op_lt:{
-	dill_mark_label_type true_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type true_label = dill_alloc_label(s, "true");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	switch (op_type) {
 	case DILL_I:
@@ -1460,7 +1460,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	break;
     }
     case  op_geq:{
-	dill_mark_label_type true_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type true_label = dill_alloc_label(s, "true");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	switch (op_type) {
 	case DILL_I:
@@ -1489,7 +1489,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	break;
     }
     case  op_gt:{
-	dill_mark_label_type true_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type true_label = dill_alloc_label(s, "true");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	switch (op_type) {
 	case DILL_I:
@@ -1545,7 +1545,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    dill_movi(s, result, rv);
 	    break;
 	}
-	true_label = dill_alloc_label(s, NULL);
+	true_label = dill_alloc_label(s, "true");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	switch (op_type) {
 	case DILL_I:
@@ -1574,7 +1574,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	break;
     }
     case  op_neq: {
-	dill_mark_label_type true_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type true_label = dill_alloc_label(s, "true");
 	dill_seti(s, result, 0);	/* op_i_seti */
 	switch (op_type) {
 	case DILL_I:
@@ -3166,13 +3166,13 @@ cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label,
     
 static void cg_selection_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
-    dill_mark_label_type else_label = dill_alloc_label(s, NULL);
+    dill_mark_label_type else_label = dill_alloc_label(s, "else");
     
     cg_branch_if_false(s, stmt->node.selection_statement.conditional, 
 		       else_label, descr);
     cg_statement(s, stmt->node.selection_statement.then_part, descr);
     if (stmt->node.selection_statement.else_part != NULL) {
-	dill_mark_label_type end_label = dill_alloc_label(s, NULL);
+	dill_mark_label_type end_label = dill_alloc_label(s, "if-end");
 	dill_jpi(s, (void*) end_label);	/* op_i_jpi */
 	dill_mark_label(s, else_label);
 	cg_statement(s, stmt->node.selection_statement.else_part, descr);
@@ -3184,7 +3184,7 @@ static void cg_selection_statement(dill_stream s, sm_ref stmt, cod_code descr)
 
 static void cg_iteration_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
-    dill_mark_label_type begin_label = dill_alloc_label(s, NULL), end_label = dill_alloc_label(s, NULL);
+    dill_mark_label_type begin_label = dill_alloc_label(s, "loop begin"), end_label = dill_alloc_label(s, "loop end");
     if (stmt->node.iteration_statement.init_expr != NULL) {
 	(void) cg_expr(s, stmt->node.iteration_statement.init_expr, 0, descr);
     }
