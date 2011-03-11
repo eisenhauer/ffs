@@ -1820,7 +1820,8 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 	dill_push_arg(s, types_array[index], args_array[index]);
     }
     ret.reg = dill_pcall(s, cod_sm_get_type(expr),
-		       func_ref->node.declaration.cg_address, "unknown");
+			 func_ref->node.declaration.cg_address, 
+			 strdup(func_ref->node.declaration.id));
     return ret;
 }
 
