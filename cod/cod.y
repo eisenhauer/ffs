@@ -2740,9 +2740,10 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    decl->node.declaration.addr_taken = 1;
 		}
 	    } else {
-		/* Can only take the address of something we can name... */
-		cod_src_error(context, expr, "Invalid operand to address operator");
-		return 0;
+		if (!is_left_hand_side(expr)) {
+		    cod_src_error(context, expr, "Invalid operand to address operator");
+		    return 0;
+		}
 	    }
 	    break;
 	case op_deref: {
@@ -3152,6 +3153,35 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	cod_print(expr);
     }
     return 0;
+}
+
+extern int
+is_left_hand_side(sm_ref expr)
+{
+    switch(expr->node_type) {
+    case cod_identifier:
+	return 1;
+    case cod_operator:
+	return expr->node.operator.result_type;
+    case cod_cast:
+	return is_left_hand_side(expr->node.cast.expression);
+    case cod_assignment_expression:
+	return expr->node.assignment_expression.cg_type;
+    case cod_declaration:
+	return 1;
+    case cod_constant:
+	return 0;
+    case cod_field_ref:
+	return 1;
+    case cod_element_ref:
+	return 1;
+    case cod_subroutine_call:
+	return 0;
+    default:
+	fprintf(stderr, "Unknown case in is_left_hand_side()\n");
+	cod_print(expr);
+	assert(0);
+    }
 }
 
 extern int
