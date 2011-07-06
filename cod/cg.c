@@ -830,9 +830,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		dill_reg addr_reg = dill_getreg(s, DILL_P);
 		dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
 #ifndef LINUX_KERNEL_MODULE
-		(void) dill_scallv(s, (void*)memset, "memset", "%p%I%I", addr_reg, 0, ctype->node.struct_type_decl.cg_size);
+		(void) dill_scallv(s, (void*)memset, "memset", "%p%I%I", addr_reg, 0, cg_get_size(s, decl));
 #else 
-		(void) dill_scallv(s, (void*)kmemset, "kmemset", "%p%I%I", addr_reg, 0, ctype->node.struct_type_decl.cg_size);
+		(void) dill_scallv(s, (void*)kmemset, "kmemset", "%p%I%I", addr_reg, 0, cg_get_size(s, decl));
 #endif
 	    }
 	}
