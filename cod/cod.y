@@ -3098,10 +3098,12 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    }
 		    break;
 		case DILL_P:
-		    if ((formal->node.declaration.cg_type != DILL_P) &&
-			(formal->node.declaration.sm_complex_type->node_type !=
-			 cod_reference_type_decl)) {
-			mismatch++;
+		    if (formal->node.declaration.cg_type != DILL_P) {
+			if (!(formal->node.declaration.sm_complex_type &&
+			      (formal->node.declaration.sm_complex_type->node_type ==
+			       cod_reference_type_decl))) {
+			    mismatch++;
+			}
 		    }
 		    break;
 		}
