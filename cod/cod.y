@@ -2740,7 +2740,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    decl->node.declaration.addr_taken = 1;
 		}
 	    } else {
-		if (!is_left_hand_side(expr)) {
+		if (!is_left_hand_side(expr->node.operator.right)) {
 		    cod_src_error(context, expr, "Invalid operand to address operator");
 		    return 0;
 		}
@@ -3164,7 +3164,7 @@ is_left_hand_side(sm_ref expr)
     case cod_identifier:
 	return 1;
     case cod_operator:
-	return expr->node.operator.result_type;
+	return 0;
     case cod_cast:
 	return is_left_hand_side(expr->node.cast.expression);
     case cod_assignment_expression:
