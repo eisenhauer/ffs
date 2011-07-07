@@ -3184,6 +3184,7 @@ is_left_hand_side(sm_ref expr)
 	cod_print(expr);
 	assert(0);
     }
+    return 0;
 }
 
 extern int
