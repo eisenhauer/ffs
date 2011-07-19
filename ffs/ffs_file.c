@@ -1789,6 +1789,43 @@ FFSread_raw(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
 }
 
 extern int
+FFSread_raw_header(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
+{
+    FFSTypeHandle f;
+    int header_size;
+    int read_size;
+    char *tmp_buf;
+
+    if (file->status != OpenForRead)
+	return 0;
+
+    if (file->read_ahead == FALSE) {
+	(void) next_record_type(file);
+    }
+    while (file->next_record_type != FFSdata) {
+	if (!FFSconsume_next_item(file)) return 0;
+    }
+
+    f = file->next_actual_handle;
+    *fp = f;
+    header_size = FFSheader_size(f);
+    read_size = file->next_data_len - header_size;
+    /* should have buffer optimization logic here.  
+     * I.E. if decode_in_place_possible() handle differently.  later
+     */
+    /* read into temporary memory */
+    memset(dest, 0, header_size);
+    memcpy(dest, f->body->server_ID.value, f->body->server_ID.length);
+    if (file->read_func(file->file_id, dest+header_size, read_size, NULL, NULL) != read_size) {
+	file->next_record_type = (file->errno_val) ? FFSerror : FFSend;
+	return 0;
+    }
+
+    file->read_ahead = FALSE;
+    return 1;
+}
+
+extern int
 FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest)
 {
     FFSTypeHandle f;
