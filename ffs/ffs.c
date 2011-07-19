@@ -563,7 +563,9 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    smd.src_ptr = ptr_value;
 	    smd.dst_ptr = (char*)buf->tmp_buffer + new_offset;
 	    smd.marshalled_count = 0;
+#ifdef DO_DCG
 	    cod_assoc_client_data(ec,  0x534d4450, (long)&smd);
+#endif
 	    marshal_info->subsample_array_func(ec, s->orig_data, element_count);
 	    /* fixup size */
 	    set_dynamic_array_size(f, buf, parent_offset, t->next, 

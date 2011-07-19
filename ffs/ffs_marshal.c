@@ -26,6 +26,7 @@ get_marshal_info(FMFormat f, FMTypeDesc *t)
     return NULL;
 }
 
+#ifdef DO_DCG
 extern sm_ref
 cod_build_type_node(const char *name, FMFieldList field_list);
 extern sm_ref
@@ -203,3 +204,9 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
 }
 
 
+#else
+extern void
+install_drop_code(FMFormat f, char *field, char*code_str){}
+extern void
+install_subsample_code(FMFormat f, char *field, char*code_str){}
+#endif

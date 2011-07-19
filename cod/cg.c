@@ -207,6 +207,8 @@ add_decl_to_static_description(sm_ref decl, cod_code cd)
     }
 }
 
+static int cg_get_size(dill_stream s, sm_ref node);
+
 static void
 cg_preprocess(sm_ref node, void *data) {
     cod_code code_descriptor = (cod_code) data;
@@ -455,8 +457,9 @@ cod_code code_descriptor;
     static int debug_cg = -1;
     dill_stream s = NULL;
     char *arg_str;
+#if defined(HAVE_DILL_H)
     dill_exec_handle handle;
-
+#endif
     if (debug_cg == -1) {
 	debug_cg = (int)(long)(getenv("COD_DEBUG"));
     }

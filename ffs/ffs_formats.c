@@ -20,6 +20,38 @@ extern char *getenv(const char *name);
 #else 
 #define dill_stream void*
 #define dill_create_stream() NULL
+/*stuff*/
+enum {
+    DILL_C,    /* char */
+    DILL_UC,   /* unsigned char */
+    DILL_S,    /* short */
+    DILL_US,   /* unsigned short */
+    DILL_I,    /* int */
+    DILL_U,    /* unsigned */
+    DILL_L,    /* long */
+    DILL_UL,   /* unsigned long */
+    DILL_P,    /* pointer */
+    DILL_F,    /* floating */
+    DILL_D,    /* double */
+    DILL_V,    /* void */
+    DILL_B,    /* block structure */
+    DILL_ERR   /* no type */
+};
+static int
+dill_type_align(dill_stream s, int t)
+{
+  switch (t) {
+  case DILL_C: case DILL_UC: return 1;
+  case DILL_S: case DILL_US: return 2;
+  case DILL_I: case DILL_U: return 4;
+  case DILL_L: case DILL_UL: return sizeof(long);
+  case DILL_P: return sizeof(char*);
+  case DILL_F: return sizeof(float);
+  case DILL_D: return sizeof(double);
+  default:
+    return 0;
+  }
+}
 #endif
 #include "ffs.h"
 #include "assert.h"

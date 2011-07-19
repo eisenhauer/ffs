@@ -3,6 +3,7 @@
 #include "stdlib.h"
 #include "ffs.h"
 
+#ifdef DO_DCG
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1195,3 +1196,4 @@ int size;
     }
     return result_oprnd;
 }
+#endif
