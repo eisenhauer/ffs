@@ -938,11 +938,10 @@ FSClient fsc;
 	    }
 	    {
 		char ret[2];
-		if (fsc->provisional != 0) {
+		ret[0] = 'I';
+		/*		if (fsc->provisional != 0) {
 		    ret[0] = 'P';
-		} else {
-		    ret[0] = 'I';
-		}
+		    } */
 		ret[1] = ioformat->server_ID.length;
 		if (os_server_write_func(fsc->fd, &ret[0], 2, NULL, NULL) != 2) {
 		    FSClient_close(fsc);
