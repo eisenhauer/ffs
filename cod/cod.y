@@ -4546,16 +4546,27 @@ cod_add_encoded_param(const char *id, char *data, int param_num,
 {
     int i = 0;
     FMFormat format = FMformat_from_ID(c, data);
-    FMFormat *formats = format->subformats;
+    FMFormat *formats;
     sm_ref top_type = NULL, param_node;
+    sm_ref node;
+    if (format == NULL) {
+	printf("No FMFormat ID found in buffer supplied to cod_add_encoded_param()\n");
+	printf("No parameter added\n");
+	return;
+    }
+    formats = format->subformats;
     while (formats[i] != NULL) {
-	sm_ref node = cod_build_type_node_FMformat(formats[i], context);
+	node = cod_build_type_node_FMformat(formats[i], context);
 	cod_add_decl_to_parse_context(name_of_FMformat(formats[i]), node, context); 
 	cod_add_decl_to_scope(name_of_FMformat(formats[i]), node, context); 
 	top_type = node;
 	i++;
     }
     
+    node = cod_build_type_node_FMformat(format, context);
+    cod_add_decl_to_parse_context(name_of_FMformat(format), node, context); 
+    cod_add_decl_to_scope(name_of_FMformat(format), node, context); 
+    top_type = node;
     param_node = cod_build_param_node(id, NULL, param_num);
     param_node->node.declaration.sm_complex_type = top_type;
     cod_add_decl_to_parse_context(id, param_node, context);
