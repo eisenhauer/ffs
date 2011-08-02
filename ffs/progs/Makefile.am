@@ -7,7 +7,7 @@ LDADD = ../libffs.la
 INCLUDES = -I.. -I$(srcdir)/../../fm
 
 if !NO_SOCKETS
-bin_PROGRAMS = FFSdump
+bin_PROGRAMS = FFSdump FFScp
 endif
 
 all-local:

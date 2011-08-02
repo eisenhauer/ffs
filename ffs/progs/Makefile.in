@@ -34,7 +34,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@NO_SOCKETS_FALSE@bin_PROGRAMS = FFSdump$(EXEEXT)
+@NO_SOCKETS_FALSE@bin_PROGRAMS = FFSdump$(EXEEXT) FFScp$(EXEEXT)
 subdir = progs
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -53,6 +53,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+FFScp_SOURCES = FFScp.c
+FFScp_OBJECTS = FFScp.$(OBJEXT)
+FFScp_LDADD = $(LDADD)
+FFScp_DEPENDENCIES = ../libffs.la
 FFSdump_SOURCES = FFSdump.c
 FFSdump_OBJECTS = FFSdump.$(OBJEXT)
 FFSdump_LDADD = $(LDADD)
@@ -72,8 +76,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = FFSdump.c
-DIST_SOURCES = FFSdump.c
+SOURCES = FFScp.c FFSdump.c
+DIST_SOURCES = FFScp.c FFSdump.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -292,6 +296,9 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+FFScp$(EXEEXT): $(FFScp_OBJECTS) $(FFScp_DEPENDENCIES) 
+	@rm -f FFScp$(EXEEXT)
+	$(LINK) $(FFScp_OBJECTS) $(FFScp_LDADD) $(LIBS)
 FFSdump$(EXEEXT): $(FFSdump_OBJECTS) $(FFSdump_DEPENDENCIES) 
 	@rm -f FFSdump$(EXEEXT)
 	$(FFSdump_LINK) $(FFSdump_OBJECTS) $(FFSdump_LDADD) $(LIBS)
