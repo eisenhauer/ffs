@@ -57,6 +57,20 @@ static int search_addr_list(dstate s, void *addr);
 static void add_to_addr_list(dstate s, void *addr, int offset);
 static int dump_subfields(void *base, FMFormat f, dstate s, int data_offset);
 
+static void
+byte_swap(data, size)
+char *data;
+int size;
+{
+    int i;
+    assert((size % 2) == 0);
+    for (i = 0; i < size / 2; i++) {
+	char tmp = data[i];
+	data[i] = data[size - i - 1];
+	data[size - i - 1] = tmp;
+    }
+}
+
 extern int
 dump_output(dstate s, int length_estimate, char *format, ...)
 {
@@ -136,8 +150,8 @@ void *data;
 }
 
 static void *
-quick_get_pointer(iofield, data)
-FMFieldPtr iofield;
+quick_get_pointer(field, data)
+FMFieldPtr field;
 void *data;
 {
     union {
@@ -145,17 +159,23 @@ void *data;
 	unsigned long tmp;
 	int tmpi[2];
     } u;
-    data = (void *) ((char *) data + iofield->offset);
+    unsigned short s;
+    unsigned int i;
+    data = (void *) ((char *) data + field->offset);
     /* only used when field type is an integer and aligned by its size */
-    switch (iofield->size) {
+    switch (field->size) {
     case 1:
 	u.tmp = (unsigned long) (*((unsigned char *) data));
 	break;
     case 2:
-	u.tmp = (unsigned long) (*((unsigned short *) data));
+	s = (*((unsigned short *) data));
+	if (field->byte_swap) byte_swap((char*)&s, 2);
+	u.tmp = (unsigned long) s;
 	break;
     case 4:
-	u.tmp = (unsigned long) (*((unsigned int *) data));
+	i = (*((unsigned int *) data));
+	if (field->byte_swap)  byte_swap((char *) &i, 4);
+	u.tmp = (unsigned long) i;
 	break;
     case 8:
 #if SIZEOF_LONG == 8
@@ -165,6 +185,7 @@ void *data;
 	} else {
 	    u.tmpi[0] = ((int *) data)[0];
 	    u.tmpi[1] = ((int *) data)[1];
+	    if (field->byte_swap)  byte_swap((char *) &u.p, 8);
 	    return u.p;
 	}
 #else
@@ -483,6 +504,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	char *ptr_value;
 	memset(&src_spec, 0, sizeof(src_spec));
 	src_spec.size = f->pointer_size;
+	src_spec.byte_swap = f->byte_reversal;
 	ptr_value = quick_get_pointer(&src_spec, (char*)base + data_offset);
 	if (ptr_value == NULL) {
 	    dump_output(s, 4, "NULL");
@@ -522,6 +544,7 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	char *ptr_value;
 	memset(&src_spec, 0, sizeof(src_spec));
 	src_spec.size = f->pointer_size;
+	src_spec.byte_swap = f->byte_reversal;
 	ptr_value = quick_get_pointer(&src_spec, (char*)base + data_offset);
 	if (ptr_value == NULL) {
 	    dump_output(s, 5, "NULL ");
