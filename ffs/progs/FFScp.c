@@ -26,7 +26,8 @@ char **argv;
     char *buffer = NULL;
     int i;
     int bitmap, format_count;
-    FMFormat *in_formats, *out_formats;
+    FFSTypeHandle *in_formats;
+    FMFormat *out_formats;
     char *in_filename = NULL, *out_filename = NULL;
     int rewrite = 0;
 
@@ -106,7 +107,6 @@ char **argv;
             }
 	    if (rewrite) {
 		FFSTypeHandle format = FFSnext_type_handle(in_file);
-		FMFormat original = FMFormat_of_original(format);
 		FMFormat out_format = NULL;
 		int i;
 		for (i=0 ; i < format_count; i++) {
