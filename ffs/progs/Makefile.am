@@ -4,10 +4,11 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 LDADD = ../libffs.la
 
-INCLUDES = -I.. -I$(srcdir)/../../fm
+INCLUDES = -I.. -I$(srcdir)/../../fm -I$(srcdir)/../tests
 
 if !NO_SOCKETS
-bin_PROGRAMS = FFSdump FFScp
+bin_PROGRAMS = FFSdump FFScp FFSsort
+noinst_PROGRAMS = sort_test_generate
 endif
 
 all-local:

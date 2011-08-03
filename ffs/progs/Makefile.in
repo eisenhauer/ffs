@@ -34,7 +34,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@NO_SOCKETS_FALSE@bin_PROGRAMS = FFSdump$(EXEEXT) FFScp$(EXEEXT)
+@NO_SOCKETS_FALSE@bin_PROGRAMS = FFSdump$(EXEEXT) FFScp$(EXEEXT) \
+@NO_SOCKETS_FALSE@	FFSsort$(EXEEXT)
+@NO_SOCKETS_FALSE@noinst_PROGRAMS = sort_test_generate$(EXEEXT)
 subdir = progs
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -52,7 +54,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
+PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 FFScp_SOURCES = FFScp.c
 FFScp_OBJECTS = FFScp.$(OBJEXT)
 FFScp_LDADD = $(LDADD)
@@ -64,6 +66,14 @@ FFSdump_DEPENDENCIES = ../libffs.la
 FFSdump_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(FFSdump_LDFLAGS) \
 	$(LDFLAGS) -o $@
+FFSsort_SOURCES = FFSsort.c
+FFSsort_OBJECTS = FFSsort.$(OBJEXT)
+FFSsort_LDADD = $(LDADD)
+FFSsort_DEPENDENCIES = ../libffs.la
+sort_test_generate_SOURCES = sort_test_generate.c
+sort_test_generate_OBJECTS = sort_test_generate.$(OBJEXT)
+sort_test_generate_LDADD = $(LDADD)
+sort_test_generate_DEPENDENCIES = ../libffs.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
@@ -76,8 +86,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = FFScp.c FFSdump.c
-DIST_SOURCES = FFScp.c FFSdump.c
+SOURCES = FFScp.c FFSdump.c FFSsort.c sort_test_generate.c
+DIST_SOURCES = FFScp.c FFSdump.c FFSsort.c sort_test_generate.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -217,7 +227,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 LDADD = ../libffs.la
-INCLUDES = -I.. -I$(srcdir)/../../fm
+INCLUDES = -I.. -I$(srcdir)/../../fm -I$(srcdir)/../tests
 FFSdump_LDFLAGS = -static
 all: all-am
 
@@ -296,12 +306,27 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 FFScp$(EXEEXT): $(FFScp_OBJECTS) $(FFScp_DEPENDENCIES) 
 	@rm -f FFScp$(EXEEXT)
 	$(LINK) $(FFScp_OBJECTS) $(FFScp_LDADD) $(LIBS)
 FFSdump$(EXEEXT): $(FFSdump_OBJECTS) $(FFSdump_DEPENDENCIES) 
 	@rm -f FFSdump$(EXEEXT)
 	$(FFSdump_LINK) $(FFSdump_OBJECTS) $(FFSdump_LDADD) $(LIBS)
+FFSsort$(EXEEXT): $(FFSsort_OBJECTS) $(FFSsort_DEPENDENCIES) 
+	@rm -f FFSsort$(EXEEXT)
+	$(LINK) $(FFSsort_OBJECTS) $(FFSsort_LDADD) $(LIBS)
+sort_test_generate$(EXEEXT): $(sort_test_generate_OBJECTS) $(sort_test_generate_DEPENDENCIES) 
+	@rm -f sort_test_generate$(EXEEXT)
+	$(LINK) $(sort_test_generate_OBJECTS) $(sort_test_generate_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -440,7 +465,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -f Makefile
@@ -509,19 +535,19 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am all-local check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-exec-local install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS
+	clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstPROGRAMS ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-local \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binPROGRAMS
 
 
 all-local:
