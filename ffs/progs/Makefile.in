@@ -227,7 +227,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 LDADD = ../libffs.la
-INCLUDES = -I.. -I$(srcdir)/../../fm -I$(srcdir)/../tests
+INCLUDES = -I.. -I$(srcdir)/../../fm -I$(srcdir)/../../cod -I$(srcdir)/../tests
 FFSdump_LDFLAGS = -static
 all: all-am
 

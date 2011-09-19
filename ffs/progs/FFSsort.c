@@ -33,8 +33,10 @@ write_data(data_entry *data_values, FFSContext c, FFSFile out_file)
     while (data_values[i].data != NULL) {
 	write_encoded_FFSfile(out_file, data_values[i].data, 
 			      data_values[i].size, c, NULL);
+	free(data_values[i].data);
 	i++;
     }
+    free(data_values[i].data);
 }
 
 typedef double (*extraction_func)(void*data);
@@ -108,7 +110,7 @@ extraction_func
 get_sort_handler(FFSTypeHandle format, char **expressions)
 {
     static func_table_entry *func_table = NULL;
-    static func_table_count = 0;
+    static int func_table_count = 0;
     int i;
     if (func_table == NULL) {
 	func_table = malloc(sizeof(func_table[0]));

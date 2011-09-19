@@ -30,20 +30,40 @@ FMStructDescRec first_format_list [] = {
     {"first", field_list, sizeof(first_rec), NULL},
     {NULL, NULL, 0, NULL}};
 
+FMField field_list2[] = {
+    {"integer field(-14)", "integer", 
+       sizeof(int), FMOffset(second_rec_ptr, integer_field)},
+    {"short field", "integer", 
+       sizeof(short), FMOffset(second_rec_ptr, short_field)},
+    {"long field(-9876129)", "integer", 
+       sizeof(long), FMOffset(second_rec_ptr, long_field)},
+    {"string field", "string",
+       sizeof(char *), FMOffset(second_rec_ptr, string)},
+    {"double_field(2.717)", "float",
+       sizeof(double), FMOffset(second_rec_ptr, double_field)},
+    {"char field", "char",
+       sizeof(char), FMOffset(second_rec_ptr, char_field)},
+    { NULL, NULL, 0, 0}
+};
+
+FMStructDescRec second_format_list[] = {
+    {"string_data", field_list2, sizeof(second_rec), NULL},
+    {NULL, NULL, 0, NULL}};
+
 int
 main(int argc, char **argv)
 {
     FMContext src_context;
     FFSFile ffsfile;
-    FMFormat first_rec_ioformat;
+    FMFormat first_rec_ioformat, second_rec_ioformat;
     first_rec rec1;
+    second_rec rec2;
 #ifdef NOT_DEF
-, second_rec_ioformat, third_rec_ioformat;
+, third_rec_ioformat;
     FMFormat fourth_rec_ioformat, later_ioformat, nested_ioformat;
     FMFormat embedded_rec_ioformat, fifth_rec_ioformat, sixth_rec_ioformat;
     FMFormat ninth_rec_ioformat;
     FMFormat string_array_ioformat;
-    second_rec rec2;
     third_rec rec3;
     fourth_rec rec4;
     later_rec rec5;
@@ -109,16 +129,9 @@ main(int argc, char **argv)
 
     first_rec_ioformat = register_data_format(src_context, first_format_list)
 ;
-#ifdef NOT_DEF
-    str_list[0].format_name = "string format";
-    str_list[0].field_list = field_list2;
-    str_list[0].struct_size = sizeof(second_rec);
-    str_list[0].opt_info = &opt_info[0];
-    str_list[1].format_name = NULL;
-    opt_info[0].info_len = strlen(string_xml) +1;
-    opt_info[0].info_block = string_xml;
-    second_rec_ioformat = register_data_format(src_context, str_list);
+    second_rec_ioformat = register_data_format(src_context, second_format_list);
 
+#ifdef NOT_DEF
     str_list[0].format_name = "two string format";
     str_list[0].field_list = field_list3;
     str_list[0].struct_size = sizeof(third_rec);
@@ -174,6 +187,23 @@ main(int argc, char **argv)
     rec1.char_field = 'A';
     if (!write_FFSfile(ffsfile, first_rec_ioformat, &rec1))
 	printf("write failed\n");
+    memset((char *) &rec2, 0, sizeof(rec2));
+    rec2.integer_field = 14;
+    rec2.short_field = 27;
+    rec2.long_field = 987234;
+    rec2.string = "testing";
+    rec2.double_field = 2.717*90;
+    rec2.char_field = 'I';
+    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a2))
+	printf("write failed\n");
+    rec2.integer_field = 14;
+    rec2.short_field = 27;
+    rec2.long_field = 987234;
+    rec2.string = NULL;
+    rec2.double_field = 2.717*100;
+    rec2.char_field = 'J';
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+	printf("write failed\n");
 #ifdef NOT_DEF
     memset((char *) &emb_array, 0, sizeof(emb_array));
     memset((char *) &var_array, 0, sizeof(var_array));
@@ -205,40 +235,21 @@ main(int argc, char **argv)
     free(emb_array.earray[2].string);
     free(emb_array.earray[3].string);
 
-    memset((char *) &rec2, 0, sizeof(rec2));
-    rec2.integer_field = 14;
-    rec2.short_field = 27;
-    rec2.long_field = 987234;
-    rec2.string = "testing";
-    rec2.double_field = 2.717;
-    rec2.char_field = 'A';
-    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a2))
-	printf("write failed\n");
-    rec2.integer_field = 14;
-    rec2.short_field = 27;
-    rec2.long_field = 987234;
-    rec2.string = NULL;
-    rec2.double_field = 2.717;
-    rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
-	printf("write failed\n");
 #endif
     rec1.integer_field = 17;
-    rec1.double_field *= 3.0;
+    rec1.double_field = 2.717*20;
     rec1.char_field = 'B';
     write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
-#ifdef NOTDEF
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
     rec2.string = NULL;
-    rec2.double_field = 2.717;
-    rec2.char_field = 'A';
+    rec2.double_field = 2.717*110;
+    rec2.char_field = 'K';
     if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
 	printf("write failed\n");
-#endif
     rec1.integer_field *= 2;
-    rec1.double_field *= 2.717;
+    rec1.double_field = 2.717*30;
     rec1.char_field = 'C';
     write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
     rec1.integer_field *= 2;
@@ -261,6 +272,15 @@ main(int argc, char **argv)
     rec1.double_field = 2.717*50;
     rec1.char_field = 'E';
     write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
+    rec2.integer_field = 14;
+    rec2.short_field = 27;
+    rec2.long_field = 987234;
+    rec2.string = "the end";
+    rec2.double_field = 2.717*120;
+    rec2.char_field = 'L';
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+	printf("writev failed\n");
+
 #ifdef NOTDEF
     memset((char *) &rec3, 0, sizeof(rec3));
     rec3.integer_field = 14;
@@ -355,15 +375,6 @@ main(int argc, char **argv)
     rec3.enum_field = Pilsner;
     if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
 	printf("write failed\n");
-
-    rec2.integer_field = 14;
-    rec2.short_field = 27;
-    rec2.long_field = 987234;
-    rec2.string = "the end";
-    rec2.double_field = 2.717;
-    rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
-	printf("writev failed\n");
 
     str_list[0].format_name = "later format";
     str_list[0].field_list = later_field_list2;
