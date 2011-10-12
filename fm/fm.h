@@ -168,10 +168,13 @@ extern void
 add_opt_info_FMformat(FMFormat format, int typ, int len, void *block);
 
 extern FMFormat
-register_simple_format(FMContext context, char *format_name, FMFieldList field_list, int struct_size);
+FMregister_simple_format(FMContext context, char *format_name, FMFieldList field_list, int struct_size);
 
 extern FMFormat
 register_data_format(FMContext context, FMStructDescList struct_list);
+
+extern FMFormat
+FMregister_data_format(FMContext context, FMStructDescList struct_list);
 
 /*!
  * lookup the FMFormat associated with a particular FMStructDescList

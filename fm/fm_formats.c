@@ -1541,7 +1541,7 @@ free_format_list(FMFormat *formats)
 }
 
 FMFormat
-register_simple_format(FMContext context, char *struct_name,
+FMregister_simple_format(FMContext context, char *struct_name,
 		       FMFieldList struct_field_list,
 		       int struct_size)
 {
@@ -1650,6 +1650,12 @@ FMlookup_format(FMContext context, FMStructDescList struct_list)
 	}
     }
     return NULL;
+}
+
+FMFormat
+FMregister_data_format(FMContext context, FMStructDescList struct_list) 
+{
+    return register_data_format(context, struct_list);
 }
 
 FMFormat
@@ -2961,8 +2967,10 @@ FMContext fmc;
     int tmp_value = *file_int_ptr;
     int junk_errno;
     char *junk_result_str;
-    if (os_server_write_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4)
+    if (os_server_write_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
+	printf("SERVER WRITE FAILED, ERRNO = %d\n", junk_errno);
 	return 0;
+    }
 #else
     Baaad shit;
 #endif
@@ -2979,8 +2987,11 @@ int byte_reversal;
     int tmp_value;
     int junk_errno;
     char *junk_result_str;
-    if (os_server_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4)
+    if (os_server_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
+	printf("SERVER READ FAILED, ERRNO = %d\n", junk_errno);
+
 	return 0;
+    }
 #else
     Baaad shit;
 #endif
