@@ -2547,7 +2547,7 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
     return decl;
 }
 
-static int 
+int 
 is_array(sm_ref expr)
 {
     sm_ref typ;

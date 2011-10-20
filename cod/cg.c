@@ -1736,6 +1736,8 @@ next_formal_is_cod_type_spec(sm_list formals)
     
 
 #define MAX_ARG 128
+extern int is_array(sm_ref expr);
+
 static operand
 cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 {
@@ -1777,7 +1779,7 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 	if (formal != NULL) {
 	    int actual_type = cod_sm_get_type(arg);
 	    formal_type = formal->node.declaration.cg_type;
-	    if (actual_type == DILL_B) {
+	    if ((actual_type == DILL_B) || is_array(arg)) {
 		/* structure param */
 		param = cg_expr(s, arg, 1, descr);
 		if (is_complex_type(arg) && (param.is_addr == 0)) {
