@@ -34,6 +34,14 @@ main(int argc, char **argv)
     static long k = 10;\n\
     static short l = 3;\n\
     static int m = 0;\n\
+ static float thresh = 1.5;\n\
+    static int base_len;\n\
+    static int epoch;      \n\
+    static float * base_csym;\n\
+    static int have_data = 0;\n\
+\n\
+    int i;\n\
+    int condition;\n\
 \n\
     j = j + 1;\n\
     k = k + 2;\n\
@@ -129,7 +137,7 @@ main(int argc, char **argv)
 	cod_code gen_code;
 	long (*func)();
 
-	cod_add_struct_type("struct_type", struct_fields, context);
+	cod_add_simple_struct_type("struct_type", struct_fields, context);
 #ifdef NO_EMULATION
 	cod_subroutine_declaration("int proc(struct_type *input)", context);
 #else
@@ -188,7 +196,7 @@ char code_string[] = {"\
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
 
-	cod_add_struct_type("struct_type", struct_fields, context);
+	cod_add_simple_struct_type("struct_type", struct_fields, context);
 #ifdef NO_EMULATION
 	cod_subroutine_declaration("int proc(struct_type *input)", context);
 #else
@@ -244,7 +252,7 @@ char code_string[] = {"\
 	double (*func)();
 
 
-	cod_add_struct_type("input_type", input_field_list, context);
+	cod_add_simple_struct_type("input_type", input_field_list, context);
 #ifdef NO_EMULATION
 	cod_subroutine_declaration("double proc(input_type *input)", context);
 #else

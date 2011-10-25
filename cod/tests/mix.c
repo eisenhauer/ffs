@@ -88,9 +88,9 @@ int main()
     cod_assoc_externs(context, externs);
     cod_parse_for_context(extern_string, context);
 
-    cod_add_struct_type("input1_type", input1_field_list, context);
-    cod_add_struct_type("input2_type", input2_field_list, context);
-    cod_add_struct_type("output_type", output_field_list, context);
+    cod_add_simple_struct_type("input1_type", input1_field_list, context);
+    cod_add_simple_struct_type("input2_type", input2_field_list, context);
+    cod_add_simple_struct_type("output_type", output_field_list, context);
     cod_subroutine_declaration("void proc(input1_type *input1, input2_type *input2, output_type output, float fade)", context);
 
 

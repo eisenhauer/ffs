@@ -296,14 +296,14 @@ main(int argc, char **argv)
 	    char *buf = read_buffer(c, read_file, test_num);
 	    param = (struct station_order *)buf;
 	    cod_add_encoded_param("order", buf, 0, c, context);
-	    cod_add_struct_type("spot_week", spot_week_fields, context);
-	    cod_add_struct_type("spot", spot_fields, context);
-	    cod_add_struct_type("station_order2", station_order_fields, context);
+	    cod_add_simple_struct_type("spot_week", spot_week_fields, context);
+	    cod_add_simple_struct_type("spot", spot_fields, context);
+	    cod_add_simple_struct_type("station_order2", station_order_fields, context);
 	    cod_add_param("order_out", "station_order2", 1, context);
 	} else {
-	    cod_add_struct_type("spot_week", spot_week_fields, context);
-	    cod_add_struct_type("spot", spot_fields, context);
-	    cod_add_struct_type("station_order", station_order_fields, context);
+	    cod_add_simple_struct_type("spot_week", spot_week_fields, context);
+	    cod_add_simple_struct_type("spot", spot_fields, context);
+	    cod_add_simple_struct_type("station_order", station_order_fields, context);
 	    cod_subroutine_declaration("void proc(station_order *order, station_order *order_out)", context);
 
 	}

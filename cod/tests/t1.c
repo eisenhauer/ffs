@@ -188,7 +188,7 @@ main(int argc, char**argv)
 	    cod_add_encoded_param("input", buf, 1, c, context);
 #endif
 	} else {
-	    cod_add_struct_type("struct_type", struct_fields, context);
+	    cod_add_simple_struct_type("struct_type", struct_fields, context);
 #ifdef NO_EMULATION
 	    cod_subroutine_declaration("int proc(struct_type *input)", context);
 #else
@@ -265,7 +265,7 @@ main(int argc, char**argv)
 	    cod_set_return_type("double", context);
 
 	} else {
-	    cod_add_struct_type("input_type", input_field_list, context);
+	    cod_add_simple_struct_type("input_type", input_field_list, context);
 #ifdef NO_EMULATION
 	    cod_subroutine_declaration("double proc(input_type *input)", context);
 #else
@@ -284,7 +284,7 @@ main(int argc, char**argv)
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param1 param);
 	if (result != 18126.00) {
-	    printf("Got %e from double float array sum, expected 18126.00\n");
+	    printf("Got %e from double float array sum, expected 18126.00\n", result);
 	    exit(1);
 	}
 	if (write_file) {

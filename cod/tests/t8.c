@@ -74,7 +74,7 @@ main(int argc, char** argv)
 	func = (long(*)()) (long) gen_code->func;
 	result = func();
 	if (result != 7) {
-	    printf("Expected 7, got %d in t8, subtest 2\n", result);
+	    printf("Expected 7, got %ld in t8, subtest 2\n", result);
 	}
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
@@ -371,7 +371,7 @@ main(int argc, char** argv)
 	func = (long(*)()) (long) gen_code->func;
 	result = func();
 	if (result != 16/sizeof(void*)) { 
-	    printf(" op minus result is %d\n", result);
+	    printf(" op minus result is %ld\n", result);
 	    exit(1);
 	}
 	cod_code_free(gen_code);
@@ -406,7 +406,7 @@ main(int argc, char** argv)
 	func = (long(*)()) (long) gen_code->func;
 	result = func();
         if (result != -(16/sizeof(void*))) {
-	    printf(" 2nd op minus result is %d\n", result);
+	    printf(" 2nd op minus result is %ld\n", result);
 	    exit(1);
 	}
 	cod_code_free(gen_code);
@@ -588,7 +588,7 @@ main(int argc, char** argv)
 	} 
 	func = (int*(*)(int *)) (long) gen_code->func;
 	result = func(&i);
-	if (result != (&i + 1)) printf("result was %lx, not %lx\n", result,
+	if (result != (&i + 1)) printf("result was %p, not %p\n", result,
 		&i + 1);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);

@@ -128,7 +128,7 @@ main(int argc, char **argv)
 	    cod_add_encoded_param("input", buf, 0, c, context);
 	    cod_set_return_type("double", context);
 	} else {
-	    cod_add_struct_type("input_type", input_field_list, context);
+	    cod_add_simple_struct_type("input_type", input_field_list, context);
 	    cod_subroutine_declaration("double proc(input_type *input)", context);
 	}
 	tmp.count = 10;
@@ -204,7 +204,7 @@ main(int argc, char **argv)
 	    cod_add_encoded_param("input", buf, 0, c, context);
 	    cod_set_return_type("int", context);
 	} else {
-	    cod_add_struct_type("input_type", input_field_list, context);
+	    cod_add_simple_struct_type("input_type", input_field_list, context);
 	    cod_subroutine_declaration("int proc(input_type *input)", context);
 	}
 	tmp.count = 10;
@@ -277,7 +277,7 @@ main(int argc, char **argv)
 	    cod_add_encoded_param("input", buf, 0, c, context);
 	    cod_set_return_type("double", context);
 	} else {
-	    cod_add_struct_type("input_type", input_field_list, context);
+	    cod_add_simple_struct_type("input_type", input_field_list, context);
 	    cod_subroutine_declaration("double proc(input_type *input)", context);
 	}
 	count = 10;

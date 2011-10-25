@@ -90,7 +90,7 @@ void doOneTest(void (*f)(), int step)
 	}
 
 	/* first, the easy size check */
-	if (result != sizeof(gray)) { printf("result is %d, not %d\n", result,
+	if (result != sizeof(gray)) { printf("result is %ld, not %ld\n", result,
 					     sizeof(gray));}
 	assert(result == sizeof(gray));
 

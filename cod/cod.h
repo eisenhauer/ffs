@@ -62,7 +62,7 @@ typedef struct _FMField {
 typedef struct _FMformat_list {
     /*! the name to be associated with this structure */
     char *format_name;
-    /*! the PBIO-style list of fields within this structure */
+    /*! the FFS-style list of fields within this structure */
     FMFieldList field_list;
     int struct_size;
     char *opt_info;
@@ -148,17 +148,54 @@ extern void
 cod_subroutine_declaration(const char *decl, cod_parse_context context);
 
 /*!
- * \brief Make a structured type, represented by a PBIO-style IOFieldList,
+ * \brief Make a structured type, represented by a FFS-style FMFieldList,
  *  available in a particular context.
  *
  * \param name the name to be associated with the new structured type.
- * \param field_list the PBIO-style IOFieldList that describes the layout of
+ * \param field_list the FFS-style FMFieldList that describes the layout of
  *  the structure.
  * \param context the context in which the type is to be made available.
  */
-extern void cod_add_struct_type ARGS((const char *name, 
-				      FMFieldList field_list, 
-				      cod_parse_context context));
+extern void cod_add_simple_struct_type(const char *name, FMFieldList field_list, 
+				       cod_parse_context context);
+
+/*!
+ * \brief Make a set of structured types, represented by a FFS-style FMStructDescList,
+ *  available in a particular context.
+ *
+ * \param format_list the FFS-style FMStructDescList that describes the layout of
+ *  the structures.
+ * \param context the context in which the type is to be made available.
+ */
+extern void cod_add_struct_type(FMStructDescList format_list, 
+				cod_parse_context context);
+
+/*!
+ * \brief As an alternative to cod_subroutine_declaration(), add declaration for the Nth parameter.
+ *
+ * \param name the name to be associated with the new parameter.
+ * \param typ the data type of the new parameter.
+ * \param param_num the numeral of the new parameter (0 is first)
+ * \param context the context in which the subroutine is being declared.
+ */
+extern void
+cod_add_param(const char *id, const char *typ, int param_num, 
+	      cod_parse_context context);
+
+/*!
+ * \brief add a declaration for the Nth parameter as an FFS-encoded structure
+ *
+ * \param name the name to be associated with the new parameter.
+ * \param data an encoded data block 
+ * \param param_num the numeral of the new parameter (0 is first)
+ * \param c an FMContext value in which to format information for the data is available
+ * \param context the context in which the subroutine is being declared.
+ */
+#ifdef FM_H
+extern void
+cod_add_encoded_param(const char *id, char *data, int param_num, 
+		      FMContext c, cod_parse_context context);
+#endif
 
 /*!
  * cod_code is a handle to the generated code.  In addition to the generated

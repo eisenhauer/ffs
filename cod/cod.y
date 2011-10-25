@@ -4041,12 +4041,28 @@ cod_parse_context context;
 }
 
 extern void
-cod_add_struct_type(const char *name, FMFieldList field_list, 
+cod_add_simple_struct_type(const char *name, FMFieldList field_list, 
 		    cod_parse_context context)
 {
     sm_ref node = cod_build_type_node(name, field_list);
     cod_add_decl_to_parse_context(name, node, context);
     cod_add_decl_to_scope((char*)name, node, context);
+}
+
+extern void
+cod_add_struct_type(FMStructDescList format_list, 
+		    cod_parse_context context)
+{
+    int count;
+    while(format_list && format_list[0].format_name) {
+	count++;
+    }
+    count = count-1;
+    for ( ; count >= 0; count--) {
+	cod_add_simple_struct_type(format_list[0].format_name,
+				   format_list[0].field_list,
+				   context);
+    }
 }
 
 static int
@@ -4878,7 +4894,7 @@ gen_rollback_code(FMStructDescList format1, FMStructDescList format2, char *xfor
     int i = 0;
     uniqueify_names(format1, "f0_");
     while (format1[i].format_name != NULL) {
-	cod_add_struct_type(format1[i].format_name,
+	cod_add_simple_struct_type(format1[i].format_name,
 			    format1[i].field_list, parse_context);
 	i++;
     }
@@ -4887,7 +4903,7 @@ gen_rollback_code(FMStructDescList format1, FMStructDescList format2, char *xfor
     i = 0;
     uniqueify_names(format2, "f1_");
     while (format2[i].format_name != NULL) {
-	cod_add_struct_type(format2[i].format_name,
+	cod_add_simple_struct_type(format2[i].format_name,
 			    format2[i].field_list, parse_context);
 	i++;
     }

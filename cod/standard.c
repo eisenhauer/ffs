@@ -230,7 +230,7 @@ cod_add_standard_elements(cod_parse_context context)
     cod_add_defined_type("attr_list", context);
 #endif
 #ifdef HAVE_CERCS_ENV_H
-    cod_add_struct_type("chr_time", chr_time_list, context);
+    cod_add_simple_struct_type("chr_time", chr_time_list, context);
 #endif
     cod_add_defined_type("cod_type_spec", context);
     cod_add_defined_type("cod_exec_context", context);

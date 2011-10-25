@@ -69,14 +69,14 @@ main(int argc, char **argv)
 	    ec = cod_create_exec_context(gen_code);
 	    func = (long(*)()) (long) gen_code->func;
 	    result = func(ec);
-	    if (verbose) printf("Run number after first run is %d, expected 1\nGrabbing state...");
+	    if (verbose) printf("Run number after first run is %ld, expected 1\nGrabbing state...", result);
 	    assert(result == 1);
 	    
 	    state = cod_extract_state(ec, &state_size);
 	    result = func(ec);
-	    if (verbose) printf("Run number after second run is %d, expected 2\n", result);
+	    if (verbose) printf("Run number after second run is %ld, expected 2\n", result);
 	    if (result != 2) {
-	      printf("First point, Expected result to be 2, found %d\n", result);
+	      printf("First point, Expected result to be 2, found %ld\n", result);
 	    }
 	    ec2 = cod_create_exec_context(gen_code);
 
@@ -85,9 +85,9 @@ main(int argc, char **argv)
 	    assert(cod_install_state(ec, state, state_size) == 1);
 
 	    result = func(ec);
-	    if (verbose) printf("Run number using state after first run is %d, expected 2\n", result);
+	    if (verbose) printf("Run number using state after first run is %ld, expected 2\n", result);
 	    if (result != 2) {
-	      printf("Second point, Expected result to be 2, found %d\n", result);
+	      printf("Second point, Expected result to be 2, found %ld\n", result);
 	    }
 	    cod_code_free(gen_code);
 	    cod_code_free(gen_code2);

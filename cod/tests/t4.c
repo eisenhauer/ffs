@@ -200,7 +200,7 @@ comment\n\
     	int ret;
 	cod_parse_context context = new_cod_parse_context();
 
-	cod_add_struct_type("struct_type", struct_fields, context);
+	cod_add_simple_struct_type("struct_type", struct_fields, context);
 	cod_subroutine_declaration("void proc(struct_type *input)", context);
 
 	ret = cod_code_verify(code_string, context);
@@ -345,7 +345,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
-	cod_add_struct_type("input_type", input_field_list, context);
+	cod_add_simple_struct_type("input_type", input_field_list, context);
 	cod_subroutine_declaration("int proc(input_type *input)", context);
 
 	ret = cod_code_verify(code, context);

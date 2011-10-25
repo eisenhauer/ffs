@@ -73,9 +73,9 @@ main()
     cod_assoc_externs(context, externs);
     cod_parse_for_context(extern_string, context);
 
-    cod_add_struct_type("PipelinedPoint", PipelinedPoint_field_list, context);
-    cod_add_struct_type("PolygonPoints", PolygonPoints_field_list, context);
-    cod_add_struct_type("FrameData", FrameData_field_list, context);
+    cod_add_simple_struct_type("PipelinedPoint", PipelinedPoint_field_list, context);
+    cod_add_simple_struct_type("PolygonPoints", PolygonPoints_field_list, context);
+    cod_add_simple_struct_type("FrameData", FrameData_field_list, context);
     cod_subroutine_declaration("int proc(FrameData *output)", context);
    
     gen_code = cod_code_gen(code, context);
