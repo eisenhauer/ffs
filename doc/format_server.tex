@@ -18,7 +18,7 @@
 \usepackage[pdftex]{graphicx}
 \pagestyle{headings}
 \renewcommand{\baselinestretch}{.95}   % -- double spaced lines
-\title{JIX Format Server Administration Guide}
+\title{FFS Format Server Administration Guide}
 \author{ {\large\bf Greg Eisenhauer }\\
 }
 \newcommand{\routine}[1]{\index{#1}{\tt #1}}
@@ -35,21 +35,21 @@
 %uncomment line below
 %\maketitle
 %recomment lines
-\title{PBIO Format Server Administration Guide}
+\title{FFS Format Server Administration Guide}
 \renewcommand{\thepage}{}
 \pagenumbering{arabic}
 \maketitle
 \section{Format server concepts}
-All PBIO/JIX programs that use {\tt IOContext} values communicate with a
+All FFS programs that use {\tt FMContext} values communicate with a
 third-party {\it format server}.  This format server acts as a repository
-for the format information that describes JIX-encoded messages and issues
-the format tokens that are prepended to messages in the JIX scheme.  Typical
-JIX operation is shown in Figure~\ref{fig:server}.
+for the format information that describes FFS-encoded messages and issues
+the format tokens that are prepended to messages in the FFS scheme.  Typical
+FFS operation is shown in Figure~\ref{fig:server}.
 \begin{figure}[tb]
 \begin{center}\
 %\psfig{figure=server.eps,width=6.3in}
 \includegraphics[width=6.3in]{server.png}
-\caption{Typical JIX operation.\label{fig:server}}
+\caption{Typical FFS operation.\label{fig:server}}
 \end{center}
 \end{figure}
 The format server may run anywhere in the reachable network.  When encoding
@@ -81,7 +81,7 @@ encoding, the format token is associated with encoded data.
 
 In the decoding application format information retrieved from the format
 server, typically when the incoming buffer is passed to {\tt
-get\_format\_IOcontext()} or similar call.  This process follows steps
+get\_format\_FMcontext()} or similar call.  This process follows steps
 similar to those in the encoding application, specifically:
 \begin{enumerate}
 \item The local format cache is checked to see if the format token in the
@@ -157,9 +157,9 @@ format\_identifier is 16-bits limits the format server to 65536 distinct
 formats.  The 'port' and 'IP\_addr' values were added to the format token in
 anticipation of supporting multiple interacting format servers.  That
 support has not yet been implemented, so these values are not
-``operational'' in the sense that they cause PBIO/JIX to seek out the
+``operational'' in the sense that they cause FFS to seek out the
 appropriate format server.  Instead, the location of the format server is
-specified at build time for the PBIO/JIX library (via the
+specified at build time for the FFS library (via the
 --with-format-server=value argument to configure).  That value can be
 overridden at run-time by specifying the {\tt FORMAT\_SERVER\_HOST}
 environment variable.   There is currently no mechanism for customizing the
@@ -219,7 +219,7 @@ information below is a sample of such output:
 \begin{verbatim}
 
 latte% format_cmd stats
-Statistics for PBIO/JIX format server running on marquesas.cc.gatech.edu 
+Statistics for FFS format server running on marquesas.cc.gatech.edu 
     Server Up Since : Mon Sep 30 12:37:54 2002 
     Known Format Count : 305 
     Test Char Count : 31290 
@@ -246,7 +246,7 @@ Previous sections have discussed the {\tt FORMAT\_SERVER\_HOST} environment
 variable that specifies the location of the format server and the {\tt
 FORMAT\_SERVICE\_DOMAIN} variable that controls the internet domain freely
 serviced by the format server.  In addition, the following environment
-variables impact PBIO/JIX operation in some way.
+variables impact FFS operation in some way.
 \begin{description}
 \item[FORMAT\_SERVER\_PWD] - When this variable is set to any value, the
 format server will substitute the current working directory for '/tmp' as
@@ -254,7 +254,7 @@ the location of the format server restart file and the format server log.
 \item[FORMAT\_SERVER\_VERBOSE] - When this variable is set for {\it client}
 applications (not the format server), those applications will generate
 verbose messages describing their interactions with the format server.
-\item[PBIO\_FIXED\_FORMAT\_IDS] - When this variable is set for {\it client}
+\item[FFS\_FIXED\_FORMAT\_IDS] - When this variable is set for {\it client}
 applications, they will request and use version-0-style 4-byte format
 tokens.  The code that supports older-generation format tokens is no longer
 exercised during testing, so this option is deprecated.
