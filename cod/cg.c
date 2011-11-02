@@ -1785,6 +1785,12 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 		if (is_complex_type(arg) && (param.is_addr == 0)) {
 		    param.is_addr = 1;
 		}
+		if (param.offset != 0) {
+		    dill_reg tmp = dill_getreg(s, DILL_P);
+		    dill_addpi(s, tmp, param.reg, param.offset);
+		    param.reg = tmp;
+		    param.offset = 0;
+		}
 	    } else {
 		param = cg_expr(s, arg, 0, descr);
 		param.reg = coerce_type(s, param.reg, formal_type,
