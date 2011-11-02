@@ -25,6 +25,12 @@ write_buffer(char *filename, FMStructDescList desc, void *data,
              int test_num);
 extern char *read_buffer(FMContext c, char *read_file, int test_num);
 
+static int *
+dummy(int *p)
+{
+  return p;
+}
+
 int
 main(int argc, char**argv)
 {
@@ -145,6 +151,7 @@ main(int argc, char**argv)
     if ((run_only == -1) || (run_only == test_num)) {
 	/* structured types */
 	char code_string[] = "{\n\
+    input.j = 5;\n\
     return input.l * (input.j + input.k + input.i);\n\
 }";
 
@@ -204,7 +211,7 @@ main(int argc, char**argv)
 	str.j = 4;
 	str.k = 10;
 	str.l = 3;
-	assert(func(EC_param1 param) == 87);
+	assert(func(EC_param1 param) == 90);
 	cod_exec_context_free(ec);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
@@ -285,6 +292,86 @@ main(int argc, char**argv)
 	result = func(EC_param1 param);
 	if (result != 18126.00) {
 	    printf("Got %e from double float array sum, expected 18126.00\n", result);
+	    exit(1);
+	}
+	if (write_file) {
+	    FMStructDescRec formats[] = {{"level_struct", input_field_list, sizeof(levels), NULL},
+					 {NULL, NULL, 0, NULL}};
+	    write_buffer(write_file, &formats[0], &levels, test_num);
+	}
+	cod_exec_context_free(ec);
+	cod_code_free(gen_code);
+	cod_free_parse_context(context);
+    }
+    test_num++; /* 5 */
+    if ((run_only == -1) || (run_only == test_num)) {
+	static char extern_string[] = "int printf(string format, ...);\n\
+int *dummy(int*p);";
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {"dummy", (void*)(long)dummy},
+	    {(void*)0, (void*)0}
+	};
+	typedef struct test {
+	    int i;
+	    double levels[3];
+	} test_struct, *test_struct_p;
+
+	static char code[] = "{\
+		return dummy(input.levels);\n\
+		}";
+
+	static FMField input_field_list[] =
+	{
+	    {"i", "integer", sizeof(int), 0},
+	    {"levels", "float[3]", sizeof(double), FMOffset(test_struct_p, levels)},
+	    {(void*)0, (void*)0, 0, 0}
+	};
+
+	cod_parse_context context = new_cod_parse_context();
+	cod_exec_context ec;
+	int i, j;
+	double levels;
+	cod_code gen_code;
+	int *(*func)(), *result;
+	test_struct strct;
+	test_struct *param = &strct;
+
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+
+	if (read_file) {
+	    FMContext c = create_local_FMcontext();
+	    char *buf = read_buffer(c, read_file, test_num);
+	    param = (test_struct*)buf;
+#ifdef NO_EMULATION
+	    cod_add_encoded_param("input", buf, 0, c, context);
+#else
+	    cod_add_param("ec", "cod_exec_context", 0, context);
+	    cod_add_encoded_param("input", buf, 1, c, context);
+#endif
+	    cod_set_return_type("int*", context);
+
+	} else {
+	    cod_add_simple_struct_type("input_type", input_field_list, context);
+#ifdef NO_EMULATION
+	    cod_subroutine_declaration("int * proc(input_type *input)", context);
+#else
+	    cod_subroutine_declaration("int * proc(cod_exec_context ec, input_type *input)", context);
+#endif
+	}
+	for(i=0; i< 3; i++) {
+	    strct.levels[i] = i + 1000*j;
+	}
+
+	gen_code = cod_code_gen(code, context);
+	ec = cod_create_exec_context(gen_code);
+	func = (int * (*)())(long) gen_code->func;
+	if (verbose) cod_dump(gen_code);
+	result = func(EC_param1 param);
+	if (result != (int*)&strct.levels) {
+	    printf("Got %p from address of array, expected %p\n", result, &strct.levels);
 	    exit(1);
 	}
 	if (write_file) {
