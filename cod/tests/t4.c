@@ -201,7 +201,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 
 	cod_add_simple_struct_type("struct_type", struct_fields, context);
-	cod_subroutine_declaration("void proc(struct_type *input)", context);
+	cod_subroutine_declaration("int proc(struct_type *input)", context);
 
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
@@ -416,6 +416,41 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
+    {
+        /*
+         * tests return statement
+         */
+
+        char code_string[] ="\
+{\n\
+    return;\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
+    {
+        /*
+         * tests return statement
+         */
+
+        char code_string[] ="\
+{\n\
+    return 1;\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	cod_subroutine_declaration("void subr()", context);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);

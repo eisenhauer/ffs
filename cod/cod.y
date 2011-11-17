@@ -3955,6 +3955,20 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	return semanticize_compound_statement(context, stmt, scope);
     case cod_return_statement:{
 	stmt->node.return_statement.cg_func_type = context->return_cg_type;
+	if (stmt->node.return_statement.cg_func_type == DILL_V) {
+	    if (stmt->node.return_statement.expression != NULL) {
+		cod_src_error(context, stmt, 
+			      "Return value supplied in subroutine declared to return VOID");
+		return 0;
+	    }
+	} else {
+	    if (stmt->node.return_statement.expression == NULL) {
+		cod_src_error(context, stmt, 
+			      "Return value missing in non-VOID subroutine");
+		return 0;
+	    }
+	}	    
+	if (stmt->node.return_statement.expression == NULL) return 1;
 	return semanticize_expr(context, 
 				stmt->node.return_statement.expression,
 				scope);

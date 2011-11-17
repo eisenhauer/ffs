@@ -160,3 +160,9 @@ int printf(string format, ...);
 ## Ecode Error:  Invalid operand to address operator at line 2, char 12
     return &(2+3);
            ^
+## Ecode Error:  Return value missing in non-VOID subroutine at line 2, char 5
+    return;
+    ^
+## Ecode Error:  Return value supplied in subroutine declared to return VOID at line 2, char 5
+    return 1;
+    ^
