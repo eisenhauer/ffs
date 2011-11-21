@@ -336,7 +336,10 @@ postfix_expression:
 	    $$->node.subroutine_call.sm_func_ref = $1;
 	}
 	| postfix_expression ARROW identifier_ref {
-           assert(0);
+	    $$ = cod_new_field_ref();
+	    $$->node.field_ref.lx_srcpos = $2.lx_srcpos;
+	    $$->node.field_ref.lx_field = $3.string;
+	    $$->node.field_ref.struct_ref = $1;
 	}
 	| postfix_expression INC_OP {
 	    $$ = cod_new_operator();
