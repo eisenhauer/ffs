@@ -11,7 +11,7 @@ LDADD = ../libffs.la
 TESTS = context_test context_test2 fortran_test marshal_test marshal_test2
 
 bin_PROGRAMS = 
-#noinst_PROGRAMS = io_read io_read2 io_dyn_read io_test io_write context_test fortran_test xml_test compat_test io_default_test io_def_write 
+
 noinst_PROGRAMS = context_test context_test2 ffs_write io_dyn_read fortran_test ffs_file_test ffs_index_test append marshal_test marshal_test2
 
 MOSTLYCLEANFILES = dcg/*

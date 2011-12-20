@@ -747,8 +747,7 @@ CFLAGS
 LDFLAGS
 LIBS
 CPPFLAGS
-CPP
-CPPFLAGS'
+CPP'
 ac_subdirs_all='fm cod ffs'
 
 # Initialize some variables set by options.

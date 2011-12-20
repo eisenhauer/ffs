@@ -759,10 +759,7 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 with_atl
-with_atl
 with_cercs_env
-with_cercs_env
-with_dill
 with_dill
 '
       ac_precious_vars='build_alias
@@ -775,8 +772,7 @@ LIBS
 CPPFLAGS
 YACC
 YFLAGS
-CPP
-CPPFLAGS'
+CPP'
 
 
 # Initialize some variables set by options.
@@ -12004,24 +12000,24 @@ fi
 
 search_list="$search_list /usr/include/atl.h /usr/local/include/atl.h /opt/atl/include/atl.h /opt/misc/include/atl.h /opt/misc/include/$cercs_cv_archive/atl.h /opt/local/include/atl.h"
 tmp_search_results=""
-echo "configure:12007: searching for $search_list " >&5
+echo "configure:12003: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12011: first found $tmp_search_results " >&5
+	echo "configure:12007: first found $tmp_search_results " >&5
 	break
    fi
 done
 
+#if test -n "$with_deb_build_specified"; then
+#  if test "include" == "lib"; then
+#     tmp_search_results=$libdir;
+#  fi
+#  if test "include" == "include"; then
+#     tmp_search_results=$incdir;
+#  fi
+#fi
 if test -n "$with_rpm_build_specified"; then
-  if test "include" == "lib"; then
-     tmp_search_results=$libdir;
-  fi
-  if test "include" == "include"; then
-     tmp_search_results=$incdir;
-  fi
-fi
-if test -n "$with_deb_build_specified"; then
 # test build directories
    if test -d "../atl"; then
       tmp_search_results=`pwd`/../atl;
@@ -12118,24 +12114,24 @@ fi
 
 search_list="$search_list /usr/lib/libatl.la /usr/local/lib/libatl.la /opt/atl/lib/libatl.la /opt/misc/lib/libatl.la /opt/misc/lib/$cercs_cv_archive/libatl.la /opt/local/lib/libatl.la"
 tmp_search_results=""
-echo "configure:12121: searching for $search_list " >&5
+echo "configure:12117: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12125: first found $tmp_search_results " >&5
+	echo "configure:12121: first found $tmp_search_results " >&5
 	break
    fi
 done
 
+#if test -n "$with_deb_build_specified"; then
+#  if test "lib" == "lib"; then
+#     tmp_search_results=$libdir;
+#  fi
+#  if test "lib" == "include"; then
+#     tmp_search_results=$incdir;
+#  fi
+#fi
 if test -n "$with_rpm_build_specified"; then
-  if test "lib" == "lib"; then
-     tmp_search_results=$libdir;
-  fi
-  if test "lib" == "include"; then
-     tmp_search_results=$incdir;
-  fi
-fi
-if test -n "$with_deb_build_specified"; then
 # test build directories
    if test -d "../atl"; then
       tmp_search_results=`pwd`/../atl;
@@ -12216,11 +12212,11 @@ else
 
 search_list="$PWD/../atl $PWD/../../atl $PWD/../../../atl"
 tmp_search_results=""
-echo "configure:12219: searching for $search_list " >&5
+echo "configure:12215: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12223: first found $tmp_search_results " >&5
+	echo "configure:12219: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -12258,11 +12254,11 @@ else
 
 search_list="$PWD/../atl $PWD/../../atl $PWD/../../../atl"
 tmp_search_results=""
-echo "configure:12261: searching for $search_list " >&5
+echo "configure:12257: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12265: first found $tmp_search_results " >&5
+	echo "configure:12261: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -12385,24 +12381,24 @@ fi
 
 search_list="$search_list /usr/include/cercs_env.h /usr/local/include/cercs_env.h /opt/cercs_env/include/cercs_env.h /opt/misc/include/cercs_env.h /opt/misc/include/$cercs_cv_archive/cercs_env.h /opt/local/include/cercs_env.h"
 tmp_search_results=""
-echo "configure:12388: searching for $search_list " >&5
+echo "configure:12384: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12392: first found $tmp_search_results " >&5
+	echo "configure:12388: first found $tmp_search_results " >&5
 	break
    fi
 done
 
+#if test -n "$with_deb_build_specified"; then
+#  if test "include" == "lib"; then
+#     tmp_search_results=$libdir;
+#  fi
+#  if test "include" == "include"; then
+#     tmp_search_results=$incdir;
+#  fi
+#fi
 if test -n "$with_rpm_build_specified"; then
-  if test "include" == "lib"; then
-     tmp_search_results=$libdir;
-  fi
-  if test "include" == "include"; then
-     tmp_search_results=$incdir;
-  fi
-fi
-if test -n "$with_deb_build_specified"; then
 # test build directories
    if test -d "../cercs_env"; then
       tmp_search_results=`pwd`/../cercs_env;
@@ -12499,24 +12495,24 @@ fi
 
 search_list="$search_list /usr/lib/libcercs_env.la /usr/local/lib/libcercs_env.la /opt/cercs_env/lib/libcercs_env.la /opt/misc/lib/libcercs_env.la /opt/misc/lib/$cercs_cv_archive/libcercs_env.la /opt/local/lib/libcercs_env.la"
 tmp_search_results=""
-echo "configure:12502: searching for $search_list " >&5
+echo "configure:12498: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12506: first found $tmp_search_results " >&5
+	echo "configure:12502: first found $tmp_search_results " >&5
 	break
    fi
 done
 
+#if test -n "$with_deb_build_specified"; then
+#  if test "lib" == "lib"; then
+#     tmp_search_results=$libdir;
+#  fi
+#  if test "lib" == "include"; then
+#     tmp_search_results=$incdir;
+#  fi
+#fi
 if test -n "$with_rpm_build_specified"; then
-  if test "lib" == "lib"; then
-     tmp_search_results=$libdir;
-  fi
-  if test "lib" == "include"; then
-     tmp_search_results=$incdir;
-  fi
-fi
-if test -n "$with_deb_build_specified"; then
 # test build directories
    if test -d "../cercs_env"; then
       tmp_search_results=`pwd`/../cercs_env;
@@ -12597,11 +12593,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:12600: searching for $search_list " >&5
+echo "configure:12596: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12604: first found $tmp_search_results " >&5
+	echo "configure:12600: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -12639,11 +12635,11 @@ else
 
 search_list="$PWD/../cercs_env $PWD/../../cercs_env $PWD/../../../cercs_env"
 tmp_search_results=""
-echo "configure:12642: searching for $search_list " >&5
+echo "configure:12638: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12646: first found $tmp_search_results " >&5
+	echo "configure:12642: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -12766,24 +12762,24 @@ fi
 
 search_list="$search_list /usr/include/dill.h /usr/local/include/dill.h /opt/dill/include/dill.h /opt/misc/include/dill.h /opt/misc/include/$cercs_cv_archive/dill.h /opt/local/include/dill.h"
 tmp_search_results=""
-echo "configure:12769: searching for $search_list " >&5
+echo "configure:12765: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12773: first found $tmp_search_results " >&5
+	echo "configure:12769: first found $tmp_search_results " >&5
 	break
    fi
 done
 
+#if test -n "$with_deb_build_specified"; then
+#  if test "include" == "lib"; then
+#     tmp_search_results=$libdir;
+#  fi
+#  if test "include" == "include"; then
+#     tmp_search_results=$incdir;
+#  fi
+#fi
 if test -n "$with_rpm_build_specified"; then
-  if test "include" == "lib"; then
-     tmp_search_results=$libdir;
-  fi
-  if test "include" == "include"; then
-     tmp_search_results=$incdir;
-  fi
-fi
-if test -n "$with_deb_build_specified"; then
 # test build directories
    if test -d "../dill"; then
       tmp_search_results=`pwd`/../dill;
@@ -12880,24 +12876,24 @@ fi
 
 search_list="$search_list /usr/lib/libdill.la /usr/local/lib/libdill.la /opt/dill/lib/libdill.la /opt/misc/lib/libdill.la /opt/misc/lib/$cercs_cv_archive/libdill.la /opt/local/lib/libdill.la"
 tmp_search_results=""
-echo "configure:12883: searching for $search_list " >&5
+echo "configure:12879: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12887: first found $tmp_search_results " >&5
+	echo "configure:12883: first found $tmp_search_results " >&5
 	break
    fi
 done
 
+#if test -n "$with_deb_build_specified"; then
+#  if test "lib" == "lib"; then
+#     tmp_search_results=$libdir;
+#  fi
+#  if test "lib" == "include"; then
+#     tmp_search_results=$incdir;
+#  fi
+#fi
 if test -n "$with_rpm_build_specified"; then
-  if test "lib" == "lib"; then
-     tmp_search_results=$libdir;
-  fi
-  if test "lib" == "include"; then
-     tmp_search_results=$incdir;
-  fi
-fi
-if test -n "$with_deb_build_specified"; then
 # test build directories
    if test -d "../dill"; then
       tmp_search_results=`pwd`/../dill;
@@ -12978,11 +12974,11 @@ else
 
 search_list="$PWD/../dill $PWD/../../dill $PWD/../../../dill"
 tmp_search_results=""
-echo "configure:12981: searching for $search_list " >&5
+echo "configure:12977: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:12985: first found $tmp_search_results " >&5
+	echo "configure:12981: first found $tmp_search_results " >&5
 	break
    fi
 done
@@ -13020,11 +13016,11 @@ else
 
 search_list="$PWD/../dill $PWD/../../dill $PWD/../../../dill"
 tmp_search_results=""
-echo "configure:13023: searching for $search_list " >&5
+echo "configure:13019: searching for $search_list " >&5
 for tmp_search_value in $search_list; do
    if test -r $tmp_search_value; then
 	tmp_search_results=$tmp_search_value
-	echo "configure:13027: first found $tmp_search_results " >&5
+	echo "configure:13023: first found $tmp_search_results " >&5
 	break
    fi
 done

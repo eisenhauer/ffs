@@ -335,7 +335,7 @@ the element type.  Figure~\ref{fig:dynarray} gives an example of a dynamic
 array declaration.  Dynamic arrays may also be multiply dimensioned,
 including the use of a mix of static and dynamic sizes.
 
-\subsection{Pointer-based Types}
+\subsection{Pointer-based Types\label{dynamic_array}} 
 Unlike its predecessor PBIO, FFS supports pointer-based declarations in
 field types.  These are declared by using a {\tt *} in the field type
 string.  For example, the field type {\tt "*integer"} declares a pointer to
@@ -667,7 +667,7 @@ int main(int argc, char **argv)
     close(fd);
 }
 \end{Code}
-\subsection{Decode memory handling}
+\subsection{Decode memory handling\label{mem_layout}}
 
 As usual, the situation on the decoding side is a bit more complex than the
 encoding side.  The example code given in Section~\ref{decode} uses the {\tt
@@ -1416,7 +1416,7 @@ generated routine, CoD also provides :
 extern void
 cod_subroutine_declaration(const char *decl, cod_parse_context context);
 \end{Code}
-{\tt cod\_subroutine\_declaration() \} allows the full profile of the
+{\tt cod\_subroutine\_declaration() } allows the full profile of the
   generated routine to be specified at once.  So, the simple example
   code above can be modified as below to use this call:
 \begin{Code}
@@ -1526,6 +1526,30 @@ symbolic references in data segments.  In this case, the {\tt
   externs[0].extern\_value} must be initialized with an assignment
 statement. 
 
+\subsection{'Magic' Assignments and Memory Allocation}
+Section~\ref{dynamic_array} introduced FFS' dynamic array capability, in
+which an integer-typed field in a structure is identified as the size of a
+dynamic array in that structure.  CoD directly supports this capability in
+that if field A is the size value of some dynamic array, and A appears on
+the left hand side of an assignment statement, CoD will automatically
+realloc() the dynamic array to correspond to the new size value.  Generally,
+this is the preferred memory allocation mechanism in CoD because it's nicely
+type-safe.  However, one has to be a bit careful with it.  In this
+circumstance in particular, it is important to make sure that input data to
+CoD has been reasonably initialized (for example using memset() to zeros).
+Because if that field A and the pointer to the dynamic array have some
+random garbage value, then an assignment to field A will cause the random
+garbage pointer to be submitted to realloc(), likely causing a segmentation
+fault.
+
+{\tt malloc()} is not generally a visible operation in CoD because whether
+or not it is appropriate or safe depends upon the environment in which CoD
+is used.  If CoD is deployed as a processing infrastructure inside a
+middleware, using malloc() may inevitably leak memory because the middleware
+has no mechanism for tracking and deallocating the created blocks.  The
+details of memory tracking and allowable memory allocation mechanisms will
+be left to the manuals of that middleware. 
+
 \subsection{Operating on Unknown Data}
 All of the examples presented so far in this manual involve data
 structures that are statically known to the application.  However,
@@ -1591,7 +1615,7 @@ parameter.  I.E. it shouldn't be on the left hand side of an assignment, be
 indirectly operated on via pointers, etc.  (Strictly speaking, CoD should
 declare it {\tt const}, but CoD does not currently have {\tt const} support.)
 
-\subsubsection{Decoding to `local' formats}
+\subsubsection{Operating on data after decoding to `local' formats}
 
 There is a somewhat more complex alternative approach that allows generated
 CoD routines to make changes in the incoming data.  Structurally, the
@@ -1630,34 +1654,45 @@ int main()     /* receiving program */
     FFSTypeHandle handle;
     FMFormat fmf;
     FMStructDescList local_struct;
-    FMContext fmc = create_FMcontext();
-    int fd, encode_size;
+    FFSContext ffsc = create_FFSContext();
+    int fd, encode_size, decode_size;
     char encoded_buffer[2048];  /* hopefully big enough */
+    void *unknown_record;
+    cod_parse_context context = new_cod_parse_context();
+    cod_code gen_code;
+    int (*func)(void *);
 
     /* "receive" encoded record over a file */
     fd = open("enc_file", O_RDONLY, 0777);
     encode_size = read(fd, encoded_buffer, sizeof(encoded_buffer));
 
-    handle = FFSTypeHandle_from_encode(fmc, encoded_buffer);
+    handle = FFSTypeHandle_from_encode(ffsc, encoded_buffer);
     fmf = FMFormat_of_original(handle);
     local_struct = get_localized_formats(fmf);
    
-    FFSset_fixed_target(context, local_struct);
-    FFS_target_from_encode(context, encoded_buffer);
-    decode_size = FFS_est_decode_length(context, encoded_buffer, encode_size);
-    rec2 = malloc(decode_size);
-    FFSdecode(context, encoded_buffer, (void*)rec2);
+    /* decode the data into an acceptable local format */
+    FFSset_fixed_target(ffsc, local_struct);
+    FFS_target_from_encode(ffsc, encoded_buffer);
+    decode_size = FFS_est_decode_length(ffsc, encoded_buffer, encode_size);
+    unknown_record = malloc(decode_size);
+    FFSdecode(ffsc, encoded_buffer, unknown_record);
 
-    cod_add_struct
+    /* generate code to operate on it */
+    cod_add_struct_type(local_struct, context);
+    cod_add_param("input", FFSTypeHandle_name(handle), 0, context);
     gen_code = cod_code_gen("{return input.j", context);
     if (!gen_code) {
         printf("The input did not have an acceptable field 'j'\n");
     } else {
         func = (long(*)()) gen_code->func;
-        printf("Field 'j' in the input has value %d\n", func(encoded_buffer));
+        printf("Field 'j' in the input has value %d\n", func(unknown_record));
     }
 }
 \end{Code}
+
+The two just preceeding code segments have demonstrated some of the
+abilities that FFS and CoD have in operating on unknown data.  However,
+there are still dangers in combining some types of operations.
 
 Our experience with FFS has shown that most programs do not operate upon
 data that they have no prior knowledge about.  While FFS
