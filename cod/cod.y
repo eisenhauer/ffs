@@ -3985,7 +3985,7 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	}	    
 	if (stmt->node.return_statement.expression == NULL) return 1;
 	if (!semanticize_expr(context, stmt->node.return_statement.expression,
-			      scope)) return;
+			      scope)) return 0;
 	expr_type = cod_sm_get_type(stmt->node.return_statement.expression);
 	if (context->dont_coerce_return) {
 	    int type_failure = 0;
@@ -4004,7 +4004,7 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	    }
 	}
 	return 1;
-    }	
+    }
     case cod_label_statement:{
 	return semanticize_statement(context, stmt->node.label_statement.statement, scope);
     }
