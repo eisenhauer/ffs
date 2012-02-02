@@ -335,6 +335,7 @@ extern cod_parse_context cod_copy_context ARGS((cod_parse_context context));
  *  \param string the textual representation of the error.
 */
 typedef void (*err_out_func_t) ARGS((void *client_data, char *string));
+
 /*!
  * cod_set_error_func establishes a new error output routine for COD.
  *
@@ -343,9 +344,17 @@ typedef void (*err_out_func_t) ARGS((void *client_data, char *string));
  *  \param context the context in which errors are to be captured
  *  \param err_func the function to be called when errors occur
  */
-
 void cod_set_error_func ARGS((cod_parse_context context, 
 			      err_out_func_t err_func));
+
+/*!
+ * cod_set_dont_coerce_return restricts COD to more strict type matching for expressions and return values
+ *
+ *  \param context the context to restrict
+ *  \param value True if coercion is not to be applied to return values, false by default
+ */
+void cod_set_dont_coerce_return ARGS((cod_parse_context context, int value));
+
 /*!
  * This will dump (to stdout) a disassembled version of the 
  * machine code that has been generated

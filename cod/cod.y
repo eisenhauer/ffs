@@ -1479,6 +1479,7 @@ struct parse_struct {
     sm_list return_type_list;
     int return_cg_type;
     int has_exec_context;
+    int dont_coerce_return;
 };
 
 static int
@@ -1507,6 +1508,16 @@ cod_swap_decls_to_standard(cod_parse_context context)
 {
     context->standard_decls = context->decls;
     context->decls = NULL;
+}
+
+void cod_set_error_func(cod_parse_context context, err_out_func_t err_func)
+{
+    context->error_func = err_func;
+}
+
+void cod_set_dont_coerce_return(cod_parse_context context, int value)
+{
+    context->dont_coerce_return = value;
 }
 
 int
@@ -3957,6 +3968,7 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
     case cod_compound_statement:
 	return semanticize_compound_statement(context, stmt, scope);
     case cod_return_statement:{
+	int expr_type;
 	stmt->node.return_statement.cg_func_type = context->return_cg_type;
 	if (stmt->node.return_statement.cg_func_type == DILL_V) {
 	    if (stmt->node.return_statement.expression != NULL) {
@@ -3972,9 +3984,26 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	    }
 	}	    
 	if (stmt->node.return_statement.expression == NULL) return 1;
-	return semanticize_expr(context, 
-				stmt->node.return_statement.expression,
-				scope);
+	if (!semanticize_expr(context, stmt->node.return_statement.expression,
+			      scope)) return;
+	expr_type = cod_sm_get_type(stmt->node.return_statement.expression);
+	if (context->dont_coerce_return) {
+	    int type_failure = 0;
+	    switch (stmt->node.return_statement.cg_func_type) {
+	    case DILL_C: case DILL_UC:  case DILL_S: case DILL_US: case DILL_I: case DILL_U: case DILL_L: case DILL_UL:
+		if (expr_type > DILL_UL) type_failure++;
+		break;
+	    case DILL_F: case DILL_D:
+		if ((expr_type != DILL_F) && (expr_type != DILL_D)) type_failure++;
+		break;
+	    }
+	    if (type_failure) {
+		cod_src_error(context, stmt, 
+			      "Return value doesn't match procedure type declaration and now allowed to use coercion");
+		return 0;
+	    }
+	}
+	return 1;
     }	
     case cod_label_statement:{
 	return semanticize_statement(context, stmt->node.label_statement.statement, scope);
@@ -4734,6 +4763,7 @@ new_cod_parse_context()
     context->return_cg_type = DILL_I;
     context->scope = push_scope(NULL);
     context->has_exec_context = 0;
+    context->dont_coerce_return = 0;
     cod_add_standard_elements(context);
     return context;
 }
