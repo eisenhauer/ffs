@@ -3,6 +3,8 @@
 AUTOMAKE_OPTIONS = no-dependencies foreign
 ACLOCAL_AMFLAGS = -I ../config
 
+INSTALL_HEADER = ${srcdir}/../config/install-sh -m 644
+
 SUBDIRS = . progs tests
 
 noinst_HEADERS = assert.h config.h ffs_gen.h ffs_internal.h 

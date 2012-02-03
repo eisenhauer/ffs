@@ -3,7 +3,7 @@
 # Customized for CHAOS to compare with the installed file and only 
 # install if there is a difference
 
-scriptversion=2010-10-26.04GSE
+scriptversion=2012-02-03.10GSE
 
 # This originates from X11R5 (mit/util/scripts/install.sh), which was
 # later released in X11R6 (xc/config/util/install.sh) with the
@@ -499,6 +499,7 @@ do
 	 }
     } || exit 1
 
+    rm -f "$dsttmp"
     trap '' 0
   fi
 done
