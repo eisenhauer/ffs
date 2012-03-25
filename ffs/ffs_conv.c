@@ -84,6 +84,23 @@ static char *float_format_str[] = {
 
 static int IO_shut_up = 0;
 
+static int words_bigendian = -1;
+
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+
 static int
 min_align_size(size)
 int size;
@@ -1655,15 +1672,15 @@ void *data;
 	} else if (iofield->size == 2 * sizeof(long)) {
 	    long tmp;
 	    int low_bytes_offset = iofield->offset;
-#ifdef WORDS_BIGENDIAN
-	    if (!iofield->byte_swap) {
-		low_bytes_offset += sizeof(long);
+	    if (WORDS_BIGENDIAN) {
+		if (!iofield->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
+	    } else {
+		if (iofield->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
 	    }
-#else
-	    if (iofield->byte_swap) {
-		low_bytes_offset += sizeof(long);
-	    }
-#endif
 	    memcpy(&tmp, (char *) data + low_bytes_offset, sizeof(long));
 	    if (iofield->byte_swap)
 		byte_swap((char *) &tmp, sizeof(long));
@@ -1726,15 +1743,15 @@ void *data;
 	} else if (iofield->size == 2 * sizeof(long)) {
 	    unsigned long tmp;
 	    int low_bytes_offset = iofield->offset;
-#ifdef WORDS_BIGENDIAN
-	    if (!iofield->byte_swap) {
-		low_bytes_offset += sizeof(long);
+	    if (WORDS_BIGENDIAN) {
+		if (!iofield->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
+	    } else {
+		if (iofield->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
 	    }
-#else
-	    if (iofield->byte_swap) {
-		low_bytes_offset += sizeof(long);
-	    }
-#endif
 	    memcpy(&tmp, (char *) data + low_bytes_offset, sizeof(long));
 	    if (iofield->byte_swap)
 		byte_swap((char *) &tmp, sizeof(long));

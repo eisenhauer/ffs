@@ -1529,6 +1529,23 @@ int size;
     return old_size;
 }
 
+static int words_bigendian = -1;
+
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+
 static unsigned long
 quick_get_ulong(iofield, data)
 FMFieldPtr iofield;
@@ -1559,11 +1576,11 @@ void *data;
 	}
 #else
 	/* must be fetching 4 bytes of the 8 available */
-#ifdef WORDS_BIGENDIAN
-	return (*(((unsigned long *) data) +1));
-#else
-	return (*((unsigned long *) data));
-#endif
+	if (WORDS_BIGENDIAN)
+	    return (*(((unsigned long *) data) +1));
+	else
+	    return (*((unsigned long *) data));
+
 #endif
     }
     return 0;
@@ -1603,11 +1620,11 @@ void *data;
 	}
 #else
 	/* must be fetching 4 bytes of the 8 available */
-#ifdef WORDS_BIGENDIAN
-	u.tmp = (*(((unsigned long *) data) +1));
-#else
-	u.tmp = (*((unsigned long *) data));
-#endif
+	if (WORDS_BIGENDIAN)
+	    u.tmp = (*(((unsigned long *) data) +1));
+	else
+	    u.tmp = (*((unsigned long *) data));
+
 #endif
 	break;
     }

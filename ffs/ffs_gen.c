@@ -52,6 +52,23 @@ iogen_oprnd_ptr src_oprnd;
     *src_oprnd = tmp_val;
 }
 
+static int words_bigendian = -1;
+
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+
 iogen_oprnd
 gen_bswap_fetch(c, src_reg, offset, size, data_type, aligned)
 dill_stream c;
@@ -106,14 +123,14 @@ int aligned;
 		    dill_reg high_reg;
 		    if (!ffs_getreg(c, &high_reg, DILL_L, DILL_TEMP))
 			gen_fatal("gen fetch out of registers \n");
-#ifdef WORDS_BIGENDIAN
-		    /* vc_reg2 holds high value */
-		    dill_ldbsui(c, ret_val.vc_reg, src_reg, offset);
-		    dill_ldbsii(c, high_reg, src_reg, offset + 4);
-#else
-		    dill_ldbsii(c, high_reg, src_reg, offset);
-		    dill_ldbsui(c, ret_val.vc_reg, src_reg, offset + 4);
-#endif
+		    if (WORDS_BIGENDIAN) {
+			/* vc_reg2 holds high value */
+			dill_ldbsui(c, ret_val.vc_reg, src_reg, offset);
+			dill_ldbsii(c, high_reg, src_reg, offset + 4);
+		    } else {
+			dill_ldbsii(c, high_reg, src_reg, offset);
+			dill_ldbsui(c, ret_val.vc_reg, src_reg, offset + 4);
+		    }
 		    dill_lshli(c, high_reg, high_reg, 32);
 		    dill_orl(c, ret_val.vc_reg, high_reg, ret_val.vc_reg);
 		    ffs_putreg(c, high_reg, DILL_L);
@@ -133,14 +150,14 @@ int aligned;
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg)));
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg2)));
 
-#ifdef WORDS_BIGENDIAN
-	    /* vc_reg2 holds high value */
-	    dill_ldbsii(c, ret_val.vc_reg, src_reg, offset);
-	    dill_ldbsii(c, ret_val.vc_reg2, src_reg, offset + 4);
-#else
-	    dill_ldbsii(c, ret_val.vc_reg2, src_reg, offset);
-	    dill_ldbsii(c, ret_val.vc_reg, src_reg, offset + 4);
-#endif
+	    if (WORDS_BIGENDIAN) {
+		/* vc_reg2 holds high value */
+		dill_ldbsii(c, ret_val.vc_reg, src_reg, offset);
+		dill_ldbsii(c, ret_val.vc_reg2, src_reg, offset + 4);
+	    } else {
+		dill_ldbsii(c, ret_val.vc_reg2, src_reg, offset);
+		dill_ldbsii(c, ret_val.vc_reg, src_reg, offset + 4);
+	    }
 	    break;
 #endif
 	}
@@ -182,13 +199,13 @@ int aligned;
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg)));
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg2)));
 	    /* vc_reg2 holds high value */
-#ifdef WORDS_BIGENDIAN
-	    dill_ldbsui(c, ret_val.vc_reg, src_reg, offset);
-	    dill_ldbsui(c, ret_val.vc_reg2, src_reg, offset + 4);
-#else
-	    dill_ldbsui(c, ret_val.vc_reg2, src_reg, offset);
-	    dill_ldbsui(c, ret_val.vc_reg, src_reg, offset + 4);
-#endif
+	    if (WORDS_BIGENDIAN) {
+		dill_ldbsui(c, ret_val.vc_reg, src_reg, offset);
+		dill_ldbsui(c, ret_val.vc_reg2, src_reg, offset + 4);
+	    } else {
+		dill_ldbsui(c, ret_val.vc_reg2, src_reg, offset);
+		dill_ldbsui(c, ret_val.vc_reg, src_reg, offset + 4);
+	    }
 	    break;
 #endif
 	}
@@ -246,13 +263,13 @@ gen_set(dill_stream c, int size, char* value)
 	REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg)));
 	REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg2)));
 	/* vc_reg2 holds high value */
-#ifdef WORDS_BIGENDIAN
-	dill_seti(c, ret_val.vc_reg2, *((long*)value));
-	dill_seti(c, ret_val.vc_reg, *((long*)(value + 4)));
-#else
-	dill_seti(c, ret_val.vc_reg, *((long*)value));
-	dill_seti(c, ret_val.vc_reg2, *((long*)(value + 4)));
-#endif
+	if (WORDS_BIGENDIAN) {
+	    dill_seti(c, ret_val.vc_reg2, *((long*)value));
+	    dill_seti(c, ret_val.vc_reg, *((long*)(value + 4)));
+	} else {
+	    dill_seti(c, ret_val.vc_reg, *((long*)value));
+	    dill_seti(c, ret_val.vc_reg2, *((long*)(value + 4)));
+	}
 	break;
 #endif
     }
@@ -328,13 +345,13 @@ int byte_swap;
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg)));
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg2)));
 	    /* vc_reg2 holds high value */
-#ifdef WORDS_BIGENDIAN
-	    dill_ldii(c, ret_val.vc_reg2, src_reg, offset);
-	    dill_ldii(c, ret_val.vc_reg, src_reg, offset + 4);
-#else
-	    dill_ldii(c, ret_val.vc_reg, src_reg, offset);
-	    dill_ldii(c, ret_val.vc_reg2, src_reg, offset + 4);
-#endif
+	    if (WORDS_BIGENDIAN) {
+		dill_ldii(c, ret_val.vc_reg2, src_reg, offset);
+		dill_ldii(c, ret_val.vc_reg, src_reg, offset + 4);
+	    } else {
+		dill_ldii(c, ret_val.vc_reg, src_reg, offset);
+		dill_ldii(c, ret_val.vc_reg2, src_reg, offset + 4);
+	    }
 	    break;
 #endif
 	}
@@ -376,13 +393,13 @@ int byte_swap;
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg)));
 	    REG_DEBUG(("get %d in gen_Fetch\n", _vrr(ret_val.vc_reg2)));
 	    /* vc_reg2 holds high value */
-#ifdef WORDS_BIGENDIAN
-	    dill_ldui(c, ret_val.vc_reg2, src_reg, offset);
-	    dill_ldui(c, ret_val.vc_reg, src_reg, offset + 4);
-#else
-	    dill_ldui(c, ret_val.vc_reg, src_reg, offset);
-	    dill_ldui(c, ret_val.vc_reg2, src_reg, offset + 4);
-#endif
+	    if (WORDS_BIGENDIAN) {
+		dill_ldui(c, ret_val.vc_reg2, src_reg, offset);
+		dill_ldui(c, ret_val.vc_reg, src_reg, offset + 4);
+	    } else {
+		dill_ldui(c, ret_val.vc_reg, src_reg, offset);
+		dill_ldui(c, ret_val.vc_reg2, src_reg, offset + 4);
+	    }
 	    break;
 #endif
 	}
@@ -526,13 +543,13 @@ int aligned;
 	case 8:
 	    /* simulate with double reg */
 	    /* vc_reg2 holds high value */
-#ifdef WORDS_BIGENDIAN
-	    dill_stii(c, src.vc_reg2, dest_reg, offset);
-	    dill_stii(c, src.vc_reg, dest_reg, offset + 4);
-#else
-	    dill_stii(c, src.vc_reg, dest_reg, offset);
-	    dill_stii(c, src.vc_reg2, dest_reg, offset + 4);
-#endif
+	    if (WORDS_BIGENDIAN) {
+		dill_stii(c, src.vc_reg2, dest_reg, offset);
+		dill_stii(c, src.vc_reg, dest_reg, offset + 4);
+	    } else {
+		dill_stii(c, src.vc_reg, dest_reg, offset);
+		dill_stii(c, src.vc_reg2, dest_reg, offset + 4);
+	    }
 	    break;
 #endif
 	}
@@ -557,13 +574,13 @@ int aligned;
 	case 8:
 	    /* simulate with double reg */
 	    /* vc_reg2 holds high value */
-#ifdef WORDS_BIGENDIAN
-	    dill_stui(c, src.vc_reg2, dest_reg, offset);
-	    dill_stui(c, src.vc_reg, dest_reg, offset + 4);
-#else
-	    dill_stui(c, src.vc_reg, dest_reg, offset);
-	    dill_stui(c, src.vc_reg2, dest_reg, offset + 4);
-#endif
+	    if (WORDS_BIGENDIAN) {
+		dill_stui(c, src.vc_reg2, dest_reg, offset);
+		dill_stui(c, src.vc_reg, dest_reg, offset + 4);
+	    } else {
+		dill_stui(c, src.vc_reg, dest_reg, offset);
+		dill_stui(c, src.vc_reg2, dest_reg, offset + 4);
+	    }
 	    break;
 #endif
 	}
