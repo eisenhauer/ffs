@@ -2662,6 +2662,23 @@ FMdata_type dat;
     }
 }
 
+static int words_bigendian = -1;
+
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+
 extern
 void
 get_IOformat_characteristics(format, ff, intf, column_major, pointer_size)
@@ -2671,19 +2688,20 @@ FMinteger_format *intf;
 int *column_major;
 int *pointer_size;
 {
-#ifdef WORDS_BIGENDIAN
-    if (format->byte_reversal) {
-	*intf = Format_Integer_littleendian;
-    } else {
-	*intf = Format_Integer_bigendian;
+    if (WORDS_BIGENDIAN) {
+	if (format->byte_reversal) {
+	    *intf = Format_Integer_littleendian;
+	} else {
+	    *intf = Format_Integer_bigendian;
+	}
+    } else{
+	if (format->byte_reversal) {
+	    *intf = Format_Integer_bigendian;
+	} else {
+	    *intf = Format_Integer_littleendian;
+	}
     }
-#else
-    if (format->byte_reversal) {
-	*intf = Format_Integer_bigendian;
-    } else {
-	*intf = Format_Integer_littleendian;
-    }
-#endif
+
     *ff = format->float_format;
     *column_major = format->column_major_arrays;
     *pointer_size = format->pointer_size;

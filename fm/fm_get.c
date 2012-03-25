@@ -53,6 +53,23 @@ int size;
     }
 }
 
+static int words_bigendian = -1;
+
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+
 static MAX_INTEGER_TYPE
 get_big_int(field, data)
 FMFieldPtr field;
@@ -84,15 +101,15 @@ void *data;
 	} else if (field->size == 2 * sizeof(long)) {
 	    long tmp;
 	    int low_bytes_offset = field->offset;
-#ifdef WORDS_BIGENDIAN
-	    if (!field->byte_swap) {
-		low_bytes_offset += sizeof(long);
+	    if (WORDS_BIGENDIAN) {
+		if (!field->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
+	    } else {
+		if (field->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
 	    }
-#else
-	    if (field->byte_swap) {
-		low_bytes_offset += sizeof(long);
-	    }
-#endif
 	    memcpy(&tmp, (char *) data + low_bytes_offset, sizeof(long));
 	    if (field->byte_swap)
 		byte_swap((char *) &tmp, (int)sizeof(long));
@@ -155,15 +172,15 @@ void *data;
 	} else if (field->size == 2 * sizeof(long)) {
 	    unsigned long tmp;
 	    int low_bytes_offset = field->offset;
-#ifdef WORDS_BIGENDIAN
-	    if (!field->byte_swap) {
-		low_bytes_offset += sizeof(long);
+	    if (WORDS_BIGENDIAN) {
+		if (!field->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
+	    } else {
+		if (field->byte_swap) {
+		    low_bytes_offset += sizeof(long);
+		}
 	    }
-#else
-	    if (field->byte_swap) {
-		low_bytes_offset += sizeof(long);
-	    }
-#endif
 	    memcpy(&tmp, (char *) data + low_bytes_offset, sizeof(long));
 	    if (field->byte_swap)
 		byte_swap((char *) &tmp, (int)sizeof(long));
@@ -424,19 +441,19 @@ long *high_long;
 	    int high_bytes_offset = field->offset;
 	    FMgetFieldStruct tmp_field;  /*OK */
 	    tmp_field = *field;
-#ifdef WORDS_BIGENDIAN
-	    if (field->byte_swap) {
-		high_bytes_offset += sizeof(long);
+	    if (WORDS_BIGENDIAN) {
+		if (field->byte_swap) {
+		    high_bytes_offset += sizeof(long);
+		} else {
+		    low_bytes_offset += sizeof(long);
+		}
 	    } else {
-		low_bytes_offset += sizeof(long);
+		if (field->byte_swap) {
+		    high_bytes_offset += sizeof(long);
+		} else {
+		    low_bytes_offset += sizeof(long);
+		}
 	    }
-#else
-	    if (field->byte_swap) {
-		high_bytes_offset += sizeof(long);
-	    } else {
-		low_bytes_offset += sizeof(long);
-	    }
-#endif
 	    tmp_field.size = sizeof(long);
 	    tmp_field.offset = low_bytes_offset;
 	    *low_long = get_FMulong(&tmp_field, data);
@@ -475,19 +492,19 @@ unsigned long *high_long;
 	    int high_bytes_offset = field->offset;
 	    FMgetFieldStruct tmp_field;  /*OK */
 	    tmp_field = *field;
-#ifdef WORDS_BIGENDIAN
-	    if (field->byte_swap) {
-		high_bytes_offset += sizeof(long);
+	    if (WORDS_BIGENDIAN) {
+		if (field->byte_swap) {
+		    high_bytes_offset += sizeof(long);
+		} else {
+		    low_bytes_offset += sizeof(long);
+		}
 	    } else {
-		low_bytes_offset += sizeof(long);
+		if (field->byte_swap) {
+		    high_bytes_offset += sizeof(long);
+		} else {
+		    low_bytes_offset += sizeof(long);
+		}
 	    }
-#else
-	    if (field->byte_swap) {
-		high_bytes_offset += sizeof(long);
-	    } else {
-		low_bytes_offset += sizeof(long);
-	    }
-#endif
 	    tmp_field.size = sizeof(unsigned long);
 	    tmp_field.offset = low_bytes_offset;
 	    *low_long = get_FMulong(&tmp_field, data);
