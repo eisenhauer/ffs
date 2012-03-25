@@ -1746,9 +1746,8 @@ void yyerror(str)
 char *str;
 {
     char tmp_str[100];
-    yycontext->error_func(yycontext->client_data, "## Error ");
-    yycontext->error_func(yycontext->client_data, str);
-    yycontext->error_func(yycontext->client_data, "\n");
+    sprintf(tmp_str, "## Error %s\n", str);
+    yycontext->error_func(yycontext->client_data, tmp_str);
     yycontext->error_func(yycontext->client_data, "## While parsing near ");
     yycontext->error_func(yycontext->client_data, yytext);
     sprintf(tmp_str, ", offset = %d, line = %d ####\n",lex_offset,line_count);
@@ -4755,13 +4754,14 @@ new_cod_parse_context()
 {
     cod_parse_context context = malloc(sizeof(struct parse_struct));
     context->decls = NULL;
+    context->standard_decls = NULL;
+    context->scope = push_scope(NULL);
     context->defined_type_count = 0;
     context->defined_types = NULL;
     context->error_func = default_error_out;
     context->client_data = NULL;
     context->return_type_list = NULL;
     context->return_cg_type = DILL_I;
-    context->scope = push_scope(NULL);
     context->has_exec_context = 0;
     context->dont_coerce_return = 0;
     cod_add_standard_elements(context);
