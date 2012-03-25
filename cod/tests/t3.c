@@ -1,6 +1,7 @@
 #include "config.h"
 #include "cod.h"
-#include "assert.h"
+#include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
 
 static double testd(){return 1.0;}
@@ -26,7 +27,7 @@ static FILE *output_file;
 static void
 error_func(void *client_data, char *string)
 {
-    fprintf(output_file, string);
+    fprintf(output_file, "%s", string);
 }
 
 int
@@ -43,7 +44,7 @@ main(int argc, char **argv)
 	} else if (strcmp(argv[1], "-output") == 0) {
 	    output_file = fopen(argv[2], "w");
 	    if (!output_file) {
-		printf("Couldn't open output file \"%s\"\n");
+		printf("Couldn't open output file \"%s\"\n", argv[2]);
 		exit(1);
 	    }
 	    argc--; argv++;
