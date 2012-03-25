@@ -1,11 +1,44 @@
 #include "config.h"
-#include "cod.h"
-#include "assert.h"
+#include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include "cod.h"
+
+static FILE *output_file;
+
+static void
+error_func(void *client_data, char *string)
+{
+    if ((strncmp("## Error", string, strlen("## Error")) != 0) || 
+	(strstr(string, "error") == NULL))
+	fprintf(output_file, "%s", string);
+}
+
+static int verbose = 0;
+static int test_to_run = -1;
 
 int
-main()
+main(int argc, char **argv)
 {
+    int test_to_run = -1;
+
+    while (argc > 1) {
+	if (strcmp(argv[1], "-v") == 0) {
+	    verbose++;
+	} else if (strcmp(argv[1], "-o") == 0) {
+	    sscanf(argv[2], "%d", &test_to_run);
+	    argc--; argv++;
+	} else if (strcmp(argv[1], "-output") == 0) {
+	    output_file = fopen(argv[2], "w");
+	    if (!output_file) {
+		printf("Couldn't open output file \"%s\"\n", argv[2]);
+		exit(1);
+	    }
+	    argc--; argv++;
+	}
+	argc--; argv++;
+    }
     {
 	/* test the basics */
 	char code_string[] = "\
@@ -24,6 +57,7 @@ main()
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);
@@ -44,6 +78,7 @@ main()
 	cod_parse_context context = new_cod_parse_context();
     	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_subroutine_declaration("int proc(int i)", context);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
@@ -200,6 +235,7 @@ comment\n\
     	int ret;
 	cod_parse_context context = new_cod_parse_context();
 
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_add_simple_struct_type("struct_type", struct_fields, context);
 	cod_subroutine_declaration("int proc(struct_type *input)", context);
 
@@ -252,9 +288,6 @@ comment\n\
     {
 	static char extern_string[] = "int printf(string format, ...);";
 
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 	static cod_extern_entry externs[] = 
 	{
 	    {"printf", (void*)(long)printf},
@@ -272,6 +305,7 @@ comment\n\
 
 	cod_parse_context context = new_cod_parse_context();
 
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_parse_for_context(extern_string, context);
 
 	cod_subroutine_declaration("int proc(int i, double d)", context);
@@ -282,6 +316,7 @@ comment\n\
 
 	context = new_cod_parse_context();
 
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
 
@@ -293,9 +328,6 @@ comment\n\
     }
     {
 	static char extern_string[] = "int junk(int i, float j);";
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 
 	static cod_extern_entry externs[] = 
 	{
@@ -309,6 +341,7 @@ comment\n\
 		}";
 
 	cod_parse_context context = new_cod_parse_context();
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
 
@@ -345,6 +378,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_add_simple_struct_type("input_type", input_field_list, context);
 	cod_subroutine_declaration("int proc(input_type *input)", context);
 
@@ -398,6 +432,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);
@@ -416,6 +451,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);
@@ -433,6 +469,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);
@@ -450,6 +487,7 @@ comment\n\
 	cod_parse_context context = new_cod_parse_context();
 	int ret;
 
+	if (output_file) cod_set_error_func(context, error_func);
 	cod_subroutine_declaration("void subr()", context);
 	ret = cod_code_verify(code_string, context);
 	assert(ret == 0);

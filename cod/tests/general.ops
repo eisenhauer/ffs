@@ -829,10 +829,6 @@ extern long lrand48();
 void srand48(long seedval);
 #endif
 
-#ifndef PRINTF_DEFINED
-extern int printf();
-#endif
-
 char* only_run_test = NULL;
 
 static char extern_string[] = "int printf(string format, ...);";

@@ -7,25 +7,49 @@ static double testd(){return 1.0;}
 
 #ifdef NO_EMULATION
 #define GEN_PARSE_CONTEXT(x) \
-x = new_cod_parse_context();
+x = new_cod_parse_context();\
+if (output_file) cod_set_error_func(x, error_func);
 #define EC_param0
 #define EC_param1
 #else
 #define GEN_PARSE_CONTEXT(x) \
 x = new_cod_parse_context();\
-cod_add_param("ec", "cod_exec_context", 0, x);
+cod_add_param("ec", "cod_exec_context", 0, x);\
+if (output_file) cod_set_error_func(x, error_func);
 #define EC_param0 ec
 #define EC_param1 ec,
 #endif
+
+static int verbose = 0;
+static FILE *output_file;
+
+static void
+error_func(void *client_data, char *string)
+{
+    fprintf(output_file, string);
+}
 
 int
 main(int argc, char **argv)
 {
     int test_to_run = -1;
-    if (argc > 1) {
-	sscanf(argv[1], "%d", &test_to_run);
-    }
 
+    while (argc > 1) {
+	if (strcmp(argv[1], "-v") == 0) {
+	    verbose++;
+	} else if (strcmp(argv[1], "-o") == 0) {
+	    sscanf(argv[2], "%d", &test_to_run);
+	    argc--; argv++;
+	} else if (strcmp(argv[1], "-output") == 0) {
+	    output_file = fopen(argv[2], "w");
+	    if (!output_file) {
+		printf("Couldn't open output file \"%s\"\n");
+		exit(1);
+	    }
+	    argc--; argv++;
+	}
+	argc--; argv++;
+    }
     if ((test_to_run == 1) || (test_to_run == -1)) {
 	/* test the basics */
 	char code_string[] = "\

@@ -185,9 +185,6 @@ main(int argc, char **argv)
 	/* 0 */
 	static char extern_string[] = "int printf(string format, ...);";
 
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 	static cod_extern_entry externs[] = 
 	{
 	    {"printf", (void*)(long)printf},
