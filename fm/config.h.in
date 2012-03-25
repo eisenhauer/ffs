@@ -145,9 +145,6 @@
 /* Version number of package */
 #undef VERSION
 
-/* Define if byteorder is bigendian */
-#undef WORDS_BIGENDIAN
-
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
 
