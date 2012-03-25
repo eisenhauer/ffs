@@ -125,8 +125,6 @@ fill_hostaddr(void *addr, char *hostname, Server_Protocol *protocol)
     DFreeMM((addrs_t)host_addr);
     return 1;
 #else
-#ifdef HAS_STRUCT_HOSTENT
-    
     host_addr = gethostbyname(hostname);
     if (host_addr == NULL) {
 	int _addr = inet_addr(hostname);
@@ -143,11 +141,6 @@ fill_hostaddr(void *addr, char *hostname, Server_Protocol *protocol)
 	memcpy(addr, host_addr->h_addr, host_addr->h_length);
     }
     return 1;
-#else
-    /* VxWorks ? */
-    *((int *)addr) = hostGetByName(hostname);
-    return 1;
-#endif
 #endif
 }
 
