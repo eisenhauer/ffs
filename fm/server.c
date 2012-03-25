@@ -339,7 +339,6 @@ IOFormatRep form2;
 
 static int server_format_count = 0;
 
-#ifndef WORDS_BIGENDIAN
 static void
 byte_swap(data, size)
 char *data;
@@ -353,8 +352,6 @@ int size;
 	data[size - i - 1] = tmp;
     }
 }
-
-#endif
 
 static void
 dump_formats_to_file(format_server fs)
@@ -690,6 +687,22 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 }
 
 
+static int words_bigendian = -1;
+
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
 
 static IOFormatRep
 find_format(fs, fsc, ioformat, new_format_mode, requested_id_version)
@@ -744,9 +757,9 @@ int requested_id_version;
 	switch (requested_id_version) {
 	case 0:
 	    tmp = (char *) ioformat;
-#ifndef WORDS_BIGENDIAN
-	    byte_swap(tmp, (int)sizeof(tmp));
-#endif
+	    if (!WORDS_BIGENDIAN)
+		byte_swap(tmp, (int)sizeof(tmp));
+
 	    tmp += (0x7 & my_pid);	/* add bottom 3 bits of pid to
 					 * format id */
 	    ioformat->server_ID.length = 8;
@@ -1457,7 +1470,7 @@ server_listen(int port)
     }
     if (bind(conn_sock, (struct sockaddr *) &sock_addr,
 	     sizeof sock_addr) < 0) {
-	fprintf(stderr, "Cannot bind INET socket\n");
+	fprintf(stderr, "Cannot bind INET socket, port %d\n", port);
 	return -1;
     }
     sock_opt_val = 1;
@@ -1644,6 +1657,9 @@ char *hostname;
     return hostlist[host_count - 1].intro_time;
 }
 
+#ifndef FORMAT_SERVICE_DOMAIN
+#define FORMAT_SERVICE_DOMAIN ""
+#endif
 static char *postfix_string = FORMAT_SERVICE_DOMAIN;
 static char **postfix_list = NULL;
 
