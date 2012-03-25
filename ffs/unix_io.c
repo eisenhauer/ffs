@@ -10,9 +10,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
 #include <stdio.h>
 #include "assert.h"
 #include "ffs.h"
