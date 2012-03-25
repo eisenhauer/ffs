@@ -107,6 +107,10 @@ char **argv;
     str_list[0].opt_info = NULL;
     str_list[1].format_name = NULL;
     first_rec_ioformat = register_data_format(src_context, str_list);
+    if (!first_rec_ioformat) {
+	printf("Format server failure\n");
+	exit(1);
+    }
 
     str_list[0].format_name = "string format";
     str_list[0].field_list = field_list2;
