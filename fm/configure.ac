@@ -23,7 +23,6 @@ AC_SUBST(CWARNFLAGS)
 AC_CHECK_PROGS(MAKEDEPEND, makedepend, :)
 #
 # checks for libraries
-CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
 
 CPPFLAGS="$CPPFLAGS"
 #
@@ -47,6 +46,8 @@ AC_CHECK_FUNCS(strtof strtod strtold)
 LIBS=$oldLibs
 
 LT_INIT
+
+CERCS_REQUIRE_PACKAGE(cercs_env,cercs_env.h,libcercs_env.la)
 
 # checks for header files
 AC_HEADER_STDC
