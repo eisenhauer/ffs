@@ -60,7 +60,7 @@ FFSencode(FFSBuffer b, FMFormat ioformat, void *data, int *buf_size);
 
 typedef struct FFSEncodeVec {
     void *iov_base;
-    UIO_SIZE_T_TYPE iov_len;
+    @UIO_SIZE_T_TYPE@ iov_len;
 } *FFSEncodeVector;
 
 extern FFSEncodeVector
