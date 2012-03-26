@@ -14717,7 +14717,7 @@ else
 fi
 
 if test "$enable_code_generation" = yes; then
-DCG_LALIB="$cercs_cv_dill_link_dir/libdill.la"
+DCG_LALIB="-L $cercs_cv_dill_link_dir -ldill"
 FFS_CONVERSION_GENERATION_DEFAULT=1
 fi
 

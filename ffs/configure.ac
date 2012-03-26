@@ -43,7 +43,7 @@ CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
 AC_ARG_ENABLE(code_generation,AC_HELP_STRING([--enable-code-generation],
                             [faster conversions via dynamic code generation (default is YES)]),,enable_code_generation="yes")
 if test "$enable_code_generation" = yes; then
-DCG_LALIB="$cercs_cv_dill_link_dir/libdill.la"
+DCG_LALIB="-L $cercs_cv_dill_link_dir -ldill"
 FFS_CONVERSION_GENERATION_DEFAULT=1
 fi
 
@@ -107,6 +107,8 @@ if test $ac_cv_sizeof_size_t -eq $ac_cv_sizeof_int ; then
 elif test $ac_cv_sizeof_size_t -eq $ac_cv_sizeof_long; then
    UIO_SIZE_T_TYPE="unsigned long";
 fi
+AT="@"
+AC_SUBST(AT)
 AC_SUBST(UIO_SIZE_T_TYPE)
 if test $ac_cv_sizeof_long -eq 8 ; then
    DATA_LEN_TYPE="long";
