@@ -43,7 +43,7 @@ CERCS_REQUIRE_PACKAGE(dill,dill.h,libdill.la)
 AC_ARG_ENABLE(code_generation,AC_HELP_STRING([--enable-code-generation],
                             [faster conversions via dynamic code generation (default is YES)]),,enable_code_generation="yes")
 if test "$enable_code_generation" = yes; then
-DCG_LALIB="-L $cercs_cv_dill_link_dir -ldill"
+DCG_LALIB="-L$cercs_cv_dill_link_dir -ldill"
 FFS_CONVERSION_GENERATION_DEFAULT=1
 fi
 
