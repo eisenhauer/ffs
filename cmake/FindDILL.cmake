@@ -4,6 +4,7 @@
 
 set (CERCS_LIB "dill")
 string(TOUPPER ${CERCS_LIB} CERCS_PROJECT)
+string(TOLOWER ${CERCS_LIB} CERCS_PROJECT_DIR)
 set (CERCS_PROJECT_INCLUDE "dill.h")
 
 IF (NOT DEFINED ${CERCS_PROJECT}_FOUND)
@@ -12,8 +13,8 @@ IF (NOT DEFINED ${CERCS_PROJECT}_FOUND)
 	MARK_AS_ADVANCED(CercsArch)
     endif()
     IF(EXISTS /users/c/chaos)
-        FIND_LIBRARY  (${CERCS_PROJECT}_LIBRARIES NAMES ${CERCS_LIB} PATHS /users/c/chaos/lib /users/c/chaos/${CercsArch}/${CERCS_PROJECT}/lib /users/c/chaos/${CercsArch}/lib NO_DEFAULT_PATH)
-	FIND_PATH (${CERCS_PROJECT}_INCLUDE_DIR NAMES ${CERCS_PROJECT_INCLUDE} PATHS /users/c/chaos/include /users/c/chaos/${CercsArch}/${CERCS_PROJECT}/include /users/c/chaos/${CercsArch}/include NO_DEFAULT_PATH)
+        FIND_LIBRARY  (${CERCS_PROJECT}_LIBRARIES NAMES ${CERCS_LIB} PATHS /users/c/chaos/lib /users/c/chaos/${CercsArch}/${CERCS_PROJECT_DIR}/lib /users/c/chaos/${CercsArch}/lib NO_DEFAULT_PATH)
+	FIND_PATH (${CERCS_PROJECT}_INCLUDE_DIR NAMES ${CERCS_PROJECT_INCLUDE} PATHS /users/c/chaos/include /users/c/chaos/${CercsArch}/${CERCS_PROJECT_DIR}/include /users/c/chaos/${CercsArch}/include NO_DEFAULT_PATH)
     ENDIF()
     message (STATUS "Use installed is ${USE_INSTALLED}")
     if (NOT (DEFINED USE_INSTALLED) )
