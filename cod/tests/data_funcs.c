@@ -92,6 +92,7 @@ int read_data_block(int f, FMContext c, int swap, char **buf_p)
 /*     *buf_p = malloc(len); */
 /*     read(f, *buf_p, len); */
 /*     return test_num; */
+  return 0;
 }
 	
 extern
@@ -106,7 +107,7 @@ char *read_buffer(FMContext c, char *read_file, int test_num)
 	f = open(read_file, O_RDONLY, 0777);
 	read(f, &in_magic, 4);
 	if (in_magic != MAGIC) {
-	    byte_swap(&in_magic, 4);
+	    byte_swap((char*)&in_magic, 4);
 	    swap++;
 	}
 	if (in_magic != MAGIC) {
