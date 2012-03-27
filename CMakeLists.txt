@@ -60,8 +60,6 @@ IF( NOT CMAKE_BUILD_TYPE )
     SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 ENDIF()
 
-configure_file(ffs/ffs.h.in ffs/ffs.h @ONLY)
-
 add_library(fm SHARED ${FM_MASTER_SRC_LIST})
 add_library(fm-static STATIC ${FM_MASTER_SRC_LIST})
 # The library target "fm" already has a default OUTPUT_NAME of "fm", so we don't need to change it.
@@ -161,6 +159,8 @@ if (${SIZEOF_SIZE_T} EQUAL ${SIZEOF_INT})
 else ()
    set (UIO_SIZE_T_TYPE "unsigned long")
 endif()
+
+configure_file(ffs/ffs.h.in ffs/ffs.h @ONLY)
 
 if (${SIZEOF_LONG} EQUAL 8) 
    set (DATA_LEN_TYPE "long")
