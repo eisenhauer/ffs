@@ -1813,7 +1813,7 @@ FFSread_raw_header(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
     /* read into temporary memory */
     memset(dest, 0, header_size);
     memcpy(dest, f->body->server_ID.value, f->body->server_ID.length);
-    if (file->read_func(file->file_id, dest+header_size, read_size, NULL, NULL) != read_size) {
+    if (file->read_func(file->file_id, (char*)dest+header_size, read_size, NULL, NULL) != read_size) {
 	file->next_record_type = (file->errno_val) ? FFSerror : FFSend;
 	return 0;
     }
