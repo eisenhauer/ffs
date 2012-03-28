@@ -9,8 +9,11 @@
 /* define if struct hostent is declared in netdb.h or winsock.h */
 #cmakedefine HAS_STRUCT_HOSTENT
 
-/* Define to 1 if you have the <dlfcn.h> header file. */
-#cmakedefine HAVE_DLFCN_H
+/* Define to 1 if you have the <atl.h> header file. */
+#cmakedefine HAVE_ATL_H
+
+/* Define to 1 if you have the <CERCS_ENV.h> header file. */
+#cmakedefine HAVE_CERCS_ENV_H
 
 /* Define to 1 if you have the <dill.h> header file. */
 #cmakedefine HAVE_DILL_H
@@ -23,6 +26,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the struct iovec defined in a header file. */
+#cmakedefine HAVE_IOVEC_DEFINE
 
 /* Define to 1 if you have the <malloc.h> header file. */
 #cmakedefine HAVE_MALLOC_H
@@ -38,9 +44,6 @@
 
 /* Define to 1 if you have the <sockLib.h> header file. */
 #cmakedefine HAVE_SOCKLIB_H
-
-/* Define to 1 if you have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
 
 /* Define to 1 if you have stdc headers. */
 #cmakedefine STDC_HEADERS
@@ -69,6 +72,9 @@
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #cmakedefine HAVE_SYS_SOCKET_H
 
+/* Define to 1 if you have the <sys/sockio.h> header file. */
+#cmakedefine HAVE_SYS_SOCKIO_H
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #cmakedefine HAVE_SYS_STAT_H
 
@@ -95,6 +101,9 @@
 
 /* Define to 1 if you have the <winsock.h> header file. */
 #cmakedefine HAVE_WINSOCK_H
+
+/* Define if you need struct iovec to be defined */
+#cmakedefine NEED_IOVEC_DEFINE
 
 /* Define if there is no socket support */
 #cmakedefine NO_SOCKET

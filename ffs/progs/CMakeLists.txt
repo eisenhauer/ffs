@@ -6,7 +6,6 @@ if (NOT NO_SOCKETS)
 else ()
     set (PROGS)
 endif()
-message (STATUS "PROGS is ${PROGS}")
 INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR}${ffs_SOURCE_DIR}/fm )
 
 foreach (TEST ${TESTS} )

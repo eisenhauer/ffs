@@ -176,7 +176,6 @@ CHECK_FUNCTION_EXISTS(strtold HAVE_STRTOLD)
 CHECK_FUNCTION_EXISTS(getdomainname HAVE_GETDOMAINNAME)
 CHECK_STRUCT_HAS_MEMBER("struct iovec" iov_base sys/uio.h HAS_IOV_BASE_IOVEC)
 
-message (STATUS has_iov_base_iovec is ${HAS_IOV_BASE_IOVEC})
 if (NOT ${HAS_IOV_BASE_IOVEC}) 
    set (NEED_IOVEC_DEFINE true)
 endif()
