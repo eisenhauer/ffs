@@ -33,9 +33,6 @@ main(int argc, char **argv)
     if (!test_only || (strcmp(test_only, "paramattr") == 0)) {
 	static char extern_string[] = "int printf(string format, ...);";
 
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 	static cod_extern_entry externs[] = 
 	{
 	    {"printf", (void*)(long)printf},
@@ -90,9 +87,6 @@ main(int argc, char **argv)
 	static char extern_string[] = "int printf(string format, ...);\n\
 				       attr_list l;";
 
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 	static cod_extern_entry externs[] = 
 	{
 	    {"printf", (void*)(long)printf},
@@ -138,9 +132,6 @@ main(int argc, char **argv)
     if (!test_only || (strcmp(test_only, "attrarray") == 0)) {
 	static char extern_string[] = "int printf(string format, ...);";
 
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 	static cod_extern_entry externs[] = 
 	{
 	    {"printf", (void*)(long)printf},
@@ -188,9 +179,6 @@ main(int argc, char **argv)
     if (!test_only || (strcmp(test_only, "timer") == 0)) {
 	static char extern_string[] = "int printf(string format, ...);";
 
-#ifndef PRINTF_DEFINED
-	extern int printf();
-#endif
 	static cod_extern_entry externs[] = 
 	{
 	    {"printf", (void*)(long)printf},
