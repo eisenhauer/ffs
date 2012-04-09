@@ -112,6 +112,8 @@ IF (ATL_FOUND)
     LINK_DIRECTORIES(${ATL_LIB_DIR})
     TARGET_LINK_LIBRARIES(ffs ${ATL_LIBRARIES})
     TARGET_LINK_LIBRARIES(ffs-static ${ATL_LIBRARIES})
+    TARGET_LINK_LIBRARIES(cod ${ATL_LIBRARIES})
+    TARGET_LINK_LIBRARIES(cod-static ${ATL_LIBRARIES})
     set (HAVE_ATL_H TRUE)
 ENDIF()
 FIND_PACKAGE (DILL)
@@ -197,7 +199,7 @@ INSTALL(TARGETS fm fm-static cod cod-static ffs ffs-static
   ARCHIVE DESTINATION lib
 )
 
-CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/config.h.cmake ${CMAKE_BINARY_DIR}/config.h )
+CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
 
 # display status message for important variables
 MESSAGE( STATUS )
