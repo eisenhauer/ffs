@@ -33,7 +33,7 @@ endif()
 
 FILE(GLOB CTOS ${ffs_SOURCE_DIR}/ffs/output_dir/context_test_output*.bin)
 FILE(GLOB FOS ${ffs_SOURCE_DIR}/ffs/output_dir/file_output*.bin)
-if (CercsArch)
+if ( NOT ("${CercsArch}" STREQUAL ""))
     ADD_TEST(write_context_output context_test -w ${ffs_SOURCE_DIR}/ffs/output_dir/context_test_output.${CercsArch}.bin)
     ADD_TEST(write_file_output ffs_write ${ffs_SOURCE_DIR}/ffs/output_dir/file_output.${CercsArch}.bin)
     LIST(APPEND CTOS ${ffs_SOURCE_DIR}/ffs/output_dir/context_test_output.${CercsArch}.bin)
