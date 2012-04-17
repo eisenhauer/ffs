@@ -16,8 +16,6 @@ endforeach()
 
 foreach (PROG ${PROGS} )
     ADD_EXECUTABLE(${PROG} ${PROG}.c)
-    TARGET_LINK_LIBRARIES(${PROG} fm )
-    TARGET_LINK_LIBRARIES(${PROG} cod )
     TARGET_LINK_LIBRARIES(${PROG} ffs )
     TARGET_LINK_LIBRARIES(${PROG} cercs_env )
 endforeach()

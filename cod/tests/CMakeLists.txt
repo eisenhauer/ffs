@@ -14,8 +14,7 @@ ADD_CUSTOM_COMMAND(
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c data_funcs.c)
-    TARGET_LINK_LIBRARIES(${TEST} fm )
-    TARGET_LINK_LIBRARIES(${TEST} cod )
+    TARGET_LINK_LIBRARIES(${TEST} ffs )
     TARGET_LINK_LIBRARIES(${TEST} ${ATL_LIBRARIES} )
     ADD_TEST(${TEST} "${TEST}")
 endforeach()
@@ -25,8 +24,7 @@ set_tests_properties (t2
 values are is 5, 3.14159, hello!")
 
 ADD_EXECUTABLE(t4 t4.c data_funcs.c)
-TARGET_LINK_LIBRARIES(t4 fm )
-TARGET_LINK_LIBRARIES(t4 cod )
+TARGET_LINK_LIBRARIES(t4 ffs )
 TARGET_LINK_LIBRARIES(t4 ${ATL_LIBRARIES} )
 ADD_TEST(t4 t4 -output t4.actual_out)
 
@@ -34,8 +32,7 @@ add_test(compare_t4 ${CMAKE_COMMAND} -E compare_files t4.actual_out ${CMAKE_CURR
 
 foreach (PROG ${PROGS} )
     ADD_EXECUTABLE(${PROG} ${PROG}.c)
-    TARGET_LINK_LIBRARIES(${PROG} fm )
-    TARGET_LINK_LIBRARIES(${PROG} cod )
+    TARGET_LINK_LIBRARIES(${PROG} ffs )
     TARGET_LINK_LIBRARIES(${PROG} atl )
 endforeach()
 

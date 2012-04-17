@@ -9,21 +9,21 @@ INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR}${ffs_SOURCE_DIR}/
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c test_funcs.c)
-    TARGET_LINK_LIBRARIES(${TEST} fm cod ffs)
+    TARGET_LINK_LIBRARIES(${TEST} ffs)
     ADD_TEST(${TEST} "${TEST}")
 endforeach()
 
 ADD_EXECUTABLE(marshal_test marshal_test.c)
-TARGET_LINK_LIBRARIES(marshal_test fm cod ffs)
+TARGET_LINK_LIBRARIES(marshal_test ffs)
 ADD_TEST(marshal_test marshal_test)
 
 ADD_EXECUTABLE(marshal_test2 marshal_test2.c)
-TARGET_LINK_LIBRARIES(marshal_test2 fm cod ffs)
+TARGET_LINK_LIBRARIES(marshal_test2 ffs)
 ADD_TEST(marshal_test2 "marshal_test2")
 
 foreach (PROG ${PROGS} )
     ADD_EXECUTABLE(${PROG} ${PROG}.c test_funcs.c)
-    TARGET_LINK_LIBRARIES(${PROG} fm cod ffs)
+    TARGET_LINK_LIBRARIES(${PROG} ffs)
 endforeach()
 
 if (NOT (DEFINED CercsArch))

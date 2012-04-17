@@ -65,27 +65,29 @@ IF( NOT CMAKE_BUILD_TYPE )
     SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 ENDIF()
 
-add_library(fm SHARED ${FM_MASTER_SRC_LIST})
-add_library(fm-static STATIC ${FM_MASTER_SRC_LIST})
-# The library target "fm" already has a default OUTPUT_NAME of "fm", so we don't need to change it.
-# The library target "fm-static" has a default OUTPUT_NAME of "fm-static", so change it.
-SET_TARGET_PROPERTIES(fm-static PROPERTIES OUTPUT_NAME "fm" )
-# Now the library target "foo-static" will be named "foo.lib" with MS tools.
-# This conflicts with the "foo.lib" import library corresponding to "foo.dll",
-# so we add a "lib" prefix (which is default on other platforms anyway):
-SET_TARGET_PROPERTIES(fm-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
-SET_TARGET_PROPERTIES(fm PROPERTIES LINKER_LANGUAGE C)
+# add_library(fm SHARED ${FM_MASTER_SRC_LIST})
+# add_library(fm-static STATIC ${FM_MASTER_SRC_LIST})
+# # The library target "fm" already has a default OUTPUT_NAME of "fm", so we don't need to change it.
+# # The library target "fm-static" has a default OUTPUT_NAME of "fm-static", so change it.
+# SET_TARGET_PROPERTIES(fm-static PROPERTIES OUTPUT_NAME "fm" )
+# # Now the library target "foo-static" will be named "foo.lib" with MS tools.
+# # This conflicts with the "foo.lib" import library corresponding to "foo.dll",
+# # so we add a "lib" prefix (which is default on other platforms anyway):
+# SET_TARGET_PROPERTIES(fm-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
+# SET_TARGET_PROPERTIES(fm PROPERTIES LINKER_LANGUAGE C)
 
-add_library(cod SHARED ${COD_MASTER_SRC_LIST})
-add_library(cod-static STATIC ${COD_MASTER_SRC_LIST})
-# The library target "cod" already has a default OUTPUT_NAME of "cod", so we don't need to change it.
-# The library target "cod-static" has a default OUTPUT_NAME of "cod-static", so change it.
-SET_TARGET_PROPERTIES(cod-static PROPERTIES OUTPUT_NAME "cod" )
-# Now the library target "foo-static" will be named "foo.lib" with MS tools.
-# This conflicts with the "foo.lib" import library corresponding to "foo.dll",
-# so we add a "lib" prefix (which is default on other platforms anyway):
-SET_TARGET_PROPERTIES(cod-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
-SET_TARGET_PROPERTIES(cod PROPERTIES LINKER_LANGUAGE C)
+# add_library(cod SHARED ${COD_MASTER_SRC_LIST})
+# add_library(cod-static STATIC ${COD_MASTER_SRC_LIST})
+# # The library target "cod" already has a default OUTPUT_NAME of "cod", so we don't need to change it.
+# # The library target "cod-static" has a default OUTPUT_NAME of "cod-static", so change it.
+# SET_TARGET_PROPERTIES(cod-static PROPERTIES OUTPUT_NAME "cod" )
+# # Now the library target "foo-static" will be named "foo.lib" with MS tools.
+# # This conflicts with the "foo.lib" import library corresponding to "foo.dll",
+# # so we add a "lib" prefix (which is default on other platforms anyway):
+# SET_TARGET_PROPERTIES(cod-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
+# SET_TARGET_PROPERTIES(cod PROPERTIES LINKER_LANGUAGE C)
+
+set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MASTER_SRC_LIST})
 
 add_library(ffs SHARED ${FFS_MASTER_SRC_LIST})
 add_library(ffs-static STATIC ${FFS_MASTER_SRC_LIST})
@@ -98,37 +100,31 @@ SET_TARGET_PROPERTIES(ffs-static PROPERTIES OUTPUT_NAME "ffs" )
 SET_TARGET_PROPERTIES(ffs-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
 SET_TARGET_PROPERTIES(ffs PROPERTIES LINKER_LANGUAGE C)
 
-add_dependencies(cod fm)
-add_dependencies(ffs cod)
+# add_dependencies(cod fm)
+# add_dependencies(ffs cod)
 
-find_CERCS_project(cercs_env LIBRARY cercs_env INCLUDES cercs_env.h REQUIRED ${CERCS_USE_INSTALLED})
-IF (CERCS_ENV_FOUND)
-    INCLUDE_DIRECTORIES(${CERCS_ENV_INCLUDE_DIR})
-    LINK_DIRECTORIES(${CERCS_ENV_LIB_DIR})
-    TARGET_LINK_LIBRARIES(fm ${CERCS_ENV_LIBRARIES})
-    TARGET_LINK_LIBRARIES(fm-static ${CERCS_ENV_LIBRARIES})
-ENDIF()
-find_CERCS_project(atl LIBRARY atl INCLUDES atl.h REQUIRED ${CERCS_USE_INSTALLED})
-IF (ATL_FOUND)
-    INCLUDE_DIRECTORIES(${ATL_INCLUDE_DIR})
-    LINK_DIRECTORIES(${ATL_LIB_DIR})
-    TARGET_LINK_LIBRARIES(ffs ${ATL_LIBRARIES})
-    TARGET_LINK_LIBRARIES(ffs-static ${ATL_LIBRARIES})
-    TARGET_LINK_LIBRARIES(cod ${ATL_LIBRARIES})
-    TARGET_LINK_LIBRARIES(cod-static ${ATL_LIBRARIES})
-ENDIF()
-find_CERCS_project(dill LIBRARY dill INCLUDES dill.h REQUIRED ${CERCS_USE_INSTALLED} VERBOSE)
+FIND_CERCS_PROJECT (cercs_env LIBRARY cercs_env INCLUDES cercs_env.h REQUIRED ${CERCS_USE_INSTALLED})
+FIND_CERCS_PROJECT (atl LIBRARY atl INCLUDES atl.h REQUIRED ${CERCS_USE_INSTALLED})
+FIND_CERCS_PROJECT (gen_thread LIBRARY gen_thread ${CERCS_USE_INSTALLED})
+FIND_CERCS_PROJECT(dill LIBRARY dill INCLUDES dill.h ${CERCS_USE_INSTALLED})
+
+list (APPEND INC_DIRS ${CERCS_ENV_INCLUDE_DIR} ${ATL_INCLUDE_DIR} ${GEN_THREAD_INCLUDE_DIR} ${DILL_INCLUDE_DIR})
+list (APPEND LIB_DIRS ${CERCS_ENV_LIB_DIR} ${ATL_LIB_DIR} ${GEN_THREAD_LIB_DIR} ${DILL_LIB_DIR})
+list (APPEND BASE_LIBS ${CERCS_ENV_LIBRARIES} ${ATL_LIBRARIES} ${GEN_THREAD_LIBRARIES} ${DILL_LIBRARIES})
+
+INCLUDE_DIRECTORIES(${INC_DIRS})
+LINK_DIRECTORIES(${LIB_DIRS})
+
+TARGET_LINK_LIBRARIES(ffs ${BASE_LIBS})
+TARGET_LINK_LIBRARIES(ffs-static ${BASE_LIBS})
+
 IF (DILL_FOUND)
-    INCLUDE_DIRECTORIES(${DILL_INCLUDE_DIR})
-    LINK_DIRECTORIES(${DILL_LIB_DIR})
-    TARGET_LINK_LIBRARIES(cod ${DILL_LIBRARIES})
-    TARGET_LINK_LIBRARIES(cod-static ${DILL_LIBRARIES})
     set (FFS_CONVERSION_GENERATION_DEFAULT TRUE)
     set (DO_DCG TRUE)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(cod fm)
-TARGET_LINK_LIBRARIES(ffs cod)
+# TARGET_LINK_LIBRARIES(cod fm)
+# TARGET_LINK_LIBRARIES(ffs cod)
 
 CHECK_INCLUDE_FILE(malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILE(memory.h HAVE_MEMORY_H)
@@ -192,7 +188,7 @@ ENDIF()
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/fm/fm.h DESTINATION include)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.h DESTINATION include)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ffs/ffs.h DESTINATION include)
-INSTALL(TARGETS fm fm-static cod cod-static ffs ffs-static
+INSTALL(TARGETS ffs ffs-static # fm fm-static cod cod-static 
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
