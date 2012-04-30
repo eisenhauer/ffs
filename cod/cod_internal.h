@@ -13,7 +13,7 @@ typedef struct {
     sm_ref control_field;
 } dimen_s;
 
-typedef struct {
+typedef struct dimen_p{
     int dimen_count;
     dimen_s dimens[1];
 } *dimen_p;

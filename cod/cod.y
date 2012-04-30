@@ -1586,6 +1586,7 @@ cod_parse_context context;
     }
     tmp = cod_new_compound_statement();
     tmp->node.compound_statement.decls = context->decls;
+    tmp->node.compound_statement.statements = NULL;
     tmp->node.compound_statement.statements =
 	malloc(sizeof(struct list_struct));
     tmp->node.compound_statement.statements->next = NULL;
@@ -2992,6 +2993,13 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    if (arr->node_type == cod_reference_type_decl) {
 		arr = arr->node.reference_type_decl.sm_complex_referenced_type;
 	    }
+	    if (expr->node.element_ref.array_ref->node_type != cod_element_ref) {
+		/* bottom level of recursion, we're the left-most array index */
+		expr->node.element_ref.this_index_dimension = 0;
+	    } else {
+		sm_ref subindex = expr->node.element_ref.array_ref;
+		expr->node.element_ref.this_index_dimension = subindex->node.element_ref.this_index_dimension + 1;
+	    }
 	    expr->node.element_ref.sm_complex_element_type = 
 		arr->node.array_type_decl.sm_complex_element_type;
 	    expr->node.element_ref.cg_element_type = 
@@ -4204,67 +4212,6 @@ int size;
     return ret_type;
 }
 
-static int
-ECLget_array_size_dimen(str, fields, dimen, control_field)
-const char *str;
-FMFieldList fields;
-int dimen;
-int *control_field;
-{
-    char *left_paren, *end;
-    long static_size;
-
-    *control_field = -1;
-    if ((left_paren = strchr(str, '[')) == NULL) {
-	return 0;
-    }	
-    while (dimen != 0) {
-	left_paren = strchr(left_paren + 1, '[');
-	if (left_paren == NULL) return 0;
-	dimen--;
-    }
-    static_size = strtol(left_paren + 1, &end, 0);
-    if (left_paren + 1 == end) {
-	/* dynamic element */
-	char field_name[1024];
-	int count = 0;
-	int i = 0;
-	while (((left_paren+1)[count] != ']') &&
-	       ((left_paren+1)[count] != 0)) {
-	    field_name[count] = (left_paren+1)[count];
-	    count++;
-	}
-	field_name[count] = 0;
-	while (fields[i].field_name != NULL) {
-	    if (strcmp(field_name, fields[i].field_name) == 0) {
-		*control_field = i;
-		return -1;
-	    }
-	    i++;
-	}
-	fprintf(stderr, "Array dimension \"%s\" in type spec \"%s\" not recognized.\n",
-		field_name, str);
-	fprintf(stderr, "Dimension must be a field name (for dynamic arrays) or a positive integer.\n");
-	fprintf(stderr, "To use a #define'd value for the dimension, use the FMArrayDecl() macro.\n");
-	return -1;
-    }
-    if (*end != ']') {
-	fprintf(stderr, "Malformed array dimension, unexpected character '%c' in type spec \"%s\"\n",
-		*end, str);
-	fprintf(stderr, "Dimension must be a field name (for dynamic arrays) or a positive integer.\n");
-	fprintf(stderr, "To use a #define'd value for the dimension, use the FMArrayDecl() macro.\n");
-	return -1;
-    }
-    if (static_size <= 0) {
-	fprintf(stderr, "Non-positive array dimension %ld in type spec \"%s\"\n",
-		static_size, str);
-	fprintf(stderr, "Dimension must be a field name (for dynamic arrays) or a positive integer.\n");
-	fprintf(stderr, "To use a #define'd value for the dimension, use the FMArrayDecl() macro.\n");
-	return -1;
-    }
-    return static_size;
-}
-
 static sm_ref
 build_subtype_nodes(context, decl, f, desc, err, scope)
 cod_parse_context context;
@@ -4298,9 +4245,12 @@ scope_ptr scope;
 	    ret->node.array_type_decl.cg_element_type = 
 		array_str_to_data_type(f->string_type, f->cg_size);
 	    ret->node.array_type_decl.cg_element_size = f->cg_size;
+	    ret->node.array_type_decl.dimensions = malloc(sizeof(struct dimen_p));
+	    ret->node.array_type_decl.dimensions->dimen_count = 1;
 	} else {
 	    if (subtype->node_type == cod_array_type_decl) {
 		int sub_size = subtype->node.array_type_decl.cg_static_size;
+		int sub_dimensions = subtype->node.array_type_decl.dimensions->dimen_count;
 		if (sub_size == -1) {
 		    /* element of *this* array has varying elements */
 		    ret->node.array_type_decl.cg_element_size = -1;
@@ -4308,6 +4258,10 @@ scope_ptr scope;
 		    ret->node.array_type_decl.cg_element_size = 
 			sub_size * subtype->node.array_type_decl.cg_element_size;;
 		}
+		
+		ret->node.array_type_decl.dimensions = malloc(sizeof(struct dimen_p) + sub_dimensions * sizeof(dimen_s));
+		ret->node.array_type_decl.dimensions->dimen_count = sub_dimensions+1;;
+		memcpy(&ret->node.array_type_decl.dimensions->dimens[1], &subtype->node.array_type_decl.dimensions->dimens[0], sub_dimensions * sizeof(dimen_s));
 	    } else {
 		ret->node.array_type_decl.cg_element_size = f->cg_size;
 	    }
@@ -4315,6 +4269,8 @@ scope_ptr scope;
 	    
 	if (ret->node.array_type_decl.cg_static_size != -1) {
 	    ret->node.array_type_decl.sm_dynamic_size = NULL;
+	    ret->node.array_type_decl.dimensions->dimens[0].static_size = ret->node.array_type_decl.cg_static_size;
+	    ret->node.array_type_decl.dimensions->dimens[0].control_field = NULL;
 	} else {
 	    for (i=0; i < desc->control_field_index; i++) {
 		fields = fields->next;
@@ -4333,6 +4289,8 @@ scope_ptr scope;
 		break;
 	    }
 	    ret->node.array_type_decl.sm_dynamic_size = cf;
+	    ret->node.array_type_decl.dimensions->dimens[0].static_size = -1;
+	    ret->node.array_type_decl.dimensions->dimens[0].control_field = cf;
 	}
 	break;
     }

@@ -1846,8 +1846,8 @@ cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_siz
 	debug_cg = (int)(long)(getenv("COD_DEBUG"));
     }
     if (debug_cg) {
-	printf("cod_expand_dyn_array, base_addr %lx, old_base %lx, new_size %d, old_size %d, struct_size %d\n",
-	       (long)base_addr, *(long*)base_addr, new_size, old_size, 
+	printf("cod_expand_dyn_array, base_addr %p, old_base %p, new_size %d, old_size %d, struct_size %d\n",
+	       base_addr, *(void**)base_addr, new_size, old_size, 
 	       struct_size);
     }
     if (*(void**)base_addr == NULL) {
@@ -1864,7 +1864,7 @@ cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_siz
 	}
     }	
     if (debug_cg) {
-	printf("\tnew base %lx\n", *(long*)base_addr);
+	printf("\tnew base %p, new size %x, end %p\n", *(void**)base_addr, new_size*struct_size, *(char**)base_addr + new_size*struct_size);
     }
 }
 
@@ -1894,6 +1894,7 @@ static void do_var_array_adjust(dill_stream s, sm_ref expr, operand old_val,
 	    continue;
 	}
 	typ = typ->node.reference_type_decl.sm_complex_referenced_type;
+	int static_size_multiplier = 1;
 	while (typ != NULL) {
 	    if (typ->node_type != cod_array_type_decl) {
 		typ = NULL;
@@ -1901,6 +1902,9 @@ static void do_var_array_adjust(dill_stream s, sm_ref expr, operand old_val,
 	    }
 	    if (typ->node.array_type_decl.sm_dynamic_size == expr) {
 		dimen = i;
+	    }
+	    if (typ->node.array_type_decl.sm_dynamic_size == NULL) {
+		static_size_multiplier *= typ->node.array_type_decl.cg_static_size;
 	    }
 	    i++;
 	    typ = typ->node.array_type_decl.sm_complex_element_type;
@@ -1927,7 +1931,7 @@ static void do_var_array_adjust(dill_stream s, sm_ref expr, operand old_val,
 	size_reg = dill_getreg(s, DILL_I);
 	old_size = dill_getreg(s, cod_sm_get_type(expr));
 	gen_load(s, old_size, old_val, DILL_I);
-	dill_seti(s, size_reg, darray_field->node.field.cg_size);
+	dill_seti(s, size_reg, darray_field->node.field.cg_size * static_size_multiplier);
 
 	dill_push_init(s);
 	if (dill_do_reverse_vararg_push(s)) {
@@ -1975,48 +1979,19 @@ is_var_array(sm_ref expr)
 }
 
 static dill_reg
-gen_dynamic_element_size(dill_stream s, sm_ref arr, sm_ref containing, 
-			 cod_code descr)
+load_dynamic_array_dimension(dill_stream s, sm_ref containing, sm_ref field, cod_code descr)
 {
     sm_ref tmp;
+    operand dsize;
     tmp = malloc(sizeof(*tmp));
     tmp->node_type = cod_field_ref;
     tmp->node.field_ref.struct_ref = containing;
     tmp->node.field_ref.lx_field = NULL;
-    tmp->node.field_ref.sm_field_ref = NULL;
-
-    if (arr->node.array_type_decl.cg_element_size == -1) {
-	/* subarray is dynamic */
-	sm_ref subtyp =	arr->node.array_type_decl.sm_complex_element_type;
-	dill_reg subsize = gen_dynamic_element_size(s, subtyp, containing,
-						       descr);
-	if (arr->node.array_type_decl.cg_static_size != -1) {
-	    dill_mulii(s, subsize, subsize, 
-		     arr->node.array_type_decl.cg_static_size);
-	    free(tmp);
-	    return subsize;
-	} else {
-	    operand dsize;
-	    tmp->node.field_ref.sm_field_ref =
-		arr->node.array_type_decl.sm_dynamic_size;
-	    dsize = cg_expr(s, tmp, 0, descr);
-	    dill_muli(s, subsize, subsize, dsize.reg);
-	    free(tmp);
-	    return subsize;
-	}
-    } else {
-	/* subarray is static, we must be dynamic */
-	operand dsize;
-	tmp->node.field_ref.sm_field_ref =
-	    arr->node.array_type_decl.sm_dynamic_size;
-	dsize = cg_expr(s, tmp, 0, descr);
-	if (arr->node.array_type_decl.cg_element_size != 1)
-	    dill_mulii(s, dsize.reg, dsize.reg, 
-		     arr->node.array_type_decl.cg_element_size);
-	free(tmp);
-	return dsize.reg;
-    }
-}		
+    tmp->node.field_ref.sm_field_ref = field;
+    dsize = cg_expr(s, tmp, 0, descr);
+    free(tmp);
+    return dsize.reg;
+}
 
 static int  /* return true if this is a structured type or a reference type */
 is_complex_type(sm_ref expr)
@@ -2273,13 +2248,36 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	}
     }
     case cod_element_ref: {
-	operand base = cg_expr(s, expr->node.element_ref.array_ref, 1, descr);
-	operand index = cg_expr(s, expr->node.element_ref.expression, 0, descr);
+	operand base;
+	operand index[100];
+	operand dimension[100];
+	int static_dimensions[100];
+	sm_ref dsize[100];
+	int array_dimensions = 0;
 	dill_reg new_base = dill_getreg(s, DILL_P);
 	int cg_type;
 	sm_ref arr;
 	int size;
-	arr = get_complex_type(NULL, expr->node.element_ref.array_ref);
+	sm_ref tmp = expr;
+	int i;
+	sm_ref containing = expr->node.element_ref.sm_containing_structure_ref;
+
+	/* rightmost index is encountered first and is index[0] */
+	while(tmp->node_type == cod_element_ref) {
+	    index[array_dimensions] = cg_expr(s, tmp->node.element_ref.expression, 0, descr);
+	    tmp = tmp->node.element_ref.array_ref;
+	    array_dimensions++;
+	}
+	/* reverse index operands so that the leftmost is index[0] */
+	for (i=0; i< array_dimensions/2; i++) {
+	    operand tmp = index[i];
+	    index[i] = index[array_dimensions - i - 1];
+	    index[array_dimensions - i - 1] = tmp;
+	}
+	arr = get_complex_type(NULL, tmp);
+	
+	base = cg_expr(s, tmp, 1, descr);
+
 	if (arr->node_type == cod_reference_type_decl) {
 	    /* we didn't load the address */
 	    int load_type = DILL_P;
@@ -2297,23 +2295,36 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    base.offset = 0;
 	    arr = arr->node.reference_type_decl.sm_complex_referenced_type;
 	}
-	size = arr->node.array_type_decl.cg_element_size;
-	cg_type = arr->node.array_type_decl.cg_element_type;
-	if (size == -1) {
-	    /* subarray is dynamic */
-	    sm_ref subtyp = arr->node.array_type_decl.sm_complex_element_type;
-	    sm_ref containing = expr->node.element_ref.sm_containing_structure_ref;
-	    dill_reg dsize = gen_dynamic_element_size(s, subtyp, containing,
-							 descr);
-	    dill_muli(s, new_base, index.reg, dsize);
-	    dill_addp(s, new_base, new_base, base.reg);
-	} else if (size != 1) {
-	    dill_mulii(s, new_base, index.reg, size);	/* op_i_mulii */
-	    dill_addp(s, new_base, new_base, base.reg);	/* op_i_addp */
-	} else {
-	    dill_addp(s, new_base, index.reg, base.reg);
+	/* base is valid at this point */
+	cg_type = expr->node.element_ref.cg_element_type;
+	int element_size  = dill_type_align(s, cg_type);
+/*
+ROW MAJOR  (C-style):
+
+2D = index1 * dim2 * element_size + index2 * element_size
+3D = index1 * dim2 * dim3 * element_size + index2 * dim3 * element_size + index3*element_size
+4D = index1 * dim2 * dim3 * dim4 * element_size + index2 * dim3 * dim4 * element_size + index3 * dim4 * element_size + index4*element_size
+*/
+	{
+	    dill_reg size_accum = dill_getreg(s, DILL_L);
+	    dimen_p d = arr->node.array_type_decl.dimensions;
+	    for (i = array_dimensions - 1; i >= 0; i--) {
+		dill_reg tmp;
+		if (i == array_dimensions -1) {
+		    dill_seti(s, size_accum, element_size);
+		} else {
+		    if (d->dimens[i+1].static_size != -1) {
+			dill_mulii(s, size_accum, size_accum, d->dimens[i+1].static_size);
+		    } else {
+			dill_reg dsize = load_dynamic_array_dimension(s, containing, d->dimens[i+1].control_field, descr);
+			dill_muli(s, size_accum, size_accum, dsize);
+		    }
+		}
+		tmp = dill_getreg(s, DILL_L);
+		dill_muli(s, tmp, index[i].reg, size_accum);
+		dill_addp(s, base.reg, base.reg, tmp);
+	    }
 	}
-	base.reg = new_base;
 	if (need_assignable == 1) {
 	    return base;
 	} else {

@@ -88,6 +88,7 @@ array_type_decl:
 	sm_ref element_ref;
 	int    static_var;
 	sm_list type_spec;
+	dimen_p dimensions;
 	int    cg_static_size;
 	sm_ref sm_dynamic_size;
 	int    cg_element_type;
@@ -129,6 +130,7 @@ element_ref:
 	sm_ref sm_complex_element_type;
 	sm_ref sm_containing_structure_ref;
 	int cg_element_type;
+	int this_index_dimension;
 	sm_ref expression;
 
 cast:
