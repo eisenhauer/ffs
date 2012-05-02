@@ -4,7 +4,7 @@ set (TESTS t1 t2 t3 t5 t6 t8 t9 t10 t12 gray general atl_test strings)
 
 INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR} 
 ${ffs_SOURCE_DIR}/cod ${ffs_BINARY_DIR}/cod 
-${ffs_SOURCE_DIR}/fm ${ffs_BINARY_DIR}/fm )
+${ffs_SOURCE_DIR}/fm ${ffs_BINARY_DIR}/fm ${CMAKE_CURRENT_SOURCE_DIR} )
 
 ADD_CUSTOM_COMMAND(
    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/general.c
