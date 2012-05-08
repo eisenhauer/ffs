@@ -35,7 +35,7 @@ build_triplet = @build@
 host_triplet = @host@
 EXTRA_PROGRAMS = t1$(EXEEXT) t2$(EXEEXT) t3$(EXEEXT) t4$(EXEEXT) \
 	t5$(EXEEXT) t6$(EXEEXT) t7$(EXEEXT) t8$(EXEEXT) t9$(EXEEXT) \
-	t10$(EXEEXT) t11$(EXEEXT) t12$(EXEEXT) gray$(EXEEXT) \
+	t10$(EXEEXT) t11$(EXEEXT) t12$(EXEEXT) compound_assignment$(EXEEXT) gray$(EXEEXT) \
 	general$(EXEEXT) mix$(EXEEXT) atl_test$(EXEEXT) \
 	strings$(EXEEXT)
 subdir = tests
@@ -90,6 +90,10 @@ t12_SOURCES = t12.c
 t12_OBJECTS = t12.$(OBJEXT)
 t12_LDADD = $(LDADD)
 t12_DEPENDENCIES = ../libcod.la
+compound_assignment_SOURCES = t12.c
+compound_assignment_OBJECTS = t12.$(OBJEXT)
+compound_assignment_LDADD = $(LDADD)
+compound_assignment_DEPENDENCIES = ../libcod.la
 am_t2_OBJECTS = t2.$(OBJEXT) data_funcs.$(OBJEXT)
 t2_OBJECTS = $(am_t2_OBJECTS)
 t2_LDADD = $(LDADD)
@@ -135,10 +139,10 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = atl_test.c general.c gray.c mix.c strings.c $(t1_SOURCES) \
-	t10.c t11.c t12.c $(t2_SOURCES) t3.c t4.c $(t5_SOURCES) t6.c \
+	t10.c t11.c t12.c compound_assignment.c $(t2_SOURCES) t3.c t4.c $(t5_SOURCES) t6.c \
 	t7.c t8.c t9.c
 DIST_SOURCES = atl_test.c general.c gray.c mix.c strings.c \
-	$(t1_SOURCES) t10.c t11.c t12.c $(t2_SOURCES) t3.c t4.c \
+	$(t1_SOURCES) t10.c t11.c t12.c compound_assignment.c $(t2_SOURCES) t3.c t4.c \
 	$(t5_SOURCES) t6.c t7.c t8.c t9.c
 ETAGS = etags
 CTAGS = ctags
@@ -340,6 +344,9 @@ t11$(EXEEXT): $(t11_OBJECTS) $(t11_DEPENDENCIES)
 t12$(EXEEXT): $(t12_OBJECTS) $(t12_DEPENDENCIES) 
 	@rm -f t12$(EXEEXT)
 	$(LINK) $(t12_OBJECTS) $(t12_LDADD) $(LIBS)
+compound_assignment$(EXEEXT): $(compound_assignment_OBJECTS) $(compound_assignment_DEPENDENCIES) 
+	@rm -f compound_assignment$(EXEEXT)
+	$(LINK) $(compound_assignment_OBJECTS) $(compound_assignment_LDADD) $(LIBS)
 t2$(EXEEXT): $(t2_OBJECTS) $(t2_DEPENDENCIES) 
 	@rm -f t2$(EXEEXT)
 	$(LINK) $(t2_OBJECTS) $(t2_LDADD) $(LIBS)
@@ -584,7 +591,7 @@ syntax-tests:  t4.stamp
 
 run_time_tests: general_tests
 
-general_tests: t1@EXEEXT@ t2.stamp t3@EXEEXT@ t5@EXEEXT@ t6@EXEEXT@ t8@EXEEXT@ t9@EXEEXT@ t10@EXEEXT@ t12@EXEEXT@ gray@EXEEXT@ mix@EXEEXT@ atl_test@EXEEXT@ @GENERAL_TEST@ strings@EXEEXT@
+general_tests: t1@EXEEXT@ t2.stamp t3@EXEEXT@ t5@EXEEXT@ t6@EXEEXT@ t8@EXEEXT@ t9@EXEEXT@ t10@EXEEXT@ t12@EXEEXT@ compound_assignment@EXEEXT@ gray@EXEEXT@ mix@EXEEXT@ atl_test@EXEEXT@ @GENERAL_TEST@ strings@EXEEXT@
 	./t1 -w test_output/t1/t1.@ARCH@
 	./t3
 	./t5 -w test_output/t5/t5.@ARCH@
@@ -593,6 +600,7 @@ general_tests: t1@EXEEXT@ t2.stamp t3@EXEEXT@ t5@EXEEXT@ t6@EXEEXT@ t8@EXEEXT@ t
 	./t9
 	./t10
 	./t12
+	./compound_assignment
 	./atl_test
 	./gray
 	./strings
