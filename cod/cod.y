@@ -4535,7 +4535,6 @@ semanticize_reference_type_node(cod_parse_context context, sm_ref decl,
     if (decl->node.reference_type_decl.name != NULL) {
 	add_decl(decl->node.reference_type_decl.name, decl, scope);
     }
-    decl->node.struct_type_decl.cg_size = struct_size;
     return ret;
 }
 
