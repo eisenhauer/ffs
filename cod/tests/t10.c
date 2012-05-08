@@ -270,7 +270,92 @@ void free(void *pointer);\n";
 	}
 	cod_free_parse_context(context);
     }
+    if ((test_to_run == 6) || (test_to_run == -1)) {
+typedef struct _dyn_arrays {
+  int dim1;
+  int dim2;
+  int dim3;
+  int *array1;
+  int *array2;
+  int *array3;
+  int *array4;
+  int *array5;
+  int *array6;
+  int *array7;
+  int *array8;
+} dyn_arrays,*dyn_arrays_t;
 
+static  FMField dyn_arrays_field_list[] =
+{
+    {"dim1", "integer", sizeof(int), FMOffset(dyn_arrays_t, dim1)},
+    {"dim2", "integer", sizeof(int), FMOffset(dyn_arrays_t, dim2)},
+    {"dim3", "integer", sizeof(int), FMOffset(dyn_arrays_t, dim3)},
+    {"array1", "*(float[7][5][3])", sizeof(int), FMOffset(dyn_arrays_t, array1)},
+    {"array2", "float[dim1][5][3]", sizeof(int), FMOffset(dyn_arrays_t, array2)},
+    {"array3", "float[7][dim2][3]", sizeof(int), FMOffset(dyn_arrays_t, array3)},
+    {"array4", "float[dim2][dim2][3]", sizeof(int), FMOffset(dyn_arrays_t, array4)},
+    {"array5", "float[7][5][dim3]", sizeof(int), FMOffset(dyn_arrays_t, array5)},
+    {"array6", "float[dim1][5][dim3]", sizeof(int), FMOffset(dyn_arrays_t, array6)},
+    {"array7", "float[7][dim2][dim3]", sizeof(int), FMOffset(dyn_arrays_t, array7)},
+    {"array8", "float[dim2][dim2][dim3]", sizeof(int), FMOffset(dyn_arrays_t, array8)},
+    {NULL, NULL, 0, 0}
+};
+	/* test dynamic array fields in static vars */
+	char code_string[] = "\
+{\n\
+	int ret = 0;\n\
+	int *p = &(input.array1[1][2][2]);\n		\
+	if (p != &(input.array2[1][2][2])) printf(\"DIED 2\\n\"); else ret=ret+1;\n\
+	if (p != &(input.array3[1][2][2])) printf(\"DIED 3\\n\"); else ret=ret+1;\n\
+	if (p != &(input.array4[1][2][2])) printf(\"DIED 4\\n\"); else ret=ret+1;\n\
+	if (p != &(input.array5[1][2][2])) printf(\"DIED 5\\n\"); else ret=ret+1;\n\
+	if (p != &(input.array6[1][2][2])) printf(\"DIED 6\\n\"); else ret=ret+1;\n\
+	if (p != &(input.array7[1][2][2])) printf(\"DIED 7\\n\"); else ret=ret+1;\n\
+	if (p != &(input.array8[1][2][2])) printf(\"DIED 8\\n\"); else ret=ret+1;\n\
+\n\
+	return ret;\n\
+}\n";
+
+	static char extern_string[] = "int printf(string format, ...);\n";
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {"malloc", (void*)(long)malloc},
+	    {"free", (void*)(long)free},
+	    {(void*)0, (void*)0}
+	};
+	cod_parse_context context = new_cod_parse_context();
+	cod_code gen_code;
+	long (*func)();
+	long result;
+
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+	cod_add_simple_struct_type("dyn_arrays", dyn_arrays_field_list, context);
+	cod_subroutine_declaration("int proc(dyn_arrays *input)", context);
+	gen_code = cod_code_gen(code_string, context);
+	if (gen_code == NULL) {
+	    printf("Code generation failed for test 3\n");
+	} else {
+	    dyn_arrays  input;
+	    func = (long(*)()) (long) gen_code->func;
+	    input.dim1 = 7;
+	    input.dim2 = 5;
+	    input.dim3 = 3;
+	    input.array1 = malloc(input.dim1 * input.dim2 * input.dim3 * sizeof(input.array1[0]));
+	    input.array2 = input.array1;
+	    input.array3 = input.array1;
+	    input.array4 = input.array1;
+	    input.array5 = input.array1;
+	    input.array6 = input.array1;
+	    input.array7 = input.array1;
+	    input.array8 = input.array1;
+	    result = func(&input);
+	    assert(result == 7);
+	    cod_code_free(gen_code);
+	}
+	cod_free_parse_context(context);
+    }
     return 0;
 }
 
