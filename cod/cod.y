@@ -242,9 +242,10 @@ cod_dup_list(sm_list list)
 %type <reference> compound_statement;
 %type <reference> labeled_statement;
 %type <list> declaration_list statement_list;
-%type <reference> declaration;
+%type <list> declaration;
 %type <reference> statement;
 %type <reference> init_declarator;
+%type <list> init_declarator_list;
 %type <reference> declarator;
 %type <reference> direct_declarator;
 %type <list> declaration_specifiers;
@@ -727,6 +728,25 @@ constant_expression
         : conditional_expression
         ;
 
+init_declarator_list
+	: init_declarator {
+		$$ = malloc(sizeof(struct list_struct));
+		$$->node = $1;
+		$$->next = NULL;
+	}
+	| init_declarator_list COMMA init_declarator {
+	    sm_list tmp = $1;
+	    while (tmp->next != NULL) {
+		tmp = tmp->next;
+	    }
+	    tmp->next = malloc(sizeof(struct list_struct));
+	    tmp = tmp->next;
+	    tmp->node = $3;
+	    tmp->next = NULL;
+	    $$ = $1;
+	}
+	;
+
 declaration:
 	declaration_specifiers 
 	     { 
@@ -735,10 +755,10 @@ declaration:
 		     YYACCEPT;
 		 }
 	     }
-	init_declarator 
+	init_declarator_list
 	    {  /* stop here if we're just doing a proc decl */
 		if (parsing_param_spec) {
-		    $<reference>$ = $3;
+		    $<reference>$ = $3->node;
 		    if ($<reference>$->node_type == cod_declaration) {
 			if  ($<reference>$->node.declaration.type_spec == NULL) {
 			    $<reference>$->node.declaration.type_spec = $1;
@@ -758,55 +778,60 @@ declaration:
 		        printf("unexpected node in init_declarator\n");
 			cod_print($<reference>$);
 		    }
-		    yyparse_value = $3;
+		    yyparse_value = $3->node;
 		    YYACCEPT;
 		}
 	    }
 	SEMI
 	    {
-		sm_list type_spec = $1;
 		$$ = $3;
-		if ($$->node_type == cod_declaration) {
-		    if  ($$->node.declaration.type_spec == NULL) {
-			$$->node.declaration.type_spec = $1;
-		    } else {
-			/* 
-			 * the pointer type list (with the declarator)
-			 * goes at the end 
-			 */
-			sm_list tmp = $1;
-			while (tmp->next != NULL) {
-			    tmp = tmp->next;
+		sm_list dtmp = $3;
+		while (dtmp) {
+		    sm_list type_spec = cod_dup_list($1);
+		    sm_ref decl = dtmp->node;
+		    if (decl->node_type == cod_declaration) {
+			if  (decl->node.declaration.type_spec == NULL) {
+			    decl->node.declaration.type_spec = type_spec;
+			} else {
+			    /* 
+			     * the pointer type list (with the declarator)
+			     * goes at the end 
+			     */
+			    sm_list tmp = type_spec;
+			    while (tmp->next != NULL) {
+				tmp = tmp->next;
+			    }
+			    tmp->next = decl->node.declaration.type_spec;
+			    decl->node.declaration.type_spec = type_spec;
 			}
-			tmp->next = $$->node.declaration.type_spec;
-			$$->node.declaration.type_spec = $1;
-		    }
-		} else if ($$->node_type == cod_array_type_decl) {
-		    if  ($$->node.array_type_decl.type_spec == NULL) {
-			$$->node.array_type_decl.type_spec = $1;
-		    } else {
-			/* 
-			 * the pointer type list (with the declarator)
-			 * goes at the end 
-			 */
-			sm_list tmp = $1;
-			while (tmp->next != NULL) {
-			    tmp = tmp->next;
+		    } else if (decl->node_type == cod_array_type_decl) {
+			if  (decl->node.array_type_decl.type_spec == NULL) {
+			    decl->node.array_type_decl.type_spec = type_spec;
+			} else {
+			    /* 
+			     * the pointer type list (with the declarator)
+			     * goes at the end 
+			     */
+			    sm_list tmp = type_spec;
+			    while (tmp->next != NULL) {
+				tmp = tmp->next;
+			    }
+			    tmp->next = decl->node.array_type_decl.type_spec;
+			    decl->node.array_type_decl.type_spec = type_spec;
 			}
-			tmp->next = $$->node.array_type_decl.type_spec;
-			$$->node.array_type_decl.type_spec = $1;
+		    } else {
+			printf("Unknown decl entry\n");
+			cod_print(decl);
 		    }
-		} else {
-		    printf("Unknown decl entry\n");
-		    cod_print($$);
-		}
-		while (type_spec != NULL) {
-		    if (type_spec->node->node.type_specifier.token == TYPEDEF) {
-			cod_add_defined_type($$->node.declaration.id, yycontext);
+		    while (type_spec != NULL) {
+			if (type_spec->node->node.type_specifier.token == TYPEDEF) {
+			    cod_add_defined_type(decl->node.declaration.id, yycontext);
+			}
+			type_spec = type_spec->next;
 		    }
-		    type_spec = type_spec->next;
+		    dtmp = dtmp->next;
 		}
-
+		cod_rfree_list($1);
 	    }
         | error SEMI {
 	    $$ = NULL;
@@ -1395,17 +1420,13 @@ declaration_list:
 		$$ = $1;
 	    } else {
 		if ($1 == NULL) {
-		    $$ = malloc(sizeof(struct list_struct));
-		    $$->node = $2;
-		    $$->next = NULL;
+		    $$ = $2;
 		} else {
 		    sm_list tmp = $1;
 		    while (tmp->next != NULL) {
 			tmp = tmp->next;
 		    }
-		    tmp->next = malloc(sizeof(struct list_struct));
-		    tmp->next->node = $2;
-		    tmp->next->next = NULL;
+		    tmp->next = $2;
 		    $$ = $1;
 		}
 	    }
