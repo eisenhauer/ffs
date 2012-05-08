@@ -407,8 +407,14 @@ cg_get_size(dill_stream s, sm_ref node) {
     case cod_field:
 	return ref->node.field.cg_size;
 		
-    case cod_struct_type_decl:
+    case cod_struct_type_decl:{
+	if ((ref->node.struct_type_decl.cg_size % dill_type_align(s, DILL_D)) != 0) {
+	    int struct_size = ref->node.struct_type_decl.cg_size;
+	    struct_size += (dill_type_align(s, DILL_D) - (struct_size % dill_type_align(s, DILL_D))) % dill_type_align(s, DILL_D);
+	    ref->node.struct_type_decl.cg_size = struct_size;
+	}
 	return ref->node.struct_type_decl.cg_size;
+    }
     case cod_cast:
 	if (ref->node.cast.sm_complex_type != NULL) {
 	    return cg_get_size(s, ref->node.cast.sm_complex_type);
@@ -791,6 +797,11 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			}
 			var_base = (char*)descr->data + (long)decl->node.declaration.cg_address;
 		    } else {
+			if ((struct_type->node.struct_type_decl.cg_size % dill_type_align(s, DILL_D)) != 0) {
+			    int struct_size = struct_type->node.struct_type_decl.cg_size;
+			    struct_size += (dill_type_align(s, DILL_D) - (struct_size % dill_type_align(s, DILL_D))) % dill_type_align(s, DILL_D);
+			    struct_type->node.struct_type_decl.cg_size = struct_size;
+			}
 			lvar = 
 			    dill_getvblock(s, struct_type->node.struct_type_decl.cg_size);
 		    }
@@ -2300,6 +2311,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	int cg_type;
 	sm_ref arr;
 	int size;
+	int element_size;
 	sm_ref tmp = expr;
 	int i;
 	sm_ref containing = expr->node.element_ref.sm_containing_structure_ref;
@@ -2339,7 +2351,11 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	}
 	/* base is valid at this point */
 	cg_type = expr->node.element_ref.cg_element_type;
-	int element_size  = dill_type_size(s, cg_type);
+	if (cg_type != DILL_B) {
+	    element_size  = dill_type_size(s, cg_type);
+	} else {
+	    element_size = cg_get_size(s, expr->node.element_ref.sm_complex_element_type);
+	}
 /*
 ROW MAJOR  (C-style):
 
