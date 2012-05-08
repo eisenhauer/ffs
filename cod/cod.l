@@ -96,6 +96,16 @@ static char *string_buf_ptr;
 "=="			{RETURN(EQ);}
 "!="			{RETURN(NEQ);}
 "="			{RETURN(ASSIGN);}
+"*="			{RETURN(MUL_ASSIGN);}
+"/="			{RETURN(DIV_ASSIGN);}
+"%="			{RETURN(MOD_ASSIGN);}
+"+="			{RETURN(ADD_ASSIGN);}
+"-="			{RETURN(SUB_ASSIGN);}
+"<<="			{RETURN(LEFT_ASSIGN);}
+">>="			{RETURN(RIGHT_ASSIGN);}
+"&="			{RETURN(AND_ASSIGN);}
+"^="			{RETURN(XOR_ASSIGN);}
+"|="			{RETURN(OR_ASSIGN);}
 "||"			{RETURN(LOG_OR);}
 "&&"			{RETURN(LOG_AND);}
 "|"			{RETURN(ARITH_OR);}

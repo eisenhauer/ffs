@@ -159,6 +159,7 @@ cod_dup_list(sm_list list)
 %union {
     lx_info info;
     sm_ref reference;
+    operator_t operator;
     sm_list list;
     char *string;
 };
@@ -187,6 +188,16 @@ cod_dup_list(sm_list list)
 %token <info> LEFT_SHIFT
 %token <info> RIGHT_SHIFT
 %token <info> ASSIGN
+%token <info> MUL_ASSIGN
+%token <info> DIV_ASSIGN
+%token <info> MOD_ASSIGN
+%token <info> ADD_ASSIGN
+%token <info> SUB_ASSIGN
+%token <info> LEFT_ASSIGN
+%token <info> RIGHT_ASSIGN
+%token <info> AND_ASSIGN
+%token <info> XOR_ASSIGN
+%token <info> OR_ASSIGN
 %token <info> LOG_OR
 %token <info> LOG_AND
 %token <info> ARITH_OR
@@ -227,6 +238,7 @@ cod_dup_list(sm_list list)
 %token <info> type_id
 
 %type <info> struct_or_union;
+%type <info> assignment_operator
 %type <reference> compound_statement;
 %type <reference> labeled_statement;
 %type <list> declaration_list statement_list;
@@ -666,17 +678,42 @@ conditional_expression:
 	logical_or_expression
 	;
 
-/* missing other assignment operators */
+assignment_operator
+	: ASSIGN
+	{ $$ = $1; $$.op = op_eq;} 
+	| MUL_ASSIGN
+	{ $$ = $1; $$.op = op_mult;} 
+	| DIV_ASSIGN
+	{ $$ = $1; $$.op = op_div;} 
+	| MOD_ASSIGN
+	{ $$ = $1; $$.op = op_modulus;} 
+	| ADD_ASSIGN
+	{ $$ = $1; $$.op = op_plus;} 
+	| SUB_ASSIGN
+	{ $$ = $1; $$.op = op_minus;} 
+	| LEFT_ASSIGN
+	{ $$ = $1; $$.op = op_left_shift;} 
+	| RIGHT_ASSIGN
+	{ $$ = $1; $$.op = op_right_shift;} 
+	| AND_ASSIGN
+	{ $$ = $1; $$.op = op_arith_and;} 
+	| XOR_ASSIGN
+	{ $$ = $1; $$.op = op_arith_xor;} 
+	| OR_ASSIGN
+	{ $$ = $1; $$.op = op_arith_or;} 
+	;
+
 assignment_expression:
 	conditional_expression
 	{ $$ = $1;} 
 	|
-	unary_expression ASSIGN assignment_expression
+	unary_expression assignment_operator assignment_expression
 	{
 	    $$ = cod_new_assignment_expression();
 	    $$->node.assignment_expression.lx_srcpos = $2.lx_srcpos;
 	    $$->node.assignment_expression.left = $1;
 	    $$->node.assignment_expression.right = $3;
+	    $$->node.assignment_expression.op = $2.op;
 	}
 	;
 
@@ -4264,6 +4301,8 @@ scope_ptr scope;
 		memcpy(&ret->node.array_type_decl.dimensions->dimens[1], &subtype->node.array_type_decl.dimensions->dimens[0], sub_dimensions * sizeof(dimen_s));
 	    } else {
 		ret->node.array_type_decl.cg_element_size = f->cg_size;
+		ret->node.array_type_decl.dimensions = malloc(sizeof(struct dimen_p));
+		ret->node.array_type_decl.dimensions->dimen_count = 1;
 	    }
 	}
 	    

@@ -49,6 +49,7 @@ assignment_expression:
 	sm_ref left;
 	sm_ref right;
 	srcpos lx_srcpos;
+	operator_t op;	
 	int    cg_type;
 
 operator:

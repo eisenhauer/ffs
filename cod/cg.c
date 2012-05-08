@@ -1155,6 +1155,9 @@ handle_incdec(dill_stream s, sm_ref expr, cod_code descr)
 }	
 
 static operand
+execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, dill_reg left, dill_reg right, sm_ref sm_left, sm_ref sm_right, int need_assignable, int result_type);
+
+static operand
 cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 {
     dill_reg right, left = 0;
@@ -1162,10 +1165,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     int op_type = expr->node.operator.operation_type;
     dill_reg result = dill_getreg(s, expr->node.operator.result_type);
     operator_t op = expr->node.operator.op;
-    int string_op = FALSE;
-    if (expr->node.operator.right) {
-	string_op = cod_expr_is_string(expr->node.operator.right);
-    }
+
     init_operand(&ret_op);
     ret_op.is_addr = 0;
     ret_op.offset = 0;
@@ -1203,12 +1203,31 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	case DILL_D: dill_setd(s, left, 0.0); break;	/* op_i_setd */
 	}
     }
+    ret_op = 
+	execute_operator_cg(s, op, op_type, result, left, right, expr->node.operator.left,
+			    expr->node.operator.right, need_assignable, expr->node.operator.result_type);
+    return ret_op;
+}
+
+static operand
+execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, dill_reg left, dill_reg right, sm_ref sm_left, sm_ref sm_right, int need_assignable, int result_type)
+{
+    operand ret_op;
+    init_operand(&ret_op);
+    ret_op.is_addr = 0;
+    ret_op.offset = 0;
+    ret_op.reg = result;
+
+    int string_op = FALSE;
+    if (sm_right) {
+	string_op = cod_expr_is_string(sm_right);
+    }
     switch(op) {
     case  op_modulus:
         dill_Pmod(s, op_type, result, left, right);
 	break;
     case  op_plus:
-	if (expr->node.operator.left == NULL) {
+	if (sm_left == NULL) {
 	    ret_op.reg = right;
 	    return ret_op;
 	}
@@ -1223,21 +1242,21 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    dill_reg offset = dill_getreg(s, DILL_UL);	    
 
 	    /* Figure out which arg is ptr and which is integral */
-	    if((typ = get_complex_type(NULL, expr->node.operator.left))) {
+	    if((typ = get_complex_type(NULL, sm_left))) {
 		if(typ->node_type == cod_reference_type_decl) {
-		    ptr = expr->node.operator.left;  opPtr = left;
-		    arg = expr->node.operator.right; opArg = right;
+		    ptr = sm_left;  opPtr = left;
+		    arg = sm_right; opArg = right;
 		} else {
-		    arg = expr->node.operator.left;  opArg = left;
-		    ptr = expr->node.operator.right; opPtr = right;
+		    arg = sm_left;  opArg = left;
+		    ptr = sm_right; opPtr = right;
 		}
 	    } else {
-		if(cod_sm_get_type(expr->node.operator.left) == DILL_P) {
-		    ptr = expr->node.operator.left;  opPtr = left; 
-		    arg = expr->node.operator.right; opArg = right;
+		if(cod_sm_get_type(sm_left) == DILL_P) {
+		    ptr = sm_left;  opPtr = left; 
+		    arg = sm_right; opArg = right;
 		} else {
-		    arg = expr->node.operator.left;  opArg = left; 
-		    ptr = expr->node.operator.right; opPtr = right;
+		    arg = sm_left;  opArg = left; 
+		    ptr = sm_right; opPtr = right;
 		}
 	    }
 
@@ -1277,7 +1296,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	}
 	break;
     case  op_minus:
-	if (expr->node.operator.left == NULL) {
+	if (sm_left == NULL) {
 	    left = dill_getreg(s, op_type);
 	    switch (op_type) {
 	    case DILL_I: dill_seti(s, left, 0); break;	/* op_i_seti */
@@ -1300,14 +1319,14 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    int size;
 	    
 	    /* Figure out if left arg is a pointer or integral */
-	    if((ltyp = get_complex_type(NULL, expr->node.operator.left))) {
+	    if((ltyp = get_complex_type(NULL, sm_left))) {
 		if(ltyp->node_type == cod_reference_type_decl) {
 		    lIsPtr = 1;
 		} else {
 		    lIsPtr = 0;
 		}
 	    } else {
-		if(cod_sm_get_type(expr->node.operator.left) == DILL_P) {
+		if(cod_sm_get_type(sm_left) == DILL_P) {
 		    lIsPtr = 1;
 		} else {
 		    lIsPtr = 0;
@@ -1315,14 +1334,14 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 
 	    /* Figure out if right arg is a pointer or integral */
-	    if((rtyp = get_complex_type(NULL, expr->node.operator.right))) {
+	    if((rtyp = get_complex_type(NULL, sm_right))) {
 		if(rtyp->node_type == cod_reference_type_decl) {
 		    rIsPtr = 1;
 		} else {
 		    rIsPtr = 0;
 		}
 	    } else {
-		if(cod_sm_get_type(expr->node.operator.right) == DILL_P) {
+		if(cod_sm_get_type(sm_right) == DILL_P) {
 		    rIsPtr = 1;
 		} else {
 		    rIsPtr = 0;
@@ -1359,12 +1378,12 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 
 		if(lIsPtr) {
 		    /* Left arg is pointer, right arg is integral */ 
-		    ptr = expr->node.operator.left;  opPtr = left;
-		    arg = expr->node.operator.right; opArg = right;
+		    ptr = sm_left;  opPtr = left;
+		    arg = sm_right; opArg = right;
 		} else {
 		    /* Left arg is integral, right arg is pointer */ 
-		    arg = expr->node.operator.left;  opArg = left;
-		    ptr = expr->node.operator.right; opPtr = right;
+		    arg = sm_left;  opArg = left;
+		    ptr = sm_right; opPtr = right;
 		}
 
 		/* Get the size of the referenced type */
@@ -1656,7 +1675,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	break;
     case  op_deref:
     {
-	sm_ref typ = get_complex_type(NULL, expr->node.operator.right);
+	sm_ref typ = get_complex_type(NULL, sm_right);
 	operand right_op;
 	init_operand(&right_op);
 	right_op.reg = right;
@@ -1675,7 +1694,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    if(right_op.in_kernel) {
 		dill_special(s, DILL_SEGMENTED_FOLLOWS, DILL_X86_GS_PREFIX);
 	    }
-	    gen_load(s, result, right_op, expr->node.operator.result_type);
+	    gen_load(s, result, right_op, result_type);
 	    right_op.reg = result;
 	    right_op.is_addr = 0;
 	    right_op.in_kernel = 0;
@@ -1686,7 +1705,6 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     case  op_address:
 	ret_op.reg = right;
 	return ret_op;
-	break;
     case op_log_neg:
 	/* handled by if at top */
 	assert(FALSE);
@@ -1837,7 +1855,7 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 }
 
 static void
-cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_size)
+cod_expand_dyn_array(void *base_addr, long new_size, long old_size, long struct_size)
 {
 
     static int debug_cg = -1;
@@ -1846,7 +1864,7 @@ cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_siz
 	debug_cg = (int)(long)(getenv("COD_DEBUG"));
     }
     if (debug_cg) {
-	printf("cod_expand_dyn_array, base_addr %p, old_base %p, new_size %d, old_size %d, struct_size %d\n",
+	printf("cod_expand_dyn_array, base_addr %p, old_base %p, new_size %ld, old_size %ld, struct_size %ld\n",
 	       base_addr, *(void**)base_addr, new_size, old_size, 
 	       struct_size);
     }
@@ -1855,8 +1873,8 @@ cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_siz
 	memset(*(void**)base_addr, 0, new_size *struct_size);
     } else {
 	if (new_size > old_size) {
-	    int malloc_size = new_size * struct_size;
-	    int memset_size = (new_size - old_size) * struct_size;
+	    long malloc_size = new_size * struct_size;
+	    long memset_size = (new_size - old_size) * struct_size;
 	    void *cur_base = *(char **)base_addr;
 	    void *new_base = realloc(cur_base, malloc_size);
 	    memset((char*)new_base + (old_size *struct_size), 0,  memset_size);
@@ -1864,7 +1882,7 @@ cod_expand_dyn_array(void *base_addr, int new_size, int old_size, int struct_siz
 	}
     }	
     if (debug_cg) {
-	printf("\tnew base %p, new size %x, end %p\n", *(void**)base_addr, new_size*struct_size, *(char**)base_addr + new_size*struct_size);
+	printf("\tnew base %p, new size %ld, end %p\n", *(void**)base_addr, new_size*struct_size, *(char**)base_addr + new_size*struct_size);
     }
 }
 
@@ -1935,15 +1953,15 @@ static void do_var_array_adjust(dill_stream s, sm_ref expr, operand old_val,
 
 	dill_push_init(s);
 	if (dill_do_reverse_vararg_push(s)) {
-	    dill_push_argi(s, size_reg);
-	    dill_push_argi(s, old_size);
-	    dill_push_argi(s, new_val.reg);
+	    dill_push_argl(s, size_reg);
+	    dill_push_argl(s, old_size);
+	    dill_push_argl(s, new_val.reg);
 	    dill_push_argp(s, array_base.reg);
 	} else {	    
 	    dill_push_argp(s, array_base.reg);
-	    dill_push_argi(s, new_val.reg);
-	    dill_push_argi(s, old_size);
-	    dill_push_argi(s, size_reg);
+	    dill_push_argl(s, new_val.reg);
+	    dill_push_argl(s, old_size);
+	    dill_push_argl(s, size_reg);
 	}
 	dill_callv(s, (void*)&cod_expand_dyn_array, "cod_expand_dyn_array");  /* op_i_callvi */
     }
@@ -2186,10 +2204,6 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	assert(right.is_addr == 0);
 	right.reg = coerce_type(s, right.reg, assign_type, 
 				cod_sm_get_type(expr->node.assignment_expression.right));
-	if (is_control_value(expr->node.assignment_expression.left, NULL)) {
-	    do_var_array_adjust(s, expr->node.assignment_expression.left, left,
-				right, descr);
-	}
 	if (cod_expr_is_string(expr->node.assignment_expression.right)) {
 	    dill_push_init(s);
 	    dill_push_argp(s, right.reg);
@@ -2204,7 +2218,35 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	if(left.is_addr && left.in_kernel) {
 	    dill_special(s, DILL_SEGMENTED_FOLLOWS, DILL_X86_GS_PREFIX);
 	}
-	gen_mov(s, left, right.reg, assign_type);
+	
+	if (expr->node.assignment_expression.op == op_eq) {
+	    if (is_control_value(expr->node.assignment_expression.left, NULL)) {
+		do_var_array_adjust(s, expr->node.assignment_expression.left, left,
+				    right, descr);
+	    }
+	    gen_mov(s, left, right.reg, assign_type);
+	} else {
+	    dill_reg left_value;
+	    operand result;
+	    /* we have an operator-assignment */
+	    if (left.is_addr == 1) {
+		left_value = dill_getreg(s, assign_type);
+		gen_load(s, left_value, left, assign_type);
+	    } else {
+		left_value = left.reg;
+	    }
+	    init_operand(&result);
+	    result.reg = dill_getreg(s, assign_type);
+	    result = execute_operator_cg(s, expr->node.assignment_expression.op, assign_type, result.reg, left_value, right.reg, 
+					     expr->node.assignment_expression.left,
+					     expr->node.assignment_expression.right, 0, assign_type);
+	    if (is_control_value(expr->node.assignment_expression.left, NULL)) {
+		do_var_array_adjust(s, expr->node.assignment_expression.left, left,
+				    result, descr);
+	    }
+	    gen_mov(s, left, result.reg, assign_type);
+	}
+		
 	return left;
     }
     case cod_field_ref: {
@@ -2297,7 +2339,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	}
 	/* base is valid at this point */
 	cg_type = expr->node.element_ref.cg_element_type;
-	int element_size  = dill_type_align(s, cg_type);
+	int element_size  = dill_type_size(s, cg_type);
 /*
 ROW MAJOR  (C-style):
 
@@ -2308,10 +2350,13 @@ ROW MAJOR  (C-style):
 	{
 	    dill_reg size_accum = dill_getreg(s, DILL_L);
 	    dimen_p d = arr->node.array_type_decl.dimensions;
+	    dill_reg new_base = dill_getreg(s, DILL_P);
 	    for (i = array_dimensions - 1; i >= 0; i--) {
 		dill_reg tmp;
 		if (i == array_dimensions -1) {
 		    dill_seti(s, size_accum, element_size);
+		    dill_movp(s, new_base, base.reg);
+		    base.reg = new_base;
 		} else {
 		    if (d->dimens[i+1].static_size != -1) {
 			dill_mulii(s, size_accum, size_accum, d->dimens[i+1].static_size);
