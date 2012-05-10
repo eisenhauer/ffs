@@ -831,7 +831,6 @@ declaration:
 		    }
 		    dtmp = dtmp->next;
 		}
-		cod_rfree_list($1);
 	    }
         | error SEMI {
 	    $$ = NULL;
