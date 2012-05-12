@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(ffs)
 
+IF( NOT CMAKE_BUILD_TYPE )
+SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
+ENDIF()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(CheckFunctionExists)
@@ -200,11 +204,18 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINAR
 MESSAGE( STATUS )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
-MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
+MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}"  (options are: Debug,Release,RelWithDebInfo,MinSizeRel))
 MESSAGE( STATUS "Change a value with: cmake -D<Variable>=<Value>" )
+MESSAGE( STATUS "    to use installed CERCS libraries specify -DCERCS_USE_INSTALLED=1" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 
+INCLUDE(CTest)
 ENABLE_TESTING()
+IF(BUILD_TESTING)
+  SET(BUILDNAME "${BUILDNAME}" CACHE STRING "Name of build on the dashboard")
+  MARK_AS_ADVANCED(BUILDNAME)
+ENDIF(BUILD_TESTING)
+
 ADD_SUBDIRECTORY( fm )
 ADD_SUBDIRECTORY( cod )
 ADD_SUBDIRECTORY( ffs )
