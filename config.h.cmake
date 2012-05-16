@@ -111,6 +111,9 @@
 /* The number of bytes in type double */
 #cmakedefine SIZEOF_DOUBLE @SIZEOF_DOUBLE@
 
+/* The number of bytes in type off_t */
+#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+
 /* The number of bytes in type float */
 #cmakedefine SIZEOF_FLOAT @SIZEOF_FLOAT@
 
