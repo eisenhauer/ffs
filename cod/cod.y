@@ -1,5 +1,8 @@
 %{
 #include "config.h"
+#if defined (__INTEL_COMPILER)
+#  pragma warning (disable: 2215)
+#endif
 #ifdef SEGMENTED_POINTERS
 int cod_segmented_pointers = 1;
 #else

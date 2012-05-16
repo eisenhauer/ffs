@@ -54,6 +54,9 @@ enum {
 #ifndef LINUX_KERNEL_MODULE
 #include "string.h"
 #endif
+#if defined (__INTEL_COMPILER)
+#  pragma warning (disable: 2215)
+#endif
 #include "cod.tab.h"
 #ifndef FALSE
 #define FALSE 0
