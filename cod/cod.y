@@ -834,6 +834,7 @@ declaration:
 		    }
 		    dtmp = dtmp->next;
 		}
+		(void)$<reference>4;
 	    }
         | error SEMI {
 	    $$ = NULL;
