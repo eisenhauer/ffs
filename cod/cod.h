@@ -381,12 +381,12 @@ extern void cod_add_int_constant_to_parse_context ARGS((const char *id, int valu
     cod_parse_context context)); 
 
 /*!
- * \brief Sets what integer cod_closure_context will send to a subroutine.
+ * \brief Sets what value cod_closure_context will send to a subroutine.
  * \param name The name of the (external) subroutine.
  * \param value The value to send
  * \param context The context in which the subroutine has been declared.
 */
-extern void cod_set_closure ARGS((char *name, int value, cod_parse_context context));
+extern void cod_set_closure ARGS((char *name, void* value, cod_parse_context context));
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

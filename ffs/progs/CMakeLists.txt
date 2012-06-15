@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR}${ffs_SOURCE_DIR}/
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c)
-    TARGET_LINK_LIBRARIES(${TEST} fm )
+    TARGET_LINK_LIBRARIES(${TEST} ffs )
     ADD_TEST(${TEST} "${TEST}")
 endforeach()
 

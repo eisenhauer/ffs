@@ -17,7 +17,7 @@ declaration:
 	sm_list params;
 	int  cg_oprnd;
 	int  cg_type;
-	int  closure_id;
+	void  *closure_id;
 	void *cg_address;
 
 label_statement:

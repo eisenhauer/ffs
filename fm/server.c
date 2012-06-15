@@ -1470,7 +1470,7 @@ server_listen(int port)
     }
     if (bind(conn_sock, (struct sockaddr *) &sock_addr,
 	     sizeof sock_addr) < 0) {
-	fprintf(stderr, "Cannot bind INET socket, port %d\n", port);
+	fprintf(stderr, "Cannot bind INET socket, port %d, errno %d\n", port, errno);
 	return -1;
     }
     sock_opt_val = 1;

@@ -229,8 +229,7 @@ main(int argc, char**argv)
 	    {(void*)0, (void*)0}
 	};
 	static char code[] = "{\
-		    int i;\n\
-		    int j;\n\
+		    int i, j;\n\
 		    double sum = 0.0;\n\
 		    double average = 0.0;\n\
 		    for(i = 0; i<37; i= i+1) {\n\

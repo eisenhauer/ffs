@@ -158,7 +158,7 @@ cod_dup_list(sm_list list)
     return ret_list;
 }
 %}
-
+%expect 2 
 %union {
     lx_info info;
     sm_ref reference;
@@ -3138,7 +3138,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
                         tmp_args->next = args->next;
 			tmp_args->node = args->node;
 			args->next = tmp_args;
-                        sprintf(tmp, "%d", func_ref->node.declaration.closure_id);
+                        sprintf(tmp, "%p", func_ref->node.declaration.closure_id);
 
                         args->node = cod_new_constant();
                         args->node->node.constant.token = integer_constant;
@@ -3648,7 +3648,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		if (strcmp(node->node.identifier.id, "cod_type_spec") == 0) {
 		    *cg_type = DILL_P;
                 } else if (strcmp(node->node.identifier.id, "cod_closure_context") == 0) {
-                    *cg_type = DILL_I;
+                    *cg_type = DILL_P;
 		} else {
 		    context->has_exec_context = 1;
 		    *cg_type = DILL_EC;
@@ -4864,7 +4864,7 @@ cod_add_int_constant_to_parse_context(const char *name, int value, cod_parse_con
 }
 
 extern void
-cod_set_closure(char *name, int closure_context, cod_parse_context context)
+cod_set_closure(char *name, void* closure_context, cod_parse_context context)
 {
     sm_ref decl;
     decl = resolve(name, context->scope);
