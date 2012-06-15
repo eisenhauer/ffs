@@ -3174,7 +3174,8 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 			sm_ref ct = formal->node.declaration.sm_complex_type;
 			if (!ct || 
 			    (ct->node_type != cod_reference_type_decl) ||
-			    (strcmp(ct->node.reference_type_decl.name, "cod_type_spec") != 0)) {
+			    ((strcmp(ct->node.reference_type_decl.name, "cod_type_spec") != 0) &&
+			     (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") != 0))) {
 			    mismatch++;
 			}
 		    }
