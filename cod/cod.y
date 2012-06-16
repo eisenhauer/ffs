@@ -3139,6 +3139,9 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 			tmp_args->node = args->node;
 			args->next = tmp_args;
                         sprintf(tmp, "%p", func_ref->node.declaration.closure_id);
+			if (strncmp(tmp, "0x", 2) != 0) {
+			    sprintf(tmp, "0x%p", func_ref->node.declaration.closure_id);
+			}
 
                         args->node = cod_new_constant();
                         args->node->node.constant.token = integer_constant;
