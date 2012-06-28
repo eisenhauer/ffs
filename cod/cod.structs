@@ -22,6 +22,7 @@ declaration:
 
 label_statement:
 	char *name;
+	int cg_label;
 	sm_ref statement;
 
 return_statement:
@@ -32,6 +33,7 @@ return_statement:
 jump_statement:
 	int continue_flag;
 	char *goto_target;
+	sm_ref sm_goto_target_stmt;
 	srcpos lx_srcpos;
 
 selection_statement:

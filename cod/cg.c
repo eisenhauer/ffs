@@ -101,6 +101,7 @@ static operand cg_expr(dill_stream s, sm_ref expr, int left, cod_code descr);
 static void cg_selection_statement(dill_stream s, sm_ref stmt, cod_code descr);
 static void cg_iteration_statement(dill_stream s, sm_ref stmt, cod_code descr);
 static void cg_return_statement(dill_stream s, sm_ref stmt, cod_code descr);
+static void cg_jump_statement(dill_stream s, sm_ref stmt, cod_code descr);
 static void gen_mov(dill_stream s, operand left, dill_reg right, int type);
 static void gen_load(dill_stream s, dill_reg left, operand right, int type);
 static void gen_encoded_field_load(dill_stream s, dill_reg ret, operand base, int load_type, sm_ref field);
@@ -217,6 +218,10 @@ cg_preprocess(sm_ref node, void *data) {
     cod_code code_descriptor = (cod_code) data;
 
     switch(node->node_type) {
+    case cod_jump_statement:{
+	inst_count_guess += 2;
+	break;
+    }
     case cod_operator: {
 	inst_count_guess += 6;	/* 5 probable worst case */
 	break;
@@ -919,9 +924,13 @@ cg_statement(dill_stream s, sm_ref stmt, cod_code descr)
     case cod_return_statement:
 	cg_return_statement(s, stmt, descr);
 	break;
+    case cod_jump_statement:
+	cg_jump_statement(s, stmt, descr);
+	break;
     case cod_label_statement: {
 	dill_mark_label_type stmt_label = dill_alloc_label(s, stmt->node.label_statement.name);
 	dill_mark_label(s, stmt_label);
+	stmt->node.label_statement.cg_label = stmt_label;
 	cg_statement(s, stmt->node.label_statement.statement, descr);
 	break;
     }
@@ -3125,6 +3134,16 @@ gen_bz(dill_stream s, int conditional, int target_label, int op_type)
     }
     default:
 	fprintf(stderr, "unhandled case in gen_bz\n");
+    }
+}
+
+static void cg_jump_statement(dill_stream s, sm_ref stmt, cod_code descr)
+{
+    if (stmt->node.jump_statement.goto_target) {
+	/* this is a goto */
+	sm_ref label_stmt = stmt->node.jump_statement.sm_goto_target_stmt;
+	dill_jv(s, label_stmt->node.label_statement.cg_label);
+	return;
     }
 }
 

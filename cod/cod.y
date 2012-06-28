@@ -323,7 +323,7 @@ primary_expression:
 	{ $$ = $2; }
 	;
 
-/* missing ->, ++, -- */
+/* missing ->  */
 postfix_expression:
 	primary_expression
 	|
@@ -1390,7 +1390,6 @@ statement_list:
 	    }
 	};
 
-/* missing labeled statement */
 statement:
 	labeled_statement
 	| compound_statement
@@ -1492,7 +1491,7 @@ selection_statement:
 	}
 	;
 
-/* missing while, do while */
+/* missing do while */
 iteration_statement:
 	FOR LPAREN expression_opt SEMI expression_opt SEMI expression_opt RPAREN statement
 	{ 
@@ -4102,7 +4101,26 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	return 1;
     }
     case cod_label_statement:{
+	add_decl(stmt->node.label_statement.name, stmt, scope);
 	return semanticize_statement(context, stmt->node.label_statement.statement, scope);
+    }
+    case cod_jump_statement:{
+	if (stmt->node.jump_statement.goto_target != NULL) {
+	    /* this is a goto */
+	    sm_ref tmp = resolve(stmt->node.jump_statement.goto_target, scope);
+	    if (!tmp) {
+		cod_src_error(context, stmt, 
+			      "Label \"%s\" not found.  Goto has no target.", stmt->node.jump_statement.goto_target);
+		return 0;
+	    }
+	    if (tmp->node_type != cod_label_statement) {
+		cod_src_error(context, stmt, 
+			      "Goto target \"%s\" is not a label.", stmt->node.jump_statement.goto_target);
+		return 0;
+	    }
+	    stmt->node.jump_statement.sm_goto_target_stmt = tmp;
+	}
+	break;
     }
     default:
 	printf("unhandled case in semanticize statement\n");

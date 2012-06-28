@@ -132,6 +132,7 @@ static			{RETURN(STATIC);}
 typedef			{RETURN(TYPEDEF);}
 continue		{RETURN(CONTINUE);}
 break			{RETURN(BREAK);}
+goto			{RETURN(GOTO);}
 const			{RETURN(CONST);}
 sizeof			{RETURN(SIZEOF);}
 struct			{RETURN(STRUCT);}

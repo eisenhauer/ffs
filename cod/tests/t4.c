@@ -494,5 +494,46 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
+    {
+        /*
+         * tests goto statement
+         */
+
+        char code_string[] ="\
+{\n\
+    goto where;\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	if (output_file) cod_set_error_func(context, error_func);
+	cod_subroutine_declaration("void subr()", context);
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
+
+     {
+        /*
+         * tests goto statement
+         */
+
+        char code_string[] ="\
+{\n\
+    int what;\n\
+    goto what;\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	if (output_file) cod_set_error_func(context, error_func);
+	cod_subroutine_declaration("void subr()", context);
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
+
     return 0;
 }

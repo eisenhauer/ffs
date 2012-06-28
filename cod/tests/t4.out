@@ -166,3 +166,9 @@ int printf(string format, ...);
 ## Ecode Error:  Return value supplied in subroutine declared to return VOID at line 2, char 5
     return 1;
     ^
+## Ecode Error:  Label "where" not found.  Goto has no target. at line 2, char 5
+    goto where;
+    ^
+## Ecode Error:  Goto target "what" is not a label. at line 3, char 5
+    goto what;
+    ^
