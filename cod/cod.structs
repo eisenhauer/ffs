@@ -29,6 +29,11 @@ return_statement:
 	int cg_func_type;
 	srcpos lx_srcpos;
 
+jump_statement:
+	int continue_flag;
+	char *goto_target;
+	srcpos lx_srcpos;
+
 selection_statement:
 	sm_ref conditional;
 	sm_ref then_part;

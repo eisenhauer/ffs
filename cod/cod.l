@@ -130,6 +130,8 @@ static char *string_buf_ptr;
 "void"			{RETURN(VOID);}
 static			{RETURN(STATIC);}
 typedef			{RETURN(TYPEDEF);}
+continue		{RETURN(CONTINUE);}
+break			{RETURN(BREAK);}
 const			{RETURN(CONST);}
 sizeof			{RETURN(SIZEOF);}
 struct			{RETURN(STRUCT);}

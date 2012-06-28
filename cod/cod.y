@@ -231,6 +231,9 @@ cod_dup_list(sm_list list)
 %token <info> SIZEOF
 %token <info> TYPEDEF
 %token <info> RETURN_TOKEN
+%token <info> CONTINUE
+%token <info> BREAK
+%token <info> GOTO
 %token <info> PRINT
 %token <info> COMMA
 %token <info> DOTDOTDOT
@@ -1435,12 +1438,29 @@ declaration_list:
 	    }
 	};
 
-/* Missing goto, continue, break */
 jump_statement:
 	RETURN_TOKEN expression_opt SEMI {
 	    $$ = cod_new_return_statement();
 	    $$->node.return_statement.expression = $2;
 	    $$->node.return_statement.lx_srcpos = $1.lx_srcpos;
+	}
+	| CONTINUE SEMI {
+	    $$ = cod_new_jump_statement();
+	    $$->node.jump_statement.continue_flag = 1;
+	    $$->node.jump_statement.goto_target = NULL;
+	    $$->node.jump_statement.lx_srcpos = $1.lx_srcpos;
+	}
+	| BREAK SEMI {
+	    $$ = cod_new_jump_statement();
+	    $$->node.jump_statement.continue_flag = 0;
+	    $$->node.jump_statement.goto_target = NULL;
+	    $$->node.jump_statement.lx_srcpos = $1.lx_srcpos;
+	}
+	| GOTO identifier_ref SEMI{
+	    $$ = cod_new_jump_statement();
+	    $$->node.jump_statement.continue_flag = 0;
+	    $$->node.jump_statement.goto_target = $2.string;
+	    $$->node.jump_statement.lx_srcpos = $1.lx_srcpos;
 	}
 	;
 
