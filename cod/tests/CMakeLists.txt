@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set (TESTS t1 t2 t3 t5 t6 t8 t9 t10 t12 compound_assignment gray general atl_test strings)
+set (TESTS t1 t2 t3 t5 t6 t8 t9 t10 t12 compound_assignment gray general atl_test strings control)
 
 INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR} 
 ${ffs_SOURCE_DIR}/cod ${ffs_BINARY_DIR}/cod 

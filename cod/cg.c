@@ -953,9 +953,10 @@ static void
 operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code descr)
 {
     operand right_op, left_op;
-    dill_reg right = 0, left = 0;
+    dill_reg tmp_right = 0, right = 0, left = 0;
     int op_type = expr->node.operator.operation_type;
     int string_op = FALSE;
+    dill_mark_label_type short_circuit = 0;
     if (expr->node.operator.op == op_address) {
 	right_op = cg_expr(s, expr->node.operator.right, 1, descr);
 	assert(right_op.is_addr == 1);
@@ -968,25 +969,6 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	return;
     }
 	
-    if (expr->node.operator.right != NULL) {
-	int right_cg_type = cod_sm_get_type(expr->node.operator.right);
-	string_op = cod_expr_is_string(expr->node.operator.right);
-
-	right_op = cg_expr(s, expr->node.operator.right, 0, descr);
-	assert(right_op.is_addr == 0);
-
-	switch(right_cg_type) {
-	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
-	    /* do integer promotion */
-	    right = coerce_type(s, right_op.reg, DILL_I, right_cg_type);
-	    right_cg_type = DILL_I;
-	    right_op.reg = right;
-	}
-
-	right = right_op.reg;
-	if (!string_op && op_type != DILL_P) 
-	    right = coerce_type(s, right_op.reg, op_type, right_cg_type);
-    }
     if (expr->node.operator.left != NULL) {
 	int left_cg_type = cod_sm_get_type(expr->node.operator.left);
 	left_op = cg_expr(s, expr->node.operator.left, 0, descr);
@@ -1003,6 +985,82 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	if (!string_op && op_type != DILL_P)
 	    left = coerce_type(s, left_op.reg, op_type, left_cg_type);
     }
+    if ((expr->node.operator.op == op_log_and) || (expr->node.operator.op == op_log_or)) {
+	/* short circuit possible */
+	short_circuit = dill_alloc_label(s, "short_circuit");
+	right = dill_getreg(s, op_type);
+	if (expr->node.operator.op == op_log_and) {
+	    /* AND case */
+	    switch (op_type) {
+	    case DILL_I:
+		dill_seti(s, right, 0);
+		dill_beqii(s, left, 0, short_circuit);
+		break;
+	    case DILL_U:
+		dill_setu(s, right, 0);
+		dill_bequi(s, left, 0, short_circuit);
+		break;
+	    case DILL_L:
+		dill_setl(s, right, 0);
+		dill_beqli(s, left, 0, short_circuit);
+		break;
+	    case DILL_UL:
+		dill_setul(s, right, 0);
+		dill_bequli(s, left, 0, short_circuit);
+		break;
+	    }
+	} else {
+	    /* OR case */
+	    switch (op_type) {
+	    case DILL_I:
+		dill_seti(s, right, 1);
+		dill_bneii(s, left, 0, short_circuit);
+		break;
+	    case DILL_U:
+		dill_setu(s, right, 1);
+		dill_bneui(s, left, 0, short_circuit);
+		break;
+	    case DILL_L:
+		dill_setl(s, right, 1);
+		dill_bneli(s, left, 0, short_circuit);
+		break;
+	    case DILL_UL:
+		dill_setul(s, right, 1);
+		dill_bneuli(s, left, 0, short_circuit);
+		break;
+	    }
+	}
+    }
+    if (expr->node.operator.right != NULL) {
+	int right_cg_type = cod_sm_get_type(expr->node.operator.right);
+	string_op = cod_expr_is_string(expr->node.operator.right);
+
+	right_op = cg_expr(s, expr->node.operator.right, 0, descr);
+	assert(right_op.is_addr == 0);
+
+	switch(right_cg_type) {
+	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
+	    /* do integer promotion */
+	    right = coerce_type(s, right_op.reg, DILL_I, right_cg_type);
+	    right_cg_type = DILL_I;
+	    right_op.reg = right;
+	}
+
+	tmp_right = right_op.reg;
+	if (!string_op && op_type != DILL_P) 
+	    tmp_right = coerce_type(s, right_op.reg, op_type, right_cg_type);
+    }
+    if ((expr->node.operator.op == op_log_and) || (expr->node.operator.op == op_log_or)) {
+	/* 
+	 * for short circuit, "right" has already been initialized and we are inside the 
+	 * conditional block here.  Overwrite "right" with "tmp_right" and terminate conditional.
+	 */
+	dill_pmov(s, op_type, right, tmp_right);
+	dill_mark_label(s, short_circuit);
+    } else {
+	right = tmp_right;
+    }
+    
     *rp = right;
     *lp = left;
 }
