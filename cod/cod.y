@@ -2000,6 +2000,7 @@ typedef struct st_entry {
 struct scope {
     cod_extern_list externs;
     struct st_entry *entry_list;
+    sm_ref code_container;
     struct scope *containing_scope;
 };
 
@@ -2025,6 +2026,17 @@ cod_parse_context context;
     return new_context;
 }
 
+static sm_ref
+find_containing_iterator(scope_ptr scope)
+{
+    if (scope == NULL) return NULL;
+    if ((scope->code_container != NULL) &&
+	(scope->code_container->node_type == cod_iteration_statement)) {
+	return scope->code_container;
+    }
+    return find_containing_iterator(scope->containing_scope);
+}
+
 static void *
 resolve_extern(char *id, scope_ptr scope)
 {
@@ -2042,11 +2054,23 @@ resolve_extern(char *id, scope_ptr scope)
 }
 
 static scope_ptr
+push_scope_container(scope_ptr containing_scope, sm_ref container)
+{
+    scope_ptr new_scope = malloc(sizeof(*new_scope));
+    new_scope->externs = NULL;
+    new_scope->entry_list = NULL;
+    new_scope->code_container = container;
+    new_scope->containing_scope = containing_scope;
+    return new_scope;
+}
+
+static scope_ptr
 push_scope(scope_ptr containing_scope)
 {
     scope_ptr new_scope = malloc(sizeof(*new_scope));
     new_scope->externs = NULL;
     new_scope->entry_list = NULL;
+    new_scope->code_container = NULL;
     new_scope->containing_scope = containing_scope;
     return new_scope;
 }
@@ -4037,11 +4061,13 @@ semanticize_iteration_statement(cod_parse_context context, sm_ref iteration,
     }
 
     if (iteration->node.iteration_statement.statement != NULL) {
+	scope_ptr sub_scope = push_scope_container(scope, iteration);
 	if (!semanticize_statement(context,
 				   iteration->node.iteration_statement.statement,
-				   scope)) {
+				   sub_scope)) {
 	    ret = 0;
 	}
+	pop_scope(sub_scope);
     }
     return ret;
 }
@@ -4118,7 +4144,16 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 			      "Goto target \"%s\" is not a label.", stmt->node.jump_statement.goto_target);
 		return 0;
 	    }
-	    stmt->node.jump_statement.sm_goto_target_stmt = tmp;
+	    stmt->node.jump_statement.sm_target_stmt = tmp;
+	} else {
+	    /* this is a continue or a break */
+	    sm_ref tmp = find_containing_iterator(scope);
+	    if (!tmp) {
+		cod_src_error(context, stmt, 
+			      "Continue or Break statement not contained inside an iterator.");
+		return 0;
+	    }
+	    stmt->node.jump_statement.sm_target_stmt = tmp;
 	}
 	break;
     }

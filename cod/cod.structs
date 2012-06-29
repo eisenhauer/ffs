@@ -33,7 +33,7 @@ return_statement:
 jump_statement:
 	int continue_flag;
 	char *goto_target;
-	sm_ref sm_goto_target_stmt;
+	sm_ref sm_target_stmt;
 	srcpos lx_srcpos;
 
 selection_statement:
@@ -47,6 +47,8 @@ iteration_statement:
 	sm_ref test_expr;
 	sm_ref iter_expr;
 	sm_ref statement;
+	int cg_iter_label;
+	int cg_end_label;
 	srcpos lx_srcpos;
 
 expression_statement:

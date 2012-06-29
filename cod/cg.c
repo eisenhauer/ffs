@@ -3141,9 +3141,19 @@ static void cg_jump_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
     if (stmt->node.jump_statement.goto_target) {
 	/* this is a goto */
-	sm_ref label_stmt = stmt->node.jump_statement.sm_goto_target_stmt;
+	sm_ref label_stmt = stmt->node.jump_statement.sm_target_stmt;
 	dill_jv(s, label_stmt->node.label_statement.cg_label);
 	return;
+    } else {
+	/* continue or break */
+	sm_ref iterator = stmt->node.jump_statement.sm_target_stmt;
+	if (stmt->node.jump_statement.continue_flag == 1) {
+	    /* continue - jump to loop start (iterator evaluation) */
+	    dill_jv(s, iterator->node.iteration_statement.cg_iter_label);
+	} else {
+	    /* break  -  jump to loop end */
+	    dill_jv(s, iterator->node.iteration_statement.cg_end_label);
+	}
     }
 }
 
@@ -3348,7 +3358,11 @@ static void cg_selection_statement(dill_stream s, sm_ref stmt, cod_code descr)
 
 static void cg_iteration_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
-    dill_mark_label_type begin_label = dill_alloc_label(s, "loop begin"), end_label = dill_alloc_label(s, "loop end");
+    dill_mark_label_type begin_label = dill_alloc_label(s, "loop begin"), 
+	end_label = dill_alloc_label(s, "loop end"),
+	iter_label = dill_alloc_label(s, "loop iteration");
+    stmt->node.iteration_statement.cg_end_label = end_label;
+    stmt->node.iteration_statement.cg_iter_label = iter_label;
     if (stmt->node.iteration_statement.init_expr != NULL) {
 	(void) cg_expr(s, stmt->node.iteration_statement.init_expr, 0, descr);
     }
@@ -3358,6 +3372,7 @@ static void cg_iteration_statement(dill_stream s, sm_ref stmt, cod_code descr)
 			   end_label, descr);
     }
     cg_statement(s, stmt->node.iteration_statement.statement, descr);
+    dill_mark_label(s, iter_label);
     if (stmt->node.iteration_statement.iter_expr != NULL) {
 	(void) cg_expr(s, stmt->node.iteration_statement.iter_expr, 0, descr);
     }

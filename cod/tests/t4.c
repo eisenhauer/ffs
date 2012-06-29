@@ -535,5 +535,50 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
+     {
+        /*
+         * tests continue statement
+         */
+
+        char code_string[] ="\
+{\n\
+    int what;\n\
+    if (what) {\n\
+	continue;\n\
+    }\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	if (output_file) cod_set_error_func(context, error_func);
+	cod_subroutine_declaration("void subr()", context);
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
+     {
+        /*
+         * tests break statement
+         */
+
+        char code_string[] ="\
+{\n\
+    int what;\n\
+    {\n\
+	break;\n\
+    }\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	if (output_file) cod_set_error_func(context, error_func);
+	cod_subroutine_declaration("void subr()", context);
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
+
     return 0;
 }
