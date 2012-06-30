@@ -4155,6 +4155,7 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	    }
 	    stmt->node.jump_statement.sm_target_stmt = tmp;
 	}
+	return 1;
 	break;
     }
     default:
