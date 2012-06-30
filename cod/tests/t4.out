@@ -172,3 +172,9 @@ int printf(string format, ...);
 ## Ecode Error:  Goto target "what" is not a label. at line 3, char 5
     goto what;
     ^
+## Ecode Error:  Continue or Break statement not contained inside an iterator. at line 4, char 2
+	continue;
+	^
+## Ecode Error:  Continue or Break statement not contained inside an iterator. at line 4, char 2
+	break;
+	^
