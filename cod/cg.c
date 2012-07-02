@@ -264,7 +264,6 @@ cg_preprocess(sm_ref node, void *data) {
 	break;
     }
     case cod_declaration: {
-	sm_ref decl = node;
 	inst_count_guess += 4;
 /*	if (decl->node.declaration.static_var) {
 	    code_description->static_block_address_register = 1;
@@ -515,19 +514,31 @@ cod_code code_descriptor;
 
 #if defined(HAVE_DILL_H)
 static void
-cg_compound_statement(dill_stream s, sm_ref stmt, cod_code descr)
+cg_decls_stmts(dill_stream s, sm_list list, cod_code descr)
 {
-    cg_decls(s, stmt->node.compound_statement.decls, descr);
-    cg_statements(s, stmt->node.compound_statement.statements, descr);
+    while(list != NULL) {
+	sm_ref item = list->node;
+	switch(item->node_type) {
+	case cod_declaration: 
+	case cod_struct_type_decl:
+	case cod_array_type_decl:
+	case cod_reference_type_decl:
+	case cod_constant:
+	    cg_decl(s, item, descr);
+	    break;
+	default:
+	    cg_statement(s, item, descr);
+	    break;
+	}
+	list = list->next;
+    }
 }
 
 static void
-cg_decls(dill_stream s, sm_list decl_list, cod_code descr)
+cg_compound_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
-    while(decl_list != NULL) {
-	cg_decl(s, decl_list->node, descr);
-	decl_list = decl_list->next;
-    }
+    cg_decls_stmts(s, stmt->node.compound_statement.decls, descr);
+    cg_decls_stmts(s, stmt->node.compound_statement.statements, descr);
 }
 
 #ifndef LINUX_KERNEL_MODULE
@@ -537,15 +548,6 @@ kmemset(char *ptr, int value, int length)
     memset(ptr, value, length);
 }
 #endif
-
-static void
-cg_statements(dill_stream s, sm_list stmt_list, cod_code descr)
-{
-    while(stmt_list != NULL) {
-	cg_statement(s, stmt_list->node, descr);
-	stmt_list = stmt_list->next;
-    }
-}
 
 static dill_reg 
 cg_get_static_block(dill_stream s, cod_code descr)
@@ -2373,14 +2375,9 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     case cod_element_ref: {
 	operand base;
 	operand index[100];
-	operand dimension[100];
-	int static_dimensions[100];
-	sm_ref dsize[100];
 	int array_dimensions = 0;
-	dill_reg new_base = dill_getreg(s, DILL_P);
 	int cg_type;
 	sm_ref arr;
-	int size;
 	int element_size;
 	sm_ref tmp = expr;
 	int i;

@@ -224,6 +224,7 @@ sub gen_copy {
     my($houtfile, $coutfile) = @_;
     print $houtfile "extern sm_ref cod_copy(sm_ref node);\n";
     print $houtfile "extern sm_list cod_copy_list(sm_list list);\n";
+    print $houtfile "extern sm_list cod_append_list(sm_list list1, sm_list list2);\n";
     print $coutfile "extern sm_list cod_copy_list(sm_list list)\n{\n";
     print $coutfile "    sm_list new_list = NULL;\n";
     print $coutfile "    if (list != NULL) {\n";
@@ -232,6 +233,17 @@ sub gen_copy {
     print $coutfile "        new_list->next = cod_copy_list(list->next);\n";
     print $coutfile "    }\n";
     print $coutfile "    return new_list;\n";
+    print $coutfile "}\n\n";
+    print $coutfile "extern sm_list cod_append_list(sm_list list, sm_list list2)\n{\n";
+    print $coutfile "    sm_list tmp = list;\n";
+    print $coutfile "    if (tmp == NULL) {\n";
+    print $coutfile "        return list2;\n";
+    print $coutfile "    }\n";
+    print $coutfile "    while (tmp->next != NULL) {\n";
+    print $coutfile "        tmp = tmp->next;\n";
+    print $coutfile "    }\n";
+    print $coutfile "    tmp->next = list2;\n";
+    print $coutfile "    return list;\n";
     print $coutfile "}\n\n";
     print $coutfile "extern sm_ref cod_copy(sm_ref node)\n{\n";
     print $coutfile "    sm_ref new_node = NULL;\n";

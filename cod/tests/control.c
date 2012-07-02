@@ -267,6 +267,49 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    if ((run_only == -1) || (run_only == test_num)) {
+	/* test 5  -  mixed decls and statementsxs */
+	static char extern_string[] = "int printf(string format, ...);";
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {(void*)0, (void*)0}
+	};
+	char code_string[] = "\
+{\n\
+	int i = 5;\n\
+	int j = 0;\n\
+	int count = 0;\n\
+        for (j=0; j< 4; j++) {\n\
+	    for(i=0; i < 10; i++) {\n\
+	        if (i > 4) continue;\n\
+		count++;\n\
+	    }\n\
+	    count +=100;\n\
+	}\n\
+	return count;\n\
+}";
+
+	cod_parse_context context;
+	cod_exec_context ec;
+	cod_code gen_code;
+	long (*func)();
+	long result;
+
+	GEN_PARSE_CONTEXT(context);
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+
+	gen_code = cod_code_gen(code_string, context);
+	ec = cod_create_exec_context(gen_code);
+	func = (long(*)()) (long) gen_code->func;
+	if (verbose) cod_dump(gen_code);
+	result = func(EC_param0);
+	assert(result == 420);
+	cod_code_free(gen_code);
+	cod_exec_context_free(ec);
+	cod_free_parse_context(context);
+    }
     return 0;
 }
 

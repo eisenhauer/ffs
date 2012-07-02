@@ -158,7 +158,7 @@ cod_dup_list(sm_list list)
     return ret_list;
 }
 %}
-%expect 2 
+
 %union {
     lx_info info;
     sm_ref reference;
@@ -247,7 +247,7 @@ cod_dup_list(sm_list list)
 %type <info> assignment_operator
 %type <reference> compound_statement;
 %type <reference> labeled_statement;
-%type <list> declaration_list statement_list;
+%type <list> declaration_list decls_stmts_list;
 %type <list> declaration;
 %type <reference> statement;
 %type <reference> init_declarator;
@@ -1367,27 +1367,24 @@ initializer:
 	assignment_expression { $$ = $1;}
 	;
 
-statement_list:
-	/* NULL */ {$$ = NULL;}
-	| statement_list statement {
-	    if ($2 == NULL) {
-		$$ = $1;
-	    } else {
-		if ($1 == NULL) {
-		    $$ = malloc(sizeof(struct list_struct));
-		    $$->node = $2;
-		    $$->next = NULL;
-		} else {
-		    sm_list tmp = $1;
-		    while (tmp->next != NULL) {
-			tmp = tmp->next;
-		    }
-		    tmp->next = malloc(sizeof(struct list_struct));
-		    tmp->next->node = $2;
-		    tmp->next->next = NULL;
-		    $$ = $1;
-		}
-	    }
+decls_stmts_list:
+	statement {
+	    sm_list tmp = malloc(sizeof(struct list_struct));
+	    tmp->node = $1;
+	    tmp->next = NULL;
+	    $$ = tmp;
+	} 
+	|  declaration {
+	    $$ = $1;
+	   }
+	| decls_stmts_list statement {
+	    sm_list tmp = malloc(sizeof(struct list_struct));
+	    tmp->node = $2;
+	    tmp->next = NULL;
+	    $$ = cod_append_list($1, tmp);
+	}
+	| decls_stmts_list declaration {
+	    $$ = cod_append_list($1, $2);
 	};
 
 statement:
@@ -1410,11 +1407,13 @@ labeled_statement:
 	};
 
 compound_statement:
-	LCURLY declaration_list statement_list RCURLY {
+	LCURLY RCURLY {
+	    $$ = cod_new_compound_statement();
+	}
+	| LCURLY decls_stmts_list RCURLY {
 	    $$ = cod_new_compound_statement();
 	    $$->node.compound_statement.decls = $2;
-	    $$->node.compound_statement.statements = $3;
-	    cod_remove_defined_types($2, yycontext);
+	    cod_remove_defined_types($$->node.compound_statement.decls, yycontext);
 	};
 
 declaration_list:
@@ -3989,6 +3988,37 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
     return 0;
 }
 
+static int semanticize_statement(cod_parse_context context, sm_ref stmt, 
+				 scope_ptr scope);
+
+static int
+semanticize_decls_stmts_list(cod_parse_context context, sm_list decls_stmts, scope_ptr scope)
+{
+    int ret = 1;
+    while (decls_stmts != NULL) {
+	sm_ref item = decls_stmts->node;
+	switch(item->node_type) {
+	case cod_declaration: 
+	case cod_struct_type_decl:
+	case cod_array_type_decl:
+	case cod_reference_type_decl:
+	case cod_constant:
+	    if (!semanticize_decl(context, item, scope)) {
+		ret = 0;
+	    }
+	    break;
+	default: {
+	    int t = semanticize_statement(context, item, scope);
+	    if (!t) {
+		ret = 0;
+	    }
+	}
+	}
+	decls_stmts = decls_stmts->next;
+    }
+    return ret;
+}
+
 static int
 semanticize_decls_list(cod_parse_context context, sm_list decls, 
 		       scope_ptr scope)
@@ -4002,9 +4032,6 @@ semanticize_decls_list(cod_parse_context context, sm_list decls,
     }
     return ret;
 }
-
-static int semanticize_statement(cod_parse_context context, sm_ref stmt, 
-				 scope_ptr scope);
 
 static int
 semanticize_selection_statement(cod_parse_context context, sm_ref selection,
@@ -4164,32 +4191,18 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
     }
 }
 
-static int
-semanticize_statements(cod_parse_context context, sm_list stmts, 
-		       scope_ptr scope)
-{
-    int ret = 1;
-    while (stmts != NULL) {
-	if (!semanticize_statement(context, stmts->node, scope)) {
-	    ret = 0;
-	}
-	stmts = stmts->next;
-    }
-    return ret;
-}
-
 extern int
 semanticize_compound_statement(cod_parse_context context, sm_ref compound, 
 			       scope_ptr containing_scope)
 {
     int ret = 1;
     scope_ptr current_scope = push_scope(containing_scope);
-    ret &= semanticize_decls_list(context,
+    ret &= semanticize_decls_stmts_list(context,
 				  compound->node.compound_statement.decls,
 				  current_scope);
-    ret &= semanticize_statements(context,
-				  compound->node.compound_statement.statements,
-				  current_scope);
+    ret &= semanticize_decls_stmts_list(context,
+					compound->node.compound_statement.statements,
+					current_scope);
     pop_scope(current_scope);
     return ret;
 }
@@ -4637,7 +4650,6 @@ semanticize_reference_type_node(cod_parse_context context, sm_ref decl,
 				scope_ptr scope)
 {
     int ret = 1;
-    int struct_size = 0;
     if (decl->node.reference_type_decl.name != NULL) {
 	add_decl(decl->node.reference_type_decl.name, decl, scope);
     }
