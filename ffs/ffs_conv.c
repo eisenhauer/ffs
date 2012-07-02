@@ -1901,8 +1901,8 @@ int size;
 
 #if !defined(HAVE_DILL_H)
 int ffs_putreg(void* s, int reg, int type) {}
-int ffs_getreg(void*s, int reg, int type) {}
-int ffs_localb(void*s, int reg, int type) {}
+int ffs_getreg(dill_stream s, int *reg_p, int type, int var_tmp){}
+int ffs_localb(void*s, int size) {}
 extern
  conv_routine
 generate_conversion(conv, src_alignment, dest_alignment)
@@ -1981,8 +1981,9 @@ int ffs_local(dill_stream s, int type)
 #endif
 }
 
-int ffs_localb(dill_stream s, int size)
+int ffs_localb(void *vs, int size)
 {
+    dill_stream s = (dill_stream)vs;
 #ifdef RAW
     return dill_localb(s, size);
 #else
@@ -1990,8 +1991,9 @@ int ffs_localb(dill_stream s, int size)
 #endif
 }
 
-int ffs_getreg(dill_stream s, int *reg_p, int type, int var_tmp)
+int ffs_getreg(void *vs, int *reg_p, int type, int var_tmp)
 {
+    dill_stream s = (dill_stream)vs;
 #ifdef RAW
     return dill_raw_getreg(s, reg_p, type, var_tmp);
 #else
@@ -2001,9 +2003,10 @@ int ffs_getreg(dill_stream s, int *reg_p, int type, int var_tmp)
     return 1;
 }
 
-int ffs_putreg(dill_stream s, int reg, int type)
+int ffs_putreg(void *vs, int reg, int type)
 {
 #ifdef RAW
+    dill_stream s = (dill_stream)vs;
     return dill_raw_putreg(s, reg, type);
 #endif
     return 1;

@@ -554,7 +554,6 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	    */
 	    int element_size = determine_size(f, buf, parent_offset, t->next->next);
 	    int element_count = size / element_size;
-	    int actual_count;
 	    cod_exec_context ec = marshal_info->ec;
 	    struct subsample_marshal_data smd;
 	    new_offset = allocate_tmp_space(s, buf, size, 8, &tmp_data_loc);

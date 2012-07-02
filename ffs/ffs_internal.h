@@ -174,6 +174,9 @@ extern int get_var_array_control(const char *str, FMFieldList fields);
 extern int validate_data_type(const char *str);
 extern int min_align_type(FMdata_type typ, int size);
 extern void init_float_formats();
+extern int ffs_getreg(void* s, int *reg_p, int type, int var_tmp);
+extern int ffs_putreg(void* s, int reg, int type);
+int ffs_localb(void* s, int size);
 extern conv_routine generate_conversion(IOConversionPtr conv, 
 					int src_alignment, int dest_alignment);
 extern void ffs_internal_convert_field(FMFieldPtr src_spec, void *src,

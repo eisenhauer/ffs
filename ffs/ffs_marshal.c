@@ -128,7 +128,6 @@ static void
 copy_array_element(cod_exec_context ec, int element)
 {
     struct subsample_marshal_data *smd = (void*)cod_get_client_data(ec, 0x534d4450);
-    int offset;
     char *element_src, *element_dest;
     if ((element < 0) || (element >= smd->element_count)) return;
     if (smd->marshalled_count == smd->element_count) {

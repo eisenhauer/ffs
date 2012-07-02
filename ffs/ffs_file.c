@@ -756,7 +756,6 @@ parse_index_block(char *index_base)
     int item_count = 0, block_size;
     int cur_offset;
     int done = 0;
-    int i;
     item = malloc(sizeof(FFSIndexItemStruct));
     block_size = htonl(*((int*)(index_base+4))) & 0xffffff;
     item->next_index_offset = htonl(*((int*)(index_base+4)));
@@ -941,7 +940,7 @@ write_encoded_FFSfile(FFSFile f, void *data, DATA_LEN_TYPE byte_size, FFSContext
      * The following 6-bytes are the size of the data -- assume size fits
      * in 6 bytes.
      */
-    indicator[0] = htonl(0x3 << 24 + (byte_size >> 32));
+    indicator[0] = htonl((0x3 << 24) + (byte_size >> 32));
     indicator[1] = htonl(byte_size & 0xffffffff); 
 
     vec[0].iov_len = 8;
@@ -1010,7 +1009,7 @@ write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs)
      * The following 6-bytes are the size of the data -- assume size fits
      * in a signed int.
      */
-    indicator[0] = htonl(0x3 << 24 + (byte_size >> 32));
+    indicator[0] = htonl((0x3 << 24) + (byte_size >> 32));
     indicator[1] = htonl(byte_size & 0xffffffff); 
 
     /* 
@@ -1378,10 +1377,7 @@ static void
 read_all_index_and_formats(FFSFile file)
 {
     int fd = (int)(long)file->file_id;
-    struct _FFSIndexItem *index;
     off_t fpos = 1;
-    int index_item;
-    FFSIndexItem prev_index_tail = NULL;
 
     if (!file->index_head)
         FFSread_index(file);
@@ -1791,7 +1787,6 @@ FFSread_raw_header(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp)
     FFSTypeHandle f;
     int header_size;
     int read_size;
-    char *tmp_buf;
 
     if (file->status != OpenForRead)
 	return 0;
