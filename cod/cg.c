@@ -93,8 +93,6 @@ typedef struct _oprnd {
 
 #if defined(HAVE_DILL_H)
 static void cg_compound_statement(dill_stream s, sm_ref stmt, cod_code descr);
-static void cg_decls(dill_stream s, sm_list decl_list, cod_code descr);
-static void cg_statements(dill_stream s, sm_list stmt_list, cod_code descr);
 static void cg_decl(dill_stream s, sm_ref decl, cod_code descr);
 static void cg_statement(dill_stream s, sm_ref stmt, cod_code descr);
 static operand cg_expr(dill_stream s, sm_ref expr, int left, cod_code descr);

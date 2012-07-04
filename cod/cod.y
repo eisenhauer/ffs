@@ -159,6 +159,7 @@ cod_dup_list(sm_list list)
 }
 %}
 
+%expect 1
 %union {
     lx_info info;
     sm_ref reference;
@@ -839,9 +840,6 @@ declaration:
 		}
 		(void)$<reference>4;
 	    }
-        | error SEMI {
-	    $$ = NULL;
-	}
 	;
 
 declaration_specifiers
@@ -1377,6 +1375,9 @@ decls_stmts_list:
 	|  declaration {
 	    $$ = $1;
 	   }
+	| error SEMI {
+	      $$ = NULL;
+	  }
 	| decls_stmts_list statement {
 	    sm_list tmp = malloc(sizeof(struct list_struct));
 	    tmp->node = $2;
@@ -1394,9 +1395,6 @@ statement:
 	| selection_statement
 	| iteration_statement
 	| jump_statement
-	| error SEMI {
-	      $$ = NULL;
-	  }
 	;
 
 labeled_statement:
