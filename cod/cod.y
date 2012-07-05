@@ -4187,6 +4187,7 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	printf("unhandled case in semanticize statement\n");
 	return 1;
     }
+    return 1;
 }
 
 extern int

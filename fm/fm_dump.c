@@ -109,6 +109,7 @@ dump_output(dstate s, int length_estimate, char *format, ...)
     return 1;
 }
 
+#if SIZEOF_LONG != 8
 static int words_bigendian = -1;
 
 static int
@@ -125,6 +126,7 @@ set_bigendian () {
 }
 
 #define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+#endif
 
 static unsigned long
 quick_get_ulong(iofield, data)
@@ -344,7 +346,6 @@ dump_subfields(void *base, FMFormat f, dstate s, int data_offset)
     for (i = 0; i < f->field_count; i++) {
 	int subfield_offset = data_offset + f->field_list[i].field_offset;
 	FMFieldList fmfield = &f->field_list[i];
-	const char *field_name = fmfield->field_name;
 	int ret;
 	start_field(s, fmfield, &f->var_list[i].type_desc);
 

@@ -1528,6 +1528,7 @@ int size;
     return old_size;
 }
 
+#if SIZEOF_LONG != 8
 static int words_bigendian = -1;
 
 static int
@@ -1544,6 +1545,7 @@ set_bigendian () {
 }
 
 #define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+#endif
 
 static unsigned long
 quick_get_ulong(iofield, data)
