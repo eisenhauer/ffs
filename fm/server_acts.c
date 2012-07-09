@@ -269,10 +269,10 @@ action_t action;
 		connected++;
 	    }
 
-	    if ((action == local_only) || (action == host_only)) return 0;
-
 	    if (!connected) {
+		if ((action == local_only) || (action == host_only)) return 0;
 		/* fallback */
+
 		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		    fprintf(stderr, "Failed to create socket for FFS format server connection.  Not enough File Descriptors?\n");
 		    return 0;

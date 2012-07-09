@@ -70,6 +70,7 @@ typedef struct format_list {
 typedef struct _format_server {
     int port;			/* server port as announced to world */
     char *hostname;		/* server's hostname */
+    int format_server_identifier; /* pseudo-random generated id */
     time_t start_time;    
     int stdout_verbose;
     void *conn_sock_inet;	/* public sock for IP socket connection */
@@ -880,6 +881,12 @@ static host_info_p hostlist = NULL;
 static int host_count = 0;
 
 
+extern int
+get_internal_format_server_identifier(format_server fs)
+{
+    return fs->format_server_identifier;
+}
+
 static void
 format_server_handle_data(fs, fsc)
 format_server fs;
@@ -1227,6 +1234,14 @@ FSClient fsc;
 		os_server_write_func(fsc->fd, &next_action, 1, &junk_errno,
 				     &junk_str);
 		break;
+	    case 'P':
+		if (fs->stdout_verbose) {
+		    printf("ping/request for ID from client\n");
+		}
+		/* send it back */
+		os_server_write_func(fsc->fd, &fs->format_server_identifier, 4, &junk_errno,
+				     &junk_str);
+		break;
 	    }
 	}
 	break;
@@ -1382,12 +1397,14 @@ format_server_create()
     format_server fs = (format_server) malloc(sizeof(*fs));
     char *format_server_file_dir = NULL;
     int max_fd = FD_SETSIZE;	/* returns process fd table size */
+    long seed;
     if (fs == NULL)
 	return NULL;
 
 /*    if (os_sockets_init_func != NULL) os_sockets_init_func();*/
 
     my_pid = (int) getpid();
+    
     gethostname(buf, MAXHOSTNAMELEN);
     host = gethostbyname(buf);
     if (host != NULL) {
@@ -1399,6 +1416,10 @@ format_server_create()
 
 	my_IP_addr = INADDR_LOOPBACK;
     }
+    seed = time(NULL);
+    seed ^= my_IP_addr;
+    srand48(seed);
+    fs->format_server_identifier = lrand48();
 
     if (cercs_getenv("FORMAT_SERVER_PWD") != 0) {
 	format_server_file_dir = malloc(PATH_MAX + 1);
@@ -2058,11 +2079,13 @@ send_stats(FSClient fsc)
 {
     static FMFormat stats_format = NULL;
     char *stats_block = NULL;
-    int stats_block_len = 0, tmp;
+    int stats_block_len = 0, tmp, rep_len, id_len;
     struct FS_stats stats;
     int junk_errno;
     char *junk_str, *start;
     int i, fsc_count = 0;
+    char *server_rep;
+    char *server_ID;
 
     if (stats_context == NULL) {
 	FMStructDescRec str_list[3];
@@ -2140,12 +2163,26 @@ send_stats(FSClient fsc)
 	}
     }
 /*    stats_block = encode_IOcontext_buffer(stats_context, stats_format,
-					  &stats, &stats_block_len);
-*/  
+      &stats, &stats_block_len);*/
+
+    server_rep = 
+	get_server_rep_FMformat(stats_format, &rep_len);
+    server_ID = get_server_ID_FMformat(stats_format, &id_len);
+
     for (i = 0; i < fsc_count; i++) {
 	free(stats.clients[i].connection_initiation_time);
     }
     free(start);
+    tmp = htonl(id_len);
+    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+			 &junk_str);
+    os_server_write_func(fsc->fd, server_ID, id_len,
+			 &junk_errno, &junk_str);
+    tmp = htonl(rep_len);
+    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+			 &junk_str);
+    os_server_write_func(fsc->fd, server_rep, rep_len,
+			 &junk_errno, &junk_str);
     tmp = htonl(stats_block_len);
     os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
 			 &junk_str);

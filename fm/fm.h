@@ -234,6 +234,9 @@ FMlocalize_formats(FMStructDescList list);
 extern int 
 count_FMfield(FMFieldList list);
 
+int
+get_format_server_identifier(FMContext fmc);
+
 extern void print_server_ID(unsigned char *ID);
 extern void print_format_ID(FMFormat ioformat);
 

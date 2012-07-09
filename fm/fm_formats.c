@@ -685,6 +685,21 @@ new_FMTypeDesc()
 	*(integer[35])[10]	10 pointers to 35 integers
 */
 
+char *FMTypeEnumString[] = {"pointer", "array", "string", "subformat", "simple"};
+char *FMDatatypeString[] = {"unknown", "integer", "unsigned", "float", "char", "string", "enumeration",
+			    "boolean"};
+	
+static void
+dump_FMTypeDesc(FMTypeDesc *l, int indent)
+{
+    printf("Type Enumeration is %s\n", FMTypeEnumString[l->type]);
+    printf("Data Type is %s\n", FMDatatypeString[l->data_type]);
+    if (l->pointer_recursive) printf("Data Type is recursively defined.\n");
+    printf("Field index %d, static size %d, control_field_index %d\n", l->field_index, l->static_size, l->control_field_index);
+    if (l->next) dump_FMTypeDesc(l->next, indent+1);
+}
+
+
 extern FMTypeDesc*
 gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
 {
@@ -3555,6 +3570,22 @@ int index;
     }
 }
 
+int
+get_format_server_identifier(FMContext fmc)
+{
+    if (fmc->self_server == 1) {
+	return -1;
+    }
+    if (fmc->format_server_identifier == 0) {
+	if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
+	    if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
+		printf("Failed to contact format server\n");
+	    }
+	}
+    }
+    return fmc->format_server_identifier;
+}
+
 static FMFormat
 server_get_format(iocontext, buffer)
 FMContext iocontext;
@@ -3807,6 +3838,8 @@ void *format_ID;
 }
 #endif
 
+#define CURRENT_PROTOCOL_VERSION 3
+
 /* write header information to the format server */
 extern int
 server_write_header(fmc, enc_len, enc_buffer)
@@ -3814,21 +3847,20 @@ FMContext fmc;
 int enc_len;
 unsigned char *enc_buffer;
 {
-    FILE_INT magic = MAGIC_NUMBER + 2;
-    FILE_INT float_format = fmc->native_float_format;
+    FILE_INT magic = MAGIC_NUMBER + CURRENT_PROTOCOL_VERSION;
     FILE_INT server_pid;
     if (enc_len == 0) {
 	put_serverAtomicInt(fmc->server_fd, &magic, fmc);
-	put_serverAtomicInt(fmc->server_fd, &float_format, fmc);
+	put_serverAtomicInt(fmc->server_fd, &enc_len, fmc);
     } else {
 	FILE_INT key_len = enc_len;
-	magic = MAGIC_NUMBER + 3;
 	put_serverAtomicInt(fmc->server_fd, &magic, fmc);
 	put_serverAtomicInt(fmc->server_fd, &key_len, fmc);
 	serverAtomicWrite(fmc->server_fd, enc_buffer, key_len);
     }	
     get_serverAtomicInt(fmc->server_fd, &magic, 0);
     get_serverAtomicInt(fmc->server_fd, &server_pid, 0);
+    get_serverAtomicInt(fmc->server_fd, &fmc->format_server_identifier, 0);
     if ((fmc->server_pid != 0) && (fmc->server_pid != server_pid)) {
 	return 0;
     } else {
@@ -3891,6 +3923,13 @@ FSClient fsc;
 	fsc->version = 3;
 	fsc->byte_reversal = 1;
 	break;
+    case MAGIC_NUMBER + 4:
+	fsc->version = 4;
+	break;
+    case REVERSE_MAGIC_NUMBER + 0x4000000:
+	fsc->version = 4;
+	fsc->byte_reversal = 1;
+	break;
     default:
 	close((int)(long)fsc->fd);
 	return;
@@ -3914,6 +3953,10 @@ FSClient fsc;
     put_serverAtomicInt(fsc->fd, &magic, (FMContext) NULL);
     if (fsc->version >= 2) {
 	put_serverAtomicInt(fsc->fd, &pid, (FMContext) NULL);
+    }
+    if (fsc->version >= 3) {
+	int format_server_identifier = get_internal_format_server_identifier(fsc->fs);
+	put_serverAtomicInt(fsc->fd, &format_server_identifier, (FMContext) NULL);
     }
 }
 

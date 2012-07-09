@@ -28,6 +28,7 @@ typedef struct _FMContextStruct {
     void *server_client_data;
     void *server_fd;
     int server_pid;
+    int format_server_identifier;
     int server_byte_reversal;
 
     int format_list_size;
@@ -195,3 +196,4 @@ extern void general_format_server(int port, int do_restart, int verbose, int do_
 extern void dump_FMFormat(FMFormat ioformat);
 extern int format_server_restarted(FMContext context);
 extern int FMhas_XML_info(FMFormat format);
+extern int get_internal_format_server_identifier(format_server fs);
