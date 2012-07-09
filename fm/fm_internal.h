@@ -25,6 +25,7 @@ typedef struct _FMContextStruct {
 
     FMContext master_context;
     int self_server;
+    int self_server_fallback;
     void *server_client_data;
     void *server_fd;
     int server_pid;

@@ -293,7 +293,9 @@ action_t action;
 		}
 		if (connect(sock, (struct sockaddr *) &sock_addr,
 			    sizeof sock_addr) < 0) {
-		    fprintf(stderr, "Failed to connect to primary or fallback format servers.\n");
+		    if (iofile->self_server_fallback == 0) {
+			fprintf(stderr, "Failed to connect to primary or fallback format servers.\n");
+		    }
 		    return 0;
 		}
 	    }

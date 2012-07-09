@@ -1420,7 +1420,10 @@ format_server_create()
     seed ^= my_IP_addr;
     srand48(seed);
     fs->format_server_identifier = lrand48();
-
+    while ((fs->format_server_identifier == 0) || (fs->format_server_identifier == -1)) {
+	/* neither 0 nor -1 are acceptable identifiers, exclude them. */
+	fs->format_server_identifier = lrand48();
+    }
     if (cercs_getenv("FORMAT_SERVER_PWD") != 0) {
 	format_server_file_dir = malloc(PATH_MAX + 1);
 	format_server_file_dir = getcwd(format_server_file_dir, PATH_MAX);

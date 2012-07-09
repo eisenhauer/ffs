@@ -10,6 +10,10 @@ extern FMContext create_FMcontext();
 extern FMContext create_local_FMcontext();
 extern void free_FMcontext();
 extern void add_ref_FMcontext();
+extern void FMcontext_allow_self_formats(FMContext fmc);
+extern int
+FMcontext_get_format_server_identifier(FMContext fmc);
+
 
 #define FMOffset(p_type,field) \
 	((int) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
@@ -233,9 +237,6 @@ FMlocalize_formats(FMStructDescList list);
 
 extern int 
 count_FMfield(FMFieldList list);
-
-int
-get_format_server_identifier(FMContext fmc);
 
 extern void print_server_ID(unsigned char *ID);
 extern void print_format_ID(FMFormat ioformat);

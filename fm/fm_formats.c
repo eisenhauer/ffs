@@ -180,6 +180,7 @@ new_FMContext()
     c->result = NULL;
     
     c->self_server = 0;
+    c->self_server_fallback = 0;
     c->server_fd = (char *) -1;
     c->server_pid = 0;
     c->server_byte_reversal = 0;
@@ -1452,6 +1453,30 @@ is_self_server(FMContext fmc)
 	return is_self_server((FMContext) fmc->master_context);
     }
     return fmc->self_server;
+}
+
+static void
+check_format_server_self_status(FMContext context)
+{
+    int result;
+    if (context->self_server == 1) return;	/* we're already serving our own formats */
+    if (context->self_server_fallback == 0) return;	/* we're not allowed to serve our own formats */
+    /* if we got here, we can fallback to serving our own formats if we can't talk to the format server */
+    result = establish_server_connection_ptr(context, host_and_fallback);
+    if (result == 0) {
+	context->self_server = 1;
+    }
+    context->self_server_fallback = 0;	/* don't try again */
+}
+
+extern void FMcontext_allow_self_formats(FMContext fmc)
+{
+    if (fmc->master_context != NULL) {
+	FMcontext_allow_self_formats((FMContext) fmc->master_context);
+    }
+    fmc->self_server_fallback = 1;
+
+    check_format_server_self_status(fmc);
 }
 
 #ifndef MAXHOSTNAMELEN
@@ -3571,7 +3596,7 @@ int index;
 }
 
 int
-get_format_server_identifier(FMContext fmc)
+FMcontext_get_format_server_identifier(FMContext fmc)
 {
     if (fmc->self_server == 1) {
 	return -1;
