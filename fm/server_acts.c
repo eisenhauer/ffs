@@ -249,8 +249,10 @@ action_t action;
 	if ((action != never_local) || (strcmp(tmp_server_host, "localhost") != 0)) {
 	    if (fill_hostaddr(&sock_addr.sin_addr, tmp_server_host, 
 			      &protocol) == 0) {
-		fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
-			tmp_server_host);
+		if (iofile->self_server_fallback == 0) {
+		    fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
+			    tmp_server_host);
+		}
 		return 0;
 	    }
 	    if (format_server_verbose == 1) {
@@ -282,8 +284,10 @@ action_t action;
 		sock_addr.sin_family = AF_INET;
 		if (fill_hostaddr(&sock_addr.sin_addr, format_server_host, 
 				  &protocol) == 0) {
-		    fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
-			    format_server_host);
+		    if (iofile->self_server_fallback == 0) {
+			fprintf(stderr, "Unknown Host \"%s\" specified as FFS format server.\n",
+				format_server_host);
+		    }
 		    return 0;
 		}
 		sock_addr.sin_port = htons(ffs_format_server_port);
