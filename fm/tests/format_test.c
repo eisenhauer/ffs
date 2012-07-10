@@ -47,7 +47,8 @@ char **argv;
 	}
     }
     
-    printf("Format server identifier is %x\n", get_format_server_identifier(context));
+    FMcontext_allow_self_formats(context);
+    printf("Format server identifier is %x\n", FMcontext_get_format_server_identifier(context));
     if (get_test) {
 	char id[] = {02, 00, 00, 37, 103, 189, 231, 165, 33, 254, 42, 32};
 	printf("Doing get test\n");
