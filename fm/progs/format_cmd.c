@@ -121,6 +121,33 @@ char **argv;
 	/* get stats */
 	int len;
 	char *buffer;
+	int id_len;
+	char *id;
+	int rep_len;
+	char *server_rep;
+	FMFormat format;
+	if (serverAtomicRead(context->server_fd, &id_len, 4) != 4) {
+	    fprintf(stderr, "length read failed...  Command rejected by server.\n");
+	    exit(1);
+	}
+	id_len = ntohl(id_len);
+	id = malloc(id_len);
+	if (serverAtomicRead(context->server_fd, id, id_len) != len) {
+	    fprintf(stderr, "stats block read failed\n");
+	}
+	printf("Read %d bytes\n", id_len);
+	if (serverAtomicRead(context->server_fd, &rep_len, 4) != 4) {
+	    fprintf(stderr, "length read failed...  Command rejected by server.\n");
+	    exit(1);
+	}
+	rep_len = ntohl(rep_len);
+	server_rep = malloc(rep_len);
+	if (serverAtomicRead(context->server_fd, server_rep, rep_len) != len) {
+	    fprintf(stderr, "stats block read failed\n");
+	}
+	printf("Read %d bytes\n", rep_len);
+
+	load_external_format_FMcontext(context, id, id_len, server_rep);
 	if (serverAtomicRead(context->server_fd, &len, 4) != 4) {
 	    fprintf(stderr, "length read failed...  Command rejected by server.\n");
 	    exit(1);
@@ -130,7 +157,9 @@ char **argv;
 	if (serverAtomicRead(context->server_fd, buffer, len) != len) {
 	    fprintf(stderr, "stats block read failed\n");
 	}
-/*	dump_encoded_as_XML(context, buffer);*/
+	printf("Read %d bytes\n", len);
+	format = FMformat_from_ID(context, buffer);
+	FMdump_encoded_data(format, buffer, -1);
     } else if (format_action_char == 'p') {
 	/* ping */
 	char response;
