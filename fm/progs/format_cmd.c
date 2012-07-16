@@ -119,11 +119,11 @@ char **argv;
 
     if (format_action_char == 'S') {
 	/* get stats */
-	int len;
+	int len = 0;
 	char *buffer;
-	int id_len;
+	int id_len = 0;
 	char *id;
-	int rep_len;
+	int rep_len = 0;
 	char *server_rep;
 	FMFormat format;
 	if (serverAtomicRead(context->server_fd, &id_len, 4) != 4) {
@@ -147,7 +147,7 @@ char **argv;
 	}
 	printf("Read %d bytes\n", rep_len);
 
-	load_external_format_FMcontext(context, id, id_len, server_rep);
+	load_external_format_FMcontext(context, id, rep_len, server_rep);
 	if (serverAtomicRead(context->server_fd, &len, 4) != 4) {
 	    fprintf(stderr, "length read failed...  Command rejected by server.\n");
 	    exit(1);
