@@ -18,6 +18,7 @@ foreach (TEST ${TESTS} )
     TARGET_LINK_LIBRARIES(${TEST} ${ATL_LIBRARIES} )
     ADD_TEST(${TEST} "${TEST}")
 endforeach()
+SET_SOURCE_FILES_PROPERTIES(general.c PROPERTIES COMPILE_FLAGS -O0)
 
 set_tests_properties (t2
   PROPERTIES PASS_REGULAR_EXPRESSION "Expect -> .values are is 5, 3.14159, hello!.
