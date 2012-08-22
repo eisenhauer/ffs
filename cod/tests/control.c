@@ -31,6 +31,9 @@ dummy(int *p)
   return p;
 }
 
+static int count(cod_exec_context ec, long queue) {return queue;}
+static int discard(cod_exec_context ec, long queue, long index) {return queue + index;}
+
 int
 main(int argc, char**argv)
 {
@@ -144,6 +147,7 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    test_num++;
     if ((run_only == -1) || (run_only == test_num)) {
 	/* test 2  -  break */
 	static char extern_string[] = "int printf(string format, ...);";
@@ -181,6 +185,7 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    test_num++;
     if ((run_only == -1) || (run_only == test_num)) {
 	/* test 3  -  break */
 	static char extern_string[] = "int printf(string format, ...);";
@@ -224,6 +229,7 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    test_num++;
     if ((run_only == -1) || (run_only == test_num)) {
 	/* test 4  -  continue */
 	static char extern_string[] = "int printf(string format, ...);";
@@ -267,8 +273,9 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    test_num++;
     if ((run_only == -1) || (run_only == test_num)) {
-	/* test 5  -  mixed decls and statementsxs */
+	/* test 5  -  mixed decls and statements */
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
@@ -310,7 +317,49 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {
+	/* test 6  -  subroutine closures */
+	static char extern_string[] = "int printf(string format, ...);\n"
+        "int EVdiscard(cod_exec_context ec, cod_closure_context type, int index);\n"
+        "int EVcount(cod_exec_context ec, cod_closure_context type);\n";
+
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {"EVdiscard", (void*)(long)discard},
+	    {"EVcount", (void*)(long)count},
+	    {(void*)0, (void*)0}
+	};
+	char code_string[] = "\
+{\n\
+	int i, j;\n\
+	i = EVdiscard(5);\n\
+	j = EVcount();\n\
+	return i + j;\n\
+}";
+
+	cod_parse_context context;
+	cod_exec_context ec;
+	cod_code gen_code;
+	long (*func)();
+	long result;
+
+	GEN_PARSE_CONTEXT(context);
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+	cod_set_closure("EVdiscard", (void*) 7, context);
+	cod_set_closure("EVcount", (void*) 9, context);
+
+	gen_code = cod_code_gen(code_string, context);
+	ec = cod_create_exec_context(gen_code);
+	func = (long(*)()) (long) gen_code->func;
+	if (verbose) cod_dump(gen_code);
+	result = func(EC_param0);
+	assert(result == 5 + 7 + 9);
+	cod_code_free(gen_code);
+	cod_exec_context_free(ec);
+	cod_free_parse_context(context);
+    }
     return 0;
 }
-
-

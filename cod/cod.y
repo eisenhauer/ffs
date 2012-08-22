@@ -3134,7 +3134,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	sm_ref func_ref = expr->node.subroutine_call.sm_func_ref;
 	sm_ref tmp = resolve(func_ref->node.identifier.id, scope);
 	sm_list args = expr->node.subroutine_call.arguments;
-	sm_list formals;
+	sm_list formals, tmp_formals, tmp_args;
 	int ret = 1;
 	if (tmp != NULL) {
 	    if ((tmp->node_type != cod_declaration) ||
@@ -3154,6 +3154,44 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 
 	    return 0;
 	}
+	tmp_formals = formals;
+	tmp_args = args;
+	sm_list *last_arg_p = &args;
+	/* add closure args if required */
+	while (tmp_formals != NULL) {
+	    sm_ref formal = tmp_formals->node;
+	    if (formal && (formal->node.declaration.sm_complex_type != NULL)) {
+		sm_ref ct = formal->node.declaration.sm_complex_type;
+		if (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") == 0) {
+		    sm_list new_arg = malloc(sizeof(struct list_struct));
+		    char tmp[30];
+		    new_arg->next = tmp_args;
+		    if (func_ref->node.declaration.closure_id == NULL) {
+			strcpy(tmp, "0");
+		    } else {
+			sprintf(tmp, "%p", func_ref->node.declaration.closure_id);
+			if (strncmp(tmp, "0x", 2) != 0) {
+			    sprintf(tmp, "0x%p", func_ref->node.declaration.closure_id);
+			}
+		    }
+
+		    new_arg->node = cod_new_constant();
+		    new_arg->node->node.constant.token = integer_constant;
+		    new_arg->node->node.constant.const_val = strdup(tmp);
+		    *last_arg_p = new_arg;
+		    tmp_args = new_arg;
+		} else if (strcmp(ct->node.reference_type_decl.name, "cod_exec_context") == 0) {
+		    tmp_formals = tmp_formals->next;
+		    continue;
+		}
+
+	    }
+	    tmp_formals = tmp_formals->next;
+	    tmp_args = tmp_args->next;
+	}
+	/* must do this assigment, in case things changed from the loop above */
+	expr->node.subroutine_call.arguments = args;
+
 	while (args != NULL) {
 	    sm_ref arg = args->node;
 	    sm_ref formal = NULL;
@@ -3172,24 +3210,6 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
                         /* swallow next formal, we'll fill that in ourselves */
                         formals = formals->next;
                         continue;
-                    } else if (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") == 0) {
-                        sm_list tmp_args = malloc(sizeof(struct list_struct));
-                        char tmp[30];
-                        tmp_args->next = args->next;
-			tmp_args->node = args->node;
-			args->next = tmp_args;
-			if (func_ref->node.declaration.closure_id == NULL) {
-			    strcpy(tmp, "0");
-			} else {
-			    sprintf(tmp, "%p", func_ref->node.declaration.closure_id);
-			    if (strncmp(tmp, "0x", 2) != 0) {
-				sprintf(tmp, "0x%p", func_ref->node.declaration.closure_id);
-			    }
-			}
-
-                        args->node = cod_new_constant();
-                        args->node->node.constant.token = integer_constant;
-                        args->node->node.constant.const_val = strdup(tmp);
                     }
                 }
 	    }
