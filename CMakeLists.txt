@@ -69,28 +69,6 @@ IF( NOT CMAKE_BUILD_TYPE )
     SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 ENDIF()
 
-# add_library(fm SHARED ${FM_MASTER_SRC_LIST})
-# add_library(fm-static STATIC ${FM_MASTER_SRC_LIST})
-# # The library target "fm" already has a default OUTPUT_NAME of "fm", so we don't need to change it.
-# # The library target "fm-static" has a default OUTPUT_NAME of "fm-static", so change it.
-# SET_TARGET_PROPERTIES(fm-static PROPERTIES OUTPUT_NAME "fm" )
-# # Now the library target "foo-static" will be named "foo.lib" with MS tools.
-# # This conflicts with the "foo.lib" import library corresponding to "foo.dll",
-# # so we add a "lib" prefix (which is default on other platforms anyway):
-# SET_TARGET_PROPERTIES(fm-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
-# SET_TARGET_PROPERTIES(fm PROPERTIES LINKER_LANGUAGE C)
-
-# add_library(cod SHARED ${COD_MASTER_SRC_LIST})
-# add_library(cod-static STATIC ${COD_MASTER_SRC_LIST})
-# # The library target "cod" already has a default OUTPUT_NAME of "cod", so we don't need to change it.
-# # The library target "cod-static" has a default OUTPUT_NAME of "cod-static", so change it.
-# SET_TARGET_PROPERTIES(cod-static PROPERTIES OUTPUT_NAME "cod" )
-# # Now the library target "foo-static" will be named "foo.lib" with MS tools.
-# # This conflicts with the "foo.lib" import library corresponding to "foo.dll",
-# # so we add a "lib" prefix (which is default on other platforms anyway):
-# SET_TARGET_PROPERTIES(cod-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
-# SET_TARGET_PROPERTIES(cod PROPERTIES LINKER_LANGUAGE C)
-
 set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MASTER_SRC_LIST})
 
 add_library(ffs SHARED ${FFS_MASTER_SRC_LIST})
@@ -193,7 +171,7 @@ ENDIF()
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/fm/fm.h DESTINATION include)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.h DESTINATION include)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ffs/ffs.h DESTINATION include)
-INSTALL(TARGETS ffs ffs-static # fm fm-static cod cod-static 
+INSTALL(TARGETS ffs ffs-static 
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
