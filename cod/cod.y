@@ -3187,8 +3187,10 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 
 	    }
 	    tmp_formals = tmp_formals->next;
-	    if (tmp_args)
+	    if (tmp_args) {
+		last_arg_p = &tmp_args->next;
 		tmp_args = tmp_args->next;
+	    }
 	}
 	/* must do this assigment, in case things changed from the loop above */
 	expr->node.subroutine_call.arguments = args;
