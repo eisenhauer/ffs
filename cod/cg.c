@@ -3342,7 +3342,7 @@ static void cg_selection_statement(dill_stream s, sm_ref stmt, cod_code descr)
     cg_statement(s, stmt->node.selection_statement.then_part, descr);
     if (stmt->node.selection_statement.else_part != NULL) {
 	dill_mark_label_type end_label = dill_alloc_label(s, "if-end");
-	dill_jpi(s, (void*) (long)end_label);	/* op_i_jpi */
+	dill_jv(s, end_label);	/* op_i_jpi */
 	dill_mark_label(s, else_label);
 	cg_statement(s, stmt->node.selection_statement.else_part, descr);
 	dill_mark_label(s, end_label);
