@@ -3136,6 +3136,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	sm_list args = expr->node.subroutine_call.arguments;
 	sm_list formals, tmp_formals, tmp_args;
 	int ret = 1;
+	int done;
 	if (tmp != NULL) {
 	    if ((tmp->node_type != cod_declaration) ||
 		!tmp->node.declaration.is_subroutine) {
@@ -3195,11 +3196,25 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	/* must do this assigment, in case things changed from the loop above */
 	expr->node.subroutine_call.arguments = args;
 
-	while (args != NULL) {
-	    sm_ref arg = args->node;
+	done = 0;
+	while (!done) {
+	    sm_ref arg = NULL;
 	    sm_ref formal = NULL;
 	    if (formals != NULL) {
 		formal = formals->node;
+	    }
+	    if (args != NULL) {
+		arg = args->node;
+	    }
+	    if ((args == NULL) && (formals != NULL)) {
+		if (strcmp(formal->node.declaration.id, "...") != 0) {
+		    cod_src_error(context, arg, "Too few arguments to function");
+		    ret = 0;
+		}
+	    }
+	    if (args == NULL) {
+		done++;
+		continue;
 	    }
 	    if (formal && (formal->node.declaration.sm_complex_type != NULL)) {
 		sm_ref ct = formal->node.declaration.sm_complex_type;
