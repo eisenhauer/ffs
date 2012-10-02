@@ -104,7 +104,7 @@ if (${DILL_FOUND})
    list (APPEND DEPLIBS "-L${DILL_LIB_DIR}" "${GEN_THREAD_LIB_DIR}/libdill.la")
 endif()
 list (APPEND DEPLIBS "-L${ATL_LIB_DIR}" "${GEN_THREAD_LIB_DIR}/libatl.la")
-list (APPEND DEPLIBS "-L${CERCS_ENV_LIB_DIR}" "${GEN_THREAD_LIB_DIR}/libcercs_env.la")
+list (APPEND DEPLIBS "-L${CERCS_ENV_LIB_DIR}" "${CERCS_ENV_LIB_DIR}/libcercs_env.la")
 
 foreach(arg ${DEPLIBS})
    set(DEP_STRING "${DEP_STRING} ${arg}")
