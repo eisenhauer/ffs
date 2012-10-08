@@ -44,12 +44,15 @@ endif()
 
 ADD_TEST(write_index_output ffs_write -i index_output)
 ADD_TEST(read_index_test ffs_index_test index_output)
+set_property(TEST read_index_test APPEND PROPERTY DEPENDS write_index_output)
 
 foreach	(CTOUT ${CTOS})
     ADD_TEST(CTOUT_${CTOUT} context_test -r ${CTOUT})
+    set_property(TEST CTOUT_${CTOUT} APPEND PROPERTY DEPENDS write_context_output)
 endforeach()
 
 foreach	(FOUT ${FOS})
     ADD_TEST(FOUT_${FOUT} ffs_file_test ${FOUT})
+    set_property(TEST FOUT_${FOUT} APPEND PROPERTY DEPENDS write_file_output)
 endforeach()
 
