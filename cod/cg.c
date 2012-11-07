@@ -1924,7 +1924,11 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 	start = 0;
 	direction = 1;
     }
-    dill_push_init(s);
+    if (func_ref->node.declaration.varidiac_subroutine_param_count == -1) {
+	dill_push_init(s);
+    } else {
+	dill_push_varidiac_init(s, func_ref->node.declaration.varidiac_subroutine_param_count);
+    }
     for (i=0; i< arg_count; i++) {
 	int index = start + i * direction;
 	dill_push_arg(s, types_array[index], args_array[index]);

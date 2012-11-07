@@ -3987,10 +3987,21 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	}
 	if (decl->node.declaration.is_subroutine) {
 	    int ret;
+	    int param_count = 0;
+	    sm_list params = decl->node.declaration.params;
 	    scope_ptr sub_scope = push_scope(scope);
 	    ret = semanticize_decls_list(context,
 					 decl->node.declaration.params, 
 					 sub_scope);
+	    decl->node.declaration.varidiac_subroutine_param_count = -1;
+	    while(params) {
+		sm_ref formal = params->node;
+		if (strcmp(formal->node.declaration.id, "...") == 0) {
+		    decl->node.declaration.varidiac_subroutine_param_count = param_count;		    
+		}
+		params = params->next;
+		param_count++;
+	    }
 	    pop_scope(sub_scope);
 	    return ret;
 	}

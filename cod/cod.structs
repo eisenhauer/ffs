@@ -11,6 +11,7 @@ declaration:
 	sm_ref init_value;
 	srcpos lx_srcpos;
 	int  is_subroutine;
+	int  varidiac_subroutine_param_count;
 	int  is_typedef;
 	int  addr_taken;
 	int  is_extern;
