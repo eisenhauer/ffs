@@ -3141,10 +3141,18 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
     }
     case cod_subroutine_call: {
 	sm_ref func_ref = expr->node.subroutine_call.sm_func_ref;
-	sm_ref tmp = resolve(func_ref->node.identifier.id, scope);
-	sm_list args = expr->node.subroutine_call.arguments;
+	char *id;
+	sm_ref tmp;
+	sm_list args;
 	sm_list formals, tmp_formals, tmp_args;
 	int ret = 1;
+	if (func_ref->node_type == cod_identifier) {
+	    id = func_ref->node.identifier.id;
+	} else {
+	    id = func_ref->node.declaration.id;
+	}
+	tmp = resolve(id, scope);
+	args = expr->node.subroutine_call.arguments;
 	int done;
 	if (tmp != NULL) {
 	    if ((tmp->node_type != cod_declaration) ||
