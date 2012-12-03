@@ -2719,15 +2719,24 @@ add_field_list(int *format_count_p, FMStructDescList *format_list_p, sm_ref typ)
     int my_format_num = (*format_count_p)++;
     *format_list_p = realloc(*format_list_p, sizeof(*format_list_p[0]) * (*format_count_p + 1));
     while(fields != NULL) {
+	sm_ref typ = fields->node->node.field.sm_complex_type;
 	field_list = realloc(field_list, (sizeof(field_list[0]) * (field_count +2)));
 	field_list[field_count].field_name = strdup(fields->node->node.field.name);
 	field_list[field_count].field_type = strdup(fields->node->node.field.string_type);
 	field_list[field_count].field_size = fields->node->node.field.cg_size;
 	field_list[field_count].field_offset = fields->node->node.field.cg_offset;
-	if ((fields->node->node.field.sm_complex_type != NULL) &&
-	    (fields->node->node.field.sm_complex_type->node_type == cod_struct_type_decl)) {
-	    add_field_list(format_count_p, format_list_p,
-			   fields->node->node.field.sm_complex_type);
+	while((typ != NULL) && ((typ->node_type == cod_reference_type_decl) || (typ->node_type == cod_declaration)
+				|| (typ->node_type == cod_array_type_decl))) {
+	    if (typ->node_type == cod_reference_type_decl) {
+		typ = typ->node.reference_type_decl.sm_complex_referenced_type;
+	    } else if (typ->node_type == cod_array_type_decl) {
+		typ = typ->node.array_type_decl.sm_complex_element_type;
+	    } else if (typ->node_type == cod_declaration) {
+		typ = typ->node.declaration.sm_complex_type;
+	    }
+	}
+	if ((typ != NULL) && (typ->node_type == cod_struct_type_decl)) {
+	    add_field_list(format_count_p, format_list_p, typ);
 	}
 	field_count++;
 	fields = fields->next;
