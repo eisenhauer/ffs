@@ -91,8 +91,8 @@ const char *str2;
     FMdata_type t1, t2;
     long t1_count, t2_count;
 
-    t1 = array_str_to_data_type(str1, &t1_count);
-    t2 = array_str_to_data_type(str2, &t2_count);
+    t1 = FMarray_str_to_data_type(str1, &t1_count);
+    t2 = FMarray_str_to_data_type(str2, &t2_count);
 
     if ((t1_count == -1) && (t2_count == -1)) {
 	/* variant array */
@@ -249,7 +249,7 @@ count_total_IOfield_list(FMFieldList list, FMFormatList format_list)
     int count = 0, i = 0;
     while (list[i].field_name != NULL) {
 	char *base_type = base_data_type(list[i].field_type);
-	if (str_to_data_type(base_type) == unknown_type) {
+	if (FMstr_to_data_type(base_type) == unknown_type) {
 	    int j = -1;
 	    while (format_list[++j].format_name) {
 		if (strcmp(base_type, format_list[j].format_name) == 0) {

@@ -416,7 +416,7 @@ build_XML_output_info(FMFormat format)
 		i = right_end - XML_opt_data;
 		continue;
 	    }
-	    data_type = array_str_to_data_type(format->field_list[field_num].field_type,
+	    data_type = FMarray_str_to_data_type(format->field_list[field_num].field_type,
 					       &junk);
 	    field_ptr = malloc(sizeof(struct _FMgetFieldStruct));
 	    field_ptr->offset = format->field_list[field_num].field_offset;
@@ -482,7 +482,7 @@ build_XML_output_info(FMFormat format)
 		continue;
 	    }
 	    info[info_count].element_prestring = prestring;
-	    data_type = array_str_to_data_type(format->field_list[field_num].field_type,
+	    data_type = FMarray_str_to_data_type(format->field_list[field_num].field_type,
 					       &elements);
 	    info[info_count].iovar = &format->var_list[field_num];
 	    info[info_count].base_type = data_type;
@@ -643,7 +643,7 @@ ffs_dstring ds;
     char str[64];
     descr.offset = field_offset;
     descr.size = field_size;
-    descr.data_type = str_to_data_type(field_type);
+    descr.data_type = FMstr_to_data_type(field_type);
     descr.byte_swap = byte_reversal;
     descr.src_float_format = float_format;
     descr.target_float_format = fm_my_float_format;

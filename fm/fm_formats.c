@@ -513,7 +513,7 @@ FMFieldList field_list;
     char **name_list = malloc(sizeof(char *));
     while (field_list[field].field_name != NULL) {
 	char *base_type = base_data_type(field_list[field].field_type);
-	if (str_to_data_type(base_type) == unknown_type) {
+	if (FMstr_to_data_type(base_type) == unknown_type) {
 	    name_list = realloc(name_list, sizeof(char *) * (name_count + 1));
 	    name_list[name_count++] = base_type;
 	} else {
@@ -735,7 +735,7 @@ gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
 	root->type = FMType_simple;
 	root->next = NULL;
 	root->field_index = field;
-	root->data_type = array_str_to_data_type(typ, &junk);
+	root->data_type = FMarray_str_to_data_type(typ, &junk);
 	while (isspace((int)*typ)) {	/* skip preceeding space */
 	    typ++;
 	}
@@ -1077,7 +1077,7 @@ gen_var_dimens(FMFormat ioformat, int field)
 	new_var_list[field].type_desc.next = NULL;
 	new_var_list[field].type_desc.type = FMType_simple;
 	new_var_list[field].type_desc.field_index = field;
-	new_var_list[field].type_desc.data_type = str_to_data_type(typ);
+	new_var_list[field].type_desc.data_type = FMstr_to_data_type(typ);
     } else {
 	FMTypeDesc *desc = gen_type_desc(ioformat, field, typ);
 	new_var_list[field].type_desc = *desc;
@@ -1179,7 +1179,7 @@ FMFormat *formats;
 	new_var_list[field].type_desc.next = NULL;
 	ioformat->field_subformats[field] = NULL;
 	new_var_list[field].data_type =
-	    array_str_to_data_type(field_list[field].field_type,
+	    FMarray_str_to_data_type(field_list[field].field_type,
 				   &elements);
 	if (new_var_list[field].data_type == string_type) {
 	    ioformat->variant = 1;
@@ -1534,7 +1534,7 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 		long elements;
 		FMdata_type base_type;
 		
-		base_type = array_str_to_data_type(field_list[field].field_type,
+		base_type = FMarray_str_to_data_type(field_list[field].field_type,
 						   &elements);
 		if ((base_type != unknown_type) &&
 		    (field_list[field].field_size > 16)) {
@@ -1988,7 +1988,7 @@ FMFieldList list;
 	} else {
 	    if (fmc) {
 		long elements;
-		array_str_to_data_type(list[i].field_type, &elements);
+		FMarray_str_to_data_type(list[i].field_type, &elements);
 		field_size = list[i].field_size * elements;
 	    } else {
 		field_size = list[i].field_size;
@@ -2017,7 +2017,7 @@ int pointer_size;
 	    field_size = pointer_size;
 	} else {
 	    long elements;
-	    array_str_to_data_type(list[i].field_type, &elements);
+	    FMarray_str_to_data_type(list[i].field_type, &elements);
 	    field_size = list[i].field_size * elements;
 	}
 	assert(field_size > 0);
@@ -2189,6 +2189,32 @@ FMFieldList list;
     new_field_list[field_count].field_offset = 0;
     new_field_list[field_count].field_size = 0;
     return new_field_list;
+}
+
+extern
+FMStructDescList
+FMcopy_struct_list(list)
+FMStructDescList list;
+{
+    int format_count = 0;
+    FMStructDescList new_list;
+    int format;
+
+    while(list[format_count].format_name != NULL) format_count++;
+
+    new_list = (FMStructDescList) malloc((size_t) sizeof(FMStructDescRec) *
+					     (format_count + 1));
+    for (format = 0; format < format_count; format++) {
+	new_list[format].format_name = strdup(list[format].format_name);
+	new_list[format].field_list = copy_field_list(list[format].field_list);
+	new_list[format].struct_size = list[format].struct_size;
+	new_list[format].opt_info = list[format].opt_info;
+    }
+    new_list[format_count].format_name = NULL;
+    new_list[format_count].field_list = NULL;
+    new_list[format_count].struct_size = 0;
+    new_list[format_count].opt_info = NULL;
+    return new_list;
 }
 
 extern
@@ -2385,7 +2411,7 @@ format_list_of_FMFormat(FMFormat format)
 }
 
 extern FMdata_type
-array_str_to_data_type(str, element_count_ptr)
+FMarray_str_to_data_type(str, element_count_ptr)
 const char *str;
 long *element_count_ptr;
 {
@@ -2399,13 +2425,13 @@ long *element_count_ptr;
 #endif
     if ((left_paren = strchr(str, '[')) == NULL) {
 	*element_count_ptr = 1;
-	ret_type = str_to_data_type(str);
+	ret_type = FMstr_to_data_type(str);
 	return ret_type;
     }
     field_type_len = left_paren - str;
     strncpy(field_type, str, field_type_len);
     field_type[field_type_len] = 0;
-    ret_type = str_to_data_type(field_type);
+    ret_type = FMstr_to_data_type(field_type);
     while (left_paren != NULL) {
 	char *end;
 	long tmp = strtol(left_paren + 1, &end, 10);
@@ -2439,8 +2465,8 @@ const char *str2;
     FMdata_type t1, t2;
     long t1_count, t2_count;
 
-    t1 = array_str_to_data_type(str1, &t1_count);
-    t2 = array_str_to_data_type(str2, &t2_count);
+    t1 = FMarray_str_to_data_type(str1, &t1_count);
+    t2 = FMarray_str_to_data_type(str2, &t2_count);
 
     if ((t1_count == -1) && (t2_count == -1)) {
 	/* variant array */
@@ -2500,7 +2526,7 @@ const char *field_type;
 }
 
 extern FMdata_type
-str_to_data_type(str)
+FMstr_to_data_type(str)
 const char *str;
 {
     const char *end;
@@ -2644,7 +2670,7 @@ int *control_field;
 	field_name[count] = 0;
 	while (fields[i].field_name != NULL) {
 	    if (strcmp(field_name, fields[i].field_name) == 0) {
-		if (str_to_data_type(fields[i].field_type) ==
+		if (FMstr_to_data_type(fields[i].field_type) ==
 		    integer_type) {
 		    *control_field = i;
 		    return -1;
@@ -3470,7 +3496,7 @@ fill_derived_format_values(FMContext fmc, FMFormat format)
 	} else {
 	    long elements = 1;
 	    FMdata_type base_type;
-	    base_type = array_str_to_data_type(field_list[field].field_type,
+	    base_type = FMarray_str_to_data_type(field_list[field].field_type,
 					       &elements);
 	    if ((base_type != unknown_type) &&
 		(field_list[field].field_size > 16)) {
@@ -3491,7 +3517,7 @@ fill_derived_format_values(FMContext fmc, FMFormat format)
 	    FMTypeDesc* desc = NULL;
 
 	    /* if field is of another record format, fill that in */
-	    if (str_to_data_type(base_type) == unknown_type) {
+	    if (FMstr_to_data_type(base_type) == unknown_type) {
 	        FMFormat *subformats = format->subformats;
 		while (subformats && subformats[0]) {
 		    if (strcmp(base_type, subformats[0]->format_name) == 0) {

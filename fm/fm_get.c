@@ -635,8 +635,8 @@ const char *str2;
     FMdata_type t1, t2;
     long t1_count, t2_count;
 
-    t1 = array_str_to_data_type(str1, &t1_count);
-    t2 = array_str_to_data_type(str2, &t2_count);
+    t1 = FMarray_str_to_data_type(str1, &t1_count);
+    t2 = FMarray_str_to_data_type(str2, &t2_count);
 
     if ((t1_count == -1) && (t2_count == -1)) {
 	/* variant array */
@@ -706,7 +706,7 @@ int *control_field;
 	field_name[count] = 0;
 	while (fields[i].field_name != NULL) {
 	    if (strcmp(field_name, fields[i].field_name) == 0) {
-		if (str_to_data_type(fields[i].field_type) ==
+		if (FMstr_to_data_type(fields[i].field_type) ==
 		    integer_type) {
 		    *control_field = i;
 		    return -1;
@@ -757,7 +757,7 @@ const char *fieldname;
     if (field_list[index].field_name == NULL)
 	return NULL;
 
-    data_type = str_to_data_type(field_list[index].field_type);
+    data_type = FMstr_to_data_type(field_list[index].field_type);
     if (data_type == unknown_type) {
 	fprintf(stderr, "Unknown field type for field %s\n",
 		field_list[index].field_name);
@@ -795,7 +795,7 @@ const char *fieldname;
     if (index >= format->field_count)
 	return NULL;
 
-    data_type = array_str_to_data_type(format->field_list[index].field_type,
+    data_type = FMarray_str_to_data_type(format->field_list[index].field_type,
 				       &junk);
     if (data_type == unknown_type) {
 	fprintf(stderr, "Unknown field type for field %s\n",

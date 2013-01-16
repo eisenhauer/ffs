@@ -220,7 +220,7 @@ void **default_val;
 {
     char *s, *s1;
     char *base_type = base_data_type(io_field->field_type);
-    FMdata_type data_type = str_to_data_type(base_type);
+    FMdata_type data_type = FMstr_to_data_type(base_type);
     strncpy(out_field_name, io_field->field_name, 64);
     s = strchr(out_field_name, '(');
     *default_val = NULL;
@@ -397,7 +397,7 @@ int converted_strings;
 	    }
 	}
 	input_field = input_field_list[input_index];
-	in_data_type = array_str_to_data_type(input_field.field_type,
+	in_data_type = FMarray_str_to_data_type(input_field.field_type,
 					      &in_elements);
 	if (in_elements != 1) {
 	    char *first_bracket = memchr(input_field.field_type, '[', strlen(input_field.field_type));
@@ -410,7 +410,7 @@ int converted_strings;
 	if (in_elements == -1) {
 	    in_elements = 1;	/* var array */
 	}
-	target_data_type = array_str_to_data_type(nfl_sort[i].field_type,
+	target_data_type = FMarray_str_to_data_type(nfl_sort[i].field_type,
 						  &target_elements);
 	if (target_elements == -1) {
 	    target_elements = 1;	/* var array */
@@ -539,7 +539,7 @@ int converted_strings;
 		conv_ptr->conversions[conv_index].rc_swap = swap_source_row_major;
 	    }
 	}
-	in_data_type = array_str_to_data_type(input_field.field_type, 
+	in_data_type = FMarray_str_to_data_type(input_field.field_type, 
 					      &in_elements);
 	conv_ptr->conversions[conv_index].iovar =
 	    &input_var_list[input_index];

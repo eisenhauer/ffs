@@ -3,13 +3,101 @@
 						 * magic */
 #define MAGIC_FLOAT 0.0078125	/* random float */
 
-extern FMdata_type str_to_data_type(const char *str);
-extern FMdata_type array_str_to_data_type(const char *str, 
+extern FMdata_type FMstr_to_data_type(const char *str);
+extern FMdata_type FMarray_str_to_data_type(const char *str, 
 						long *element_count_ptr);
 extern const char *data_type_to_str(FMdata_type data_type);
 extern int field_offset_compar(const void *a, const void *b);
 extern void dump_FMFormat(FMFormat ioformat);
 extern FMContext new_FMContext();
+
+typedef enum {
+    FMType_pointer, FMType_array, FMType_string, FMType_subformat, FMType_simple
+}FMTypeEnum;
+	
+typedef struct FMTypeDesc {
+    struct FMTypeDesc *next;
+    FMTypeEnum type;
+    FMdata_type data_type;
+    int pointer_recursive;
+    int field_index;
+    int static_size;
+    int control_field_index;
+} FMTypeDesc;
+
+typedef struct FMDimen {
+    int static_size;
+    int control_field_index;
+} FMDimen;
+
+typedef struct _FMVarInfoStruct {
+    int string;
+    int var_array;
+    int byte_vector;
+    FMdata_type data_type;
+    int dimen_count;
+    FMDimen *dimens;
+    FMTypeDesc type_desc;
+} FMVarInfoStruct, *FMVarInfoList;
+
+typedef struct _xml_output_info *xml_output_info;
+
+struct _format_wire_format_0;
+typedef struct _format_wire_format_0 *format_rep;
+
+typedef struct _server_ID_struct {
+    int length;
+    char *value;
+} server_ID_type;
+
+typedef struct _FMFormatBody {
+    int ref_count;
+    FMContext context;
+    char *format_name;
+    int format_index;
+    server_ID_type server_ID;
+    int record_length;
+    int byte_reversal;
+    FMfloat_format float_format;
+    int pointer_size;
+    int IOversion;
+    int field_count;
+    int variant;
+    int recursive;
+    int alignment;
+    int column_major_arrays;
+    FMStructDescList master_struct_list;
+    FMStructDescList orig_struct_list;	/* we don't own this memory */
+    FMFormat superformat;
+    FMFormat *subformats;
+    FMFieldList field_list;
+    FMVarInfoList var_list;
+    FMFormat *field_subformats;
+    FMOptInfo *opt_info;
+    xml_output_info xml_out;
+    format_rep server_format_rep;    
+    void *ffs_info;
+    void (*free_ffs_info)(void*);
+} FMFormatBody;
+
+extern long
+FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data, 
+			  int encode);
+
+extern FMTypeDesc*
+gen_FMTypeDesc(FMFieldList fl, int field, const char *typ);
+
+typedef struct _FMgetFieldStruct {
+    int offset;
+    int size;
+    FMdata_type data_type;
+    unsigned char byte_swap;
+    unsigned char src_float_format;
+    unsigned char target_float_format;
+} FMgetFieldStruct;
+
+extern FMfloat_format ffs_reverse_float_formats[];
+extern char *base_data_type(const char *str);
 
 struct _format_server;
 
@@ -144,13 +232,6 @@ typedef struct {
 #endif
 
 #define MAX_UNSIGNED_TYPE unsigned MAX_INTEGER_TYPE
-
-extern FMfloat_format ffs_reverse_float_formats[];
-extern char *base_data_type(const char *str);
-extern char *get_FMstring_base(FMFieldPtr iofield, void *data, void *string_base);
-extern void *get_FMaddr (FMFieldPtr iofield, void *data, void *string_base, int encode);
-extern FMFieldPtr get_FMfieldPtrFromList(FMFieldList field_list, 
-					 const char *fieldname);
 
 typedef int (*IOinterface_func)(void *conn, void *buffer, int length,
 				      int *errno_p, char **result_p);

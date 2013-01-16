@@ -32,6 +32,7 @@ int cod_kplugins_integration = 0;
 #endif
 #endif
 #include "fm.h"
+#include "fm_internal.h"
 #include "cod.h"
 #include "cod_internal.h"
 #include "assert.h"
