@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#define HAVE_IOVEC_DEFINE
 #endif
 #define FD_SETSIZE 1024
 #include <windows.h>

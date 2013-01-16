@@ -9,6 +9,7 @@
 #include <ffs.h>
 #include "cercs_env.h"
 #include "cod.h"
+#include "fm_internal.h"
 #include "ffs_internal.h"
 #include "ffs_marshal.h"
 

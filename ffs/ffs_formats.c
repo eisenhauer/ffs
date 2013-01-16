@@ -54,6 +54,7 @@ dill_type_align(dill_stream s, int t)
 }
 #endif
 #include "ffs.h"
+#include "fm_internal.h"
 #include "assert.h"
 
 static int

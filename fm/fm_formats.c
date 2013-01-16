@@ -22,6 +22,7 @@
 #include <time.h>
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#define HAVE_IOVEC_DEFINE
 #endif
 #include <stdlib.h>
 #ifdef HAVE_MEMORY_H
@@ -4048,6 +4049,13 @@ int *id_length;
 {
     *id_length = format->server_ID.length;
     return format->server_ID.value;
+}
+
+extern FMContext
+FMContext_from_FMformat(format)
+FMFormat format;
+{
+    return format->context;
 }
 
 

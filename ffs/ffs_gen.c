@@ -8,6 +8,7 @@
 #include <memory.h>
 #endif
 #include "assert.h"
+#include "fm_internal.h"
 #include "ffs_internal.h"
 #include "dill.h"
 #define static_ctx c 

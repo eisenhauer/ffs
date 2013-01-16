@@ -1,3 +1,6 @@
+#ifndef FM_INTERNAL_H
+#define FM_INTERNAL_H
+
 #define MAGIC_NUMBER 0x4356ffa9	/* random magic */
 #define REVERSE_MAGIC_NUMBER 0xa9ff5643		/* byte reversed random
 						 * magic */
@@ -236,6 +239,18 @@ typedef struct {
 typedef int (*IOinterface_func)(void *conn, void *buffer, int length,
 				      int *errno_p, char **result_p);
 
+#if !defined(HAVE_IOVEC_DEFINE) && !defined(_STRUCT_IOVEC)
+#define HAVE_IOVEC_DEFINE
+struct	iovec {
+    const void *iov_base;
+    int	iov_len;
+};
+#endif
+
+typedef int (*IOinterface_funcv)(void *conn, struct iovec *iov, 
+				 int icount, int *errno_p, 
+				 char **result_p);
+
 typedef int (*IOinterface_close)(void *conn);
 
 typedef int (*IOinterface_poll)(void *conn);
@@ -279,3 +294,4 @@ extern void dump_FMFormat(FMFormat ioformat);
 extern int format_server_restarted(FMContext context);
 extern int FMhas_XML_info(FMFormat format);
 extern int get_internal_format_server_identifier(format_server fs);
+#endif

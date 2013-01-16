@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#define HAVE_IOVEC_DEFINE
 #endif
 #else
 /* kernel build */

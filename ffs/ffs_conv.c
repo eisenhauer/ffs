@@ -29,6 +29,7 @@
 #define _vrr(x) x
 #endif
 #include "ffs.h"
+#include "fm_internal.h"
 #include "ffs_internal.h"
 #if defined(HAVE_DILL_H)
 #include "ffs_gen.h"

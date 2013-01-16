@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include "assert.h"
 #include "ffs.h"
+#include "fm_internal.h"
 #include "ffs_internal.h"
 #include "io_interface.h"
 

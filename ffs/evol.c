@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <ffs.h>
 #include "cercs_env.h"
+#include "fm_internal.h"
 #include "ffs_internal.h"
 
 #define MAX_DIFF	0xFFFF

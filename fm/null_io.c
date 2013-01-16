@@ -21,6 +21,7 @@
 #endif
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#define HAVE_IOVEC_DEFINE
 #endif
 #include <stdio.h>
 #include "fm.h"

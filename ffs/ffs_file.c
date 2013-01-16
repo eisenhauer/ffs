@@ -4,6 +4,7 @@
 #include "assert.h"
 #include "atl.h"
 #include "ffs.h"
+#include "fm_internal.h"
 #include "ffs_internal.h"
 #include "cercs_env.h"
 #include "strings.h"
@@ -496,15 +497,15 @@ open_FFSfile(const char *path, const char *flags)
     parse_flags(flags, &allow_input, &allow_output, &raw, &index);
 
     if (allow_input && allow_output) {
-	file = ffs_file_open_func(path, "a");
+	file = ffs_file_open_func(path, "a", NULL, NULL);
 	if (file == (void*)0) {
 	    /* if open for append failed, try creating it */
-	    file = ffs_file_open_func(path, "w");
+	    file = ffs_file_open_func(path, "w", NULL, NULL);
 	}
     } else if (allow_input) {
-	file = ffs_file_open_func(path, "r");
+	file = ffs_file_open_func(path, "r", NULL, NULL);
     } else {
-	file = ffs_file_open_func(path, "w");
+	file = ffs_file_open_func(path, "w", NULL, NULL);
     }
 
     if (file == NULL) {

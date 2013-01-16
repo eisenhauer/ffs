@@ -121,7 +121,7 @@ generate_single_handler(FFSTypeHandle format, char *expression, func_table_entry
     while (templates[j] != NULL) {
 	for (i=0 ; i < 3; i++) {
 	    cod_parse_context context = new_cod_parse_context();
-	    FMContext c = fmf->context;
+	    FMContext c = FMContext_from_FMformat(fmf);
 	    cod_code gen_code;
 	    int id_len;
 	    char *decl;

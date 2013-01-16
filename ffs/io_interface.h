@@ -27,6 +27,7 @@ struct	iovec {
 };
 #endif
 
+#ifndef FM_INTERNAL_H
 typedef int (*IOinterface_func) ARGS((void *conn, void *buffer, int length,
 				      int *errno_p, char **result_p));
 
@@ -38,8 +39,9 @@ typedef int (*IOinterface_close) ARGS((void *conn));
 
 typedef int (*IOinterface_poll) ARGS((void *conn));
 
-typedef void *(*IOinterface_open)(const char *path, const char *flag_str);
+typedef void *(*IOinterface_open)(const char *path, const char *flag_str, int *input, int *output);
 typedef void (*IOinterface_init)(void );
+#endif
 
 extern IOinterface_func ffs_file_read_func;
 extern IOinterface_func ffs_file_write_func;
