@@ -239,7 +239,7 @@ typedef struct {
 typedef int (*IOinterface_func)(void *conn, void *buffer, int length,
 				      int *errno_p, char **result_p);
 
-#if !defined(HAVE_IOVEC_DEFINE) && !defined(_STRUCT_IOVEC)
+#if !defined(HAVE_IOVEC_DEFINE) && !defined(_STRUCT_IOVEC) && !(defined(_BITS_UIO_H))
 #define HAVE_IOVEC_DEFINE
 struct	iovec {
     const void *iov_base;
