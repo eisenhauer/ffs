@@ -243,7 +243,7 @@ typedef int (*IOinterface_func)(void *conn, void *buffer, int length,
 #define HAVE_IOVEC_DEFINE
 struct	iovec {
     const void *iov_base;
-    int	iov_len;
+    long iov_len;
 };
 #endif
 
