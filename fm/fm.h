@@ -80,6 +80,9 @@ get_server_rep_FMformat(FMFormat ioformat, int *rep_length);
 extern char *
 get_server_ID_FMformat(FMFormat ioformat, int *id_length);
 
+extern FMContext
+FMContext_from_FMformat(FMFormat ioformat);
+
 extern int
 get_rep_len_format_ID(void *format_ID);
 
