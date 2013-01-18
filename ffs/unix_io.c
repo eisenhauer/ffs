@@ -222,7 +222,8 @@ int *output;
     int flags;
     int file_id;
     long tmp_flags = (long)flag_str;
-    *input = *output = 0;
+    if (input) *input = 0;
+    if (output) *output = 0;
 
     tmp_flags &= ~(O_TRUNC);
     tmp_flags &= ~(O_CREAT);
@@ -230,15 +231,15 @@ int *output;
 	(O_WRONLY == tmp_flags)) {
 	 /* must be old style call */
 	 flags = (long)flag_str;
-	 *input = (O_RDONLY == (long)flag_str);
-	 *output = (O_WRONLY & (long)flag_str);
+	 if (input) *input = (O_RDONLY == (long)flag_str);
+	 if (output) *output = (O_WRONLY & (long)flag_str);
     } else {
 	 if (strcmp(flag_str, "r") == 0) {
 	      flags = O_RDONLY;
-	      *input = 1;
+	      if (input) *input = 1;
 	 } else if (strcmp(flag_str, "w") == 0) {
 	      flags = O_WRONLY | O_CREAT | O_TRUNC;
-	      *output = 1;
+	      if (output) *output = 1;
 	 } else {
 	      fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
 		      path);
