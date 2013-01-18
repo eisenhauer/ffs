@@ -140,7 +140,9 @@ LOG(format_server fs, char *format,...)
 	if (log == (void *) 0) {
 	    restart++;
 	    if (stat("/users/c/chaos/bin/format_server_report", &stat_buf) == 0) {
-		system("/users/c/chaos/bin/format_server_report restart");
+	        if(system("/users/c/chaos/bin/format_server_report restart") == -1) {
+		    printf("RESTART FAILED\n");
+		}
 	    }
 	}
 	log = fopen(format_server_log, "a");
@@ -181,7 +183,9 @@ LOG(format_server fs, char *format,...)
 	    fflush(log);
 	    fclose(log);
 	    if (stat("/users/c/chaos/bin/format_server_report", &stat_buf) == 0) {
-		system("/users/c/chaos/bin/format_server_report log");
+	        if(system("/users/c/chaos/bin/format_server_report log") == -1) {
+		    printf("log failed\n");
+	        }
 	    }
 	    unlink(format_server_log);
 	    
@@ -1296,7 +1300,9 @@ get_qual_hostname(char *buf, int len)
 #ifdef HAVE_GETDOMAINNAME
 	int end = strlen(buf);
 	buf[end] = '.';
-	getdomainname((&buf[end]) + 1, len - strlen(buf));
+	if (getdomainname((&buf[end]) + 1, len - strlen(buf)) == -1) {
+	    buf[end+1] = 0;
+	}
 	if (buf[end + 1] == 0) {
 	    char *tmp_name;
 	    buf[end] = 0;

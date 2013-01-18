@@ -656,22 +656,22 @@ int *size_p;
 	    printf("memory overwrite error\n");
 	}
     }
-    read(file_fd, &indicator, 4);
+    if(read(file_fd, &indicator, 4) != 4) exit(1);
     indicator = ntohl(indicator);
     if ((indicator >> 24) == 0x2) {
 	/* got a format coming in */
 	int format_rep_size, format_id_size;
 	char *format_id, *format_rep;
-	read(file_fd, &format_rep_size, 4);
+	if (read(file_fd, &format_rep_size, 4) != 4) exit(1);
 	format_rep_size = ntohl(format_rep_size);
 	format_id_size = indicator & 0xff;
 	format_id = malloc(format_id_size);
 	format_rep = malloc(format_rep_size);
-	read(file_fd, format_id, format_id_size);
-	read(file_fd, format_rep, format_rep_size);
+	if (read(file_fd, format_id, format_id_size) != format_id_size) exit(1);
+	if (read(file_fd, format_rep, format_rep_size) != format_rep_size) exit(1);
 	(void) load_external_format_FMcontext(loaded_FMcontext, format_id,
 					      format_id_size, format_rep);
-	read(file_fd, &indicator, 4);
+	if(read(file_fd, &indicator, 4) != 4) exit(1);
 	indicator = ntohl(indicator);
     }
     if ((indicator >> 24) != 0x3) printf("BAD!\n");
@@ -1225,7 +1225,7 @@ int size;
 	vec[2].iov_base = server_rep;
 	vec[3].iov_len = 0;
 	vec[3].iov_base = NULL;
-	writev(file_fd, vec, 3);
+	if (writev(file_fd, vec, 3) != 3) exit(1);
 	seen_formats[seen_count++] = format;
     }
 
@@ -1235,6 +1235,6 @@ int size;
      */
     indicator = htonl((size & 0xffffff) | 0x3 << 24);
 
-    write(file_fd, &indicator, 4);
-    write(file_fd, buf, size);
+    if (write(file_fd, &indicator, 4) != 4) exit(1);
+    if (write(file_fd, buf, size) != 4) exit(1);
 }

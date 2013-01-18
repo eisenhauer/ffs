@@ -127,9 +127,9 @@ int *size_p;
 	    printf("memory overwrite error\n");
 	}
     }
-    read(file_fd, &csize, 1);	/* low byte of 2-byte size */
+    if (read(file_fd, &csize, 1) != 1) exit(1);	/* low byte of 2-byte size */
     ssize = csize;
-    read(file_fd, &csize, 1);	/* high byte of 2-byte size */
+    if (read(file_fd, &csize, 1) != 1) exit(1);	/* high byte of 2-byte size */
     ssize += ((csize << 8) & 0xff00);
     to_read = ssize;
     buffer = realloc(buffer, to_read+4);
@@ -343,8 +343,8 @@ int size;
     }
     ssize = size;
     csize = ssize & 0xff;
-    write(file_fd, &csize, 1);	/* low byte of 2-byte size */
+    if (write(file_fd, &csize, 1) != 1) exit(1);/* low byte of 2-byte size */
     csize = ((ssize >> 8) & 0xff);
-    write(file_fd, &csize, 1);	/* high byte of 2-byte size */
-    write(file_fd, buf, size);
+    if (write(file_fd, &csize, 1) != 1) exit(1);/* high byte of 2-byte size */
+    if (write(file_fd, buf, size) != size) exit(1);
 }

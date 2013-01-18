@@ -105,7 +105,7 @@ char *read_buffer(FMContext c, char *read_file, int test_num)
     if (f == 0) {
 	int in_magic;
 	f = open(read_file, O_RDONLY, 0777);
-	read(f, &in_magic, 4);
+	if(read(f, &in_magic, 4) != 4) exit(1);
 	if (in_magic != MAGIC) {
 	    byte_swap((char*)&in_magic, 4);
 	    swap++;
