@@ -1225,7 +1225,10 @@ int size;
 	vec[2].iov_base = server_rep;
 	vec[3].iov_len = 0;
 	vec[3].iov_base = NULL;
-	if (writev(file_fd, vec, 3) != 3) exit(1);
+	if (writev(file_fd, vec, 3) == -1) {
+	    printf("Writev failed\n");
+	    exit(1);
+	}
 	seen_formats[seen_count++] = format;
     }
 
@@ -1235,6 +1238,6 @@ int size;
      */
     indicator = htonl((size & 0xffffff) | 0x3 << 24);
 
-    if (write(file_fd, &indicator, 4) != 4) exit(1);
-    if (write(file_fd, buf, size) != 4) exit(1);
+    if (write(file_fd, &indicator, 4) != 4) {printf("Write 4 failed\n");exit(1);}
+    if (write(file_fd, buf, size) != size) {printf("Write size failed\n");exit(1);}
 }
