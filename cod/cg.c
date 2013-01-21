@@ -1817,6 +1817,17 @@ next_formal_is_drisc_exec_ctx(sm_list formals)
     return 0;
 }
 
+static void
+cod_do_noop_statement(dill_stream s, sm_ref func_ref, dill_reg duration)
+{
+    dill_mark_label_type top_label = dill_alloc_label(s, "noop_loop");
+    dill_reg count = dill_getreg(s, DILL_I);
+    dill_seti(s, count, 0);
+    dill_mark_label(s, top_label);
+    dill_addii(s, count, count, 1);
+    dill_blei(s, count, duration, top_label);
+}
+
 static int
 next_formal_is_cod_type_spec(sm_list formals)
 {
@@ -1923,6 +1934,10 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
     } else {
 	start = 0;
 	direction = 1;
+    }
+    if (strcmp(func_ref->node.declaration.id, "cod_NoOp") == 0) {
+	cod_do_noop_statement(s, func_ref, args_array[0]);
+	return ret;
     }
     if (func_ref->node.declaration.varidiac_subroutine_param_count == -1) {
 	dill_push_init(s);

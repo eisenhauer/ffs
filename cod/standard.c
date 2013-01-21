@@ -179,6 +179,14 @@ static char extern_string[] = "\n\
 	double chr_time_to_millisecs (chr_time *time);\n\
 	double chr_time_to_secs (chr_time *time);\n\
 	double chr_approx_resolution();\n";
+static char internals[] = "\n\
+	void cod_NoOp(int duration);\n";
+
+static cod_extern_entry internal_externs[] = 
+{
+    {"cod_NoOp", (void*)(long)0xdeadbeef},    /* value is unimportant, but can't be NULL */
+    {NULL, NULL}
+};
 
 static cod_extern_entry externs[] = 
 {
@@ -240,8 +248,10 @@ cod_add_standard_elements(cod_parse_context context)
 #if defined(HAVE_ATL_H) && defined(HAVE_CERCS_ENV_H)
     cod_assoc_externs(context, externs);
     cod_parse_for_context(extern_string, context);
-    cod_swap_decls_to_standard(context);
 #endif
+    cod_assoc_externs(context, internal_externs);
+    cod_parse_for_context(internals, context);
+    cod_swap_decls_to_standard(context);
 }
 
 #else /* LINUX_KERNEL_MODULE */
