@@ -1231,6 +1231,8 @@ init_written_data()
     derive.init_data_block = NULL; 
     derive.init_data_len = 0;
 
+    memset(&multi_array, 0, sizeof(multi_array));
+    memset(&multi_array2, 0, sizeof(multi_array2));
     multi_array.ifield = 4;
     multi_array2.ifield = 4;
     for (i = 0; i < 2; i++) {
