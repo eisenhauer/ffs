@@ -445,7 +445,9 @@ char **argv;
         memset((char *) &var_var, 0, sizeof(var_var));
 	var_var.vec_length = i;
 	var_var.eventv = malloc(sizeof(((ninth_rec_ptr) 0)->eventv[0]) * var_var.vec_length);
+        memset((char *) var_var.eventv, 0, sizeof(((ninth_rec_ptr) 0)->eventv[0]) * var_var.vec_length);
 
+        memset((char *) &str_array, 0, sizeof(str_array));
 	str_array.array_len = i;
 	str_array.array = malloc(sizeof(char*) * i);
 
