@@ -1157,6 +1157,7 @@ init_written_data()
 	}
 	index++;
     }
+    memset(&derive, 0, sizeof(derive));
     derive.chan_str = "b013050800000000";
     derive.cond = 2; 
     derive.client_channel_id.len = 12; 
@@ -1166,6 +1167,7 @@ init_written_data()
     derive.filter = "{ return 1;}"; 
     derive.field_list_len = 3; 
     derive.field_list = malloc(3*sizeof(derive.field_list[0]));
+    memset(derive.field_list, 0, 3*sizeof(derive.field_list[0]));
     derive.field_list[0].field_name = "num_points"; 
     derive.field_list[0].field_type = "integer"; 
     derive.field_list[0].field_size = 4;  
@@ -1180,10 +1182,13 @@ init_written_data()
     derive.field_list[2].field_offset = 0;
     derive.format_list_len = 2; 
     derive.format_list = malloc(2*sizeof(derive.format_list[0]));
+    memset(derive.format_list, 0, 2*sizeof(derive.format_list[0]));
     derive.format_list[0].format_name = "PipelinedPoint"; 
     derive.format_list[0].field_list_len = 7; 
     derive.format_list[0].field_list = 
       malloc(7*sizeof(derive.format_list[0].field_list[0]));
+    memset(derive.format_list[0].field_list, 0, 
+	   7*sizeof(derive.format_list[0].field_list[0]));
     derive.format_list[0].field_list[0].field_name = "x"; 
     derive.format_list[0].field_list[0].field_type = "integer"; 
     derive.format_list[0].field_list[0].field_size = 2; 
@@ -1216,6 +1221,8 @@ init_written_data()
     derive.format_list[1].field_list_len = 3; 
     derive.format_list[1].field_list = 
       malloc(3*sizeof(derive.format_list[1].field_list[0]));
+    memset(derive.format_list[1].field_list, 0,
+	   3*sizeof(derive.format_list[1].field_list[0]));
     derive.format_list[1].field_list[0].field_name = "num_points"; 
     derive.format_list[1].field_list[0].field_type = "integer"; 
     derive.format_list[1].field_list[0].field_size = 4; 
@@ -1248,14 +1255,18 @@ init_written_data()
 	}
     }
     multi_array.int_array = malloc(2*4*sizeof(int));
+    memset(multi_array.int_array, 0, 2*4*sizeof(int));
     multi_array2.int_array = malloc(2*4*sizeof(int));
+    memset(multi_array2.int_array, 0, 2*4*sizeof(int));
     for (i = 0; i < 4; i++) {
 	for (j = 0; j < 2; j++) {
 	    multi_array.int_array[i][j] = 1000*i + 100*j;
 	}
     }
     multi_array.int_array2 = malloc(4*2*sizeof(int));
+    memset(multi_array.int_array2, 0, 4*2*sizeof(int));
     multi_array2.int_array2 = malloc(4*2*sizeof(int));
+    memset(multi_array2.int_array2, 0, 4*2*sizeof(int));
     for (i = 0; i < 2; i++) {
 	for (j = 0; j < 4; j++) {
 	    multi_array.int_array2[i][j] = 1000*i + 100*j;
@@ -1268,7 +1279,9 @@ init_written_data()
 	}
     }
     multi_array.int_array3 = malloc(4*4*4*sizeof(int));
+    memset(multi_array.int_array3, 0, 4*4*4*sizeof(int));
     multi_array2.int_array3 = malloc(4*4*4*sizeof(int));
+    memset(multi_array2.int_array3, 0, 4*4*4*sizeof(int));
     for (i = 0; i < 4; i++) {
 	for (j = 0; j < 4; j++) {
 	    for (k = 0; k < 4; k++) {
@@ -1277,6 +1290,7 @@ init_written_data()
 	    }
 	}
     }
+    memset(&fortran_array, 0, sizeof(fortran_array));
     fortran_array.ifield = 4;
     for (i = 0; i < 2; i++) {
 	for (j = 0; j < 2; j++) {
@@ -1289,18 +1303,21 @@ init_written_data()
 	}
     }
     fortran_array.int_array = malloc(2*4*sizeof(int));
+    memset(fortran_array.int_array, 0, 2*4*sizeof(int));
     for (i = 0; i < 2; i++) {
 	for (j = 0; j < 4; j++) {
 	    (*((int (*)[4][2]) fortran_array.int_array))[j][i] = 1000*i + 100*j;
 	}
     }
     fortran_array.int_array2 = malloc(4*2*sizeof(int));
+    memset(fortran_array.int_array2, 0, 4*2*sizeof(int));
     for (i = 0; i < 4; i++) {
 	for (j = 0; j < 2; j++) {
 	    (*((int (*)[2][4]) fortran_array.int_array2))[j][i] = 1000*i + 100*j;
 	}
     }
     fortran_array.int_array3 = malloc(4*4*4*sizeof(int));
+    memset(fortran_array.int_array3, 0, 4*4*4*sizeof(int));
     for (i = 0; i < 4; i++) {
 	for (j = 0; j < 4; j++) {
 	    for (k = 0; k < 4; k++) {
@@ -1308,11 +1325,13 @@ init_written_data()
 	    }
 	}
     }
+    memset(&triangle, 0, sizeof(triangle));
     triangle.corner1x = triangle.corner1y = triangle.corner1z = 4;
     triangle.corner2x = triangle.corner2y = triangle.corner2z = 6;
     triangle.compression_type = 5;
     triangle.codebook_size = 10;
     triangle.codebook_data = malloc(triangle.codebook_size * sizeof(int));
+    memset(triangle.codebook_data, 0, triangle.codebook_size * sizeof(int));
     for (i=0; i< triangle.codebook_size; i++) {
 	triangle.codebook_data[i] = i + 10;
     }
@@ -1320,6 +1339,7 @@ init_written_data()
     triangle.nonce = 5;
     triangle.num_meshes = 5;
     triangle.mesh_data = malloc(triangle.num_meshes * sizeof(triangle.mesh_data[0]));
+    memset(triangle.mesh_data, 0, triangle.num_meshes * sizeof(triangle.mesh_data[0]));
     for (i=0; i < triangle.num_meshes; i++) {
 	int j;
 	triangle.mesh_data[i].id = i;
@@ -1336,15 +1356,19 @@ init_written_data()
 	    triangle.mesh_data[i].corner2z = i+1;
 	triangle.mesh_data[i].atom_type = 13;
     }
+    memset(&add_action_record, 0, sizeof(add_action_record));
     add_action_record.action = 5;
     add_action_record.in_format_name = "my format";
     add_action_record.format_count = 2; 
     add_action_record.out_formats = malloc(2*sizeof(add_action_record.out_formats[0]));
+    memset(add_action_record.out_formats, 0, 2*sizeof(add_action_record.out_formats[0]));
     add_action_record.out_formats[0].format_name = "PipelinedPoint"; 
     add_action_record.out_formats[0].xml_markup = NULL; 
     add_action_record.out_formats[0].field_list_len = 7; 
     add_action_record.out_formats[0].field_list = 
       malloc(7*sizeof(add_action_record.out_formats[0].field_list[0]));
+    memset(add_action_record.out_formats[0].field_list, 0, 
+	   7*sizeof(add_action_record.out_formats[0].field_list[0]));
     add_action_record.out_formats[0].field_list[0].field_name = "x"; 
     add_action_record.out_formats[0].field_list[0].field_type = "integer"; 
     add_action_record.out_formats[0].field_list[0].field_size = 2; 
@@ -1378,6 +1402,8 @@ init_written_data()
     add_action_record.out_formats[1].field_list_len = 3; 
     add_action_record.out_formats[1].field_list = 
       malloc(3*sizeof(add_action_record.out_formats[1].field_list[0]));
+    memset(add_action_record.out_formats[1].field_list, 0, 
+	   3*sizeof(add_action_record.out_formats[1].field_list[0]));
     add_action_record.out_formats[1].field_list[0].field_name = "num_points"; 
     add_action_record.out_formats[1].field_list[0].field_type = "integer"; 
     add_action_record.out_formats[1].field_list[0].field_size = 4; 
@@ -1392,7 +1418,9 @@ init_written_data()
     add_action_record.out_formats[1].field_list[2].field_offset = 0;
     add_action_record.func_str = "{ la la la }";
 
+    memset(&psa, 0, sizeof(psa));
     psa.int_array = malloc(4 * 4 * sizeof(int));
+    memset(psa.int_array, 0, 4 * 4 * sizeof(int));
     for (i=0; i < 4; i++) {
 	for (j=0; j < 4; j++) {
 	    (*psa.int_array)[i][j] = (i+1) * (j + 10);
