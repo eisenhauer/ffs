@@ -159,6 +159,7 @@ else ()
 endif()
 
 configure_file(ffs/ffs.h.in ffs/ffs.h @ONLY)
+configure_file(CTestCustom.ctest.in CTestCustom.ctest @ONLY)
 
 if (${SIZEOF_LONG} EQUAL 8) 
    set (DATA_LEN_TYPE "long")
