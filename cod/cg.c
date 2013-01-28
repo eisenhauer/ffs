@@ -336,7 +336,7 @@ char *
 generate_arg_str(sm_ref net)
 {
     sm_list decls = NULL;
-    char *arg_str = malloc(1);
+    char *arg_str = malloc(4);  /* 4 makes valgrind happier */
     signed char *arg_types = malloc(1);
     int arg_count = 0;
     int i;
@@ -380,7 +380,8 @@ generate_arg_str(sm_ref net)
 	    printf("Arg %d not declared\n", i);
 	    return arg_str;
 	}
-	arg_str = realloc(arg_str, strlen(arg_str) + 4);
+	int len = strlen(arg_str) + 4;
+	arg_str = realloc(arg_str, len);
 	strcat(arg_str, "%");
 	strcat(arg_str, arg_type_str[arg_types[i]]);
     }
