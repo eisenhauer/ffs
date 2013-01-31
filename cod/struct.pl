@@ -255,7 +255,7 @@ sub gen_copy {
 	print $coutfile "	    new_node->node.$name = node->node.$name;\n";
 	foreach $field (reverse keys %{$structs{$name}->{types}}) {
 	    if ($structs{$name}->{types}->{$field}  eq "char*") {
-		print $coutfile "	    new_node->node.$name.$field = strdup(node->node.$name.$field);\n";
+		print $coutfile "	    new_node->node.$name.$field = node->node.$name.$field? strdup(node->node.$name.$field):NULL;\n";
 	    } elsif ($structs{$name}->{types}->{$field}  eq "sm_list") {
 		print $coutfile "	    new_node->node.$name.$field = cod_copy_list(node->node.$name.$field);\n";
 	    } elsif (($structs{$name}->{types}->{$field}  eq "sm_ref") &&
