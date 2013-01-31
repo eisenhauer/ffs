@@ -5,6 +5,7 @@ compound_statement:
 declaration:
 	sm_list type_spec;
 	sm_ref sm_complex_type;
+	sm_ref freeable_complex_type;
 	int static_var;
 	int param_num;
 	char *id;
@@ -120,6 +121,7 @@ field:
 	char *string_type;
 	sm_list type_spec;
 	sm_ref sm_complex_type;
+	sm_ref freeable_complex_type;
 	int  cg_size;
 	int  cg_offset;
 	int  cg_type;

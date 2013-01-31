@@ -151,8 +151,7 @@ cod_dup_list(sm_list list)
     while (list != NULL) {
 	*last_p = new_list = malloc(sizeof(struct list_struct));
 	last_p = &(new_list->next);
-	new_list->node = malloc(sizeof(*(list->node)));
-	memcpy(new_list->node, list->node, sizeof(*(list->node)));
+	new_list->node = cod_copy(list->node);
 	list = list->next;
     }
     *last_p = NULL;
@@ -840,6 +839,7 @@ declaration:
 		    dtmp = dtmp->next;
 		}
 		(void)$<reference>4;
+		cod_rfree_list($1, NULL);
 	    }
 	;
 
@@ -2304,7 +2304,8 @@ determine_op_type(cod_parse_context context, sm_ref expr,
 }
 
 static sm_ref reduce_type_list(cod_parse_context context, sm_list type_list, 
-			       int *cg_type, scope_ptr scope, int *is_typedef);
+			       int *cg_type, scope_ptr scope, int *is_typedef,
+			       sm_ref *freeable_type);
 static int 
 assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right);
 
@@ -2809,7 +2810,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	}
 
 	typ = reduce_type_list(context, expr->node.cast.type_spec, &cg_type, 
-			       scope, NULL);
+			       scope, NULL, NULL);
 	if ((cg_type == DILL_ERR) && (typ == NULL)) {
 	    cod_src_error(context, expr, "Illegal cast");
 	    return 0;
@@ -3550,7 +3551,7 @@ get_complex_type(cod_parse_context context, sm_ref node)
 
 static sm_ref
 reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
-			    scope_ptr scope, int*is_typedef) 
+		 scope_ptr scope, int*is_typedef, sm_ref *freeable_type) 
 {
     sm_list orig_list = type_list;
     int short_appeared = 0;
@@ -3748,7 +3749,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		 (strcmp(node->node.identifier.id, "cod_exec_context") == 0))) {
 		/* special ECL type information for prior arg */
 		sm_ref typ = cod_new_reference_type_decl();
-		typ->node.reference_type_decl.name = node->node.identifier.id;
+		typ->node.reference_type_decl.name = strdup(node->node.identifier.id);
 		if (strcmp(node->node.identifier.id, "cod_type_spec") == 0) {
 		    *cg_type = DILL_P;
                 } else if (strcmp(node->node.identifier.id, "cod_closure_context") == 0) {
@@ -3762,6 +3763,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		    complex_return_type;
 		typ->node.reference_type_decl.kernel_ref = 0;
 		complex_return_type = typ;
+		*freeable_type = typ;
 	    }
 	    assert(complex_return_type != NULL);
 	    type_found++;
@@ -3974,7 +3976,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	    if (decl->node.declaration.type_spec != NULL) {
 		int type_def = 0;
 		typ = reduce_type_list(context, decl->node.declaration.type_spec,
-				       &cg_type, scope, &type_def);
+				       &cg_type, scope, &type_def, &decl->node.declaration.freeable_complex_type);
 		if (type_def) {
 		    decl->node.declaration.is_typedef = 1;
 		}
@@ -3987,7 +3989,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		    (arr->node_type == cod_array_type_decl)) {
 		    typ = reduce_type_list(context, 
 					    arr->node.array_type_decl.type_spec, 
-					    &cg_type, scope, NULL);
+					   &cg_type, scope, NULL, &decl->node.declaration.freeable_complex_type);
 		}
 	    }
 	    if ((typ == NULL) && (cg_type == DILL_ERR)) return 0;
@@ -4596,14 +4598,14 @@ scope_ptr scope;
 
 	if (decl->node.declaration.type_spec != NULL) {
 	    typ = reduce_type_list(context, decl->node.declaration.type_spec,
-				   &cg_type, scope, NULL);
+				   &cg_type, scope, NULL, &decl->node.declaration.freeable_complex_type);
 	} else {
 	    sm_ref arr = decl->node.declaration.sm_complex_type;
 	    if ((arr != NULL) && 
 		(arr->node_type == cod_array_type_decl)) {
 		typ = reduce_type_list(context, 
 					arr->node.array_type_decl.type_spec, 
-					&cg_type, scope, NULL);
+					&cg_type, scope, NULL, &decl->node.declaration.freeable_complex_type);
 	    }
 	}
 	if ((typ == NULL) && (cg_type == DILL_ERR)) return 0;
@@ -4635,6 +4637,17 @@ scope_ptr scope;
 
 extern FMTypeDesc*
 gen_FMTypeDesc(FMFieldList fl, int field, const char *typ);
+
+static void
+free_FMTypeDesc(FMTypeDesc *desc)
+{
+    while (desc) {
+	FMTypeDesc *tmp = desc->next;
+	free(desc);
+	desc = tmp;
+    }
+    return;
+}
 
 static int
 semanticize_struct_type_node(cod_parse_context context, sm_ref decl, 
@@ -4675,6 +4688,7 @@ semanticize_struct_type_node(cod_parse_context context, sm_ref decl,
 	    build_type_nodes(context, decl, f, fields, f->cg_size, f->cg_type,
 			     desc, &err, scope);
 	    
+	    free_FMTypeDesc(desc);
 	    f->cg_type = str_to_data_type(f->string_type, f->cg_size);
 	    field_size = f->cg_size;
 	    if (f->sm_complex_type) {
@@ -4696,7 +4710,7 @@ semanticize_struct_type_node(cod_parse_context context, sm_ref decl,
 	    int cg_type;
 	    sm_ref typ;
 	    typ = reduce_type_list(context, f->type_spec, &cg_type, scope, 
-				   &type_def);
+				   &type_def, &f->freeable_complex_type);
 	    f->sm_complex_type = typ;
 	    f->cg_type = cg_type;
 	    field_size = -1;
@@ -4707,6 +4721,7 @@ semanticize_struct_type_node(cod_parse_context context, sm_ref decl,
 	fields = fields->next;
 	field_num++;
     }
+    free(fl);
     decl->node.struct_type_decl.cg_size = struct_size;
     return ret;
 }
@@ -4842,7 +4857,7 @@ extern void
 cod_subroutine_declaration(const char *decl, cod_parse_context context)
 {
     sm_list type_list, params;
-    sm_ref complex_type, declaration;
+    sm_ref complex_type, declaration, freeable_complex_type = NULL;
     int cg_type, param_num;
 
     setup_for_string_parse(decl, context->defined_type_count, 
@@ -4862,7 +4877,9 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
     type_list = declaration->node.declaration.type_spec;
 
     /* handle return type */
-    complex_type = reduce_type_list(context, type_list, &cg_type, context->scope, NULL);
+    complex_type = reduce_type_list(context, type_list, &cg_type, context->scope
+, NULL, &freeable_complex_type);
+    if (freeable_complex_type) cod_rfree(freeable_complex_type);
     context->return_type_list = type_list;
     if (complex_type != NULL) {
 	cg_type = DILL_P;
@@ -4899,7 +4916,7 @@ cod_set_return_type(char *typ, cod_parse_context context)
 {
     sm_list type_list;
     int cg_type;
-    sm_ref complex_type;
+    sm_ref complex_type, freeable_complex_type = NULL;
     setup_for_string_parse(typ, context->defined_type_count, context->defined_types);
     cod_code_string = typ;
     parsing_type = 1;
@@ -4914,10 +4931,11 @@ cod_set_return_type(char *typ, cod_parse_context context)
     }
     type_list = (sm_list) yyparse_value;
 
-    complex_type = reduce_type_list(context, type_list, &cg_type, context->scope, NULL);
+    complex_type = reduce_type_list(context, type_list, &cg_type, context->scope, NULL, &freeable_complex_type);
     context->return_type_list = type_list;
     if (complex_type != NULL) {
 	cg_type = DILL_P;
+	if (freeable_complex_type) cod_rfree(freeable_complex_type);
     }
     context->return_cg_type = cg_type;
 }
