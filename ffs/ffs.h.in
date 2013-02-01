@@ -48,7 +48,7 @@ typedef struct _FFSTypeHandle *FFSTypeHandle;
 
 typedef struct _FFSIndexItem *FFSIndexItem;
 
-#define create_FFSContext() create_FFSContext_FM(create_FMcontext())
+#define create_FFSContext() create_FFSContext_FM(NULL)
 extern FFSContext create_FFSContext_FM(FMContext fmc);
 
 extern FFSBuffer create_FFSBuffer();
