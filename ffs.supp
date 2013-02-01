@@ -24,3 +24,9 @@
 ...
    fun:FFSconvert_record
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*
+   fun:init_env_table
+}
