@@ -1478,6 +1478,7 @@ free_written_data()
 	free(add_action_record.out_formats[i].field_list);
     }
     free(add_action_record.out_formats);
+    free(psa.int_array);
 }
 
 FMField field_list[] = {
