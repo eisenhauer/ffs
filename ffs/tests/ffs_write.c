@@ -446,6 +446,7 @@ main(int argc, char **argv)
 	    printf("write failed");
 	if (!write_FFSfile(ffsfile, string_array_ioformat, &str_array))
 	    printf("write failed");
+	if (str_array.base_string) free(str_array.base_string);
 	for (j = 0; j < var_var.vec_length; j++) {
 	    free(var_var.eventv[j].iov_base);
 	    free(str_array.array[j]);
@@ -456,5 +457,8 @@ main(int argc, char **argv)
 
     close_FFSfile(ffsfile);
     free_FFSfile(ffsfile);
+    free_FMcontext(src_context);
+    free_attr_list(a1);
+    free_attr_list(a2);
     return 0;
 }
