@@ -497,6 +497,7 @@ cod_code code_descriptor;
 	printf("\n");
     }
     handle = dill_finalize(s);
+    code_descriptor->execution_handle = handle;
     init_func = dill_get_fp(handle);
     if (debug_cg) {
 	printf("Native insn dump\n");

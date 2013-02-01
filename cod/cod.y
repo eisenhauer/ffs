@@ -786,6 +786,7 @@ declaration:
 			cod_print($<reference>$);
 		    }
 		    yyparse_value = $3->node;
+		    free($3);
 		    YYACCEPT;
 		}
 	    }
@@ -1556,6 +1557,7 @@ struct parse_struct {
     void *client_data;
     sm_list return_type_list;
     int return_cg_type;
+    sm_ref freeable_declaration;
     int has_exec_context;
     int dont_coerce_return;
 };
@@ -1754,6 +1756,9 @@ cod_code code;
 #if defined(HAVE_DILL_H)
     if (code->drisc_context) {
 	dill_free_stream((dill_stream) code->drisc_context);
+    }
+    if (code->execution_handle) {
+	dill_free_handle((dill_exec_handle) code->execution_handle);
     }
 #endif
     free(code);
@@ -4465,6 +4470,7 @@ scope_ptr scope;
 	}
 	ret->node.array_type_decl.cg_element_type = DILL_B;
 	ret->node.array_type_decl.sm_complex_element_type = subtype;
+	ret->node.array_type_decl.freeable_complex_element_type = subtype;
 	if (subtype == NULL) {
 	    ret->node.array_type_decl.cg_element_type = 
 		array_str_to_data_type(f->string_type, f->cg_size);
@@ -4525,6 +4531,7 @@ scope_ptr scope;
 	ret->node.reference_type_decl.name = gen_anon();
 	ret->node.reference_type_decl.cg_referenced_type = DILL_ERR;
 	ret->node.reference_type_decl.sm_complex_referenced_type = subtype;
+	ret->node.reference_type_decl.freeable_complex_referenced_type = subtype;
 	ret->node.reference_type_decl.cg_referenced_size = -1;
 	break;
     case FMType_subformat: {
@@ -4558,6 +4565,7 @@ scope_ptr scope;
 {
     sm_ref complex_type = build_subtype_nodes(context, decl, f, desc, err, scope);
     f->sm_complex_type = complex_type;
+    f->freeable_complex_type = complex_type;
 }
 
 static int
@@ -4874,6 +4882,7 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
 	return;
     }
     declaration = yyparse_value;
+    context->freeable_declaration = declaration;
     type_list = declaration->node.declaration.type_spec;
 
     /* handle return type */
@@ -4885,7 +4894,6 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
 	cg_type = DILL_P;
     }
     context->return_cg_type = cg_type;
-
 
     /* handle params */
     params = declaration->node.declaration.params;
@@ -4905,7 +4913,7 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
 	}
 	param->node.declaration.param_num = param_num;
 	cod_add_decl_to_parse_context(param->node.declaration.id,
-				      params->node, context);
+				      cod_copy(params->node), context);
 	param_num++;
 	params = params->next;
     }
@@ -4960,6 +4968,7 @@ new_cod_parse_context()
     context->client_data = NULL;
     context->return_type_list = NULL;
     context->return_cg_type = DILL_I;
+    context->freeable_declaration = NULL;
     context->has_exec_context = 0;
     context->dont_coerce_return = 0;
     cod_add_standard_elements(context);
@@ -4978,6 +4987,9 @@ cod_free_parse_context(cod_parse_context parse_context)
     }
     if (parse_context->standard_decls) {
 	cod_rfree_list(parse_context->standard_decls, NULL);
+    }
+    if (parse_context->freeable_declaration) {
+        cod_rfree(parse_context->freeable_declaration);
     }
     free(parse_context);
 }

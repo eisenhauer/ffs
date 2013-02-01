@@ -105,6 +105,7 @@ array_type_decl:
 	sm_ref sm_dynamic_size;
 	int    cg_element_type;
 	sm_ref sm_complex_element_type;
+	sm_ref freeable_complex_element_type;
 	int    cg_element_size;
 
 reference_type_decl:
@@ -113,6 +114,7 @@ reference_type_decl:
 	sm_list type_spec;
 	int    cg_referenced_type;
 	sm_ref sm_complex_referenced_type;
+	sm_ref freeable_complex_referenced_type;
 	int    cg_referenced_size;
 	int    kernel_ref;
 

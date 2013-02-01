@@ -219,6 +219,9 @@ typedef struct _cod_code_struct {
     /*! a pointer to the DRISC context used to generate the function \internal 
     */
     void *drisc_context;
+    /*! a pointer to the DRISC execution handle used to free the function \internal 
+    */
+    void *execution_handle;
 } *cod_code;
 
 /*!
