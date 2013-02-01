@@ -2225,6 +2225,7 @@ int dest_alignment;
     if (generation_verbose) {
 	dill_dump(c);
     }
+    dill_free_stream(c);
     return (conv_routine) conversion_routine;
 }
 /*#define REG_DEBUG(x) printf x ;*/
