@@ -356,6 +356,7 @@ free_FFSfile(FFSFile f)
     f->info = NULL;
     f->info_size = 0;
     free_FFSBuffer(f->buf);
+    free_FFSBuffer(f->tmp_buffer);
     f->buf = NULL;
     i = f->index_head;
     while (i != NULL) {
@@ -364,6 +365,7 @@ free_FFSfile(FFSFile f)
 	i = next;
     }
     free_FFSContext(f->c);
+    free_FMcontext(f->fmc);
     free(f);
 }
 
@@ -1096,6 +1098,7 @@ FFSread_format(FFSFile ffsfile)
     ffsfile->read_ahead = FALSE;
     format = load_external_format_FMcontext(ffsfile->c->fmc, id, 
 					    ffsfile->next_fid_len, rep);
+    free(id);
     handle = FFSTypeHandle_by_index(ffsfile->c, format->format_index);
 
     /* in case we're in append mode, mark this as ready in the file */
