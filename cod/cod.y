@@ -4442,18 +4442,20 @@ int size;
 }
 
 static sm_ref
-build_subtype_nodes(context, decl, f, desc, err, scope)
+build_subtype_nodes(context, decl, f, desc, err, scope, must_free_p)
 cod_parse_context context;
 sm_ref decl;
 field* f;
 FMTypeDesc *desc;
 int *err;
 scope_ptr scope;
+int *must_free_p;
 {
     sm_ref ret = NULL;
     sm_ref subtype = NULL;
+    int must_free_flag = 0;
     if (desc->next != NULL) {
-	subtype = build_subtype_nodes(context, decl, f, desc->next, err, scope);
+	subtype = build_subtype_nodes(context, decl, f, desc->next, err, scope, &must_free_flag);
 	if (*err != 0) {
 	    return NULL;
 	}
@@ -4464,13 +4466,16 @@ scope_ptr scope;
 	sm_ref cf;
 	int i;
 	ret = cod_new_array_type_decl();
+	*must_free_p = 1;
 	ret->node.array_type_decl.cg_static_size = desc->static_size;
 	if (desc->static_size == 0) {
 	    ret->node.array_type_decl.cg_static_size = -1;
 	}
 	ret->node.array_type_decl.cg_element_type = DILL_B;
 	ret->node.array_type_decl.sm_complex_element_type = subtype;
-	ret->node.array_type_decl.freeable_complex_element_type = subtype;
+	if (must_free_flag) {
+	    ret->node.array_type_decl.freeable_complex_element_type = subtype;
+	}
 	if (subtype == NULL) {
 	    ret->node.array_type_decl.cg_element_type = 
 		array_str_to_data_type(f->string_type, f->cg_size);
@@ -4528,15 +4533,19 @@ scope_ptr scope;
     }
     case FMType_pointer:
 	ret = cod_new_reference_type_decl();
+	*must_free_p = 1;
 	ret->node.reference_type_decl.name = gen_anon();
 	ret->node.reference_type_decl.cg_referenced_type = DILL_ERR;
 	ret->node.reference_type_decl.sm_complex_referenced_type = subtype;
-	ret->node.reference_type_decl.freeable_complex_referenced_type = subtype;
+	if (must_free_flag) {
+	    ret->node.reference_type_decl.freeable_complex_referenced_type = subtype;
+	}
 	ret->node.reference_type_decl.cg_referenced_size = -1;
 	break;
     case FMType_subformat: {
 	char *tmp_str = FMbase_type(f->string_type);
 	ret = resolve(tmp_str, scope);
+	free(tmp_str);
 	if (ret == NULL) {
 	    *err = 1;
 	}
@@ -4563,9 +4572,12 @@ FMTypeDesc* desc;
 int *err;
 scope_ptr scope;
 {
-    sm_ref complex_type = build_subtype_nodes(context, decl, f, desc, err, scope);
+    int must_free_flag = 0;
+    sm_ref complex_type = build_subtype_nodes(context, decl, f, desc, err, scope, &must_free_flag);
     f->sm_complex_type = complex_type;
-    f->freeable_complex_type = complex_type;
+    if (must_free_flag) {
+	f->freeable_complex_type = complex_type;
+    }
 }
 
 static int
