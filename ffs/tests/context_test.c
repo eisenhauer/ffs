@@ -675,6 +675,7 @@ int *size_p;
 					      format_id_size, format_rep);
 	if(read(file_fd, &indicator, 4) != 4) exit(1);
 	indicator = ntohl(indicator);
+	free(format_id);
     }
     if ((indicator >> 24) != 0x3) printf("BAD!\n");
     to_read = indicator & 0xffffff;
