@@ -714,6 +714,7 @@ read_test_only()
 	test_all_receive(input, size, 0);
     }
     test_all_receive(NULL, 0, 1);
+    free(input);
 }
 
 static FFSTypeHandle first_rec_ioformat, second_rec_ioformat, third_rec_ioformat;
