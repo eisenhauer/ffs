@@ -363,6 +363,8 @@ free_FFSfile(FFSFile f)
 	free_FFSIndexItem(i);
 	i = next;
     }
+    free_FFSContext(f->c);
+    free(f);
 }
 
 
