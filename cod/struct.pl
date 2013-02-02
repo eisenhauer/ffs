@@ -166,10 +166,13 @@ sub gen_free {
 	foreach $field (reverse keys %{$structs{$name}->{types}}) {
 	    if ($structs{$name}->{types}->{$field}  eq "char*") {
 		print $coutfile "	    free(node->node.$name.$field);\n";
-	   }
+	    }
 	    if ($structs{$name}->{types}->{$field}  eq "enc_info") {
 		print $coutfile "	    free_enc_info(node->node.$name.$field);\n";
-	   }
+	    }
+	    if ($structs{$name}->{types}->{$field}  eq "dimen_p") {
+		print $coutfile "	    free(node->node.$name.$field);\n";
+	    }
 	}
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
