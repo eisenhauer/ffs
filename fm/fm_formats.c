@@ -4074,6 +4074,7 @@ char *server_rep;
 	    print_server_ID((void*)server_id);
 	}
 	/* format is already here */
+	free(server_rep);
 	return format;
     }
     format = expand_format_from_rep((format_rep)server_rep);
@@ -4083,6 +4084,7 @@ char *server_rep;
 	    printf("Couldn't expand external format  - ");
 	    print_server_ID((void*)server_id);
 	}
+	free(server_rep);
 	return NULL;
     }
     add_format_to_iofile((FMContext)iocontext, format, id_size, server_id, -1);
