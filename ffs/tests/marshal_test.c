@@ -53,7 +53,7 @@ main(int argc, char **argv)
     memset((char *) &rec2, 0, sizeof(rec2));
     rec2.len = 10;
     rec2.array = malloc(sizeof(rec2.array[0]) * rec2.len);
-    for (i=0; i++; i < rec2.len) {
+    for (i=0; i < rec2.len; i++ ) {
 	rec2.array[i] = i * 2.0 + 0.5;
     }
     rec2.char_field = 'A';
@@ -88,6 +88,8 @@ main(int argc, char **argv)
         printf("First rec array element 0 wrong.\n");
 	return 1;
     }
+    close_FFSfile(ffsfile);
+    free_FFSfile(ffsfile);
     unlink(output_file);
     return 0;
 }
