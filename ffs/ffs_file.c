@@ -355,8 +355,8 @@ free_FFSfile(FFSFile f)
     free(f->info);
     f->info = NULL;
     f->info_size = 0;
-    free_FFSBuffer(f->buf);
-    free_FFSBuffer(f->tmp_buffer);
+    if (f->buf) free_FFSBuffer(f->buf);
+    if (f->tmp_buffer) free_FFSBuffer(f->tmp_buffer);
     f->buf = NULL;
     i = f->index_head;
     while (i != NULL) {
