@@ -35,6 +35,7 @@ static char *test_only = NULL;
 
 static FFSContext rcv_context = NULL;
 static int verbose = 0;
+static FMContext loaded_FMcontext = NULL;
 
 int
 main(argc, argv)
@@ -93,8 +94,11 @@ char **argv;
 	read_test_only();
 	free_written_data();
 	if (rcv_context != NULL) {
-/*	    free_FFScontext(rcv_context);*/
+	    free_FFSContext(rcv_context);
 	    rcv_context = NULL;
+	}
+	if (loaded_FMcontext) {
+	    free_FMcontext(loaded_FMcontext);
 	}
 	if (fail) exit(1);
 	exit(0);
@@ -620,7 +624,12 @@ char **argv;
     test_all_receive(NULL, 0, 1);
     write_buffer(first_rec_ioformat, NULL, 0);
     free_written_data();
-    if (rcv_context != NULL) free_FFSContext(rcv_context);
+    if (rcv_context != NULL) {
+	free_FFSContext(rcv_context);
+    }
+    if (loaded_FMcontext) {
+	free_FMcontext(loaded_FMcontext);
+    }
     if (fail) exit(1);
     return 0;
 }
@@ -629,7 +638,6 @@ char **argv;
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-static FMContext loaded_FMcontext = NULL;
 
 static char *
 get_buffer(size_p)
