@@ -968,7 +968,7 @@ struct_or_union_specifier
 	    $$ = cod_build_parsed_type_node(yycontext, $2.string, $4);
 	}
 	| struct_or_union LCURLY struct_declaration_list RCURLY {
-	    $$ = cod_build_parsed_type_node(yycontext, "anon", $3);
+	    $$ = cod_build_parsed_type_node(yycontext, strdup("anon"), $3);
 	}
 	| struct_or_union identifier_ref {
 	    $$ = cod_build_parsed_type_node(yycontext, $2.string, NULL);
@@ -1728,6 +1728,9 @@ cod_parse_context context;
     terminate_string_parse();
 
     if ((yyparse_value == NULL) || (yyerror_count != 0)) {
+	if (yyparse_value) {
+	    cod_rfree(yyparse_value);
+	}
 	return 0;
     }
 
@@ -2608,7 +2611,7 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
     sm_list tmp = l;
     sm_list last_type = NULL;
     int field_count = 0;
-    decl->node.struct_type_decl.id = strdup(name);
+    decl->node.struct_type_decl.id = name;
     
      while(tmp != NULL) {
 	sm_ref node = tmp->node;
@@ -2789,6 +2792,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	if (tmp != NULL) {
             if (tmp->node_type == cod_constant) {
                 srcpos old_srcpos = expr->node.identifier.lx_srcpos;
+		free(expr->node.identifier.id);
                 /* morph idenfitfier into constant */
                 expr->node_type = cod_constant;
                 expr->node.constant.token = tmp->node.constant.token;
