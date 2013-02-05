@@ -1741,9 +1741,9 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    FMOptInfo *opt_info = struct_list[i].opt_info;
 	    int opt_info_count = 0;
 	    while (opt_info[opt_info_count].info_type != 0) opt_info_count++;
-	    formats[0]->opt_info = malloc(sizeof(opt_info[0]) * 
+	    formats[i]->opt_info = malloc(sizeof(opt_info[0]) * 
 						(opt_info_count + 1));
-	    memcpy(formats[0]->opt_info, opt_info, sizeof(opt_info[0]) * 
+	    memcpy(formats[i]->opt_info, opt_info, sizeof(opt_info[0]) * 
 		   (opt_info_count + 1));
 	    /* 
 	     * we should vet the opt_info that we understand here.  I.E. check 
@@ -1859,17 +1859,15 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 		dump_FMFormat(formats[0]);
 	    }
 	} else {
-	    free_FMformat(formats[0]);
-	    formats[0] = cache_format;
-	    formats[0]->ref_count++;
+	    free_format_list(formats);
+	    cache_format->ref_count++;
 
 	    if (format_server_verbose == 1) {
 		printf("Cache hit on format registration %lx \"%s\" ", 
-		       (long)formats[0], formats[0]->format_name);
-		print_format_ID(formats[0]);
+		       (long)cache_format, cache_format->format_name);
+		print_format_ID(cache_format);
 		printf("\n");
 	    }
-	    free(formats);
 	    return cache_format;
 	}
     }
@@ -2239,6 +2237,7 @@ free_FMFormatList(FMFormatList format_list)
     while(format_list[i].format_name){
 	free(format_list[i].format_name);
 	free_field_list(format_list[i].field_list);
+	if (format_list[i].opt_info) free(format_list[i].opt_info);
 	i++;
     }
 }

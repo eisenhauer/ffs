@@ -357,6 +357,12 @@ free_FFSfile(FFSFile f)
     f->info_size = 0;
     if (f->buf) free_FFSBuffer(f->buf);
     if (f->tmp_buffer) free_FFSBuffer(f->tmp_buffer);
+    if (f->cur_index) {
+	if (f->cur_index->write_info.index_block) {
+	    free(f->cur_index->write_info.index_block);
+	}
+	free(f->cur_index);
+    }
     f->buf = NULL;
     i = f->index_head;
     while (i != NULL) {
@@ -588,13 +594,17 @@ init_write_index_block(FFSFile f)
 	data_index_start = f->cur_index->write_info.data_index_end;
     } else {
 	f->cur_index = malloc(sizeof(*(f->cur_index)));
+	memset(f->cur_index, 0, sizeof(*(f->cur_index)));
     }
     
     f->cur_index->write_info.base_file_pos = end_of_index - INDEX_BLOCK_SIZE;
     f->cur_index->write_info.data_index_start = data_index_start;
     f->cur_index->write_info.data_index_end = f->cur_index->write_info.data_index_start;
     f->cur_index->write_info.index_block_size = INDEX_BLOCK_SIZE;
-    f->cur_index->write_info.index_block = malloc(INDEX_BLOCK_SIZE);
+    if (!f->cur_index->write_info.index_block) {
+	f->cur_index->write_info.index_block = malloc(INDEX_BLOCK_SIZE);
+	memset(f->cur_index->write_info.index_block, 0, INDEX_BLOCK_SIZE);
+    }
     f->cur_index->write_info.next_item_offset = 16;   /* number of bytes written below */
     f->fpos = end_of_index;
 }

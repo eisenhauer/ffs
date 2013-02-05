@@ -18,6 +18,33 @@
    fun:cercs_getenv
 }
 {
+   cercs_env, leak
+   Memcheck:Leak
+...
+   fun:init_env_table
+   fun:cercs_getenv
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   fun:libgenthreads_init3
+}
+{
+   Atom strings persist
+   Memcheck:Leak
+   fun:malloc
+...
+   fun:set_string_and_atom
+}
+{
+   Atom strings persist
+   Memcheck:Leak
+   fun:malloc
+...
+   fun:attr_atom_from_string
+}
+{
    Funky strcpy overlap in decode
    Memcheck:Overlap
    fun:strcpy
