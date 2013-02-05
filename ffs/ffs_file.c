@@ -344,6 +344,7 @@ free_FFSIndexItem(FFSIndexItemStruct *item)
 	    free(item->elements[i].format_id);
 	}
     }
+    if (item->elements) free(item->elements);
     free(item);
 }
 
