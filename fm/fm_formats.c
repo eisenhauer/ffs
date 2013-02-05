@@ -1732,6 +1732,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 
 	if (new_field_list == NULL) {
 	    free_format_list(formats);
+	    free(formats);
 	    return NULL;
 	}
 	master_struct_list[i].field_list = ioformat->field_list;
@@ -1758,6 +1759,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     for (i= 0; i < struct_count; i++) {
 	if (!generate_var_list(formats[struct_count -i - 1], formats)) {
 	    free_format_list(formats);
+	    free(formats);
 	    return NULL;
 	}
     }
@@ -1802,6 +1804,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 				   subformat->format_name,
 				   subformat->record_length);
 		    free_format_list(formats);
+		    free(formats);
 		    return NULL;
 		}
 	    }
@@ -1811,6 +1814,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 			       field_list[field].field_name,
 			       ioformat->format_name);
 		free_format_list(formats);
+		free(formats);
 		return NULL;
 	    }
 	    last_field_end = field_list[field].field_offset +
@@ -1827,6 +1831,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    (void) fprintf(stderr, "Structure size for structure %s is smaller than last field size + offset.  Format rejected.\n",
 			   ioformat->format_name);
 	    free_format_list(formats);
+	    free(formats);
 	    return NULL;
 	}
     }
@@ -1860,6 +1865,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	    }
 	} else {
 	    free_format_list(formats);
+	    free(formats);
 	    cache_format->ref_count++;
 
 	    if (format_server_verbose == 1) {
