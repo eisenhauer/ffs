@@ -340,6 +340,9 @@ int converted_strings;
 	    if (conv_ptr->conversions[i].default_value) {
 		free(conv_ptr->conversions[i].default_value);
 	    }
+	    if (conv_ptr->conversions[i].subconversion) {
+		FFSfree_conversion(conv_ptr->conversions[i].subconversion);
+	    }
 	}
     }
     conv_ptr->conversion_type = conv;
