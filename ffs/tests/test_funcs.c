@@ -1882,7 +1882,7 @@ FMStructDescRec node_format_list [] = {
 
 FMField pointer_to_static_field_list[] = 
 {
-    {"int_array", "*(integer[4][4])", sizeof(struct pointer_to_static_array),
+    {"int_array", "*(integer[4][4])", sizeof(int),
       FMOffset(pointer_to_static_array_ptr, int_array)},
     {(char *) 0, (char *) 0, 0, 0}
 };
