@@ -125,8 +125,10 @@ main(int argc, char **argv)
 	    printf("Function didn't return 15\n");
 	}
 	
+	free_attr_list(l);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
+	cod_free_parse_context(context2);
 
     }
     if (!test_only || (strcmp(test_only, "attrarray") == 0)) {
