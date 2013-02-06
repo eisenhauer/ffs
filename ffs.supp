@@ -45,6 +45,13 @@
    fun:attr_atom_from_string
 }
 {
+   Atom strings persist
+   Memcheck:Leak
+   fun:malloc
+...
+   fun:init_atom_server
+}
+{
    Funky strcpy overlap in decode
    Memcheck:Overlap
    fun:strcpy
