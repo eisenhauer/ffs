@@ -724,6 +724,7 @@ gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
 	tmp = root = gen_FMTypeDesc(fl, field, t);
 	while (tmp->next) tmp = tmp->next;
 	*tmp = *base;   /* wipe out Simple */
+	free(base);
 	free(t);
 	return root;
     } else {
