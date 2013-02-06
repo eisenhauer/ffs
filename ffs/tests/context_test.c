@@ -626,6 +626,7 @@ char **argv;
     free_written_data();
     if (rcv_context != NULL) {
 	free_FFSContext(rcv_context);
+	rcv_context = NULL;
     }
     if (loaded_FMcontext) {
 	free_FMcontext(loaded_FMcontext);
