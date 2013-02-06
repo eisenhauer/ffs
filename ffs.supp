@@ -72,7 +72,7 @@
    fun:cg_subroutine_call
 }
 {
-   This seems to be a Lex/Flex issue.  Possible non-reentrant.
+   This seems to be a Bison/Yacc issue.  Possible non-reentrant.
    Memcheck:Leak
 ...
    fun:yyensure_buffer_stack
