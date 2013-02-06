@@ -1865,7 +1865,7 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 		dump_FMFormat(formats[0]);
 	    }
 	} else {
-	    free_format_list(formats);
+	    free_FMformat(formats[0]);
 	    free(formats);
 	    cache_format->ref_count++;
 
