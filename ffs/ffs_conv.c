@@ -2218,6 +2218,7 @@ int dest_alignment;
 	conv->conv_pkg = dill_finalize_package(c, &pkg_len);
 	conv->free_data = conv->conv_pkg;
 	conv->free_func = (void(*)(void*))&free;
+	dill_free_stream(c);
 	return NULL;
     } else {
 	conversion_handle = dill_finalize(c);
