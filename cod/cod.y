@@ -795,7 +795,12 @@ declaration:
 		$$ = $3;
 		sm_list dtmp = $3;
 		while (dtmp) {
-		    sm_list type_spec = cod_dup_list($1);
+		    sm_list type_spec;
+		    if (dtmp->next != NULL) {
+			type_spec = cod_dup_list($1);
+		    } else {
+			type_spec = $1;
+		    }
 		    sm_ref decl = dtmp->node;
 		    if (decl->node_type == cod_declaration) {
 			if  (decl->node.declaration.type_spec == NULL) {
@@ -840,7 +845,6 @@ declaration:
 		    dtmp = dtmp->next;
 		}
 		(void)$<reference>4;
-		cod_rfree_list($1, NULL);
 	    }
 	;
 
@@ -3953,6 +3957,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		(l->node->node.type_specifier.token == STATIC)) {
 		decl->node.declaration.type_spec = l->next;
 		decl->node.declaration.static_var = 1;
+		free(l->node);
 		free(l);
 	    }
 	}
@@ -4046,6 +4051,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		(l->node->node.type_specifier.token == STATIC)) {
 		decl->node.array_type_decl.type_spec = l->next;
 		decl->node.array_type_decl.element_ref->node.declaration.static_var = 1;
+		free(l->node);
 		free(l);
 	    }
 	}
