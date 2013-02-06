@@ -1316,6 +1316,7 @@ transpose_array(int *dimens, char *src, char *dest, int source_column_major,
 	    }
 	}
     }
+    free(index);
 }
 
 static long
