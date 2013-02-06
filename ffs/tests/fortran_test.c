@@ -92,6 +92,7 @@ char **argv;
     test_all_receive(NULL, 0, 1);
     write_buffer(NULL, 0);
     free_written_data();
+    free_FFSBuffer(buffer);
     if (rcv_context != NULL) free_FFSContext(rcv_context);
     if (fail) exit(1);
     return 0;
@@ -168,6 +169,7 @@ read_test_only()
 	test_all_receive(input, size, 0);
     }
     test_all_receive(NULL, 0, 1);
+    free(input);
 }
 
 static FFSTypeHandle multi_array_ioformat;
