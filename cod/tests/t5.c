@@ -196,7 +196,6 @@ main(int argc, char **argv)
 	order_out.TASK_NAME = order.TASK_NAME;\n\
 	order_out.SPOT_COUNT = order.SPOT_COUNT;\n\
 	order_out.SPOTS[1].BROADCAST_WEEK = 5;\n\
-	order_out.SPOTS[1].PROGRAM_ID = order.SPOTS[1].PROGRAM_ID;\n\
 	order_out.SPOT_COUNT = 4;\n\
 	if (order.SPOTS[0].PROGRAM_ID == \"EM2\") {\n\
 		order_out.SPOTS[0].PROGRAM_ID = \"My Favorite Martian\";\n\
@@ -338,6 +337,11 @@ main(int argc, char **argv)
 	    fprintf(stderr, "Spots[3] not NULL\n");
 	    return 1;
 	}
+	free(out_order.spots[2].program_id);
+	free(out_order.spots[1].program_id);
+	free(out_order.spots[0].program_id);
+	free(out_order.spots);
+	free(out_order.task_name);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
