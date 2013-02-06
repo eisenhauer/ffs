@@ -353,6 +353,7 @@ static  FMField dyn_arrays_field_list[] =
 	    result = func(&input);
 	    assert(result == 7);
 	    cod_code_free(gen_code);
+	    free(input.array1);
 	}
 	cod_free_parse_context(context);
     }
