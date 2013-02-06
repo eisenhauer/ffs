@@ -86,7 +86,12 @@ main()
     func(&data);
     cod_code_free(gen_code);
     cod_free_parse_context(context);
-    if ((data.num_points != 1) || (data.image_data[0].num_points != 1)) 
+    if ((data.num_points != 1) || (data.image_data[0].num_points != 1))  {
+	free(data.image_data[0].polygon_points);
+	free(data.image_data);
 	return 1;
+    }
+    free(data.image_data[0].polygon_points);
+    free(data.image_data);
     return 0;
 }
