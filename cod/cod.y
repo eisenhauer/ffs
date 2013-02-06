@@ -2625,8 +2625,8 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
 	new_elem->next = NULL;
 	new_elem->node = cod_new_field();
 	if (node->node_type == cod_declaration) {
-	    typ = node->node.declaration.type_spec;
-	    new_elem->node->node.field.name = node->node.declaration.id;
+	    typ = cod_dup_list(node->node.declaration.type_spec);
+	    new_elem->node->node.field.name = strdup(node->node.declaration.id);
 	    new_elem->node->node.field.string_type  = 
 		type_list_to_string(c, typ, &new_elem->node->node.field.cg_size);
 	} else if (node->node_type == cod_array_type_decl) {
@@ -2634,12 +2634,12 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
 	    sm_ref size = node->node.array_type_decl.size_expr;
 	    char *base_string_type = NULL;
 	    char *size_str = NULL, *final_type;
-	    typ = node->node.array_type_decl.type_spec;
+	    typ = cod_dup_list(node->node.array_type_decl.type_spec);
 	    if (base_decl->node_type != cod_declaration) {
 		printf("Array base type must be a simple type\n");
 		return NULL;
 	    }
-	    new_elem->node->node.field.name = base_decl->node.declaration.id;
+	    new_elem->node->node.field.name = strdup(base_decl->node.declaration.id);
 	    base_string_type  = 
 		type_list_to_string(c, typ, &new_elem->node->node.field.cg_size);
 	    if (size->node_type == cod_constant) {
@@ -2665,7 +2665,7 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
 	new_elem->node->node.field.cg_offset = -1;
 	new_elem->node->node.field.cg_type = DILL_ERR;
 	new_elem->node->node.field.type_spec = typ;
-	free(node);
+	cod_rfree(node);
 	field_count++;
 	last_type = tmp;
 	tmp = tmp->next;
