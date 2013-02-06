@@ -376,11 +376,12 @@ generate_arg_str(sm_ref net)
 	decls = decls->next;
     }
     for (i = 0; i < arg_count ; i++) {
+	int len;
 	if (arg_types[i] == -1) {
 	    printf("Arg %d not declared\n", i);
 	    return arg_str;
 	}
-	int len = strlen(arg_str) + 4;
+	len = strlen(arg_str) + 8;
 	arg_str = realloc(arg_str, len);
 	strcat(arg_str, "%");
 	strcat(arg_str, arg_type_str[arg_types[i]]);
