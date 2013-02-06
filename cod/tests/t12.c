@@ -91,6 +91,9 @@ main(int argc, char **argv)
 	    }
 	    cod_code_free(gen_code);
 	    cod_code_free(gen_code2);
+	    cod_exec_context_free(ec);
+	    cod_exec_context_free(ec2);
+	    free(state);
 	}
 	cod_free_parse_context(context);
     }
@@ -163,6 +166,8 @@ main(int argc, char **argv)
 	    assert(result == 20);
 	    cod_code_free(gen_code);
 	    cod_code_free(gen_code2);
+	    cod_exec_context_free(ec);
+	    cod_exec_context_free(ec2);
 	}
 	cod_free_parse_context(context);
     }
