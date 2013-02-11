@@ -203,7 +203,7 @@ FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat,
 #define MAX_FLOAT_TYPE long double
 #else
 #define MAX_FLOAT_TYPE double
-#define MAX_FLOAT_GET get_IOdouble
+#define MAX_FLOAT_GET get_FMdouble
 #endif
 #if SIZEOF_LONG_LONG != 0
 #define MAX_INTEGER_TYPE long long
