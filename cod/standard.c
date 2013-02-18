@@ -171,7 +171,7 @@ attr_svalue(attr_list l, char *name)
 static char extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
 	attr_list create_attr_list();\n\
-	free_attr_list(attr_list l);\n\
+	void free_attr_list(attr_list l);\n					\
 	void set_long_attr(attr_list l, string name, long value);\n\
 	void set_float_attr(attr_list l, string name, double value);\n\
 	void set_double_attr(attr_list l, string name, double value);\n\
