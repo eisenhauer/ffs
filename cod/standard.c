@@ -55,6 +55,18 @@ attr_set(attr_list l, char *name)
     return query_attr(l, atom, &junk, &junk2);
 }
 
+static attr_list
+attr_create_list()
+{
+    return create_attr_list();
+}
+
+static void
+attr_free_list(attr_list l)
+{
+    free_attr_list(l);
+}
+
 static void
 std_set_int_attr(attr_list l, char *name, int value)
 {
@@ -158,6 +170,8 @@ attr_svalue(attr_list l, char *name)
 
 static char extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
+	attr_list create_attr_list();\n\
+	free_attr_list(attr_list l);\n\
 	void set_long_attr(attr_list l, string name, long value);\n\
 	void set_float_attr(attr_list l, string name, double value);\n\
 	void set_double_attr(attr_list l, string name, double value);\n\
@@ -192,6 +206,8 @@ static cod_extern_entry externs[] =
 {
 #ifdef HAVE_ATL_H
     {"attr_set", (void*)(long)attr_set},
+    {"create_attr_list", (void*)(long)attr_create_list},
+    {"free_attr_list", (void*)(long)attr_free_list},
     {"set_int_attr", (void*)(long)std_set_int_attr},
     {"set_long_attr", (void*)(long)std_set_long_attr},
     {"set_double_attr", (void*)(long)std_set_double_attr},
