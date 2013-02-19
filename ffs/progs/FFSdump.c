@@ -12,6 +12,10 @@
 #endif
 
 extern int FMdumpVerbose;
+extern void FFSprint_version();
+extern void FFSdump_index(FFSIndexItem index_item);
+extern void dump_FMFormat(FMFormat ioformat);
+extern int FFSread_raw(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp);
 
 char *usage = "\
 Usage: FFSdump [<option>] <filename>\n\

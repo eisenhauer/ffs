@@ -7,6 +7,10 @@
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#define HAVE_IOVEC_DEFINE
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

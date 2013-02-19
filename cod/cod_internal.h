@@ -39,6 +39,10 @@ extern void cod_print_srcpos(srcpos pos);
 
 extern void cod_print_dimen_p(dimen_p dimen);
 
+extern void cod_print_enc_info(enc_info enc);
+
+extern void free_enc_info(enc_info enc);
+
 extern void *cod_cg_net(sm_ref net, int ret_type, unsigned int *offset_p,
 			cod_code code_descriptor);
 extern int cod_sm_get_type(sm_ref node);

@@ -20,7 +20,7 @@ terminate_string_parse()
 static char *input_str = NULL;
 static void
 setup_for_string_parse(string, defined_type_count, defined_types)
-char *string;
+const char *string;
 int defined_type_count;
 char **defined_types;
 {
@@ -324,7 +324,7 @@ int my_yy_input(buf,result,max_size) {
 
 static void
 setup_for_string_parse(string, defined_type_count, defined_types)
-char *string;
+const char *string;
 int defined_type_count;
 char **defined_types;
 {
@@ -350,7 +350,7 @@ char **defined_types;
 
 static void
 setup_for_string_parse(string, defined_type_count, defined_types)
-char *string;
+const char *string;
 int defined_type_count;
 char **defined_types;
 {

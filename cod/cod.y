@@ -2787,6 +2787,8 @@ build_format_list(cod_parse_context context, sm_ref expr)
     return formats;
 }
 
+static int is_left_hand_side(sm_ref expr);
+
 static int semanticize_expr(cod_parse_context context, sm_ref expr, 
 			    scope_ptr scope) 
 {
@@ -3357,7 +3359,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
     return 0;
 }
 
-extern int
+static int
 is_left_hand_side(sm_ref expr)
 {
     switch(expr->node_type) {
@@ -4785,6 +4787,10 @@ cod_build_param_node(const char *id, sm_ref typ, int param_num)
     return node;
 }
 
+extern
+void
+get_FMformat_characteristics(FMFormat format, FMfloat_format *ff, FMinteger_format *intf, int *column_major, int *pointer_size);
+
 static
 sm_ref cod_build_type_node_FMformat(FMFormat format, cod_parse_context context)
 {
@@ -4795,7 +4801,7 @@ sm_ref cod_build_type_node_FMformat(FMFormat format, cod_parse_context context)
     int column_major;
     int pointer_size;
     FMFieldList field_list = format->field_list;
-    get_IOformat_characteristics(format, &data_float, &data_int, &column_major, &pointer_size);
+    get_FMformat_characteristics(format, &data_float, &data_int, &column_major, &pointer_size);
 
     decl->node.struct_type_decl.id = strdup(name_of_FMformat(format));
     decl->node.struct_type_decl.encode_info = malloc(sizeof(struct enc_struct));

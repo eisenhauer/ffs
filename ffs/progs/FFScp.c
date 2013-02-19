@@ -16,6 +16,12 @@ Usage: FFScp [<option>] <in filename> <out filename>\n\
 extern char *
 dump_raw_FMrecord_to_string(FMContext fmc, FMFormat format, void *data);
 
+extern int
+FFSread_raw_header(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp);
+extern int
+write_encoded_FFSfile(FFSFile f, void *data, DATA_LEN_TYPE byte_size, FFSContext c,
+		      attr_list attrs);
+
 int
 main(argc, argv)
 int argc;

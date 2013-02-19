@@ -2754,7 +2754,7 @@ set_bigendian () {
 
 extern
 void
-get_IOformat_characteristics(format, ff, intf, column_major, pointer_size)
+get_FMformat_characteristics(format, ff, intf, column_major, pointer_size)
 FMFormat format;
 FMfloat_format *ff;
 FMinteger_format *intf;

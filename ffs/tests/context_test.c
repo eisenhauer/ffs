@@ -21,6 +21,8 @@
 
 #include "test_funcs.h"
 
+extern void dump_FMFormat(FMFormat ioformat);
+
 static void test_receive(char *buffer, int buf_size, int finished,
 			       int test_level);
 static void test_all_receive(char *buffer, int buf_size, int finished);
@@ -785,7 +787,7 @@ int total_size_func(FFSContext context, char *src, int rec_len,
 static int 
 decode_in_place(FFSContext context, char *src, int src_len, void *dest)
 {
-    if (decode_in_place_possible(FFSTypeHandle_from_encode(context, src))) {
+    if (FFSdecode_in_place_possible(FFSTypeHandle_from_encode(context, src))) {
 	int ret, header_len;
 	char *real_dest;
 	ret = FFSdecode_in_place(context, src, (void**)&real_dest);

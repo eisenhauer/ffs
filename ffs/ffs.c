@@ -1229,8 +1229,7 @@ long record_length;
 }
 
 extern int
-FFSheader_size(ioformat)
-FFSTypeHandle ioformat;
+FFSheader_size(FFSTypeHandle ioformat)
 {
     int header_size = ioformat->body->server_ID.length;
     int align_pad;

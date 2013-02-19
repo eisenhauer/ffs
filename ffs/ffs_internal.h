@@ -196,6 +196,11 @@ make_tmp_buffer(FFSBuffer buf, int size);
 extern int
 FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat, 
 			 long record_length);
+extern void
+FFS_determine_conversion(FFSContext c, FFSTypeHandle format);
+
+extern int
+FFSheader_size(FFSTypeHandle ioformat);
 
 #define Max(i,j) ((i<j) ? j : i)
 

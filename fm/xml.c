@@ -629,7 +629,7 @@ extern int
 add_single_value_as_XML(field_type, field_size, field_offset, 
 			data, string_base, byte_reversal, float_format,
 			encode, ds)
-char *field_type;
+const char *field_type;
 int field_size;
 int field_offset;
 void *data;
@@ -734,7 +734,7 @@ static void
 add_value_as_XML(field_type, field_size, field_offset, format, field, data, 
 		  string_base, byte_reversal, float_format, encode, 
 		 in_array, ds)
-char *field_type;
+const char *field_type;
 int field_size;
 int field_offset;
 FMFormat format;

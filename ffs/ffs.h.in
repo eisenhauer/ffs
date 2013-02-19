@@ -137,6 +137,12 @@ write_FFSfile(FFSFile f, FMFormat format, void *data);
 extern int
 write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs);
 
+extern int
+write_comment_FFSfile(FFSFile f, const char *comment);
+
+extern long
+FFSfile_next_decode_length(FFSFile iofile);
+
 typedef enum {
     FFSerror=1, FFSend=2, FFSdata=4, FFSformat=8, FFScomment=16, FFSindex=32
 } FFSRecordType;

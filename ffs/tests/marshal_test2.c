@@ -4,7 +4,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "ffs.h"
+
+extern void
+install_subsample_code(FMFormat f, char *field, char*code_str);
 
 typedef struct _second_rec {
     int len, len2;

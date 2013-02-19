@@ -17,6 +17,8 @@
 
 static int verbose = 0;
 
+extern void free_field_list(FMFieldList list);
+
 void
 dump_format_list(FMStructDescList l)
 {

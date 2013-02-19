@@ -191,11 +191,20 @@ cod_add_param(const char *id, const char *typ, int param_num,
  * \param c an FMContext value in which to format information for the data is available
  * \param context the context in which the subroutine is being declared.
  */
-#ifdef FM_H
+#ifdef __FM__
 extern void
 cod_add_encoded_param(const char *id, char *data, int param_num, 
 		      FMContext c, cod_parse_context context);
 #endif
+
+/*!
+ * \brief As an alternative to cod_subroutine_declaration(), set the return type of a subroutine
+ *
+ * \param typ the data type of the return value.
+ * \param context the context in which the subroutine is being declared.
+ */
+extern void
+cod_set_return_type(char *typ, cod_parse_context context);
 
 /*!
  * cod_code is a handle to the generated code.  In addition to the generated

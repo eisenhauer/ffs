@@ -38,6 +38,8 @@ dump_format_list(FMStructDescList l)
     }
 }
 
+extern void free_field_list(FMFieldList list);
+
 void
 do_test(FMStructDescList list)
 {

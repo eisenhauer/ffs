@@ -48,9 +48,7 @@ FMformat_compat_cmp(FMFormat format, FMFormat *formatList,
 		    int listSize, FMcompat_formats * older_format);
 
 extern void
-FFS_determine_conversion(c, format)
-FFSContext c;
-FFSTypeHandle format;
+FFS_determine_conversion(FFSContext c, FFSTypeHandle format)
 {
     int i;
     FMStructDescList struct_list;

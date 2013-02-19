@@ -150,6 +150,8 @@ int (*read_func) ();
 
 	next = FFSnext_record_type(iofile);
 	switch (next) {
+	case FFSindex:
+	    assert(0);
 	case FFScomment:
 	    comment = FFSread_comment(iofile);
 	    break;

@@ -7,6 +7,7 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 #include "ffs.h"
 #include "cod.h"
 
@@ -43,6 +44,11 @@ static int quiet = 0;
 
 extern char *
 dump_raw_FMrecord_to_string(FMContext fmc, FMFormat format, void *data);
+extern int
+write_encoded_FFSfile(FFSFile f, void *data, DATA_LEN_TYPE byte_size, FFSContext c,
+		      attr_list attrs);
+extern int
+FFSread_raw_header(FFSFile file, void *dest, int buffer_size, FFSTypeHandle *fp);
 
 typedef struct {
     void *data;
@@ -429,6 +435,8 @@ char **argv;
 	    case STRING_SORT:
 		qsort(data_values, count, sizeof(data_values[0]), string_compar);
 		break;
+	    default:
+	      assert(0);
 	    }
 	    write_data(data_values, FFSContext_of_file(in_file), out_file);
             close_FFSfile(in_file);

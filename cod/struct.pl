@@ -104,6 +104,7 @@ sub gen_apply {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
+    print $coutfile "      default: assert(FALSE);\n";
     print $coutfile "    }\n";
     print $coutfile "    node->visited--;\n";
     print $coutfile "    if(post_func) (post_func)(node, data);\n";
@@ -143,6 +144,7 @@ sub gen_dump {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
+    print $coutfile "      default: assert(FALSE);\n";
     print $coutfile "    }\n";
     print $coutfile "    printf(\"\\n\");\n";
     print $coutfile "}\n\n"
@@ -177,6 +179,7 @@ sub gen_free {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
+    print $coutfile "      default: assert(FALSE);\n";
     print $coutfile "    }\n";
     print $coutfile "    free(node);\n";
     print $coutfile "}\n\n";
@@ -197,6 +200,7 @@ sub gen_free {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
+    print $coutfile "      default: assert(FALSE);\n";
     print $coutfile "    }\n";
     print $coutfile "}\n\n";
     print $houtfile "extern void cod_rfree(sm_ref node);\n";
@@ -269,6 +273,7 @@ sub gen_copy {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
+    print $coutfile "      default: assert(FALSE);\n";
     print $coutfile "    }\n";
     print $coutfile "    return new_node;\n";
     print $coutfile "}\n\n";
@@ -305,6 +310,7 @@ gen_typedef(HOUTFILE);
 print HOUTFILE "#endif\n";
 open(COUTFILE, ">cod_node.c");
 print COUTFILE "#include \"config.h\"\n";
+print COUTFILE "#include \"assert.h\"\n";
 print COUTFILE "#ifndef LINUX_KERNEL_MODULE\n";
 print COUTFILE "#include \<stdio.h\>\n";
 print COUTFILE "#endif\n";

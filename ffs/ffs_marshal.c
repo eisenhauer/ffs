@@ -11,6 +11,7 @@
 #include "cod.h"
 #include "fm_internal.h"
 #include "ffs_internal.h"
+#include "../cod/cod_internal.h"
 #include "ffs_marshal.h"
 
 extern field_marshal_info
