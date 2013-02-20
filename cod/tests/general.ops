@@ -190,6 +190,7 @@ print COUT<<EOF;
 $div_label	}
     }
     if (verbose) printf(" done\\n");
+    cod_free_parse_context(context);
     cod_code_free(gen_code);
   }
 EOF
