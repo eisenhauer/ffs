@@ -326,6 +326,8 @@ extern int derive_eq(DeriveMsgPtr d1, DeriveMsgPtr d2);
 extern int multi_array_eq(multi_array_rec *r1, multi_array_rec *r2);
 extern int triangle_param_eq(triangle_param *r1, triangle_param *r2);
 extern int add_rec_eq(add_rec_ptr r1, add_rec_ptr r2);
+extern int
+pointer_to_static_rec_eq(pointer_to_static_array_ptr r1, pointer_to_static_array_ptr r2);
 
 extern char *first_xml;
 extern char *string_xml;
