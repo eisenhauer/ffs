@@ -39,7 +39,7 @@ main(int argc, char **argv)
 	}
 	argc--; argv++;
     }
-    {
+    if ((test_to_run == -1) || (test_to_run == 0)) {
 	/* test the basics */
 	char code_string[] = "\
 {\n\
@@ -63,7 +63,7 @@ main(int argc, char **argv)
 	cod_free_parse_context(context);
     }
 
-    {
+    if ((test_to_run == -1) || (test_to_run == 1)) {
 
 	/* test the ability to have a parameter */
 	char code_string[] = "\
@@ -84,7 +84,7 @@ main(int argc, char **argv)
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
-    {
+    if ((test_to_run == -1) || (test_to_run == 2)) {
 	/* structured types */
 	char code_string[] = "\
 {\n\
@@ -285,7 +285,7 @@ comment\n\
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
-    {
+    if ((test_to_run == -1) || (test_to_run == 3)) {
 	static char extern_string[] = "int printf(string format, ...);";
 
 	static cod_extern_entry externs[] = 
@@ -326,7 +326,7 @@ comment\n\
 	assert (ret == 0);
 	cod_free_parse_context(context);
     }
-    {
+    if ((test_to_run == -1) || (test_to_run == 4)) {
 	static char extern_string[] = "int junk(int i, float j);";
 
 	static cod_extern_entry externs[] = 
@@ -353,7 +353,7 @@ comment\n\
 
     }
 
-    {
+    if ((test_to_run == -1) || (test_to_run == 5)) {
 	static char code[] = "{\n\
 		    int i;\n\
 		    int j;\n\
@@ -387,7 +387,7 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
-    {
+    if ((test_to_run == -1) || (test_to_run == 6)) {
         /*
          * test operators inapplicable to pointers and operator
          * arguments mixing pointers w/ incompatible other arguments
@@ -438,7 +438,7 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
-    {
+    if ((test_to_run == -1) || (test_to_run == 7)) {
         /*
          * tests validity of address operator's operand
          */
@@ -456,7 +456,7 @@ comment\n\
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
-    {
+    if ((test_to_run == -1) || (test_to_run == 8)) {
         /*
          * tests return statement
          */
@@ -474,7 +474,7 @@ comment\n\
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
-    {
+    if ((test_to_run == -1) || (test_to_run == 9)) {
         /*
          * tests return statement
          */
@@ -494,7 +494,7 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
-    {
+    if ((test_to_run == -1) || (test_to_run == 10)) {
         /*
          * tests goto statement
          */
@@ -514,7 +514,7 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
-     {
+    if ((test_to_run == -1) || (test_to_run == 11)) {
         /*
          * tests goto statement
          */
@@ -535,7 +535,7 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
-     {
+    if ((test_to_run == -1) || (test_to_run == 12)) {
         /*
          * tests continue statement
          */
@@ -557,7 +557,7 @@ comment\n\
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
-     {
+    if ((test_to_run == -1) || (test_to_run == 13)) {
         /*
          * tests break statement
          */
