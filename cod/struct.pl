@@ -104,7 +104,7 @@ sub gen_apply {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
-    print $coutfile "      default: assert(FALSE);\n";
+    print $coutfile "      default: printf(\"Unhandled case in cod_apply\\n\");\n";
     print $coutfile "    }\n";
     print $coutfile "    node->visited--;\n";
     print $coutfile "    if(post_func) (post_func)(node, data);\n";
@@ -144,7 +144,7 @@ sub gen_dump {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
-    print $coutfile "      default: assert(FALSE);\n";
+    print $coutfile "      default: printf(\"Unhandled case in cod_print\\n\");\n";
     print $coutfile "    }\n";
     print $coutfile "    printf(\"\\n\");\n";
     print $coutfile "}\n\n"
@@ -179,7 +179,7 @@ sub gen_free {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
-    print $coutfile "      default: assert(FALSE);\n";
+    print $coutfile "      default: printf(\"Unhandled case in cod_free\\n\");\n";
     print $coutfile "    }\n";
     print $coutfile "    free(node);\n";
     print $coutfile "}\n\n";
@@ -200,7 +200,7 @@ sub gen_free {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
-    print $coutfile "      default: assert(FALSE);\n";
+    print $coutfile "      default: printf(\"Unhandled case in cod_make_free\\n\");\n";
     print $coutfile "    }\n";
     print $coutfile "}\n\n";
     print $houtfile "extern void cod_rfree(sm_ref node);\n";
@@ -273,7 +273,7 @@ sub gen_copy {
 	print $coutfile "          break;\n";
 	print $coutfile "      }\n";
     }
-    print $coutfile "      default: assert(FALSE);\n";
+    print $coutfile "      default: printf(\"Unhandled case in cod_copy\\n\");\n";
     print $coutfile "    }\n";
     print $coutfile "    return new_node;\n";
     print $coutfile "}\n\n";
