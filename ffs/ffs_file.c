@@ -1242,7 +1242,7 @@ FFSFile ffsfile;
     return ffsfile->next_data_handle;
 }
 
-extern DATA_LEN_TYPE
+extern long
 FFSfile_next_decode_length(FFSFile iofile)
 {
     FFSContext context = iofile->c;
