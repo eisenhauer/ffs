@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 set (TESTS context_test context_test2 fortran_test)
-set (PROGS ffs_write ffs_index_test ffs_file_test)
+set (PROGS ffs_write ffs_index_test ffs_file_test test_file_unique)
 
 ENABLE_TESTING()
 
@@ -33,16 +33,15 @@ endif()
 
 FILE(GLOB CTOS ${ffs_SOURCE_DIR}/ffs/output_dir/context_test_output*.bin)
 FILE(GLOB FOS ${ffs_SOURCE_DIR}/ffs/output_dir/file_output*.bin)
-if ( NOT ("${CercsArch}" STREQUAL ""))
-    ADD_TEST(write_context_output context_test -w ${ffs_BINARY_DIR}/ffs/tests/context_test_output.${CercsArch}.bin)
-    ADD_TEST(CompareContextOutput ${CMAKE_COMMAND} -E compare_files ${ffs_SOURCE_DIR}/ffs/output_dir/context_test_output.${CercsArch}.bin ${ffs_BINARY_DIR}/ffs/tests/context_test_output.${CercsArch}.bin)
-    ADD_TEST(write_file_output ffs_write ${ffs_BINARY_DIR}/ffs/tests/file_output.${CercsArch}.bin)
-    ADD_TEST(CompareFileOutput ${CMAKE_COMMAND} -E compare_files ${ffs_SOURCE_DIR}/ffs/output_dir/file_output.${CercsArch}.bin ${ffs_BINARY_DIR}/ffs/tests/file_output.${CercsArch}.bin)
-    LIST(APPEND CTOS context_test_output.${CercsArch}.bin)
-    LIST(REMOVE_DUPLICATES CTOS)
-    LIST(APPEND FOS file_output.${CercsArch}.bin)
-    LIST(REMOVE_DUPLICATES FOS)
-endif()
+
+ADD_TEST(write_context_output context_test -w ${ffs_BINARY_DIR}/ffs/tests/context_test_output.bin)
+ADD_TEST(context_output_unique test_file_unique ${ffs_BINARY_DIR}/ffs/tests/context_test_output.bin ${CTOS} )
+ADD_TEST(write_file_output ffs_write ${ffs_BINARY_DIR}/ffs/tests/file_output.bin)
+ADD_TEST(file_output_unique test_file_unique ${ffs_BINARY_DIR}/ffs/tests/file_output.bin ${FOS} )
+LIST(APPEND CTOS context_test_output.bin)
+LIST(REMOVE_DUPLICATES CTOS)
+LIST(APPEND FOS file_output.bin)
+LIST(REMOVE_DUPLICATES FOS)
 
 ADD_TEST(write_index_output ffs_write -i index_output)
 ADD_TEST(read_index_test ffs_index_test index_output)
