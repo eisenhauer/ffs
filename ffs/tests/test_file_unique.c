@@ -8,7 +8,7 @@ unsigned
 file_checksum(char *filename)
 {
     unsigned int sum;
-    unsigned int nbytes;
+    unsigned int nbytes = 0;
     int c;
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
