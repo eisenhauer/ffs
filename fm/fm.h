@@ -205,10 +205,20 @@ extern char *FMbase_type(const char *field_type);
 #define COMPAT_OPT_INFO_FMFILE 0x45564F4D
 
 typedef struct _FMgetFieldStruct *FMFieldPtr;
-extern char *get_FMstring_base(FMFieldPtr iofield, void *data, void *string_base);
-extern void *get_FMaddr (FMFieldPtr iofield, void *data, void *string_base, int encode);
 extern FMFieldPtr get_FMfieldPtrFromList(FMFieldList field_list, 
 					 const char *fieldname);
+
+extern void *
+get_FMfieldAddr_by_name(FMFieldList field_list, const char *fieldname, void *data);
+extern void *
+get_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data, int encode);
+extern int
+set_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data, void *ptr_value);
+
+extern char *get_FMstring_base(FMFieldPtr iofield, void *data, void *string_base);
+extern void *get_FMFieldAddr(FMFieldPtr iofield, void *data);
+extern void *get_FMaddr (FMFieldPtr iofield, void *data, void *string_base, int encode);
+extern void *put_FMaddr (FMFieldPtr iofield, void *data);
 extern float get_FMfloat(FMFieldPtr iofield, void *data);
 extern double get_FMdouble(FMFieldPtr iofield, void *data);
 extern short get_FMshort(FMFieldPtr iofield, void *data);

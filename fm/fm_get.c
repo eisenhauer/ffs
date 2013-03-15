@@ -774,6 +774,74 @@ const char *fieldname;
     return ret_val;
 }
 
+extern void *
+get_FMfieldAddr_by_name(FMFieldList field_list, const char *fieldname, void *data)
+{
+    int index;
+    FMFieldPtr ret_val;
+    FMdata_type data_type;
+
+    for (index = 0; field_list[index].field_name != NULL; index++) {
+	if (strcmp(field_list[index].field_name, fieldname) == 0) {
+	    break;
+	}
+    }
+    if (field_list[index].field_name == NULL)
+	return NULL;
+
+    return ((char*)data) + field_list[index].field_offset;
+}
+
+extern void *
+get_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data, int encode)
+{
+    int index;
+    struct _FMgetFieldStruct field;
+    FMdata_type data_type;
+
+    for (index = 0; field_list[index].field_name != NULL; index++) {
+	if (strcmp(field_list[index].field_name, fieldname) == 0) {
+	    break;
+	}
+    }
+    if (field_list[index].field_name == NULL)
+	return NULL;
+
+    field.offset = field_list[index].field_offset;
+    field.size = field_list[index].field_size;
+    field.byte_swap = 0;
+
+    unsigned long offset = get_offset((void *) ((char *) data + field.offset),
+			     field.size, field.byte_swap);
+    if (offset == 0) {
+	return NULL;
+    } else if (!encode) {
+	return (char *) offset;
+    } else {
+	return (char *) data + offset;
+    }
+}
+
+extern int
+set_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data, void *ptr_value)
+{
+    int index;
+    FMFieldPtr ret_val;
+    FMdata_type data_type;
+
+    for (index = 0; field_list[index].field_name != NULL; index++) {
+	if (strcmp(field_list[index].field_name, fieldname) == 0) {
+	    break;
+	}
+    }
+    if (field_list[index].field_name == NULL)
+	return 0;
+
+    
+    *((void**)(((char*)data) + field_list[index].field_offset)) = ptr_value;
+    return 1;
+}
+
 extern FMFieldPtr
 get_FMfieldPtr(format, fieldname)
 FMFormat format;
