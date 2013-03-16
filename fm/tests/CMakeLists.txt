@@ -18,7 +18,4 @@ foreach (PROG ${PROGS} )
     TARGET_LINK_LIBRARIES(${PROG} ffs )
 endforeach()
 
-ADD_EXECUTABLE(array_examples array_examples.c)
-TARGET_LINK_LIBRARIES(array_examples ffs )
-
 INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/format_test DESTINATION bin)
