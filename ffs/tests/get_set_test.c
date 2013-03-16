@@ -101,7 +101,7 @@ char **argv;
     assert(strcmp(tmp_string, "svelte buoyant waterfowl") == 0);
     
     free_FFSBuffer(buf);
-
+    free(encode_buffer);
     free_FMcontext(context);
     
     return 0;
