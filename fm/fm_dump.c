@@ -742,6 +742,20 @@ int character_limit;
     return 0;
 }
 
+void *
+FMheader_skip(FMContext c, void *data)
+{
+    FMFormat format = FMformat_from_ID(c, data);
+    int header_size = format->server_ID.length;
+
+    if (format->variant) {
+	header_size += sizeof(INT4);
+    }
+    header_size += (8 - header_size) & 0x7;
+    data = (char*)data + header_size;
+    return data;
+}
+
 extern void
 FMdump_encoded_XML(FMContext c, void *data, int limit)
 {

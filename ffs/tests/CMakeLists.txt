@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set (TESTS context_test context_test2 fortran_test)
+set (TESTS context_test context_test2 fortran_test get_set_test)
 set (PROGS ffs_write ffs_index_test ffs_file_test test_file_unique)
 
 ENABLE_TESTING()

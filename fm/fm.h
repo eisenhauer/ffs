@@ -215,6 +215,7 @@ get_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data
 extern int
 set_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data, void *ptr_value);
 
+extern void * FMheader_skip(FMContext c, void *data);
 extern char *get_FMstring_base(FMFieldPtr iofield, void *data, void *string_base);
 extern void *get_FMFieldAddr(FMFieldPtr iofield, void *data);
 extern void *get_FMaddr (FMFieldPtr iofield, void *data, void *string_base, int encode);

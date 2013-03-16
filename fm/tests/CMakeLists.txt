@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set (TESTS align_test compat_test get_set_test)
+set (TESTS align_test compat_test)
 set (PROGS format_test self_format_test)
 
 ENABLE_TESTING()
