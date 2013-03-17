@@ -808,7 +808,7 @@ get_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data
 	return NULL;
 
     field.offset = field_list[index].field_offset;
-    field.size = field_list[index].field_size;
+    field.size = sizeof(void*);
     field.byte_swap = 0;
 
     unsigned long offset = get_offset((void *) ((char *) data + field.offset),
