@@ -21,7 +21,7 @@
    cercs_env, leak
    Memcheck:Leak
 ...
-   fun:init_env_table
+   fun:*
    fun:cercs_getenv
 }
 {
