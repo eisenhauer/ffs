@@ -2237,6 +2237,13 @@ FMFieldList list;
     free(list);
 }
 
+extern
+void
+free_FMfield_list(FMFieldList list)
+{
+    free_field_list(list);
+}
+
 extern void
 free_FMFormatList(FMFormatList format_list)
 {
