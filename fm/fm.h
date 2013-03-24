@@ -9,7 +9,6 @@ typedef struct _FMContextStruct *FMContext;
 extern FMContext create_FMcontext();
 extern FMContext create_local_FMcontext();
 extern void free_FMcontext();
-extern void free_FMfield_list(FMFieldList list);
 extern void add_ref_FMcontext();
 extern void FMcontext_allow_self_formats(FMContext fmc);
 extern int
@@ -114,6 +113,8 @@ register_data_format(FMContext context, FMStructDescList struct_list);
 
 extern FMFormat
 FMregister_data_format(FMContext context, FMStructDescList struct_list);
+
+extern void free_FMfield_list(FMFieldList list);
 
 /*!
  * lookup the FMFormat associated with a particular FMStructDescList
