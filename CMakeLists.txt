@@ -8,16 +8,15 @@ ENDIF()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-file (STRINGS "${CMAKE_SOURCE_DIR}/version.c" VERSION_TEXT REGEX "^static.*")
-STRING(REGEX REPLACE ".*Version ([0-9]+.[0-9]+.[0-9]+).*" "\\1" VERSION_TEXT "${VERSION_TEXT}")
-STRING(REGEX REPLACE "([0-9]+)[0-9.]*$" "\\1" MAJOR_VERSION_STRING ${VERSION_TEXT})
-
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CreateLibtoolFile)
+include(AddLibtoolLibrary)
 include(FindCERCSProject)
+
+option(BUILD_SHARED_STATIC "enable building the shared or the static library" "BOTH")
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
 ${CMAKE_CURRENT_SOURCE_DIR}/fm ${CMAKE_CURRENT_SOURCE_DIR}/cod
@@ -77,21 +76,6 @@ ENDIF()
 
 set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MASTER_SRC_LIST})
 
-add_library(ffs SHARED ${FFS_MASTER_SRC_LIST})
-add_library(ffs-static STATIC ${FFS_MASTER_SRC_LIST})
-# The library target "ffs" already has a default OUTPUT_NAME of "ffs", so we don't need to change it.
-# The library target "ffs-static" has a default OUTPUT_NAME of "ffs-static", so change it.
-SET_TARGET_PROPERTIES(ffs-static PROPERTIES OUTPUT_NAME "ffs" )
-# Now the library target "foo-static" will be named "foo.lib" with MS tools.
-# This conflicts with the "foo.lib" import library corresponding to "foo.dll",
-# so we add a "lib" prefix (which is default on other platforms anyway):
-SET_TARGET_PROPERTIES(ffs-static PROPERTIES PREFIX "lib" LINKER_LANGUAGE C)
-SET_TARGET_PROPERTIES(ffs PROPERTIES LINKER_LANGUAGE C)
-SET_TARGET_PROPERTIES(ffs PROPERTIES STATIC_LIB "libffs.a")
-SET_TARGET_PROPERTIES(ffs PROPERTIES LT_SHOULDNOTLINK "no")
-
-# add_dependencies(cod fm)
-# add_dependencies(ffs cod)
 
 FIND_CERCS_PROJECT (cercs_env LIBRARY cercs_env INCLUDES cercs_env.h REQUIRED ${CERCS_USE_INSTALLED})
 FIND_CERCS_PROJECT (atl LIBRARY atl INCLUDES atl.h REQUIRED ${CERCS_USE_INSTALLED})
@@ -115,14 +99,10 @@ foreach(arg ${DEPLIBS})
    set(DEP_STRING "${DEP_STRING} ${arg}")
 endforeach(arg ${DEPLIBS})
 
-SET_TARGET_PROPERTIES(ffs PROPERTIES LT_DEPENDENCY_LIBS "${DEP_STRING}")
+add_libtool_library(NAME ffs SRC_LIST ${FFS_MASTER_SRC_LIST} DEP_LIBS "${DEP_STRING}" LINK_LIBS ${BASE_LIBS})
+
 INCLUDE_DIRECTORIES(${INC_DIRS})
 LINK_DIRECTORIES(${LIB_DIRS})
-
-TARGET_LINK_LIBRARIES(ffs ${BASE_LIBS})
-SET_TARGET_PROPERTIES(ffs  PROPERTIES VERSION "${VERSION_TEXT}" SOVERSION "${MAJOR_VERSION_STRING}")
-TARGET_LINK_LIBRARIES(ffs-static ${BASE_LIBS})
-SET_TARGET_PROPERTIES(ffs-static  PROPERTIES VERSION "${VERSION_TEXT}" SOVERSION "${MAJOR_VERSION_STRING}")
 
 IF (DILL_FOUND)
     set (FFS_CONVERSION_GENERATION_DEFAULT TRUE)
@@ -198,7 +178,7 @@ CREATE_LIBTOOL_FILE(ffs /lib)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/fm/fm.h DESTINATION include)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.h DESTINATION include)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ffs/ffs.h DESTINATION include)
-INSTALL(TARGETS ffs ffs-static 
+INSTALL(TARGETS ${INSTALL_TARGETS}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -215,6 +195,7 @@ MESSAGE( STATUS )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}"  (options are: Debug,Release,RelWithDebInfo,MinSizeRel))
+MESSAGE( STATUS "BUILD_SHARED_STATIC = ${BUILD_SHARED_STATIC}")
 MESSAGE( STATUS "Change a value with: cmake -D<Variable>=<Value>" )
 MESSAGE( STATUS "    to use installed CERCS libraries specify -DCERCS_USE_INSTALLED=1" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
