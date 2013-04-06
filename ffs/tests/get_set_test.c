@@ -51,25 +51,43 @@ char **argv;
 
     /* stop using test_rec and see if we can access fields using the data_ptr and the field list */
     tmp_ptr = get_FMfieldAddr_by_name(field_list3, "integer field", data_ptr);
-    assert(*((int*)tmp_ptr) == -15);
+    if (*((int*)tmp_ptr) != -15) {
+	printf("Failed integer field\n");
+	exit(1);
+    }
 
     tmp_ptr = get_FMfieldAddr_by_name(field_list3, "long field", data_ptr);
-    assert(*((long*)tmp_ptr) == -2);
+    if (*((long*)tmp_ptr) != -2) {
+	printf("Failed long field\n");
+	exit(1);
+    }
 
     /* OK, now get pointers (here, strings) and test */
     tmp_string = get_FMPtrField_by_name(field_list3, "string field", data_ptr, 0);
-    assert(strcmp(tmp_string, "penny arcade") == 0);
+    if (strcmp(tmp_string, "penny arcade") != 0) {
+	printf("failed string field\n");
+	exit(1);
+    }
 
     tmp_string = get_FMPtrField_by_name(field_list3, "string field2", data_ptr, 0);
-    assert(strcmp(tmp_string, "xkcd") == 0);
+    if (strcmp(tmp_string, "xkcd") != 0) {
+	printf("failed string field2\n");
+	exit(1);
+    }
     
     /* OK, now SET pointers (here, strings) and test */
-    assert(set_FMPtrField_by_name(field_list3, "string field", data_ptr, strdup("Ack! Thbbft!")) == 1);
+    if (set_FMPtrField_by_name(field_list3, "string field", data_ptr, strdup("Ack! Thbbft!")) != 1) exit(1);
 
-    assert(set_FMPtrField_by_name(field_list3, "string field2", data_ptr, strdup("svelte buoyant waterfowl")) == 1);
+    if (set_FMPtrField_by_name(field_list3, "string field2", data_ptr, strdup("svelte buoyant waterfowl")) != 1) exit(1);
 	   
-    assert(strcmp(test_rec.string, "Ack! Thbbft!") == 0);
-    assert(strcmp(test_rec.string2, "svelte buoyant waterfowl") == 0);
+    if (strcmp(test_rec.string, "Ack! Thbbft!") != 0) {
+	printf("Failed Ack! Thbbft!\n");
+	exit(1);
+    }
+    if (strcmp(test_rec.string2, "svelte buoyant waterfowl") != 0) {
+	printf("Failed svelte bouyant waterfowl\n");
+	exit(1);
+    }
 
     /* register a format so we can do more stuff */
     context = create_local_FMcontext();
@@ -88,17 +106,29 @@ char **argv;
     
     /* stop using test_rec and see if we can access fields using the data_ptr and the field list */
     tmp_ptr = get_FMfieldAddr_by_name(field_list3, "integer field", base_data);
-    assert(*((int*)tmp_ptr) == -15);
+    if (*((int*)tmp_ptr) != -15) {
+	printf("failed second integer field\n");
+	exit(1);
+    }
 
     tmp_ptr = get_FMfieldAddr_by_name(field_list3, "long field", base_data);
-    assert(*((long*)tmp_ptr) == -2);
+    if (*((long*)tmp_ptr) != -2) {
+	printf("failed second long field\n");
+	exit(1);
+    }
 
     /* OK, now get pointers (here, strings) and test */
     tmp_string = get_FMPtrField_by_name(field_list3, "string field", base_data, 1);
-    assert(strcmp(tmp_string, "Ack! Thbbft!") == 0);
+    if (strcmp(tmp_string, "Ack! Thbbft!") != 0) {
+	printf("Failed second Ack!\n");
+	exit(1);
+    }
 
     tmp_string = get_FMPtrField_by_name(field_list3, "string field2", base_data, 1);
-    assert(strcmp(tmp_string, "svelte buoyant waterfowl") == 0);
+    if (strcmp(tmp_string, "svelte buoyant waterfowl") != 0) {
+	printf("Failed second svelte\n");
+	exit(1);
+    }
     
     free_FFSBuffer(buf);
     free(encode_buffer);
