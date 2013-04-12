@@ -792,6 +792,56 @@ get_FMfieldAddr_by_name(FMFieldList field_list, const char *fieldname, void *dat
     return ((char*)data) + field_list[index].field_offset;
 }
 
+extern int
+get_FMfieldInt_by_name(FMFieldList field_list, const char *fieldname, void *data)
+{
+    int index;
+    FMgetFieldStruct descr;
+    FMdata_type data_type;
+
+    for (index = 0; field_list[index].field_name != NULL; index++) {
+	if (strcmp(field_list[index].field_name, fieldname) == 0) {
+	    break;
+	}
+    }
+    if (field_list[index].field_name == NULL) {
+	printf("Field %s not found\n", fieldname);
+	return 0;
+    }
+
+    descr.offset = field_list[index].field_offset;
+    descr.size = field_list[index].field_size;
+    descr.data_type = integer_type;
+    descr.byte_swap = 0;
+    descr.src_float_format = descr.target_float_format = Format_IEEE_754_bigendian;
+    return get_FMint(&descr, data);
+}
+
+extern long
+get_FMfieldLong_by_name(FMFieldList field_list, const char *fieldname, void *data)
+{
+    int index;
+    FMgetFieldStruct descr;
+    FMdata_type data_type;
+
+    for (index = 0; field_list[index].field_name != NULL; index++) {
+	if (strcmp(field_list[index].field_name, fieldname) == 0) {
+	    break;
+	}
+    }
+    if (field_list[index].field_name == NULL) {
+	printf("Field %s not found\n", fieldname);
+	return 0;
+    }
+
+    descr.offset = field_list[index].field_offset;
+    descr.size = field_list[index].field_size;
+    descr.data_type = integer_type;
+    descr.byte_swap = 0;
+    descr.src_float_format = descr.target_float_format = Format_IEEE_754_bigendian;
+    return get_FMlong(&descr, data);
+}
+
 extern void *
 get_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data, int encode)
 {
