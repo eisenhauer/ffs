@@ -40,9 +40,10 @@ typedef struct dump_state {
     int use_XML;
     int indent;
     char *offset_base;
-    int use_stdout;
+    int use_file_out;
     char *output_string;
     int realloc_string;
+    FILE *out;
     /* 
      * entries below are to prevent multiple visits in recursively-defined types
      */
@@ -102,8 +103,8 @@ dump_output(dstate s, int length_estimate, char *format, ...)
     vsprintf(tmp, format, ap);
     va_end(ap);
     s->output_len += strlen(tmp);
-    if (s->use_stdout) {
-	printf("%s", tmp);
+    if (s->use_file_out) {
+	fprintf(s->out, "%s", tmp);
     }
     if (free_tmp) free(tmp);
     return 1;
@@ -227,10 +228,11 @@ init_dump_state(dstate state)
     state->use_XML = 0;
     state->addr_list_cnt = 0;
     state->indent = 0;
-    state->use_stdout = 1;
+    state->use_file_out = 1;
     state->offset_base = NULL;
     state->output_string = NULL;
     state->realloc_string = 0;
+    state->out = stdout;
 }
 
 static int
@@ -238,6 +240,16 @@ internal_dump_data(FMFormat format, void *data, dstate state);
 
 extern int
 FMdump_data(format, data, character_limit)
+FMFormat format;
+void *data;
+int character_limit;
+{
+    return FMfdump_data(stdout, format, data, character_limit);
+}
+
+extern int
+FMfdump_data(out, format, data, character_limit)
+void *out;
 FMFormat format;
 void *data;
 int character_limit;
@@ -707,7 +719,7 @@ void *data;
     state.output_limit = -1;
     state.encoded = 1;
     state.offset_base = data;
-    state.use_stdout = 0;
+    state.use_file_out = 0;
     state.output_string = malloc(1);
     state.realloc_string++;
     if (FMdumpVerbose)
@@ -718,7 +730,8 @@ void *data;
 }
 
 extern int
-FMdump_encoded_data(format, data, character_limit)
+FMfdump_encoded_data(out, format, data, character_limit)
+void *out;
 FMFormat format;
 void *data;
 int character_limit;
@@ -735,11 +748,21 @@ int character_limit;
     state.output_limit = character_limit;
     state.encoded = 1;
     state.offset_base = data;
+    state.out = (FILE*)out;
     if (FMdumpVerbose)
 	dump_output(&state, strlen(format->format_name) + 15, "Record type %s :", format->format_name);
     internal_dump_data(format, data, &state);
     dump_output(&state, 1, "\n");
     return 0;
+}
+
+extern int
+FMdump_encoded_data(format, data, character_limit)
+FMFormat format;
+void *data;
+int character_limit;
+{
+    return FMfdump_encoded_data((void*)stdout, format, data, character_limit);
 }
 
 void *
@@ -757,7 +780,7 @@ FMheader_skip(FMContext c, void *data)
 }
 
 extern void
-FMdump_encoded_XML(FMContext c, void *data, int limit)
+FMfdump_encoded_XML(void *out, FMContext c, void *data, int limit)
 {
     FMFormat format = FMformat_from_ID(c, data);
     int header_size = format->server_ID.length;
@@ -779,9 +802,16 @@ FMdump_encoded_XML(FMContext c, void *data, int limit)
     state.encoded = 1;
     state.offset_base = data;
     state.use_XML = 1;
+    state.out = (FILE*)out;
     dump_output(&state,	strlen(format->format_name) + 3, "<%s>\n", format->format_name);
     internal_dump_data(format, data, &state);
     dump_output(&state, strlen(format->format_name) + 4, "</%s>\n", format->format_name);
+}
+
+extern void
+FMdump_encoded_XML(FMContext c, void *data, int limit)
+{
+    FMfdump_encoded_XML(stdout, c, data, limit);
 }
 
 extern void

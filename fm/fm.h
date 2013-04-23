@@ -194,6 +194,18 @@ FMdump_XML(FMFormat format, void *data, int encoded);
 extern void
 FMdump_encoded_XML(FMContext c, void *data, int character_limit);
 
+extern int
+FMfdump_data(void *file, FMFormat format, void *data, int character_limit);
+
+extern int
+FMfdump_encoded_data(void *file, FMFormat format, void *data, int character_limit);
+
+extern void
+FMfdump_XML(void *file, FMFormat format, void *data, int encoded);
+
+extern void
+FMfdump_encoded_XML(void *file, FMContext c, void *data, int character_limit);
+
 extern char*
 FMunencoded_to_XML_string(FMContext fmcontext, FMFormat format, void *data);
 
