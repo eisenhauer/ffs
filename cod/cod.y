@@ -3470,7 +3470,8 @@ get_complex_type(cod_parse_context context, sm_ref node)
 {
     switch(node->node_type) {
     case cod_subroutine_call:
-	return NULL;
+	return get_complex_type(context,
+				node->node.subroutine_call.sm_func_ref);
     case cod_identifier:
 	return get_complex_type(context, 
 				node->node.identifier.sm_declaration);

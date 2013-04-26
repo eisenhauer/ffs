@@ -2123,6 +2123,8 @@ is_complex_type(sm_ref expr)
     case cod_declaration:
 	if (expr->node.declaration.sm_complex_type == NULL) return 0;
 	return is_complex_type(expr->node.declaration.sm_complex_type);
+    case cod_subroutine_call:
+	return is_complex_type(expr->node.subroutine_call.sm_func_ref);
     case cod_struct_type_decl:
 	return 1;
     case cod_reference_type_decl:
