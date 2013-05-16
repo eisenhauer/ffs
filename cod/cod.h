@@ -45,12 +45,30 @@ typedef struct cod_exec_struct *cod_exec_context;
 typedef struct sm_struct *sm_ref;
 
 #ifndef FMOffset
+#define FMOffset(p_type,field) \
+	((int) (((char *) (&(((p_type)0)->field))) - ((char *) 0)))
+#if defined(__STDC__) || defined(__ANSI_CPP__) || defined(_MSC_VER)
+#define FMstr(s) #s
+#else
+#define FMstr(s) "s"
+#endif
+#define FMArrayDecl(type, size) FMstr(type[size])
+#define FMArrayDecl2(type, size, size2) FMstr(type[size][size2])
+
+#define FMDefaultDecl(name, val) FMstr(name(val))
+
 typedef struct _FMField {
-    char *field_name;		/* Field name */
-    char *field_type;		/* Representation type desired */
+    const char *field_name;	/* Field name */
+    const char *field_type;	/* Representation type desired */
     int field_size;		/* Size in bytes of representation */
     int field_offset;		/* Offset from base to put field value */
 } FMField, *FMFieldList;
+
+typedef struct _FMOptInfo {
+    int info_type;
+    int info_len;
+    char *info_block;
+} FMOptInfo;
 
 /*!
  * A structure to hold Format Name / Field List associations.
@@ -65,18 +83,8 @@ typedef struct _FMformat_list {
     /*! the FFS-style list of fields within this structure */
     FMFieldList field_list;
     int struct_size;
-    char *opt_info;
+    FMOptInfo *opt_info;
 }FMStructDescRec, *FMStructDescList;
-
-#define FMOffset(p_type,field) \
-	((int) (((char *) (&(((p_type)0)->field))) - ((char *) 0)))
-#if defined(__STDC__) || defined(__ANSI_CPP__) || defined(_MSC_VER)
-#define FMstr(s) #s
-#else
-#define FMstr(s) "s"
-#endif
-#define FMArrayDecl(type, size) IOstr(type[size])
-#define FMArrayDecl2(type, size, size2) IOstr(type[size][size2])
 #endif
 
 /*!
