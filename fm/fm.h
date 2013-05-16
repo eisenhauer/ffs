@@ -15,6 +15,7 @@ extern int
 FMcontext_get_format_server_identifier(FMContext fmc);
 
 
+#ifndef FMOffset
 #define FMOffset(p_type,field) \
 	((int) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
 #if defined(__STDC__) || defined(__ANSI_CPP__) || defined(_MSC_VER)
@@ -55,6 +56,7 @@ typedef struct _FMformat_list {
     int struct_size;
     FMOptInfo *opt_info;
 }FMFormatRec, *FMFormatList, FMStructDescRec, *FMStructDescList;
+#endif
 
 typedef enum {
   Format_Unknown= 0, Format_IEEE_754_bigendian = 1, 
