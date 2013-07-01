@@ -45,9 +45,9 @@
 #include "fm.h"
 #include "fm_internal.h"
 
-static int server_register_format(FMContext fmc, FMFormat ioformat);
+static int server_register_format(FMContext fmc, FMFormat fmformat);
 static int self_server_register_format(FMContext fmc,
-					     FMFormat ioformat);
+					     FMFormat fmformat);
 
 static void byte_swap(char *data, int size);
 static FMFormat server_get_format(FMContext iocontext, void *buffer);
@@ -262,7 +262,7 @@ FMFormat body;
 }
 
 static int format_server_verbose = -1;
-extern void dump_FMFormat(FMFormat ioformat);
+extern void dump_FMFormat(FMFormat fmformat);
 unsigned char ID_length[] = {8, 10, 12};
 
 extern int
@@ -329,22 +329,22 @@ FMContext fmc;
 #endif
 
 extern FMcompat_formats
-FMget_compat_formats(FMFormat ioformat)
+FMget_compat_formats(FMFormat fmformat)
 {
     FMcompat_formats ret;
     int count = 0;
     int i = 0;
     /*printf("%s:%d In funtion %s\n", __FILE__, __LINE__, __FUNCTION__);*/
-    if(ioformat->opt_info)
+    if(fmformat->opt_info)
 	ret = malloc(sizeof(struct compat_formats));
     else
 	return NULL;
-    while (ioformat->opt_info[i].info_type != 0) {
-	if (ioformat->opt_info[i].info_type == COMPAT_OPT_INFO) {
-	    char *buffer = ioformat->opt_info[i].info_block;
+    while (fmformat->opt_info[i].info_type != 0) {
+	if (fmformat->opt_info[i].info_type == COMPAT_OPT_INFO) {
+	    char *buffer = fmformat->opt_info[i].info_block;
 	    int fid_length = ID_length[version_of_format_ID(buffer)];
 	    ret[count].prior_format = 
-		FMformat_from_ID(ioformat->context, buffer);
+		FMformat_from_ID(fmformat->context, buffer);
 	    ret[count].xform_code = buffer + fid_length;
 	    count++;
 	    ret = realloc(ret, sizeof(struct compat_formats) * (count + 1));
@@ -533,19 +533,33 @@ FMFieldList field_list;
 
 static
 void
-get_subformats_context(ioformat, format_list_p, format_count_p)
-FMFormat ioformat;
+get_subformats_context(fmformat, format_list_p, format_count_p, stack_p)
+FMFormat fmformat;
 FMFormat **format_list_p;
 int *format_count_p;
+FMFormat **stack_p;
 {
     int field;
-    for (field = 0; field < ioformat->field_count; field++) {
-	FMFormat subformat = ioformat->field_subformats[field];
+    int stack_depth = 0;
+    FMFormat *stack = *stack_p;
+    while(stack[stack_depth] != NULL) stack_depth++;
+    *stack_p = stack = realloc(stack, sizeof(stack[0]) * (stack_depth + 2));
+    stack[stack_depth] = fmformat;
+    stack[stack_depth+1] = NULL;
+    for (field = 0; field < fmformat->field_count; field++) {
+	FMFormat subformat = fmformat->field_subformats[field];
 	if (subformat != NULL) {
 	    int i;
-	    get_subformats_context(subformat, format_list_p, format_count_p);
+	    int j = 0;
+	    while((stack[j] != subformat) && (stack[j] != NULL)) j++;
+	    if (stack[j] != subformat) {
+		/* if we're not already getting this subformat, recurse */
+		get_subformats_context(subformat, format_list_p, format_count_p, stack_p);
+		/* stack might have been realloc'd */
+		stack = *stack_p;
+	    }
 	    *format_list_p = realloc(*format_list_p,
-			       sizeof(FMFormat) * (*format_count_p + 1));
+			       sizeof(FMFormat) * (*format_count_p + 2));
 	    for (i=0; i< *format_count_p; i++) {
 		if ((*format_list_p)[i] == subformat) {
 		    /* don't add it if it's already there */
@@ -560,14 +574,17 @@ int *format_count_p;
 }
 
 FMFormat *
-get_subformats_IOformat(ioformat)
-FMFormat ioformat;
+get_subformats_IOformat(fmformat)
+FMFormat fmformat;
 {
     int format_count = 0;
     FMFormat *format_list = malloc(sizeof(FMFormat));
-    get_subformats_context(ioformat, &format_list, &format_count);
+    FMFormat *stack = malloc(sizeof(FMFormat)*2);
+    stack[0] = NULL;
+    get_subformats_context(fmformat, &format_list, &format_count, &stack);
+    free(stack);
     format_list = realloc(format_list, sizeof(FMFormat) * (format_count + 2));
-    format_list[format_count] = ioformat;
+    format_list[format_count] = fmformat;
     format_list[format_count + 1] = NULL;
     return format_list;
 }
@@ -594,31 +611,31 @@ int index;
 FMFormat
 new_FMFormat()
 {
-    FMFormat ioformat;
-    ioformat = (FMFormat) malloc(sizeof(FMFormatBody));
-    ioformat->field_subformats = NULL;
-    ioformat->superformat = NULL;
-    ioformat->subformats = NULL;
-    ioformat->ref_count = 1;
-    ioformat->master_struct_list = NULL;
-    ioformat->format_name = NULL;
-    ioformat->byte_reversal = 0;
-    ioformat->alignment = 0;
-    ioformat->column_major_arrays = 0; /* by default, C mode */
-    ioformat->recursive = 0;
-    ioformat->float_format = fm_my_float_format;
-    ioformat->pointer_size = 0;
-    ioformat->IOversion = -1;
-    ioformat->field_list = NULL;
-    ioformat->var_list = NULL;
-    ioformat->server_format_rep = NULL;
-    ioformat->server_ID.length = 0;
-    ioformat->server_ID.value = NULL;
-    ioformat->opt_info = NULL;
-    ioformat->xml_out = NULL;
-    ioformat->ffs_info = NULL;
-    ioformat->free_ffs_info = NULL;
-    return (ioformat);
+    FMFormat fmformat;
+    fmformat = (FMFormat) malloc(sizeof(FMFormatBody));
+    fmformat->field_subformats = NULL;
+    fmformat->superformat = NULL;
+    fmformat->subformats = NULL;
+    fmformat->ref_count = 1;
+    fmformat->master_struct_list = NULL;
+    fmformat->format_name = NULL;
+    fmformat->byte_reversal = 0;
+    fmformat->alignment = 0;
+    fmformat->column_major_arrays = 0; /* by default, C mode */
+    fmformat->recursive = 0;
+    fmformat->float_format = fm_my_float_format;
+    fmformat->pointer_size = 0;
+    fmformat->IOversion = -1;
+    fmformat->field_list = NULL;
+    fmformat->var_list = NULL;
+    fmformat->server_format_rep = NULL;
+    fmformat->server_ID.length = 0;
+    fmformat->server_ID.value = NULL;
+    fmformat->opt_info = NULL;
+    fmformat->xml_out = NULL;
+    fmformat->ffs_info = NULL;
+    fmformat->free_ffs_info = NULL;
+    return (fmformat);
 }
 
 extern
@@ -842,13 +859,13 @@ typedef struct {
 } *sd;
 
 static int
-type_alignment(ioformat, field)
-FMFormat ioformat;
+type_alignment(fmformat, field)
+FMFormat fmformat;
 int field;
 {
-    FMVarInfoList var = &ioformat->var_list[field];
+    FMVarInfoList var = &fmformat->var_list[field];
     FMTypeDesc *t = &var->type_desc;
-    int size = ioformat->field_list[field].field_size;
+    int size = fmformat->field_list[field].field_size;
     while (t != NULL) {
 	switch (t->type) {
 	case FMType_pointer:
@@ -858,8 +875,8 @@ int field;
 	    t = t->next;
 	    break;
 	case FMType_subformat:
-	    assert(ioformat->field_subformats[field]->alignment != 0);
-	    return ioformat->field_subformats[field]->alignment;
+	    assert(fmformat->field_subformats[field]->alignment != 0);
+	    return fmformat->field_subformats[field]->alignment;
 	case FMType_simple:
 	    switch(t->data_type) {
 	    case integer_type: case unsigned_type:
@@ -888,10 +905,10 @@ int field;
 static int
 determine_size(FMFormat top, int index, int field, int actual)
 {
-    FMFormat ioformat = top->subformats[index];
-    FMVarInfoList var = &ioformat->var_list[field];
+    FMFormat fmformat = top->subformats[index];
+    FMVarInfoList var = &fmformat->var_list[field];
     FMTypeDesc *t = &var->type_desc;
-    int size = ioformat->field_list[field].field_size;
+    int size = fmformat->field_list[field].field_size;
     int array_size = 1;
     while (t != NULL) {
 	switch (t->type) {
@@ -912,7 +929,7 @@ determine_size(FMFormat top, int index, int field, int actual)
 	    break;
 	case FMType_subformat: {
 	    int i = 0;
-	    FMFormat subformat = ioformat->field_subformats[field];
+	    FMFormat subformat = fmformat->field_subformats[field];
 	    while (top->subformats[i] != subformat) i++;
 	    size = top->master_struct_list[i].struct_size;
 	    break;
@@ -1066,10 +1083,10 @@ FMlocalize_structs(FMStructDescList list)
 }
 
 static void
-gen_var_dimens(FMFormat ioformat, int field)
+gen_var_dimens(FMFormat fmformat, int field)
 {
-    FMFieldList field_list = ioformat->field_list;
-    FMVarInfoList new_var_list = ioformat->var_list;
+    FMFieldList field_list = fmformat->field_list;
+    FMVarInfoList new_var_list = fmformat->var_list;
     const char *typ = field_list[field].field_type;
     int dimen_count = 0;
     int done = 0;
@@ -1081,7 +1098,7 @@ gen_var_dimens(FMFormat ioformat, int field)
 	new_var_list[field].type_desc.field_index = field;
 	new_var_list[field].type_desc.data_type = FMstr_to_data_type(typ);
     } else {
-	FMTypeDesc *desc = gen_type_desc(ioformat, field, typ);
+	FMTypeDesc *desc = gen_type_desc(fmformat, field, typ);
 	new_var_list[field].type_desc = *desc;
 	free(desc);
     }
@@ -1089,17 +1106,17 @@ gen_var_dimens(FMFormat ioformat, int field)
     last = NULL;
     while(tmp->next != NULL) {
 	if (tmp->type == FMType_pointer) {
-	    ioformat->variant = 1;
+	    fmformat->variant = 1;
 	}
 	last = tmp;
 	tmp = tmp->next;
     }
     if (new_var_list[field].data_type == string_type) {
 	tmp->type = FMType_string;
-    } else if (ioformat->field_subformats[field] != NULL) {
+    } else if (fmformat->field_subformats[field] != NULL) {
 	tmp->type = FMType_subformat;
 	tmp->field_index = field;
-	if (ioformat->field_subformats[field]->recursive) {
+	if (fmformat->field_subformats[field]->recursive) {
 	    if (last) last->pointer_recursive++;
 	}
     }
@@ -1121,7 +1138,7 @@ gen_var_dimens(FMFormat ioformat, int field)
 	dimens[dimen_count].control_field_index = -1;
 	if (control_val != -1) {
 	    /* got a variant array */
-	    ioformat->variant = 1;
+	    fmformat->variant = 1;
 	    new_var_list[field].var_array = 1;
 	    dimens[dimen_count].control_field_index = control_val;
 	    dimens[dimen_count].static_size = 0;
@@ -1135,42 +1152,42 @@ gen_var_dimens(FMFormat ioformat, int field)
 }
 
 extern void
-set_alignment(ioformat)
-FMFormat ioformat;
+set_alignment(fmformat)
+FMFormat fmformat;
 {
     int field_align;
     int field;
-    if (ioformat->alignment != 0) return;
-    for (field = 0; field < ioformat->field_count; field++) {
-	field_align = type_alignment(ioformat, field);
-	if (ioformat->alignment < field_align) {
-	    ioformat->alignment = field_align;
+    if (fmformat->alignment != 0) return;
+    for (field = 0; field < fmformat->field_count; field++) {
+	field_align = type_alignment(fmformat, field);
+	if (fmformat->alignment < field_align) {
+	    fmformat->alignment = field_align;
 	}
     }
 }
 
 	
 extern int
-generate_var_list(ioformat, formats)
-FMFormat ioformat;
+generate_var_list(fmformat, formats)
+FMFormat fmformat;
 FMFormat *formats;
 {
     FMVarInfoList new_var_list;
-    FMFieldList field_list = ioformat->field_list;
-    int field_count = ioformat->field_count;
+    FMFieldList field_list = fmformat->field_list;
+    int field_count = fmformat->field_count;
     int field;
     static int first = 1;
     if (first) {
 	first = 0;
     }
-    if (ioformat->var_list)
-	free(ioformat->var_list);
-    if (ioformat->field_subformats)
-	free(ioformat->field_subformats);
+    if (fmformat->var_list)
+	free(fmformat->var_list);
+    if (fmformat->field_subformats)
+	free(fmformat->field_subformats);
     new_var_list = (FMVarInfoList)
 	malloc((size_t) sizeof(FMVarInfoStruct) * field_count);
-    ioformat->field_subformats = malloc(sizeof(FMFormat) * field_count);
-    ioformat->var_list = new_var_list;
+    fmformat->field_subformats = malloc(sizeof(FMFormat) * field_count);
+    fmformat->var_list = new_var_list;
     for (field = 0; field < field_count; field++) {
 	long elements;
 	new_var_list[field].string = 0;
@@ -1179,12 +1196,12 @@ FMFormat *formats;
 	new_var_list[field].dimen_count = 0;
 	new_var_list[field].dimens = NULL;
 	new_var_list[field].type_desc.next = NULL;
-	ioformat->field_subformats[field] = NULL;
+	fmformat->field_subformats[field] = NULL;
 	new_var_list[field].data_type =
 	    FMarray_str_to_data_type(field_list[field].field_type,
 				   &elements);
 	if (new_var_list[field].data_type == string_type) {
-	    ioformat->variant = 1;
+	    fmformat->variant = 1;
 	    new_var_list[field].string = 1;
 	}
 	if (new_var_list[field].data_type == unknown_type) {
@@ -1197,14 +1214,14 @@ FMFormat *formats;
 		}
 		j++;
 	    }
-	    if (strcmp(base_type, ioformat->format_name) == 0) {
-		subformat = ioformat;
-		ioformat->recursive = 1;
-		ioformat->variant = 1;
+	    if (strcmp(base_type, fmformat->format_name) == 0) {
+		subformat = fmformat;
+		fmformat->recursive = 1;
+		fmformat->variant = 1;
 	    }
 	    if (subformat == NULL) {
 		(void) fprintf(stderr, "Field \"%s\" base type \"%s\" is not a simple type or registered format name.\n",
-			       ioformat->field_list[field].field_name,
+			       fmformat->field_list[field].field_name,
 			       base_type);
 		(void) fprintf(stderr, "Format rejected.\n ");
 		return 0;
@@ -1214,12 +1231,12 @@ FMFormat *formats;
 		(strcmp(base_type, "IOEncodeElem") == 0);
 	    free(base_type);
 	    if (subformat != NULL) {
-		ioformat->variant |= subformat->variant;
-		ioformat->recursive |= subformat->recursive;
+		fmformat->variant |= subformat->variant;
+		fmformat->recursive |= subformat->recursive;
 	    }
-	    ioformat->field_subformats[field] = subformat;
+	    fmformat->field_subformats[field] = subformat;
 	}
-	gen_var_dimens(ioformat, field);
+	gen_var_dimens(fmformat, field);
     }
     return 1;
 }
@@ -1234,14 +1251,14 @@ FMFormat *formats;
 
     
 static format_rep
-add_server_subformat_rep(ioformat, super_rep, super_rep_size)
-FMFormat ioformat;
+add_server_subformat_rep(fmformat, super_rep, super_rep_size)
+FMFormat fmformat;
 char *super_rep;
 int *super_rep_size;
 {
-    int byte_reversal = ioformat->byte_reversal;
+    int byte_reversal = fmformat->byte_reversal;
     int rep_size = (sizeof(struct _field_wire_format) *
-		     (ioformat->field_count));
+		     (fmformat->field_count));
     int i;
     int opt_info_count = 0;
     struct _subformat_wire_format *rep;
@@ -1249,18 +1266,18 @@ int *super_rep_size;
     int cur_offset;
     struct _field_wire_format *fields;
 
-    rep_size += strlen(ioformat->format_name) + 1;
-    for (i = 0; i < ioformat->field_count; i++) {
-	rep_size += strlen(ioformat->field_list[i].field_name) + 1;
-	rep_size += strlen(ioformat->field_list[i].field_type) + 1;
+    rep_size += strlen(fmformat->format_name) + 1;
+    for (i = 0; i < fmformat->field_count; i++) {
+	rep_size += strlen(fmformat->field_list[i].field_name) + 1;
+	rep_size += strlen(fmformat->field_list[i].field_type) + 1;
     }
 
     rep_size += sizeof(struct _subformat_wire_format_0);
 
     rep_size = (rep_size + 3) & -4;  /* round up by even 4 */
-    while (ioformat->opt_info && 
-	   (ioformat->opt_info[opt_info_count].info_type != 0)) {
-	rep_size += ioformat->opt_info[opt_info_count].info_len;
+    while (fmformat->opt_info && 
+	   (fmformat->opt_info[opt_info_count].info_type != 0)) {
+	rep_size += fmformat->opt_info[opt_info_count].info_len;
 	rep_size = (rep_size + 3) & -4;  /* round up by even 4 */
 	opt_info_count++;
     }
@@ -1270,47 +1287,47 @@ int *super_rep_size;
     rep = (struct _subformat_wire_format *) (super_rep + *super_rep_size);
     cur_offset = (sizeof(struct _subformat_wire_format_0) + 
 		  (sizeof(struct _field_wire_format) * 
-		   (ioformat->field_count)));
+		   (fmformat->field_count)));
     rep->f.f0.server_rep_version = 0;
     rep->f.f0.header_size = sizeof(struct _subformat_wire_format_0);
     
-    rep->f.f0.column_major_arrays = ioformat->column_major_arrays;
-    rep->f.f0.alignment = ioformat->alignment;
+    rep->f.f0.column_major_arrays = fmformat->column_major_arrays;
+    rep->f.f0.alignment = fmformat->alignment;
     rep->f.f0.opt_info_offset = 0; /* will be set later */
 
     string_base = (char *) rep;
 
     rep->f.f0.name_offset = cur_offset;
     if (byte_reversal) byte_swap((char*) &rep->f.f0.name_offset, 2);
-    strcpy(string_base + cur_offset, ioformat->format_name);
-    cur_offset += strlen(ioformat->format_name) + 1;
+    strcpy(string_base + cur_offset, fmformat->format_name);
+    cur_offset += strlen(fmformat->format_name) + 1;
 
-    rep->f.f0.field_count = ioformat->field_count;
+    rep->f.f0.field_count = fmformat->field_count;
     if (byte_reversal) byte_swap((char*) &rep->f.f0.field_count, 2);
-    rep->f.f0.record_length = ioformat->record_length;
+    rep->f.f0.record_length = fmformat->record_length;
     if (byte_reversal) byte_swap((char*) &rep->f.f0.record_length, 4);
-    rep->f.f0.record_byte_order = ioformat->byte_reversal ? 
+    rep->f.f0.record_byte_order = fmformat->byte_reversal ? 
 	OTHER_BYTE_ORDER : OUR_BYTE_ORDER;
-    rep->f.f0.pointer_size = ioformat->pointer_size;
-    rep->f.f0.floating_point_rep = ioformat->float_format;
+    rep->f.f0.pointer_size = fmformat->pointer_size;
+    rep->f.f0.floating_point_rep = fmformat->float_format;
 
     fields = (struct _field_wire_format *) ((char*) rep + 
 					    rep->f.f0.header_size);
-    for (i = 0; i < ioformat->field_count; i++) {
-	fields[i].field_size = ioformat->field_list[i].field_size;
+    for (i = 0; i < fmformat->field_count; i++) {
+	fields[i].field_size = fmformat->field_list[i].field_size;
 	if (byte_reversal) byte_swap((char*) &fields[i].field_size, 4);
-	fields[i].field_offset = ioformat->field_list[i].field_offset;
+	fields[i].field_offset = fmformat->field_list[i].field_offset;
 	if (byte_reversal) byte_swap((char*) &fields[i].field_offset, 4);
 	fields[i].field_name_offset = cur_offset;
 	if (byte_reversal) byte_swap((char*) &fields[i].field_name_offset, 2);
 	strcpy(string_base + cur_offset, 
-	       ioformat->field_list[i].field_name);
-	cur_offset += strlen(ioformat->field_list[i].field_name) + 1;
+	       fmformat->field_list[i].field_name);
+	cur_offset += strlen(fmformat->field_list[i].field_name) + 1;
 	fields[i].field_type_offset = cur_offset;
 	if (byte_reversal) byte_swap((char*) &fields[i].field_type_offset, 2);
 	strcpy(string_base + cur_offset,
-	       ioformat->field_list[i].field_type);
-	cur_offset += strlen(ioformat->field_list[i].field_type) +1;
+	       fmformat->field_list[i].field_type);
+	cur_offset += strlen(fmformat->field_list[i].field_type) +1;
     }
     {
 	char *info_base;
@@ -1334,16 +1351,16 @@ int *super_rep_size;
 	       sizeof(tmp_base));
 	i = 0;
 	for ( ; i < opt_info_count; i++) {
-	    tmp_base.info_type = ioformat->opt_info[i].info_type;
+	    tmp_base.info_type = fmformat->opt_info[i].info_type;
 	    if (byte_reversal) byte_swap((char*) &tmp_base.info_type, 4);
-	    tmp_base.info_len = ioformat->opt_info[i].info_len;
+	    tmp_base.info_len = fmformat->opt_info[i].info_len;
 	    if (byte_reversal) byte_swap((char*) &tmp_base.info_len, 4);
 	    tmp_base.info_offset = cur_offset;
 	    if (byte_reversal) byte_swap((char*) &tmp_base.info_offset, 4);
 	    memcpy(info_base + i*sizeof(tmp_base), &tmp_base, sizeof(tmp_base));
 	    memcpy(string_base + cur_offset, 
-		   ioformat->opt_info[i].info_block,
-		   ioformat->opt_info[i].info_len);
+		   fmformat->opt_info[i].info_block,
+		   fmformat->opt_info[i].info_len);
 	    cur_offset += tmp_base.info_len;
 	    while ((cur_offset & 0x3) != 0) {
 		*(string_base + cur_offset++) = 0;
@@ -1361,11 +1378,11 @@ int *super_rep_size;
 }
 
 static format_rep
-build_server_format_rep(ioformat)
-FMFormat ioformat;
+build_server_format_rep(fmformat)
+FMFormat fmformat;
 {
     int subformat_count = 0;
-    FMFormat *subformats = ioformat->subformats;
+    FMFormat *subformats = fmformat->subformats;
     int i;
     struct _format_wire_format *rep = malloc(sizeof(*rep));
     int rep_size = sizeof(*rep);
@@ -1374,14 +1391,14 @@ FMFormat ioformat;
     if (subformat_count >= 100) return NULL;  /* no way */
 
     rep = (struct _format_wire_format *)
-	add_server_subformat_rep(ioformat, (char*)rep, &rep_size);
+	add_server_subformat_rep(fmformat, (char*)rep, &rep_size);
     for (i=0; i < subformat_count; i++) {
         rep = (struct _format_wire_format *)
 	    add_server_subformat_rep(subformats[i], (char*)rep, &rep_size);
     }
     
     rep->f.f0.format_rep_length = htons(rep_size);
-    rep->f.f0.record_byte_order = ioformat->byte_reversal ? 
+    rep->f.f0.record_byte_order = fmformat->byte_reversal ? 
 	OTHER_BYTE_ORDER : OUR_BYTE_ORDER;
     rep->f.f0.server_rep_version = 0;
     rep->f.f0.subformat_count = subformat_count;
@@ -1398,52 +1415,52 @@ FMFormat ioformat;
  * server_format_rep fields.
  */
 static FMFormat
-search_compatible_formats(iocontext, ioformat)
+search_compatible_formats(iocontext, fmformat)
 FMContext iocontext;
-FMFormat ioformat;
+FMFormat fmformat;
 {
     int i, search_rep_length;
     FMContext fmc = (FMContext) iocontext;
 
-    if (ioformat->server_format_rep == NULL) {
+    if (fmformat->server_format_rep == NULL) {
 	return NULL;
     }
-    search_rep_length = ntohs(ioformat->server_format_rep->format_rep_length);
+    search_rep_length = ntohs(fmformat->server_format_rep->format_rep_length);
 
     /* search locally first */
     for (i = 0; i < fmc->reg_format_count; i++) {
 	FMFormat tmp = fmc->format_list[i];
 	int rep_length;
 
-	if (tmp == ioformat)
+	if (tmp == fmformat)
 	    continue;
 	if (tmp->server_format_rep == NULL) {
 	    continue;
 	}
-	if (strcmp(ioformat->format_name,
+	if (strcmp(fmformat->format_name,
 		   fmc->format_list[i]->format_name) != 0)
 	    continue;
 	rep_length = ntohs(tmp->server_format_rep->format_rep_length);
 	if (search_rep_length != rep_length) {
 	    if (format_server_verbose == 1) {
 		printf("Format %s found in context %lx, but server reps have different lengths, %d and %d\n",
-		       ioformat->format_name, (long) iocontext,
+		       fmformat->format_name, (long) iocontext,
 		       search_rep_length, rep_length);
 	    }
 	    continue;
 	}
-	if (memcmp(ioformat->server_format_rep, tmp->server_format_rep,
+	if (memcmp(fmformat->server_format_rep, tmp->server_format_rep,
 		   search_rep_length) == 0) {
 	    return tmp;
 	} else {
 	    if (format_server_verbose == 1) {
 		printf("Format %s found in context %lx, but server reps are different\n",
-		       ioformat->format_name, (long) iocontext);
+		       fmformat->format_name, (long) iocontext);
 	    }
 	}
     }
     if (fmc->master_context != NULL) {
-	return search_compatible_formats(fmc->master_context, ioformat);
+	return search_compatible_formats(fmc->master_context, fmformat);
     }
     return NULL;
 }
@@ -1504,7 +1521,7 @@ field_offset_compar(const void *a, const void *b)
 }
 
 FMFieldList
-validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
+validate_and_copy_field_list(FMFieldList field_list, FMFormat fmformat)
 {
     int field;
     FMFieldList new_field_list;
@@ -1518,7 +1535,7 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 	    if (index(field_list[field].field_type, '*') == NULL) {
 		field_size = field_list[field].field_size;
 	    } else {
-		field_size = ioformat->pointer_size;
+		field_size = fmformat->pointer_size;
 	    }
 	} else {
 	    int ret = is_var_array_field(field_list, field);
@@ -1526,10 +1543,10 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 	    if ((ret == 1) || (index(field_list[field].field_type, '*'))) {
 		/* variant array, real_field_size is
 		 * fmc->pointer_size */
-		field_size = ioformat->pointer_size;
+		field_size = fmformat->pointer_size;
 		if (field_size <= 0) {
 		    fprintf(stderr, "Pointer Size is not positive! BAD! pointer size = %d\n",
-			    ioformat->pointer_size);
+			    fmformat->pointer_size);
 		    return NULL;
 		}
 	    } else {
@@ -1541,7 +1558,7 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 		if ((base_type != unknown_type) &&
 		    (field_list[field].field_size > 16)) {
 		    fprintf(stderr, "Field size for field %s in format %s is large, check to see if it is valid.\n",
-			    field_list[field].field_name, ioformat->format_name);
+			    field_list[field].field_name, fmformat->format_name);
 		}
 		field_size = field_list[field].field_size * elements;
 		if (field_size <= 0) {
@@ -1553,7 +1570,7 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
 	    }
 	}
 
-	ioformat->record_length = Max(ioformat->record_length,
+	fmformat->record_length = Max(fmformat->record_length,
 					 field_list[field].field_offset +
 					    field_size);
 	new_field_list[field].field_name = strdup(field_list[field].field_name);
@@ -1566,9 +1583,9 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat ioformat)
     new_field_list[field_count].field_type = NULL;
     new_field_list[field_count].field_size = 0;
     new_field_list[field_count].field_offset = 0;
-    ioformat->field_count = field_count;
-    ioformat->field_list = new_field_list;
-    qsort(ioformat->field_list, field_count, sizeof(FMField),
+    fmformat->field_count = field_count;
+    fmformat->field_list = new_field_list;
+    qsort(fmformat->field_list, field_count, sizeof(FMField),
 	  field_offset_compar);
     return new_field_list;
 }
@@ -1715,28 +1732,28 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     master_struct_list = malloc(sizeof(struct_list[0]) * (struct_count+1));
     formats[struct_count] = NULL;
     for (i = 0 ; i < struct_count; i++ ) {
-	FMFormat ioformat = new_FMFormat();
+	FMFormat fmformat = new_FMFormat();
 	FMFieldList new_field_list;
-	ioformat->format_name = strdup(struct_list[i].format_name);
-	master_struct_list[i].format_name = ioformat->format_name;
-	ioformat->pointer_size = context->native_pointer_size;
-	ioformat->column_major_arrays = context->native_column_major_arrays;
-	ioformat->float_format = context->native_float_format;
-	ioformat->context = context;
-	ioformat->record_length = 0;
-	ioformat->variant = 0;
-	ioformat->record_length = struct_list[i].struct_size;
+	fmformat->format_name = strdup(struct_list[i].format_name);
+	master_struct_list[i].format_name = fmformat->format_name;
+	fmformat->pointer_size = context->native_pointer_size;
+	fmformat->column_major_arrays = context->native_column_major_arrays;
+	fmformat->float_format = context->native_float_format;
+	fmformat->context = context;
+	fmformat->record_length = 0;
+	fmformat->variant = 0;
+	fmformat->record_length = struct_list[i].struct_size;
 
 	new_field_list = 
-	    validate_and_copy_field_list(struct_list[i].field_list, ioformat);
-	formats[i] = ioformat;
+	    validate_and_copy_field_list(struct_list[i].field_list, fmformat);
+	formats[i] = fmformat;
 
 	if (new_field_list == NULL) {
 	    free_format_list(formats);
 	    free(formats);
 	    return NULL;
 	}
-	master_struct_list[i].field_list = ioformat->field_list;
+	master_struct_list[i].field_list = fmformat->field_list;
 	master_struct_list[i].struct_size = struct_list[i].struct_size;
 	master_struct_list[i].opt_info = NULL;
 	if (struct_list[i].opt_info != NULL) {
@@ -1788,11 +1805,11 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 	}
     }
     for (i= 0; i < struct_count; i++) {
-	FMFormat ioformat = formats[i];
+	FMFormat fmformat = formats[i];
 	int last_field_end = 0;
-	FMFieldList field_list = ioformat->field_list;
-	for (field = 0; field < ioformat->field_count; field++) {
-	    FMFormat subformat = ioformat->field_subformats[field];
+	FMFieldList field_list = fmformat->field_list;
+	for (field = 0; field < fmformat->field_count; field++) {
+	    FMFormat subformat = fmformat->field_subformats[field];
 	    if (subformat != NULL) {
 		
 		if (field_list[field].field_size <
@@ -1813,24 +1830,24 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 		(void) fprintf(stderr, "Fields \"%s\" and \"%s\" in format \"%s\" overlap!  Format rejected.\n",
 			       field_list[field - 1].field_name,
 			       field_list[field].field_name,
-			       ioformat->format_name);
+			       fmformat->format_name);
 		free_format_list(formats);
 		free(formats);
 		return NULL;
 	    }
 	    last_field_end = field_list[field].field_offset +
 		field_list[field].field_size;
-	    if (ioformat->var_list[field].var_array) {
+	    if (fmformat->var_list[field].var_array) {
 		last_field_end = field_list[field].field_offset +
-		    ioformat->pointer_size;
-	    } else if (ioformat->var_list[field].type_desc.type == FMType_pointer) {
+		    fmformat->pointer_size;
+	    } else if (fmformat->var_list[field].type_desc.type == FMType_pointer) {
 		last_field_end = field_list[field].field_offset +
-		    ioformat->pointer_size;
+		    fmformat->pointer_size;
 	    }
 	}
 	if (struct_list[i].struct_size < last_field_end) {
 	    (void) fprintf(stderr, "Structure size for structure %s is smaller than last field size + offset.  Format rejected.\n",
-			   ioformat->format_name);
+			   fmformat->format_name);
 	    free_format_list(formats);
 	    free(formats);
 	    return NULL;
@@ -1927,9 +1944,9 @@ generate_format2_server_ID(server_ID_type *server_ID,
 }
 
 static int
-self_server_register_format(fmc, ioformat)
+self_server_register_format(fmc, fmformat)
 FMContext fmc;
-FMFormat ioformat;
+FMFormat fmformat;
 {
     format_rep server_format_rep;
     if (format_server_verbose == -1) {
@@ -1942,22 +1959,22 @@ FMFormat ioformat;
     /* we're a format server ourselves, assign an ID */
     if (fmc->master_context != NULL) {
 	return self_server_register_format((FMContext) fmc->master_context,
-					   ioformat);
+					   fmformat);
     }
-    if (ioformat->context != fmc) {
+    if (fmformat->context != fmc) {
 	/* registering in a master, copy it down */
 	assert(0);
     }
-    if (ioformat->server_format_rep == NULL) {
-	server_format_rep = build_server_format_rep(ioformat);
+    if (fmformat->server_format_rep == NULL) {
+	server_format_rep = build_server_format_rep(fmformat);
     }
-    server_format_rep = ioformat->server_format_rep;
+    server_format_rep = fmformat->server_format_rep;
 
-    generate_format2_server_ID(&ioformat->server_ID, server_format_rep);
+    generate_format2_server_ID(&fmformat->server_ID, server_format_rep);
     if (format_server_verbose == 1) {
 	printf("Registering %s to locally-issued format ID ",
-	       ioformat->format_name);
-	print_format_ID(ioformat);
+	       fmformat->format_name);
+	print_format_ID(fmformat);
 	printf("\n");
     }
     return 1;
@@ -1985,7 +2002,7 @@ FMFieldList list;
     while (list[i].field_name != NULL) {
 	int field_size = 0;
 	if (is_var_array_field(list, i) == 1) {
-	    /* variant array, real_field_size is ioformat->pointer_size */
+	    /* variant array, real_field_size is fmformat->pointer_size */
 	    if ((fmc == NULL) || (fmc->native_pointer_size == 0)) {
 		field_size = sizeof(char *);
 	    } else {
@@ -2019,7 +2036,7 @@ int pointer_size;
     while (list[i].field_name != NULL) {
 	int field_size = 0;
 	if (is_var_array_field(list, i) == 1) {
-	    /* variant array, real_field_size is ioformat->pointer_size */
+	    /* variant array, real_field_size is fmformat->pointer_size */
 	    field_size = pointer_size;
 	} else {
 	    long elements;
@@ -2805,37 +2822,37 @@ FMFormat format;
 
 
 extern void
-dump_FMFormat(ioformat)
-FMFormat ioformat;
+dump_FMFormat(fmformat)
+FMFormat fmformat;
 {
     int index, i;
     printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Float format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
-	   ioformat->format_name, ioformat->record_length, 
-	   ioformat->field_count, ioformat->byte_reversal, 
-	   float_format_str[ioformat->float_format],
-	   ioformat->pointer_size, ioformat->column_major_arrays,
-	   ioformat->alignment, ioformat->IOversion);
+	   fmformat->format_name, fmformat->record_length, 
+	   fmformat->field_count, fmformat->byte_reversal, 
+	   float_format_str[fmformat->float_format],
+	   fmformat->pointer_size, fmformat->column_major_arrays,
+	   fmformat->alignment, fmformat->IOversion);
     printf("Server ID = ");
-    for (i = 0; i < ioformat->server_ID.length; i++) {
-	printf("%02x", ((unsigned char *) ioformat->server_ID.value)[i]);
+    for (i = 0; i < fmformat->server_ID.length; i++) {
+	printf("%02x", ((unsigned char *) fmformat->server_ID.value)[i]);
     }
     printf("\n");
-    for (index = 0; index < ioformat->field_count; index++) {
+    for (index = 0; index < fmformat->field_count; index++) {
 	printf("\t\t%s \"%s\"; size = %d; offset = %d\n",
-	       ioformat->field_list[index].field_name,
-	       ioformat->field_list[index].field_type,
-	       ioformat->field_list[index].field_size,
-	       ioformat->field_list[index].field_offset);
+	       fmformat->field_list[index].field_name,
+	       fmformat->field_list[index].field_type,
+	       fmformat->field_list[index].field_size,
+	       fmformat->field_list[index].field_offset);
     }
-    if (ioformat->opt_info == NULL) {
+    if (fmformat->opt_info == NULL) {
 	printf("\tNo Optional Format Info\n");
     } else {
 	int i = 0;
-	while (ioformat->opt_info[i].info_type != 0) {
-	    int typ = ioformat->opt_info[i].info_type;
-	    int j, text = 1, len = ioformat->opt_info[i].info_len;
-/*	    if (ioformat->opt_info[i].info_type == COMPAT_OPT_INFO) {
-		char *buffer = ioformat->opt_info[i].info_block;
+	while (fmformat->opt_info[i].info_type != 0) {
+	    int typ = fmformat->opt_info[i].info_type;
+	    int j, text = 1, len = fmformat->opt_info[i].info_len;
+/*	    if (fmformat->opt_info[i].info_type == COMPAT_OPT_INFO) {
+		char *buffer = fmformat->opt_info[i].info_block;
 		int fid_length = ID_length[version_of_format_ID(buffer)];
 		printf("\t Opt Info Backwards Compatability\n");
 		printf("\t\t Compatible with format ");
@@ -2849,17 +2866,17 @@ FMFormat ioformat;
 		   (typ >> 24) & 0xff, (typ >> 16) & 0xff, (typ >> 8) & 0xff,
 		   typ & 0xff, len);
 	    for(j=0; ((j < 10) && (j < len)); j++) {
-		if (!isprint((int)((char*)ioformat->opt_info[i].info_block)[j])) text = 0;
+		if (!isprint((int)((char*)fmformat->opt_info[i].info_block)[j])) text = 0;
 	    }
 	    if (text == 1) {
 		printf("\"");
 		for(j=0;((j < 50) && (j < len)); j++) {
-		    printf("%c", ((char*)ioformat->opt_info[i].info_block)[j]);
+		    printf("%c", ((char*)fmformat->opt_info[i].info_block)[j]);
 		}
 		printf("\"\n");
 	    } else {
 		for(j=0;((j < 20) && (j < len)); j++) {
-		    printf("%02x ", ((unsigned char*)ioformat->opt_info[i].info_block)[j]);
+		    printf("%02x ", ((unsigned char*)fmformat->opt_info[i].info_block)[j]);
 		}
 		printf("\n");
 	    }
@@ -2869,32 +2886,32 @@ FMFormat ioformat;
 }
 
 extern void
-dump_FMFormat_as_XML(ioformat)
-FMFormat ioformat;
+dump_FMFormat_as_XML(fmformat)
+FMFormat fmformat;
 {
     int index, i;
     printf("<FMFormat>\n");
-    printf("<formatID>%d</formatID>\n", ioformat->format_index);
-    printf("<formatName>%s</formatName>\n", ioformat->format_name);
-    printf("<recordLength>%d</recordLength>\n", ioformat->record_length);
-    printf("<fieldCount>%d</fieldCount>\n", ioformat->field_count);
-    printf("<byteReversal>%d</byteReversal>\n", ioformat->byte_reversal);
-    printf("<alignment>%d</alignment>\n", ioformat->alignment);
-    printf("<columnMajorArrays>%d</columnMajorArrays>\n", ioformat->column_major_arrays);
-    printf("<pointerSize>%d</pointerSize>\n", ioformat->pointer_size);
-    printf("<IOversion>%d</IOversion>\n", ioformat->IOversion);
+    printf("<formatID>%d</formatID>\n", fmformat->format_index);
+    printf("<formatName>%s</formatName>\n", fmformat->format_name);
+    printf("<recordLength>%d</recordLength>\n", fmformat->record_length);
+    printf("<fieldCount>%d</fieldCount>\n", fmformat->field_count);
+    printf("<byteReversal>%d</byteReversal>\n", fmformat->byte_reversal);
+    printf("<alignment>%d</alignment>\n", fmformat->alignment);
+    printf("<columnMajorArrays>%d</columnMajorArrays>\n", fmformat->column_major_arrays);
+    printf("<pointerSize>%d</pointerSize>\n", fmformat->pointer_size);
+    printf("<IOversion>%d</IOversion>\n", fmformat->IOversion);
     printf("<serverID>");
-    for (i = 0; i < ioformat->server_ID.length; i++) {
-	printf("%02x", ((unsigned char *) ioformat->server_ID.value)[i]);
+    for (i = 0; i < fmformat->server_ID.length; i++) {
+	printf("%02x", ((unsigned char *) fmformat->server_ID.value)[i]);
     }
     printf("</serverID>\n");
-    for (index = 0; index < ioformat->field_count; index++) {
+    for (index = 0; index < fmformat->field_count; index++) {
 	printf("<IOField>\n");
 	printf("<fieldName>%s</fieldName>\n<fieldType>%s</fieldType>\n<fieldSize>%d</fieldSize>\n<fieldOffset>%d</fieldOffset>\n",
-	       ioformat->field_list[index].field_name,
-	       ioformat->field_list[index].field_type,
-	       ioformat->field_list[index].field_size,
-	       ioformat->field_list[index].field_offset);
+	       fmformat->field_list[index].field_name,
+	       fmformat->field_list[index].field_type,
+	       fmformat->field_list[index].field_size,
+	       fmformat->field_list[index].field_offset);
     }
 
 }
@@ -2925,21 +2942,21 @@ FMContext c;
 #define DUMP
 #ifdef DUMP
 static void
-free_FMfield(ioformat, field, data, string_base, encode, verbose)
-FMFormat ioformat;
+free_FMfield(fmformat, field, data, string_base, encode, verbose)
+FMFormat fmformat;
 int field;
 void *data;
 void *string_base;
 int encode;
 int verbose;
 {
-    FMFieldList iofield = &ioformat->field_list[field];
-    FMVarInfoList iovar = &ioformat->var_list[field];
+    FMFieldList iofield = &fmformat->field_list[field];
+    FMVarInfoList iovar = &fmformat->var_list[field];
     int field_offset = iofield->field_offset;
     int field_size = iofield->field_size;
     const char *field_type = iofield->field_type;
     int data_offset = field_offset;
-    int byte_reversal = ioformat->byte_reversal;
+    int byte_reversal = fmformat->byte_reversal;
     int dimension;
     FMFormat subformat = NULL;
     int sub_field_size;
@@ -2950,12 +2967,12 @@ int verbose;
 	/* must be simple data type or array of simple data types */
 	return;
     }
-    dimension = FMget_array_element_count(ioformat, iovar, data, encode);
+    dimension = FMget_array_element_count(fmformat, iovar, data, encode);
     if (iovar->var_array) {
 	FMgetFieldStruct descr;  /* OK */
 	long tmp_offset;
 	descr.offset = iofield->field_offset;
-	descr.size = ioformat->pointer_size;
+	descr.size = fmformat->pointer_size;
 	descr.data_type = integer_type;
 	descr.byte_swap = byte_reversal;
 	
@@ -2969,7 +2986,7 @@ int verbose;
     if (!iovar->string) { 
 	/* must be substructured */
 	char *typ = base_data_type(field_type);
-	subformat = ioformat->field_subformats[field];
+	subformat = fmformat->field_subformats[field];
 	free(typ);
     }
     if (iovar->string || (subformat && subformat->variant)){
@@ -2995,14 +3012,14 @@ int verbose;
 }
 
 extern void
-FMfree_var_rec_elements(ioformat, data)
-FMFormat ioformat;
+FMfree_var_rec_elements(fmformat, data)
+FMFormat fmformat;
 void *data;
 {
     int index;
-    if (ioformat->variant == 0) return;  /* nothing to do */
-    for (index=0; index < ioformat->field_count; index++) {
-	free_FMfield(ioformat, index, data, data, 0, 1);
+    if (fmformat->variant == 0) return;  /* nothing to do */
+    for (index=0; index < fmformat->field_count; index++) {
+	free_FMfield(fmformat, index, data, data, 0, 1);
     }
 }
 
