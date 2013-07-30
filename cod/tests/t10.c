@@ -1,11 +1,15 @@
 #include "config.h"
 #include "cod.h"
-#include "assert.h"
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+
+#define assert(e)  \
+    ((void) ((e) ? 0 : __assert (#e, __FILE__, __LINE__)))
+#define __assert(e, file, line) \
+    ((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e), abort())
 
 int
 main(int argc, char **argv)
@@ -17,6 +21,16 @@ main(int argc, char **argv)
 
     if ((test_to_run == 1) || (test_to_run == -1)) {
 	/* test the basics */
+	static char extern_string[] = "int printf(string format, ...);\n\
+void *malloc(int size);\n\
+void free(void *pointer);\n";
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {"malloc", (void*)(long)malloc},
+	    {"free", (void*)(long)free},
+	    {(void*)0, (void*)0}
+	};
 	char code_string[] = "\
 {\n\
 	typedef struct test {\n\
@@ -28,12 +42,14 @@ main(int argc, char **argv)
     int j = 4;\n\
     long k = 10;\n\
     short l = 3;\n\
-	test_struct t;\n\
-    t.ti = j;\n\
+    test_struct *a[2];\n\
+    test_struct t;\n\
     t.tj = j;\n\
     t.tk = k;\n\
     t.tl = l;\n\
-    return t.tl * (t.tj + t.tk);\n\
+    a[0] = &t;\n\
+    a[0].ti = j;\n\
+    return a[0].tl * (t.tj + t.tk);\n\
 }";
 
 	cod_parse_context context = new_cod_parse_context();
@@ -41,6 +57,8 @@ main(int argc, char **argv)
 	long (*func)();
 	long result;
 
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	func = (long(*)()) (long) gen_code->func;
 	result = func();
