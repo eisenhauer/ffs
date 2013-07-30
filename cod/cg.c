@@ -2357,6 +2357,12 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     case cod_field_ref: {
 	operand base = cg_expr(s, expr->node.field_ref.struct_ref, 1, descr);
 	sm_ref field = expr->node.field_ref.sm_field_ref;
+	if (base.is_addr && get_complex_type(NULL, expr->node.field_ref.struct_ref)->node_type == cod_reference_type_decl) {
+	    dill_reg ret = dill_getreg(s, DILL_P);
+	    gen_load(s, ret, base, DILL_P);
+	    base.reg = ret;
+	    base.is_addr = 1;
+	}
 	base.offset += field->node.field.cg_offset;
 	if (is_var_array(field) && (need_assignable == 0)) {
 	    /* variable array */
