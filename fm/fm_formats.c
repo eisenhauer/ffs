@@ -2546,6 +2546,9 @@ const char *str;
     if (strchr(typ, '[') != NULL) {	/* truncate at array stuff */
 	*strchr(typ, '[') = 0;
     }
+    if (strchr(typ, ')') != NULL) {	/* truncate close parens */
+	*strchr(typ, ')') = 0;
+    }
     return typ;
 }
 
