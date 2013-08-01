@@ -4348,14 +4348,14 @@ extern void
 cod_add_struct_type(FMStructDescList format_list, 
 		    cod_parse_context context)
 {
-    int count;
-    while(format_list && format_list[0].format_name) {
+    int count=0;
+    while(format_list && format_list[count].format_name) {
 	count++;
     }
     count = count-1;
     for ( ; count >= 0; count--) {
-	cod_add_simple_struct_type(format_list[0].format_name,
-				   format_list[0].field_list,
+	cod_add_simple_struct_type(format_list[count].format_name,
+				   format_list[count].field_list,
 				   context);
     }
 }
@@ -4514,6 +4514,9 @@ int *must_free_p;
 		ret->node.array_type_decl.cg_element_size = f->cg_size;
 		ret->node.array_type_decl.dimensions = malloc(sizeof(struct dimen_p));
 		ret->node.array_type_decl.dimensions->dimen_count = 1;
+		if (subtype->node_type == cod_reference_type_decl) {
+		    ret->node.array_type_decl.cg_element_type = DILL_P;
+		}
 	    }
 	}
 	    
