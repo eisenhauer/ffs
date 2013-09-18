@@ -123,8 +123,18 @@ char **argv;
 	}
 	lim.rlim_cur = lim.rlim_max;
 	if (setrlimit(RLIMIT_NOFILE, &lim) != 0) {
-	    perror("Setrlimit");
-	}
+#if defined(__APPLE__) && defined(RLIMIT_NOFILE) && defined(OPEN_MAX)
+	  if (lim.rlim_cur > OPEN_MAX) {
+	    lim.rlim_cur = OPEN_MAX;
+	    if (setrlimit(RLIMIT_NOFILE, &lim) != 0) {
+	      perror("Setrlimit");
+	    }
+	  }
+#else
+          perror("Setrlimit");
+#endif
+        }
+
 	if (getrlimit(RLIMIT_CORE, &lim) != 0) {
 	    perror("Setrlimit");
 	}
