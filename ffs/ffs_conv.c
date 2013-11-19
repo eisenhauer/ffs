@@ -2644,7 +2644,7 @@ int data_already_copied;
 	    ffs_putreg(c, actual_dest_reg, DILL_P);
 	    generate_convert_field(c, conv_status, tmp_src_reg, 0, 
 				   tmp_dest_reg, 0, rt_conv_status,
-				   conv, type_desc->next, 0);
+				   conv, type_desc->next, conv_status->global_conv->conversion_type == direct_to_mem);
 	    
 #ifdef RAW
 	    dill_ldpi(c, src_addr, dill_lp(c), src_storage);
@@ -2779,6 +2779,17 @@ int data_already_copied;
 	    int loop_var_type;
 
 	    int loop_head, loop_end;
+	    if (data_already_copied &&
+		!conv->src_field.byte_swap &&
+		(conv->src_field.src_float_format == conv->src_field.target_float_format) &&
+		(conv->src_field.size == conv->dest_size) &&
+		(conv->subconversion == NULL) &&
+		(next->type != FMType_pointer) &&
+		(next->type != FMType_string) &&
+		((conv->src_field.data_type != string_type))) {
+		/* Nothing but data movement required */
+		    break;
+	    }
 #ifdef RAW
 	    int src_storage = ffs_local(c, DILL_P);
 	    int dest_storage = ffs_local(c, DILL_P);
