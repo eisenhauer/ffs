@@ -399,7 +399,7 @@ void *buffer;
     }
     case 2:
     {
-	INT2 rep_len = ((version_2_format_ID*) buffer)->rep_len;
+	UINT2 rep_len = ((version_2_format_ID*) buffer)->rep_len;
 	/* shortcut on comparisons.  check likely difference first */
 	for (i = fmc->reg_format_count - 1; i >= 0; i--) {
 	    version_2_format_ID* id = (version_2_format_ID*)
