@@ -286,7 +286,7 @@ int converted_strings;
 				 target_field_count * sizeof(IOconvFieldStruct));
     int column_row_swap_necessary = (target_column_major != src_ioformat->body->column_major_arrays);
     
-    if (target_fp_format == -1) target_fp_format = ffs_my_float_format;
+    if (target_fp_format == Format_Unknown) target_fp_format = ffs_my_float_format;
 
     conv_ptr->notify_of_format_change = 0;
     conv_ptr->context = src_ioformat->context;
