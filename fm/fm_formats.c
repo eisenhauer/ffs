@@ -470,7 +470,7 @@ char *buffer;
 	for (i = fmc->reg_format_count - 1; i >= 0; i--) {
 	    version_2_format_ID* id = (version_2_format_ID*)
 		fmc->format_list[i]->server_ID.value;
-	    if (rep_len != (INT2) id->rep_len) continue;
+	    if (rep_len != (UINT2) id->rep_len) continue;
 	    if (memcmp(buffer, fmc->format_list[i]->server_ID.value,
 		       fmc->format_list[i]->server_ID.length) == 0) {
 		return fmc->format_list[i];
