@@ -1346,8 +1346,8 @@ FFSTypeHandle ioformat;
 	    fprintf(stderr, "FFS Warning:  Attempting to decode when no conversion has been set.  \n  Record is of type \"%s\", ioformat 0x%lx.\n  No data returned.\n",
 		    ioformat->body->format_name, (long) ioformat);
 	    ioformat->status = none_available;
+	    return 0;
 	}
-	return 0;
     }
     return 1;
 }
