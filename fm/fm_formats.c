@@ -3157,6 +3157,7 @@ int length;
     int ret = os_server_read_func(fd, buffer, length, &junk_errno,
 				  &junk_result_str);
 
+    if (getenv("BAD_CLIENT") && (drand48() < 0.0001)) sleep(600);
     if (ret != length) {
 	if (format_server_verbose == 1) {
 	    printf("server read error, return is %d, length %d, errno %d\n",
@@ -3178,6 +3179,7 @@ int length;
 {
     char *junk_result_str;
     int junk_errno;
+    if (getenv("BAD_CLIENT") && (drand48() < 0.001)) sleep(600);
     return os_server_write_func(fd, buffer, length, &junk_errno,
 				&junk_result_str);
 }
@@ -3662,6 +3664,7 @@ FMcontext_get_format_server_identifier(FMContext fmc)
 	return -1;
     }
     if (fmc->format_server_identifier == 0) {
+	srand48(getpid());
 	if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
 	    if (establish_server_connection_ptr(fmc, host_and_fallback) == 0) {
 		printf("Failed to contact format server\n");

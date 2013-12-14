@@ -56,6 +56,7 @@
 #endif
 #include <string.h>
 #include <assert.h>
+#include <pthread.h>
 
 typedef struct IOFormatRep {
     server_ID_type server_ID;
@@ -86,6 +87,8 @@ typedef struct _format_server {
     FMContext proxy_context_to_master;
     int pending_unregistered;
     format_list *lists[1];	/* first dimension float format */
+    int fork_threads;
+    pthread_mutex_t lock;
 } _fsserver;
 
 static FSClient
@@ -849,6 +852,7 @@ FSClient_close(FSClient fsc)
     }
     if (fsc->hostname) free(fsc->hostname);
     free(fsc);
+    if (fs->fork_threads) pthread_exit(NULL);
 }
 
 static IOFormatRep
@@ -898,13 +902,14 @@ format_server fs;
 FSClient fsc;
 {
     char next_action;
+    int input_bytes = 0;
     LOG(fs, "    handle data, fd %d - %s", fsc->fd, fsc->hostname);
     select_handle_count++;
     if (serverAtomicRead(fsc->fd, &next_action, 1) != 1) {
 	FSClient_close(fsc);
 	return;
     }
-    fsc->input_bytes++;
+    input_bytes++;
     switch (next_action) {
     case 'T':
 	LOG(fs, "    Testing ");
@@ -928,7 +933,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes++;
+	    input_bytes++;
 	    if (block_version > 2) {
 		fprintf(stderr, "Unknown version in block registration\n");
 		FSClient_close(fsc);
@@ -939,7 +944,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += sizeof(length);
+	    input_bytes += sizeof(length);
 	    length = ntohs(length);
 	    rep = malloc(length);
 	    rep->format_rep_length = htons((short)length);
@@ -949,7 +954,8 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += (length - sizeof(length));
+	    pthread_mutex_lock(&fs->lock);
+	    fsc->input_bytes += input_bytes + (length - sizeof(length));
 	    ioformat = malloc(sizeof(*ioformat));
 	    ioformat->server_format_rep = rep;
 	    ioformat->server_ID.length = 0;
@@ -961,6 +967,7 @@ FSClient fsc;
 		print_server_ID( (unsigned char *) ioformat->server_ID.value);
 		printf("\n");
 	    }
+	    pthread_mutex_unlock(&fs->lock);
 	    {
 		char ret[2];
 		ret[0] = 'I';
@@ -991,6 +998,7 @@ FSClient fsc;
 	    IOFormatRep ioformat;
 	    char *format_ID;
 	    int format_ID_len;
+	    int input_bytes = 0;
 	    if (fs->stdout_verbose) {
 		printf("Push block format registration\n");
 	    }
@@ -999,7 +1007,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes++;
+	    input_bytes++;
 	    if (block_version <= 1) {
 		fprintf(stderr, "Unknown version in block registration\n");
 		FSClient_close(fsc);
@@ -1011,7 +1019,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += sizeof(length);
+	    input_bytes += sizeof(length);
 	    format_ID_len = length = ntohs(length);
 	    format_ID = malloc(format_ID_len);
 	    if (serverAtomicRead(fsc->fd, ((char *) format_ID), format_ID_len)
@@ -1019,7 +1027,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += (length - sizeof(length));
+	    input_bytes += (length - sizeof(length));
 
 	    /* read body */
 	    if (serverAtomicRead(fsc->fd, &length, sizeof(length)) !=
@@ -1027,7 +1035,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += sizeof(length);
+	    input_bytes += sizeof(length);
 	    length = ntohs(length);
 	    rep = malloc(length);
 	    rep->format_rep_length = htons(length);
@@ -1035,9 +1043,10 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += (length - sizeof(length));
 
 	    
+	    pthread_mutex_lock(&fs->lock);
+	    fsc->input_bytes += input_bytes + (length - sizeof(length));
 	    if (fs->stdout_verbose) {
 		printf("Got Pushed -> ");
 		print_server_ID( (unsigned char *) format_ID);
@@ -1054,11 +1063,13 @@ FSClient fsc;
 
 	    registration_count++;
 	    fsc->formats_registered++;
+	    pthread_mutex_unlock(&fs->lock);
 	    break;
 	}
     case 'g': {
 	    IOFormatRep ioformat;
 	    char format_id_length;
+	    int input_bytes = 0;
 	    struct {
 		char reg[2];
 		unsigned short len;
@@ -1074,14 +1085,15 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes++;
+	    input_bytes++;
 	    format_id_value = malloc(format_id_length);
 	    if (serverAtomicRead(fsc->fd, format_id_value,
 				 format_id_length) != format_id_length) {
 		FSClient_close(fsc);
 		return;
 	    }
-	    fsc->input_bytes += format_id_length;
+	    pthread_mutex_lock(&fs->lock);
+	    fsc->input_bytes += input_bytes + format_id_length;
 	    ioformat = fetch_format(fs, fsc, format_id_value, 
 				    format_id_length);
 	    if (fs->stdout_verbose) {
@@ -1096,6 +1108,8 @@ FSClient fsc;
 	    } else {
 		tmp.len = 0;
 	    }
+	    fsc->formats_fetched++;
+	    pthread_mutex_unlock(&fs->lock);
 	    ret = os_server_write_func(fsc->fd, &tmp, sizeof(tmp),
 				       &errno, &errstr);
 	    if (ret != sizeof(tmp)) {
@@ -1115,7 +1129,6 @@ FSClient fsc;
 		}
 	    }
 	    get_count++;
-	    fsc->formats_fetched++;
 	    break;
 	}
     case 'D':
@@ -1127,6 +1140,7 @@ FSClient fsc;
 	    int byte_order;
 	    int tmp;
 	    server_ID_type *out_list = malloc(sizeof(out_list[0]));
+	    pthread_mutex_lock(&fs->lock);
 	    for (byte_order = 0; byte_order <= 1; byte_order++) {
 		format_list *list = fs->lists[0];
 		while (list != NULL) {
@@ -1138,6 +1152,7 @@ FSClient fsc;
 		}
 	    }
 	    tmp = htonl(out_count);
+	    pthread_mutex_unlock(&fs->lock);
 	    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
 				 &junk_str);
 	    for (i = 0; i < out_count; i++) {
@@ -1304,17 +1319,22 @@ get_qual_hostname(char *buf, int len)
 	    buf[end+1] = 0;
 	}
 	if (buf[end + 1] == 0) {
-	    char *tmp_name;
+	    struct hostent *tmp;
 	    buf[end] = 0;
 	    /* getdomainname was useless, hope that gethostbyname helps */
-	    tmp_name = (gethostbyname(buf))->h_name;
-	    strncpy(buf, tmp_name, len);
+	    tmp = gethostbyname(buf);
+	    if (tmp) {
+		strncpy(buf, tmp->h_name, len);
+	    }
 	}
 #else
 	{
 	    /* no getdomainname, hope that gethostbyname will help */
-	    char *tmp_name = (gethostbyname(buf))->h_name;
-	    strncpy(buf, tmp_name, len);
+	    struct hostent *tmp;
+	    tmp = gethostbyname(buf);
+	    if (tmp) {
+		strncpy(buf, tmp->h_name, len);
+	    }
 	}
 #endif
 	buf[len - 1] = '\0';
@@ -1451,6 +1471,7 @@ format_server_create()
     fs->usock_name = NULL;
     fs->start_time = time(NULL);
     fs->stdout_verbose = 0;
+    pthread_mutex_init(&fs->lock, NULL);
     for (j = 0; j < 1; j++) {
 	fs->lists[j] = NULL;
     }
@@ -1467,6 +1488,7 @@ format_server_create()
     fs->buffer_size = 1;
     fs->proxy_context_to_master = NULL;
     fs->pending_unregistered = 0;
+    fs->fork_threads = 1;
     /* 
      * ignore SIGPIPE's  (these pop up when ports die.  we catch the
      * failed writes)
@@ -1571,6 +1593,16 @@ format_server_listen(format_server fs, int port_num)
 static void out_domain_rejection(int fd, FSClient fsc);
 static int verify_magic_cookie (FSClient fsc);
 
+static void *
+client_handler_thread(void * fscv)
+{
+    FSClient fsc = (FSClient)fscv;
+    server_read_header(fsc);
+    while(1) {
+	format_server_handle_data(fsc->fs, fsc);
+    }
+}
+
 /* 
  * Accept socket connection from other data exchs.  If conn_sock is -1,
  * check if there is connection request at conn_sock_inet or
@@ -1635,11 +1667,6 @@ format_server_accept_conn_sock(format_server fs, void *conn_sock)
     fsc = FSClient_create(fs);
     fsc->fd = (void *) (long) sock;
 
-    FD_SET(sock, &fs->fdset);
-    if (sock > FD_SETSIZE) {
-	fprintf(stderr, "Internal Error, stupid WINSOCK large FD bug.\n");
-	fprintf(stderr, "Increase FD_SETSIZE.  Item not added to fdset.\n");
-    }
     fs->ports[sock] = fsc;
     fs->timestamp[sock] = time(NULL);
     fs->portCount++;
@@ -1654,16 +1681,26 @@ format_server_accept_conn_sock(format_server fs, void *conn_sock)
 	       (int) (long) fsc->fd, fsc->port,
 	       fsc->hostname);
     }
-    server_read_header(fsc);
     total_client_count++;
-    if (!verify_magic_cookie(fsc)) {
-	out_domain_rejection(sock, fsc);
-    } else {
-	if (fs->stdout_verbose) {
-	    printf("client verified by key authentication\n");
+    if (!fs->fork_threads) {
+	FD_SET(sock, &fs->fdset);
+	if (sock > FD_SETSIZE) {
+	    fprintf(stderr, "Internal Error, stupid WINSOCK large FD bug.\n");
+	    fprintf(stderr, "Increase FD_SETSIZE.  Item not added to fdset.\n");
 	}
+	server_read_header(fsc);
+	if (!verify_magic_cookie(fsc)) {
+	    out_domain_rejection(sock, fsc);
+	} else {
+	    if (fs->stdout_verbose) {
+		printf("client verified by key authentication\n");
+	    }
+	}
+    } else {
+	pthread_t t;
+	pthread_create(&t, NULL, client_handler_thread, fsc);
+	pthread_detach(t);
     }
-
     return fsc;
 }
 
