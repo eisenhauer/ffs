@@ -2478,6 +2478,7 @@ ROW MAJOR  (C-style):
 		}
 		tmp = dill_getreg(s, DILL_L);
 		dill_muli(s, tmp, index[i].reg, size_accum);
+		dill_cvi2l(s, tmp, tmp);       /* op_i_cvi2l */
 		dill_addp(s, base.reg, base.reg, tmp);
 	    }
 	}
