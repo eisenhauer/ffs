@@ -3772,7 +3772,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
                     *cg_type = DILL_P;
 		} else {
 		    context->has_exec_context = 1;
-		    *cg_type = DILL_EC;
+		    *cg_type = DILL_P;
 		}
 		typ->node.reference_type_decl.cg_referenced_type = *cg_type;
 		typ->node.reference_type_decl.sm_complex_referenced_type =
