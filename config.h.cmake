@@ -109,25 +109,25 @@
 #cmakedefine NO_SOCKET
 
 /* The number of bytes in type double */
-#cmakedefine SIZEOF_DOUBLE @SIZEOF_DOUBLE@
+#define SIZEOF_DOUBLE @SIZEOF_DOUBLE@
 
 /* The number of bytes in type off_t */
-#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+#define SIZEOF_OFF_T @SIZEOF_OFF_T@
 
 /* The number of bytes in type float */
-#cmakedefine SIZEOF_FLOAT @SIZEOF_FLOAT@
+#define SIZEOF_FLOAT @SIZEOF_FLOAT@
 
 /* The number of bytes in type int */
-#cmakedefine SIZEOF_INT @SIZEOF_INT@
+#define SIZEOF_INT @SIZEOF_INT@
 
 /* The number of bytes in type long */
-#cmakedefine SIZEOF_LONG @SIZEOF_LONG@
+#define SIZEOF_LONG @SIZEOF_LONG@
 
 /* The number of bytes in type long double */
-#cmakedefine SIZEOF_LONG_DOUBLE @SIZEOF_LONG_DOUBLE@
+#define SIZEOF_LONG_DOUBLE @SIZEOF_LONG_DOUBLE@
 
 /* The number of bytes in type long long */
-#cmakedefine SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
+#define SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 
 /* Define to `int' if <sys/types.h> does not define. */
 #cmakedefine pid_t
