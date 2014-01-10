@@ -91,7 +91,7 @@ void doOneTest(void (*f)(), int step)
 
 	/* first, the easy size check */
 	if (result != sizeof(gray)) { printf("result is %ld, not %ld\n", result,
-					     sizeof(gray));}
+					     (long)sizeof(gray));}
 	assert(result == sizeof(gray));
 
         /* then compare the whole image w/ expected gray */
