@@ -1241,15 +1241,23 @@ FMFormat *formats;
     return 1;
 }
 
-#ifdef WORDS_BIGENDIAN
-#define OUR_BYTE_ORDER 1
-#define OTHER_BYTE_ORDER 0
-#else
-#define OUR_BYTE_ORDER 0
-#define OTHER_BYTE_ORDER 1
-#endif
+static int words_bigendian = -1;
 
-    
+static int
+set_bigendian () {
+  /* Are we little or big endian?  From Harbison&Steele.  */
+  union
+  {
+    long l;
+    char c[sizeof (long)];
+  } u;
+  u.l = 1;
+  words_bigendian = (u.c[sizeof (long) - 1] == 1);
+  return words_bigendian;
+}
+
+#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
+
 static format_rep
 add_server_subformat_rep(fmformat, super_rep, super_rep_size)
 FMFormat fmformat;
@@ -1265,6 +1273,8 @@ int *super_rep_size;
     char *string_base;
     int cur_offset;
     struct _field_wire_format *fields;
+    int OUR_BYTE_ORDER = WORDS_BIGENDIAN;
+    int OTHER_BYTE_ORDER = (WORDS_BIGENDIAN ? 0 : 1);
 
     rep_size += strlen(fmformat->format_name) + 1;
     for (i = 0; i < fmformat->field_count; i++) {
@@ -1386,6 +1396,8 @@ FMFormat fmformat;
     int i;
     struct _format_wire_format *rep = malloc(sizeof(*rep));
     int rep_size = sizeof(*rep);
+    int OUR_BYTE_ORDER = WORDS_BIGENDIAN;
+    int OTHER_BYTE_ORDER = (WORDS_BIGENDIAN ? 0 : 1);
 
     while(subformats && subformats[subformat_count]) subformat_count++;
     if (subformat_count >= 100) return NULL;  /* no way */
@@ -2762,23 +2774,6 @@ FMdata_type dat;
     }
 }
 
-static int words_bigendian = -1;
-
-static int
-set_bigendian () {
-  /* Are we little or big endian?  From Harbison&Steele.  */
-  union
-  {
-    long l;
-    char c[sizeof (long)];
-  } u;
-  u.l = 1;
-  words_bigendian = (u.c[sizeof (long) - 1] == 1);
-  return words_bigendian;
-}
-
-#define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
-
 extern
 void
 get_FMformat_characteristics(format, ff, intf, column_major, pointer_size)
@@ -3372,6 +3367,8 @@ struct _subformat_wire_format *rep;
     int field;
     UINT2 tmp;
     INT4 tmp2;
+    int OUR_BYTE_ORDER = WORDS_BIGENDIAN;
+    int OTHER_BYTE_ORDER = (WORDS_BIGENDIAN ? 0 : 1);
     int byte_reversal = ((rep->f.f0.record_byte_order & 0x1) != OUR_BYTE_ORDER);
 
     tmp = rep->f.f0.name_offset;
