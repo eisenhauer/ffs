@@ -1568,7 +1568,7 @@ struct parse_struct {
 
 static int
 semanticize_compound_statement(cod_parse_context context, sm_ref compound, 
-			       scope_ptr containing_scope);
+			       scope_ptr containing_scope, int require_last_return);
 static int semanticize_decls_list(cod_parse_context context, sm_list decls, 
 				  scope_ptr scope);
 static int semanticize_array_type_node(cod_parse_context context,
@@ -1681,7 +1681,7 @@ cod_parse_context context;
 	malloc(sizeof(struct list_struct));
     tmp2->node.compound_statement.statements->next = NULL;
     tmp2->node.compound_statement.statements->node = tmp;
-    if (!semanticize_compound_statement(context, tmp, context->scope)) {
+    if (!semanticize_compound_statement(context, tmp, context->scope, (context->return_cg_type != DILL_V))) {
 	tmp->node.compound_statement.decls = NULL;
 	tmp2->node.compound_statement.decls = NULL;
 	cod_rfree(tmp2);
@@ -1744,7 +1744,7 @@ cod_parse_context context;
 	malloc(sizeof(struct list_struct));
     tmp->node.compound_statement.statements->next = NULL;
     tmp->node.compound_statement.statements->node = yyparse_value;
-    if (semanticize_compound_statement(context, tmp, context->scope) == 0) {
+    if (semanticize_compound_statement(context, tmp, context->scope, (context->return_cg_type != DILL_V)) == 0) {
 	tmp->node.compound_statement.decls = NULL;
 	cod_rfree(tmp);
 	return 0;
@@ -4075,6 +4075,29 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 
 static int semanticize_statement(cod_parse_context context, sm_ref stmt, 
 				 scope_ptr scope);
+static int 
+check_last_statement_return(cod_parse_context context, sm_list stmts)
+{
+    sm_ref stmt;
+    while (stmts != NULL) {
+	stmt = stmts->node;
+	stmts = stmts->next;
+    }
+    if (!stmt) return 0;
+
+    switch (stmt->node_type) {
+    case cod_compound_statement: {
+	sm_list list = stmt->node.compound_statement.statements;
+	if (!list) list = stmt->node.compound_statement.decls;
+
+	return check_last_statement_return(context, list);
+    }
+    case cod_return_statement:
+	return 1;
+    default:
+	return 0;
+    }
+}
 
 static int
 semanticize_decls_stmts_list(cod_parse_context context, sm_list decls_stmts, scope_ptr scope)
@@ -4199,7 +4222,7 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 				scope);
     }	
     case cod_compound_statement:
-	return semanticize_compound_statement(context, stmt, scope);
+	return semanticize_compound_statement(context, stmt, scope, 0);
     case cod_return_statement:{
 	int expr_type;
 	stmt->node.return_statement.cg_func_type = context->return_cg_type;
@@ -4279,16 +4302,27 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 
 extern int
 semanticize_compound_statement(cod_parse_context context, sm_ref compound, 
-			       scope_ptr containing_scope)
+			       scope_ptr containing_scope, int require_last_return)
 {
     int ret = 1;
     scope_ptr current_scope = push_scope(containing_scope);
     ret &= semanticize_decls_stmts_list(context,
-				  compound->node.compound_statement.decls,
-				  current_scope);
+					compound->node.compound_statement.decls,
+					current_scope);
     ret &= semanticize_decls_stmts_list(context,
 					compound->node.compound_statement.statements,
 					current_scope);
+    if (ret && require_last_return) {
+	int tmp;
+	sm_list list = compound->node.compound_statement.statements;
+	if (!list) list = compound->node.compound_statement.decls;
+	tmp = check_last_statement_return(context, compound->node.compound_statement.statements);
+	if (!tmp) {
+	    cod_src_error(context, NULL, 
+			  "Control reaches end of non-void function.");
+	}
+	ret &= tmp;
+    }
     pop_scope(current_scope);
     return ret;
 }

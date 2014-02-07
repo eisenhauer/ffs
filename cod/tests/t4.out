@@ -178,3 +178,6 @@ int printf(string format, ...);
 ## Ecode Error:  Continue or Break statement not contained inside an iterator. at line 4, char 2
 	break;
 	^
+## Ecode Error:  Control reaches end of non-void function. at line 0, char 0
+{
+^

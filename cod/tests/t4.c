@@ -579,6 +579,26 @@ comment\n\
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
+    if ((test_to_run == -1) || (test_to_run == 14)) {
+        /*
+         * tests break statement
+         */
+
+        char code_string[] ="\
+{\n\
+    int c;\n\
+    c = a + b;\n\
+}";
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	if (output_file) cod_set_error_func(context, error_func);
+	cod_subroutine_declaration("int subr(int a, int b)", context);
+	ret = cod_code_verify(code_string, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
 
     return 0;
 }
