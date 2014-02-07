@@ -187,6 +187,7 @@ install_subsample_code(FMFormat f, char *field, char*code_str)
     add_param(parse_context, "input", 1, f);
     cod_add_param("element_count", "int", 2, parse_context);
 
+    cod_set_return_type("void", parse_context);
     cod_assoc_externs(parse_context, externs);
     cod_parse_for_context(extern_string, parse_context);
 
