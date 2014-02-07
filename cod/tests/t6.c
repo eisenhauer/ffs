@@ -62,6 +62,7 @@ main()
     FrameData *f;\n\
         output.num_points = 1;\
         output.image_data[0].num_points = 1;\
+	return 1;\n\
      }";
     FrameData data;
    
