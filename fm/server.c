@@ -216,14 +216,17 @@ general_format_server(int port, int do_restart, int verbose, int do_proxy)
     }
     if (format_server_listen(fs, port) != -1) {
 	if (do_restart) read_formats_from_file(fs);
+	pthread_mutex_lock(&fs->lock);
 	while (1) {
 	    format_server_poll_and_handle(fs);
 	}
+	pthread_mutex_unlock(&fs->lock);
     }
     return;
 }
 
 static void FSClient_close(FSClient fsc);
+static void FSClient_force_close(FSClient fsc);
 #define CONN_TIMEOUT_INTERVAL 300
 
 static int
@@ -242,8 +245,10 @@ format_server_poll_and_handle(format_server fs)
     timeout.tv_usec = 0;
     timeout.tv_sec = CONN_TIMEOUT_INTERVAL + 5;
 
+    pthread_mutex_unlock(&fs->lock);
     res = select(FD_SETSIZE, &rd_set, (fd_set *) NULL,
 		 (fd_set *) NULL, &timeout);
+    pthread_mutex_lock(&fs->lock);
     if (res == -1) {
 	if (errno == EBADF) {
 	    int i;
@@ -265,7 +270,7 @@ format_server_poll_and_handle(format_server fs)
 				i);
 			LOG(fs, "REmoving bad fd %d", i);
 			if (fs->ports[i]) {
-			    FSClient_close(fs->ports[i]);
+			    FSClient_force_close(fs->ports[i]);
 			} else if (i != (long) fs->conn_sock_inet) {
 			    FD_CLR((unsigned long) i, &fs->fdset);
 			    os_close_func((void *) (long) i);
@@ -853,6 +858,23 @@ FSClient_close(FSClient fsc)
     if (fsc->hostname) free(fsc->hostname);
     free(fsc);
     if (fs->fork_threads) pthread_exit(NULL);
+}
+
+static void
+FSClient_force_close(FSClient fsc)
+{
+    format_server fs = fsc->fs;
+    int fd = (int) (long) fsc->fd;
+    LOG(fs, "Forcibly closing client fd %d- %s", fd, fsc->hostname);
+    if (fd != 0) {
+	fs->ports[fd] = NULL;
+	fs->timestamp[fd] = 0;
+	FD_CLR((unsigned long) fd, &fs->fdset);
+	os_close_func((void *) (long) fd);
+	fs->portCount--;
+    }
+    if (fsc->hostname) free(fsc->hostname);
+    free(fsc);
 }
 
 static IOFormatRep
@@ -1920,7 +1942,7 @@ timeout_old_conns(format_server server_fs)
 	if (server_fs->ports[i] != NULL) {
 	    if (now - server_fs->timestamp[i] > CONN_TIMEOUT_INTERVAL) {
 		LOG(server_fs, "Timeout -> fd %d", i);
-		FSClient_close(server_fs->ports[i]);
+		FSClient_force_close(server_fs->ports[i]);
 	    }
 	}
     }
@@ -1946,7 +1968,7 @@ timeout_oldest_conn(format_server server_fs)
     }
     if (oldest_time != 0) {
 	LOG(server_fs, "Closing oldest -> fd %d", i);
-	FSClient_close(server_fs->ports[oldest_index]);
+	FSClient_force_close(server_fs->ports[oldest_index]);
     }
 }
 
