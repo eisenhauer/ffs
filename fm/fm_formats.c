@@ -3197,6 +3197,7 @@ int fd;
 static void
 dump_server_error(char *string, FMContext context)
 {
+/*    printf("%s\n", string); */
 }
 
 static int
@@ -3250,14 +3251,14 @@ FMFormat format;
 	if (serverAtomicRead(fmc->server_fd, &ret_info[0], 2) != 2) {
 	    dump_server_error("Read failed for format server.  Out of domain?\n",
 			      fmc);
-	    return 0;
+	    goto retry;
 	}
 	if (ret_info[0] == 'P') {
 	    provisional_use_warning((int) (long) fmc->server_fd);
 	} else {
 	    if (ret_info[0] != 'I') {
-		printf("Bad character from format server %c\n", ret_info[0]);
-		return 0;
+		dump_server_error("Bad character from format server\n", fmc);
+		goto retry;
 	    }
 	}
 	format->server_ID.length = ret_info[1];
