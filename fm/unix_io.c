@@ -47,19 +47,19 @@ char **result_p;
 
     iget = read(fd, (char *) buffer, length);
     if (iget == 0) {
-	*result_p = "End of file";
-	*errno_p = 0;
+	if (result_p) *result_p = "End of file";
+	if (errno_p) *errno_p = 0;
 	return 0;		/* end of file */
     } else if (iget == -1) {
 	int lerrno = errno;
-	*errno_p = lerrno;
+	if (errno_p) *errno_p = lerrno;
 	if ((lerrno != EWOULDBLOCK) &&
 	    (lerrno != EAGAIN) &&
 	    (lerrno != EINTR)) {
 	    /* serious error */
 	    return -1;
 	} else {
-	    *errno_p = 0;
+	    if (errno_p) *errno_p = 0;
 	    iget = 0;
 	}
     }
@@ -67,19 +67,19 @@ char **result_p;
     while (left > 0) {
 	iget = read(fd, (char *) buffer + length - left, left);
 	if (iget == 0) {
-	    *result_p = "End of file";
-	    *errno_p = 0;
+	    if (result_p) *result_p = "End of file";
+	    if (errno_p) *errno_p = 0;
 	    return length - left;	/* end of file */
 	} else if (iget == -1) {
 	    int lerrno = errno;
-	    *errno_p = errno;
+	    if (errno_p) *errno_p = errno;
 	    if ((lerrno != EWOULDBLOCK) &&
 		(lerrno != EAGAIN) &&
 		(lerrno != EINTR)) {
 		/* serious error */
 		return (length - left);
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -107,15 +107,15 @@ char **result_p;
 	perror("fcntl block");
     iget = read(fd, (char *) buffer, length);
     if (iget == 0) {
-	*result_p = "End of file";
-	*errno_p = 0;
+	if (result_p) *result_p = "End of file";
+	if (errno_p) *errno_p = 0;
 	fdflags &= ~O_NONBLOCK;
 	if (fcntl(fd, F_SETFL, fdflags) == -1) 
 	    perror("fcntl nonblock");
 	return 0;		/* end of file */
     } else if (iget == -1) {
 	int lerrno = errno;
-	*errno_p = lerrno;
+	if (errno_p) *errno_p = lerrno;
 	if ((lerrno != EWOULDBLOCK) &&
 	    (lerrno != EAGAIN) &&
 	    (lerrno != EINTR)) {
@@ -125,7 +125,7 @@ char **result_p;
 		perror("fcntl nonblock");
 	    return -1;
 	} else {
-	    *errno_p = 0;
+	    if (errno_p) *errno_p = 0;
 	    iget = 0;
 	}
     }
@@ -141,15 +141,15 @@ char **result_p;
 	sleep(1);
 	iget = read(fd, (char *) buffer + length - left, left);
 	if (iget == 0) {
-	    *result_p = "End of file";
-	    *errno_p = 0;
+	    if (result_p) *result_p = "End of file";
+	    if (errno_p) *errno_p = 0;
 	    fdflags &= ~O_NONBLOCK;
 	    if (fcntl(fd, F_SETFL, fdflags) == -1) 
 		perror("fcntl nonblock");
 	    return length - left;	/* end of file */
 	} else if (iget == -1) {
 	    int lerrno = errno;
-	    *errno_p = errno;
+	    if (errno_p) *errno_p = errno;
 	    if ((lerrno != EWOULDBLOCK) &&
 		(lerrno != EAGAIN) &&
 		(lerrno != EINTR)) {
@@ -159,7 +159,7 @@ char **result_p;
 		    perror("fcntl nonblock");
 		return (length - left);
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -186,18 +186,18 @@ char **result_p;
     while (icount > 0) {
 	iget = readv(fd, (struct iovec *) iov, icount);
 	if (iget == 0) {
-	    *result_p = "End of file";
-	    *errno_p = 0;
+	    if (result_p) *result_p = "End of file";
+	    if (errno_p) *errno_p = 0;
 	    return 0;		/* end of file */
 	} else if (iget == -1) {
-	    *errno_p = errno;
-	    if ((*errno_p != EWOULDBLOCK) &&
-		(*errno_p != EAGAIN) &&
-		(*errno_p != EINTR)) {
+	    if (errno_p) *errno_p = errno;
+	    if ((errno != EWOULDBLOCK) &&
+		(errno != EAGAIN) &&
+		(errno != EINTR)) {
 		/* serious error */
 		return -1;
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -232,14 +232,14 @@ char **result_p;
 	iget = write(fd, (char *) buffer + length - left, left);
 	if (iget == -1) {
 	    int lerrno = errno;
-	    *errno_p = errno;
+	    if (errno_p) *errno_p = errno;
 	    if ((lerrno != EWOULDBLOCK) &&
 		(lerrno != EAGAIN) &&
 		(lerrno != EINTR)) {
 		/* serious error */
 		return (length - left);
 	    } else {
-		*errno_p = 0;
+		if (errno_p) *errno_p = 0;
 		iget = 0;
 	    }
 	}
@@ -271,7 +271,7 @@ char **result_p;
 	if (iget == -1) {
 	    if ((errno != EWOULDBLOCK) && (errno != EAGAIN)) {
 		/* serious error */
-		*errno_p = errno;
+		if (errno_p) *errno_p = errno;
 		return (iovcnt - iovleft);
 	    } else {
 		iget = 0;
