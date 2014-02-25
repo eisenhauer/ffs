@@ -3139,8 +3139,6 @@ int byte_reversal;
     return 1;
 }
 
-static int server_read_failure = 0;
-
 extern int
 serverAtomicRead(fd, buffer, length)
 void *fd;
@@ -3161,7 +3159,6 @@ int length;
 		printf("result_string is %s\n", junk_result_str);
 	    }
 	}
-	server_read_failure++;
     }
     return ret;
 }
@@ -4030,10 +4027,14 @@ FSClient fsc;
 	    close((int)(long)fsc->fd);
 	    return;
 	}
-	key = malloc(key_len);
-	serverAtomicRead(fsc->fd, key, key_len);
-	fsc->key = key;
+	fsc->key = NULL;
 	fsc->key_len = key_len;
+	if (key_len > 0) {
+	    key = malloc(key_len);
+	    serverAtomicRead(fsc->fd, key, key_len);
+	    fsc->key = key;
+	    fsc->key_len = key_len;
+	}
     }
     magic = MAGIC_NUMBER;
     put_serverAtomicInt(fsc->fd, &magic, (FMContext) NULL);
