@@ -89,6 +89,7 @@ typedef struct _format_server {
     format_list *lists[1];	/* first dimension float format */
     int fork_threads;
     pthread_mutex_t lock;
+    pthread_mutex_t log_lock;
 } _fsserver;
 
 static FSClient
@@ -138,6 +139,7 @@ LOG(format_server fs, char *format,...)
     struct stat stat_buf;
     static int log_count = 0;
 
+    pthread_mutex_lock(&fs->log_lock);
     if ((log == (void *) -1) || (log == (void *) 0)) {
 	int restart = 0;
 	if (log == (void *) 0) {
@@ -152,6 +154,7 @@ LOG(format_server fs, char *format,...)
 
 	if (log == NULL) {
 	    log = (void *) -1;
+	    pthread_mutex_unlock(&fs->log_lock);
 	    return;
 	}
 	if (restart) {
@@ -195,6 +198,7 @@ LOG(format_server fs, char *format,...)
 	    log = (void *) -1;
 	}
     }
+    pthread_mutex_unlock(&fs->log_lock);
 }
 
 #include "self_ip_addr.c"
@@ -229,6 +233,13 @@ static void FSClient_close(FSClient fsc);
 static void FSClient_force_close(FSClient fsc);
 #define CONN_TIMEOUT_INTERVAL 300
 
+static int test_count = 0;
+static int registration_count = 0;
+static int get_count = 0;
+static int select_handle_count = 0;
+static int total_client_count = 0;
+static int rejected_client_count = 0;
+
 static int
 format_server_poll_and_handle(format_server fs)
 {
@@ -249,6 +260,7 @@ format_server_poll_and_handle(format_server fs)
     res = select(FD_SETSIZE, &rd_set, (fd_set *) NULL,
 		 (fd_set *) NULL, &timeout);
     pthread_mutex_lock(&fs->lock);
+    select_handle_count++;
     if (res == -1) {
 	if (errno == EBADF) {
 	    int i;
@@ -847,7 +859,9 @@ FSClient_close(FSClient fsc)
 {
     format_server fs = fsc->fs;
     int fd = (int) (long) fsc->fd;
-    LOG(fs, "Closing client fd %d- %s", fd, fsc->hostname);
+    pthread_mutex_lock(&fs->lock);
+    LOG(fs, "Closing client fd %d- %s", fd, fsc->hostname ?
+	fsc->hostname : "NULL");
     if (fd != 0) {
 	fs->ports[fd] = NULL;
 	fs->timestamp[fd] = 0;
@@ -855,8 +869,12 @@ FSClient_close(FSClient fsc)
 	os_close_func((void *) (long) fd);
 	fs->portCount--;
     }
-    if (fsc->hostname) free(fsc->hostname);
+    if (fsc->hostname) {
+	free(fsc->hostname);
+	fsc->hostname = NULL;
+    }
     free(fsc);
+    pthread_mutex_unlock(&fs->lock);
     if (fs->fork_threads) pthread_exit(NULL);
 }
 
@@ -865,7 +883,8 @@ FSClient_force_close(FSClient fsc)
 {
     format_server fs = fsc->fs;
     int fd = (int) (long) fsc->fd;
-    LOG(fs, "Forcibly closing client fd %d- %s", fd, fsc->hostname);
+    LOG(fs, "Forcibly closing client fd %d- %s", fd, fsc->hostname ?
+	fsc->hostname : "NULL");
     if (fd != 0) {
 	fs->ports[fd] = NULL;
 	fs->timestamp[fd] = 0;
@@ -873,8 +892,9 @@ FSClient_force_close(FSClient fsc)
 	os_close_func((void *) (long) fd);
 	fs->portCount--;
     }
-    if (fsc->hostname) free(fsc->hostname);
-    free(fsc);
+/*   We count on the thread freeing the fsc */    
+/*    if (fsc->hostname) free(fsc->hostname);*/
+/*    free(fsc); */
 }
 
 static IOFormatRep
@@ -897,12 +917,6 @@ fetch_format(format_server fs, FSClient fsc, const unsigned char *format_id,
 }
 
 
-static int test_count = 0;
-static int registration_count = 0;
-static int get_count = 0;
-static int select_handle_count = 0;
-static int total_client_count = 0;
-static int rejected_client_count = 0;
 typedef struct host_info {
     struct in_addr ip_addr;
     time_t intro_time;
@@ -925,9 +939,9 @@ FSClient fsc;
 {
     char next_action;
     int input_bytes = 0;
+    void* fd = fsc->fd;
     LOG(fs, "    handle data, fd %d - %s", fsc->fd, fsc->hostname);
-    select_handle_count++;
-    if (serverAtomicRead(fsc->fd, &next_action, 1) != 1) {
+    if (serverAtomicRead(fd, &next_action, 1) != 1) {
 	FSClient_close(fsc);
 	return;
     }
@@ -951,7 +965,7 @@ FSClient fsc;
 		printf("New style block format registration\n");
 	    }
 	    LOG(fs, "    Registration ");
-	    if (serverAtomicRead(fsc->fd, &block_version, 1) != 1) {
+	    if (serverAtomicRead(fd, &block_version, 1) != 1) {
 		FSClient_close(fsc);
 		return;
 	    }
@@ -961,7 +975,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    if (serverAtomicRead(fsc->fd, &length, sizeof(length)) !=
+	    if (serverAtomicRead(fd, &length, sizeof(length)) !=
 		sizeof(length)) {
 		FSClient_close(fsc);
 		return;
@@ -970,7 +984,7 @@ FSClient fsc;
 	    length = ntohs(length);
 	    rep = malloc(length);
 	    rep->format_rep_length = htons((short)length);
-	    if (serverAtomicRead(fsc->fd, ((char *) rep) + sizeof(length),
+	    if (serverAtomicRead(fd, ((char *) rep) + sizeof(length),
 				 length - sizeof(length)) !=
 		(length - sizeof(length))) {
 		FSClient_close(fsc);
@@ -997,11 +1011,11 @@ FSClient fsc;
 		    ret[0] = 'P';
 		    } */
 		ret[1] = ioformat->server_ID.length;
-		if (os_server_write_func(fsc->fd, &ret[0], 2, NULL, NULL) != 2) {
+		if (os_server_write_func(fd, &ret[0], 2, NULL, NULL) != 2) {
 		    FSClient_close(fsc);
 		    return;
 		}
-		if (os_server_write_func(fsc->fd, ioformat->server_ID.value,
+		if (os_server_write_func(fd, ioformat->server_ID.value,
 				  ioformat->server_ID.length, NULL,
 			     NULL) != ioformat->server_ID.length) {
 		    FSClient_close(fsc);
@@ -1025,7 +1039,7 @@ FSClient fsc;
 		printf("Push block format registration\n");
 	    }
 	    LOG(fs, "    Push Registration ");
-	    if (serverAtomicRead(fsc->fd, &block_version, 1) != 1) {
+	    if (serverAtomicRead(fd, &block_version, 1) != 1) {
 		FSClient_close(fsc);
 		return;
 	    }
@@ -1036,7 +1050,7 @@ FSClient fsc;
 		return;
 	    }
 	    /* read pushed format ID */
-	    if (serverAtomicRead(fsc->fd, &length, sizeof(length)) !=
+	    if (serverAtomicRead(fd, &length, sizeof(length)) !=
 		sizeof(length)) {
 		FSClient_close(fsc);
 		return;
@@ -1044,7 +1058,7 @@ FSClient fsc;
 	    input_bytes += sizeof(length);
 	    format_ID_len = length = ntohs(length);
 	    format_ID = malloc(format_ID_len);
-	    if (serverAtomicRead(fsc->fd, ((char *) format_ID), format_ID_len)
+	    if (serverAtomicRead(fd, ((char *) format_ID), format_ID_len)
 		!= format_ID_len) {
 		FSClient_close(fsc);
 		return;
@@ -1052,7 +1066,7 @@ FSClient fsc;
 	    input_bytes += (length - sizeof(length));
 
 	    /* read body */
-	    if (serverAtomicRead(fsc->fd, &length, sizeof(length)) !=
+	    if (serverAtomicRead(fd, &length, sizeof(length)) !=
 		sizeof(length)) {
 		FSClient_close(fsc);
 		return;
@@ -1061,7 +1075,7 @@ FSClient fsc;
 	    length = ntohs(length);
 	    rep = malloc(length);
 	    rep->format_rep_length = htons(length);
-	    if (serverAtomicRead(fsc->fd, ((char *) rep), length) != length) {
+	    if (serverAtomicRead(fd, ((char *) rep), length) != length) {
 		FSClient_close(fsc);
 		return;
 	    }
@@ -1103,13 +1117,13 @@ FSClient fsc;
 	    LOG(fs, "    new style get format");
 	    if (fs->stdout_verbose)
 		printf("new style Get Format   -> ");
-	    if (serverAtomicRead(fsc->fd, &format_id_length, 1) != 1) {
+	    if (serverAtomicRead(fd, &format_id_length, 1) != 1) {
 		FSClient_close(fsc);
 		return;
 	    }
 	    input_bytes++;
 	    format_id_value = malloc(format_id_length);
-	    if (serverAtomicRead(fsc->fd, format_id_value,
+	    if (serverAtomicRead(fd, format_id_value,
 				 format_id_length) != format_id_length) {
 		FSClient_close(fsc);
 		return;
@@ -1132,7 +1146,7 @@ FSClient fsc;
 	    }
 	    fsc->formats_fetched++;
 	    pthread_mutex_unlock(&fs->lock);
-	    ret = os_server_write_func(fsc->fd, &tmp, sizeof(tmp),
+	    ret = os_server_write_func(fd, &tmp, sizeof(tmp),
 				       &errno, &errstr);
 	    if (ret != sizeof(tmp)) {
 		FSClient_close(fsc);
@@ -1141,7 +1155,7 @@ FSClient fsc;
 	    if ((ioformat != NULL) &&
 		(ioformat->server_format_rep != NULL)) {
 		format_rep rep = ioformat->server_format_rep;
-		ret = os_server_write_func(fsc->fd,
+		ret = os_server_write_func(fd,
 					   (char *) rep + sizeof(rep->format_rep_length),
 					   ntohs(rep->format_rep_length) - sizeof(rep->format_rep_length),
 					   &errno, &errstr);
@@ -1175,13 +1189,13 @@ FSClient fsc;
 	    }
 	    tmp = htonl(out_count);
 	    pthread_mutex_unlock(&fs->lock);
-	    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+	    os_server_write_func(fd, &tmp, 4, &junk_errno,
 				 &junk_str);
 	    for (i = 0; i < out_count; i++) {
 		tmp = htonl(out_list[i].length);
-		os_server_write_func(fsc->fd, &tmp, 4,
+		os_server_write_func(fd, &tmp, 4,
 				     &junk_errno, &junk_str);
-		os_server_write_func(fsc->fd, out_list[i].value,
+		os_server_write_func(fd, out_list[i].value,
 				     out_list[i].length,
 				     &junk_errno, &junk_str);
 	    }
@@ -1197,17 +1211,17 @@ FSClient fsc;
 	    int tmp;
 
 	    tmp = htonl(out_count);
-	    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+	    os_server_write_func(fd, &tmp, 4, &junk_errno,
 				 &junk_str);
 	    for (i = 0; i < out_count; i++) {
 		char *time_str;
-		os_server_write_func(fsc->fd, &hostlist[i].ip_addr, 4,
+		os_server_write_func(fd, &hostlist[i].ip_addr, 4,
 				     &junk_errno, &junk_str);
 		time_str = (char *) ctime(&hostlist[i].intro_time);
 		tmp = htonl(strlen(time_str) + 1);
-		os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+		os_server_write_func(fd, &tmp, 4, &junk_errno,
 				     &junk_str);
-		os_server_write_func(fsc->fd, time_str, strlen(time_str) + 1,
+		os_server_write_func(fd, time_str, strlen(time_str) + 1,
 				     &junk_errno, &junk_str);
 	    }
 	}
@@ -1223,7 +1237,7 @@ FSClient fsc;
 	    int local_connection = 1;
 
 	    memset(&in_sock, 0, sizeof(in_sock));
-	    if (getpeername((int) (long) fsc->fd, sock_addr, (socklen_t*)&sock_len) != 0) {
+	    if (getpeername((int) (long) fd, sock_addr, (socklen_t*)&sock_len) != 0) {
 		if (fs->stdout_verbose) {
 		    printf("Rejecting command connection from non peer host\n");
 		}
@@ -1233,7 +1247,7 @@ FSClient fsc;
 	    if (my_IP_addr != htonl(in_sock.sin_addr.s_addr)) {
 		local_connection = 0;
 	    }
-	    if (serverAtomicRead(fsc->fd, &next_action, 1) != 1) {
+	    if (serverAtomicRead(fd, &next_action, 1) != 1) {
 		FSClient_close(fsc);
 		return;
 	    }
@@ -1243,6 +1257,12 @@ FSClient fsc;
 		    printf("NO command action\n");
 		}
 		break;
+	    /* case 'X': */
+	    /* 	if (fs->stdout_verbose) { */
+	    /* 	    printf("EXIT command action\n"); */
+	    /* 	} */
+	    /* 	exit(0); */
+	    /* 	break; */
 	    case 'D':
 		if (fs->stdout_verbose) {
 		    printf("dump formats to file\n");
@@ -1273,7 +1293,7 @@ FSClient fsc;
 		    printf("ping from client\n");
 		}
 		/* send it back */
-		os_server_write_func(fsc->fd, &next_action, 1, &junk_errno,
+		os_server_write_func(fd, &next_action, 1, &junk_errno,
 				     &junk_str);
 		break;
 	    case 'P':
@@ -1281,14 +1301,14 @@ FSClient fsc;
 		    printf("ping/request for ID from client\n");
 		}
 		/* send it back */
-		os_server_write_func(fsc->fd, &fs->format_server_identifier, 4, &junk_errno,
+		os_server_write_func(fd, &fs->format_server_identifier, 4, &junk_errno,
 				     &junk_str);
 		break;
 	    }
 	}
 	break;
     default:
-	LOG(fs, "Unknown request from fd %d- %s", fsc->fd, fsc->hostname);
+	LOG(fs, "Unknown request from fd %d- %s", fd, fsc->hostname);
 	printf("Unknown request %c, %x\n", next_action, (unsigned char) next_action);
 	FSClient_close(fsc);
 	break;
@@ -1494,6 +1514,7 @@ format_server_create()
     fs->start_time = time(NULL);
     fs->stdout_verbose = 0;
     pthread_mutex_init(&fs->lock, NULL);
+    pthread_mutex_init(&fs->log_lock, NULL);
     for (j = 0; j < 1; j++) {
 	fs->lists[j] = NULL;
     }
