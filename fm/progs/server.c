@@ -69,6 +69,27 @@ typedef struct format_list {
     struct format_list *next;
 } format_list;
 
+#define MAX_CLIENT_FD 256
+
+typedef struct _FSclient {
+    int port;			/* port's port number */
+    char *hostname;		/* port's host name */
+    char *usock_name;		/* port's unix socket name */
+    void *fd;
+    int byte_reversal;
+    format_server fs;
+    int provisional;
+    int version;
+    long created;
+    int input_bytes;
+    int output_bytes;
+    int formats_registered;
+    int formats_fetched;
+    unsigned char *key;
+    int key_len;
+    pthread_t handler_thread;
+} *FSClient;
+
 typedef struct _format_server {
     int port;			/* server port as announced to world */
     char *hostname;		/* server's hostname */
@@ -889,12 +910,13 @@ FSClient_force_close(FSClient fsc)
 	fs->ports[fd] = NULL;
 	fs->timestamp[fd] = 0;
 	FD_CLR((unsigned long) fd, &fs->fdset);
+	pthread_kill(fsc->handler_thread, 13);
 	os_close_func((void *) (long) fd);
 	fs->portCount--;
+	fsc->fd = 0;
     }
-/*   We count on the thread freeing the fsc */    
-/*    if (fsc->hostname) free(fsc->hostname);*/
-/*    free(fsc); */
+//    if (fsc->hostname) free(fsc->hostname);
+//    free(fsc);
 }
 
 static IOFormatRep
@@ -930,6 +952,161 @@ extern int
 get_internal_format_server_identifier(format_server fs)
 {
     return fs->format_server_identifier;
+}
+
+#define FILE_INT INT4
+
+static int
+put_serverAtomicInt(fd, file_int_ptr, fmc)
+void *fd;
+FILE_INT *file_int_ptr;
+FMContext fmc;
+{
+#if SIZEOF_INT == 4
+    int tmp_value = *file_int_ptr;
+    int junk_errno;
+    char *junk_result_str;
+    if (os_server_write_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
+	printf("SERVER WRITE FAILED, ERRNO = %d\n", junk_errno);
+	return 0;
+    }
+#else
+    Baaad shit;
+#endif
+    return 1;
+}
+
+static int
+get_serverAtomicInt(fd, file_int_ptr, byte_reversal)
+void *fd;
+FILE_INT *file_int_ptr;
+int byte_reversal;
+{
+#if SIZEOF_INT == 4
+    int tmp_value;
+    int junk_errno;
+    char *junk_result_str;
+    if (os_server_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
+	printf("SERVER READ FAILED, ERRNO = %d\n", junk_errno);
+
+	return 0;
+    }
+#else
+    Baaad shit;
+#endif
+    if (byte_reversal)
+	byte_swap((char *) &tmp_value, 4);
+    *file_int_ptr = tmp_value;
+    return 1;
+}
+
+extern int
+unix_timeout_read_func(void *conn, void *buffer, int length, 
+		       int *errno_p, char **result_p);
+
+static int
+get_serverTimeoutInt(fd, file_int_ptr, byte_reversal)
+void *fd;
+FILE_INT *file_int_ptr;
+int byte_reversal;
+{
+#if SIZEOF_INT == 4
+    int tmp_value;
+    int junk_errno;
+    char *junk_result_str;
+    if (unix_timeout_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4)
+	return 0;
+#else
+    Baaad shit;
+#endif
+    if (byte_reversal)
+	byte_swap((char *) &tmp_value, 4);
+    *file_int_ptr = tmp_value;
+    return 1;
+}
+
+static void
+server_read_header(fsc)
+FSClient fsc;
+{
+    FILE_INT magic;
+    FILE_INT float_format;
+    FILE_INT pid = getpid();
+
+    void *fd = fsc->fd;
+    int byte_reversal = 0;
+    int version = -1;
+
+    get_serverTimeoutInt(fd, &magic, byte_reversal);
+
+    switch (magic) {
+    case MAGIC_NUMBER:
+	break;
+    case REVERSE_MAGIC_NUMBER:
+	byte_reversal = 1;
+	break;
+    case MAGIC_NUMBER + 1:
+	version = 1;
+	break;
+    case REVERSE_MAGIC_NUMBER + 0x1000000:
+	version = 1;
+	byte_reversal = 1;
+	break;
+    case MAGIC_NUMBER + 2:
+	version = 2;
+	break;
+    case REVERSE_MAGIC_NUMBER + 0x2000000:
+	version = 2;
+	byte_reversal = 1;
+	break;
+    case MAGIC_NUMBER + 3:
+	version = 3;
+	break;
+    case REVERSE_MAGIC_NUMBER + 0x3000000:
+	version = 3;
+	byte_reversal = 1;
+	break;
+    case MAGIC_NUMBER + 4:
+	version = 4;
+	break;
+    case REVERSE_MAGIC_NUMBER + 0x4000000:
+	version = 4;
+	byte_reversal = 1;
+	break;
+    default:
+	close((int)(long)fd);
+	return;
+    }
+    if (version <= 2) {
+	get_serverAtomicInt(fd, &float_format, byte_reversal);
+    } else {
+	FILE_INT key_len;
+	unsigned char *key;
+	get_serverAtomicInt(fd, &key_len, byte_reversal);
+	if (key_len > 1024) {
+	    close((int)(long)fd);
+	    return;
+	}
+	fsc->key = NULL;
+	fsc->key_len = key_len;
+	if (key_len > 0) {
+	    key = malloc(key_len);
+	    serverAtomicRead(fd, key, key_len);
+	    fsc->key = key;
+	    fsc->key_len = key_len;
+	}
+    }
+    magic = MAGIC_NUMBER;
+    put_serverAtomicInt(fd, &magic, (FMContext) NULL);
+    if (version >= 2) {
+	put_serverAtomicInt(fd, &pid, (FMContext) NULL);
+    }
+    if (version >= 3) {
+	int format_server_identifier = get_internal_format_server_identifier(fsc->fs);
+	put_serverAtomicInt(fd, &format_server_identifier, (FMContext) NULL);
+    }
+    fsc->byte_reversal = byte_reversal;
+    fsc->version = version;
 }
 
 static void
@@ -1350,6 +1527,7 @@ get_qual_hostname(char *buf, int len)
 	strncpy(buf, hostname_string, len);
 	return;
     }
+    buf[0] = 0;
     gethostname(buf, len);
     buf[len - 1] = '\0';
     if (memchr(buf, '.', strlen(buf)) == NULL) {
@@ -1740,9 +1918,8 @@ format_server_accept_conn_sock(format_server fs, void *conn_sock)
 	    }
 	}
     } else {
-	pthread_t t;
-	pthread_create(&t, NULL, client_handler_thread, fsc);
-	pthread_detach(t);
+	pthread_create(&fsc->handler_thread, NULL, client_handler_thread, fsc);
+	pthread_detach(fsc->handler_thread);
     }
     return fsc;
 }

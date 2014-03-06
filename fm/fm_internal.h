@@ -129,24 +129,6 @@ typedef struct _FMContextStruct {
 
 typedef struct _format_server *format_server;
 
-typedef struct _FSclient {
-    int port;			/* port's port number */
-    char *hostname;		/* port's host name */
-    char *usock_name;		/* port's unix socket name */
-    void *fd;
-    int byte_reversal;
-    format_server fs;
-    int provisional;
-    int version;
-    long created;
-    int input_bytes;
-    int output_bytes;
-    int formats_registered;
-    int formats_fetched;
-    unsigned char *key;
-    int key_len;
-} *FSClient;
-
 #if SIZEOF_INT == 4
 #define INT4 int
 #endif
@@ -280,7 +262,6 @@ extern void stringify_server_ID(unsigned char *ID, char *buffer, int len);
 extern void 
 generate_format2_server_ID(server_ID_type *server_ID,
 			   struct _format_wire_format_0 *server_format_rep);
-extern void server_read_header(FSClient fsc);
 extern void
 add_format_to_iofile(FMContext fmc, FMFormat ioformat, int id_size, 
 		     void *id_buffer, int index);

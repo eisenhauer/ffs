@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 set (TESTS)
 if (NOT NO_SOCKETS)
-    set (PROGS format_server format_dump format_cmd format_info)
+    set (PROGS format_dump format_cmd format_info)
+    ADD_EXECUTABLE(format_server format_server.c server.c)
+    TARGET_LINK_LIBRARIES(format_server ffs )
+    TARGET_LINK_LIBRARIES(format_server cercs_env )
 else ()
     set (PROGS)
 endif()
@@ -22,7 +25,7 @@ endforeach()
 
 SET(PROGS_INSTALL)
 # prefix and suffix elements
-foreach(l ${PROGS})
+foreach(l ${PROGS} format_server)
    list(APPEND PROGS_INSTALL ${CMAKE_CURRENT_BINARY_DIR}/${l} )
 endforeach()
 

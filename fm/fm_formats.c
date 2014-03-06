@@ -3118,27 +3118,6 @@ extern int
 unix_timeout_read_func(void *conn, void *buffer, int length, 
 		       int *errno_p, char **result_p);
 
-static int
-get_serverTimeoutInt(fd, file_int_ptr, byte_reversal)
-void *fd;
-FILE_INT *file_int_ptr;
-int byte_reversal;
-{
-#if SIZEOF_INT == 4
-    int tmp_value;
-    int junk_errno;
-    char *junk_result_str;
-    if (unix_timeout_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4)
-	return 0;
-#else
-    Baaad shit;
-#endif
-    if (byte_reversal)
-	byte_swap((char *) &tmp_value, 4);
-    *file_int_ptr = tmp_value;
-    return 1;
-}
-
 extern int
 serverAtomicRead(fd, buffer, length)
 void *fd;
@@ -3958,93 +3937,6 @@ unsigned char *enc_buffer;
 	}
     }
     return 1;
-}
-
-extern void
-server_write_char(fsc, chr)
-FSClient fsc;
-char *chr;
-{
-    serverAtomicWrite(fsc->fd, chr, 1);
-}
-
-extern void
-server_read_header(fsc)
-FSClient fsc;
-{
-    FILE_INT magic;
-    FILE_INT float_format;
-    FILE_INT pid = getpid();
-
-    fsc->byte_reversal = 0;
-    get_serverTimeoutInt(fsc->fd, &magic, fsc->byte_reversal);
-
-    switch (magic) {
-    case MAGIC_NUMBER:
-	break;
-    case REVERSE_MAGIC_NUMBER:
-	fsc->byte_reversal = 1;
-	break;
-    case MAGIC_NUMBER + 1:
-	fsc->version = 1;
-	break;
-    case REVERSE_MAGIC_NUMBER + 0x1000000:
-	fsc->version = 1;
-	fsc->byte_reversal = 1;
-	break;
-    case MAGIC_NUMBER + 2:
-	fsc->version = 2;
-	break;
-    case REVERSE_MAGIC_NUMBER + 0x2000000:
-	fsc->version = 2;
-	fsc->byte_reversal = 1;
-	break;
-    case MAGIC_NUMBER + 3:
-	fsc->version = 3;
-	break;
-    case REVERSE_MAGIC_NUMBER + 0x3000000:
-	fsc->version = 3;
-	fsc->byte_reversal = 1;
-	break;
-    case MAGIC_NUMBER + 4:
-	fsc->version = 4;
-	break;
-    case REVERSE_MAGIC_NUMBER + 0x4000000:
-	fsc->version = 4;
-	fsc->byte_reversal = 1;
-	break;
-    default:
-	close((int)(long)fsc->fd);
-	return;
-    }
-    if (fsc->version <= 2) {
-	get_serverAtomicInt(fsc->fd, &float_format, fsc->byte_reversal);
-    } else {
-	FILE_INT key_len;
-	unsigned char *key;
-	get_serverAtomicInt(fsc->fd, &key_len, fsc->byte_reversal);
-	if (key_len > 1024) {
-	    close((int)(long)fsc->fd);
-	    return;
-	}
-	fsc->key = NULL;
-	fsc->key_len = key_len;
-	if (key_len > 0) {
-	    key = malloc(key_len);
-	    serverAtomicRead(fsc->fd, key, key_len);
-	    fsc->key = key;
-	    fsc->key_len = key_len;
-	}
-    }
-    magic = MAGIC_NUMBER;
-    put_serverAtomicInt(fsc->fd, &magic, (FMContext) NULL);
-    if (fsc->version >= 2) {
-	put_serverAtomicInt(fsc->fd, &pid, (FMContext) NULL);
-    }
-    if (fsc->version >= 3) {
-	int format_server_identifier = get_internal_format_server_identifier(fsc->fs);
-	put_serverAtomicInt(fsc->fd, &format_server_identifier, (FMContext) NULL);
-    }
 }
 
 extern int

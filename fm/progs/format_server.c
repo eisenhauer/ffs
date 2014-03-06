@@ -207,6 +207,7 @@ void check_for_running_server_and_fork()
 		exit(0);
 	    }
 	}
+	signal(SIGPIPE, SIG_IGN);
 	format_server_pid_file = fopen(format_server_pid, "w");
 	if (format_server_pid_file) {
 	    fprintf(format_server_pid_file, "%lx\n", (long) getpid());

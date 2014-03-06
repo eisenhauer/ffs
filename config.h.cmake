@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* config.h is generated from config.h.cmake by cmake.  */
 
 /* Define with the name of the host which will run the format server */
 #cmakedefine FORMAT_SERVER_HOST "@FORMAT_SERVER_HOST@"
