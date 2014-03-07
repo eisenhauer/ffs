@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 
+FIND_PACKAGE (Threads)
+
 set (TESTS)
 if (NOT NO_SOCKETS)
     set (PROGS format_dump format_cmd format_info)
     ADD_EXECUTABLE(format_server format_server.c server.c)
-    TARGET_LINK_LIBRARIES(format_server ffs )
-    TARGET_LINK_LIBRARIES(format_server cercs_env )
+    TARGET_LINK_LIBRARIES(format_server ffs cercs_env  ${CMAKE_THREAD_LIBS_INIT})
 else ()
     set (PROGS)
 endif()
