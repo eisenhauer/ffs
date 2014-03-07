@@ -21,8 +21,6 @@ int argc;
 char **argv;
 {
 
-    FMContext context = create_FMcontext();
-    FMFormat first_rec_ioformat;
     int continuous_test = 0;
     int restart_test = 0;
     int get_test = 0;
@@ -47,9 +45,11 @@ char **argv;
 	}
     }
     
-    FMcontext_allow_self_formats(context);
-    printf("Format server identifier is %x\n", FMcontext_get_format_server_identifier(context));
     if (get_test) {
+	FMFormat first_rec_ioformat;
+	FMContext context = create_FMcontext();
+	FMcontext_allow_self_formats(context);
+	printf("Format server identifier is %x\n", FMcontext_get_format_server_identifier(context));
 	char id[] = {02, 00, 00, 37, 103, 189, 231, 165, 33, 254, 42, 32};
 	printf("Doing get test\n");
 	first_rec_ioformat = FMformat_from_ID(context, (char *) &id[0]);
@@ -57,7 +57,11 @@ char **argv;
 	return 0;
     }
     if (XML_test) {
+	FMFormat first_rec_ioformat;
+	FMContext context = create_FMcontext();
+	FMcontext_allow_self_formats(context);
 	FMOptInfo opt_info[2];
+	printf("Format server identifier is %x\n", FMcontext_get_format_server_identifier(context));
 	opt_info[0].info_type = 0x584D4C20;
 	opt_info[0].info_len = 44;
 	opt_info[0].info_block = "this is a bunch of text meant to be XML text";
@@ -70,7 +74,10 @@ char **argv;
 	first_rec_ioformat = register_data_format(context, str_list);
 	dump_FMFormat(first_rec_ioformat);
     } else if (!continuous_test && !restart_test) {
+	FMContext context = create_FMcontext();
 	FMContext local_context = create_local_FMcontext(NULL);
+	FMFormat first_rec_ioformat;
+	FMcontext_allow_self_formats(context);
 	str_list[0].format_name = "first format";
 	str_list[0].field_list = field_list;
 	str_list[0].struct_size = sizeof(first_rec);
@@ -108,6 +115,7 @@ char **argv;
 	FMContext static_context = create_FMcontext(NULL);
 	while (1) {
 	    FMContext context = create_FMcontext(NULL);
+	    FMFormat first_rec_ioformat;
 
 	    if (format_server_restarted(static_context)) {
 		printf("Format server was restarted\n");
