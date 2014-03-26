@@ -911,6 +911,7 @@ FSClient_force_close(FSClient fsc)
 	fs->timestamp[fd] = 0;
 	FD_CLR((unsigned long) fd, &fs->fdset);
 	pthread_kill(fsc->handler_thread, 13);
+	pthread_cancel(fsc->handler_thread);
 	os_close_func((void *) (long) fd);
 	fs->portCount--;
 	fsc->fd = 0;
