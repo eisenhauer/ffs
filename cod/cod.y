@@ -3240,16 +3240,6 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    if (args != NULL) {
 		arg = args->node;
 	    }
-	    if ((args == NULL) && (formals != NULL)) {
-		if (strcmp(formal->node.declaration.id, "...") != 0) {
-		    cod_src_error(context, arg, "Too few arguments to function");
-		    ret = 0;
-		}
-	    }
-	    if (args == NULL) {
-		done++;
-		continue;
-	    }
 	    if (formal && (formal->node.declaration.sm_complex_type != NULL)) {
 		sm_ref ct = formal->node.declaration.sm_complex_type;
 		if ((ct->node_type == cod_reference_type_decl) &&
@@ -3264,6 +3254,16 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
                         continue;
                     }
                 }
+	    }
+	    if ((args == NULL) && (formals != NULL)) {
+		if (strcmp(formal->node.declaration.id, "...") != 0) {
+		    cod_src_error(context, arg, "Too few arguments to function");
+		    ret = 0;
+		}
+	    }
+	    if (args == NULL) {
+		done++;
+		continue;
 	    }
 	    if (!semanticize_expr(context, arg, scope) ) {
 		args = args->next;
