@@ -1,3 +1,7 @@
+/*
+ *   t4 is a test of error handling.  Everything here has an error and should 
+ *  generate the appropriate error string.
+ */
 #include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -218,6 +222,13 @@ comment\n\
      return 1;\n\
 }";
 
+	char code_string23[] = "\
+{\n\
+     const int pi = 3;\n				\
+     pi = 5;\n\
+     return 1;\n\
+}";
+
 	typedef struct test {
 	    int i;
 	    int j;
@@ -282,6 +293,8 @@ comment\n\
 	ret = cod_code_verify(code_string21, context);
 	assert(ret == 0);
 	ret = cod_code_verify(code_string22, context);
+	assert(ret == 0);
+	ret = cod_code_verify(code_string23, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }
@@ -580,9 +593,6 @@ comment\n\
 	cod_free_parse_context(context);
     }
     if ((test_to_run == -1) || (test_to_run == 14)) {
-        /*
-         * tests break statement
-         */
 
         char code_string[] ="\
 {\n\
@@ -600,5 +610,33 @@ comment\n\
 	cod_free_parse_context(context);
     }
 
+    if ((test_to_run == -1) || (test_to_run == 15)) {
+	static char code1[] = "{\n\
+			input.val = 5.5;\n\
+		}";
+	static char code2[] = "{\n\
+			input.levels[0][0] = 5.5;\n\
+		}";
+
+	static FMField input_field_list[] =
+	{
+	    {"levels", "float[253][37]", sizeof(double), 0},
+	    {"val", "float", sizeof(double), 0},
+	    {(void*)0, (void*)0, 0, 0}
+	};
+
+	cod_parse_context context = new_cod_parse_context();
+	int ret;
+
+	if (output_file) cod_set_error_func(context, error_func);
+	cod_add_simple_struct_type("input_type", input_field_list, context);
+	cod_subroutine_declaration("int proc(const input_type *input)", context);
+
+	ret = cod_code_verify(code1, context);
+	assert(ret == 0);
+	ret = cod_code_verify(code2, context);
+	assert(ret == 0);
+	cod_free_parse_context(context);
+    }
     return 0;
 }

@@ -1,3 +1,9 @@
+/*
+ *   cod - T3
+ *     
+ *       static variables?  Simple stuff with a cod_exec_context.  Static array.
+ */
+
 #include "config.h"
 #include "cod.h"
 #include <strings.h>
@@ -6,6 +12,7 @@
 #include <stdio.h>
 
 static double testd(){return 1.0;}
+static int testi(){return 4;}
 
 #ifdef NO_EMULATION
 #define GEN_PARSE_CONTEXT(x) \
@@ -382,6 +389,46 @@ char code_string[] = {"\
 	assert(func(EC_param0) == 23);
 	assert(func(EC_param0) == 29);
 	assert(func(EC_param0) == 35);
+	cod_exec_context_free(ec);
+	cod_code_free(gen_code);
+	cod_free_parse_context(context);
+    }
+
+    if ((test_to_run == 8) || (test_to_run == -1)) {
+	static char extern_string[] = "int printf(string format, ...);\
+					int testi();";
+	static cod_extern_entry externs[] = 
+	{
+	    {"testi", (void*)(long)testi},
+	    {"printf", (void*)(long)printf},
+	    {(void*)0, (void*)0}
+	};
+	static char code[] = "{\
+				   static int count = 0;\n\
+				   return count % testi();\n\
+		}";
+
+	cod_parse_context context = new_cod_parse_context();
+	cod_exec_context ec;
+	int result;
+	cod_code gen_code;
+	int (*func)();
+
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+
+#ifdef NO_EMULATION
+	cod_subroutine_declaration("int proc()", context);
+#else
+	cod_subroutine_declaration("int proc(cod_exec_context ec)", context);
+#endif
+	gen_code = cod_code_gen(code, context);
+	ec = cod_create_exec_context(gen_code);
+	func = (int (*)())(long) gen_code->func;
+	result = (func)(EC_param0);
+	if (result != 0) {
+	    printf("Expected %d, got %d\n", 0, result);
+	}
 	cod_exec_context_free(ec);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);

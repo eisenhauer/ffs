@@ -1,3 +1,8 @@
+/*
+ *   cod - T2
+ *     
+ *       Printf working?   Float arrays?  dynamic arrays?
+ */
 #include "config.h"
 #include "data_funcs.h"
 #include "cod.h"

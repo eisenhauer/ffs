@@ -2368,6 +2368,36 @@ is_string(sm_ref expr)
     return 0;
 }
 
+static int 
+is_const(sm_ref expr)
+{
+    switch(expr->node_type) {
+    case cod_field_ref:
+	return is_const(expr->node.field_ref.struct_ref);
+    case cod_element_ref:
+	return is_const(expr->node.element_ref.array_ref);
+    case cod_cast:
+	return is_const(expr->node.cast.expression);
+    case cod_identifier:
+	return is_const(expr->node.identifier.sm_declaration);
+    case cod_declaration:
+	return expr->node.declaration.const_var;
+    case cod_constant:
+	return 1;
+    case cod_operator:
+	/* most operator errors handled elsewhere.  Here we're only looking for dereference */
+	if (expr->node.operator.op == op_deref) {
+	    return is_const(expr->node.operator.right);
+	}
+	return 0;
+    default:
+	printf("Unhandled case in is_const()\n");
+	cod_print(expr);
+	assert(0);
+    }
+    return 0;
+}
+
 extern int 
 cod_expr_is_string(sm_ref expr)
 {
@@ -3031,6 +3061,10 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	} else {
 	    expr->node.assignment_expression.cg_type = 
 		cod_sm_get_type(expr->node.assignment_expression.left);
+	}
+	if (expr->node.assignment_expression.left && is_const(expr->node.assignment_expression.left)) {
+	    cod_src_error(context, expr->node.assignment_expression.left, "Invalid assignment, left side is const");
+	    ret = 0;
 	}
 	if ((expr->node.assignment_expression.cg_type == DILL_P) ||
 	    (expr->node.assignment_expression.cg_type == DILL_ERR)) {
@@ -3957,9 +3991,14 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	if (decl->node.declaration.type_spec != NULL) {
 	    sm_list l = decl->node.declaration.type_spec;
 	    if ((l->node->node_type == cod_type_specifier) && 
-		(l->node->node.type_specifier.token == STATIC)) {
+		((l->node->node.type_specifier.token == STATIC) ||
+		 (l->node->node.type_specifier.token == CONST))) {
+		if (l->node->node.type_specifier.token == STATIC) {
+		    decl->node.declaration.static_var = 1;
+		} else {
+		    decl->node.declaration.const_var = 1;
+		}
 		decl->node.declaration.type_spec = l->next;
-		decl->node.declaration.static_var = 1;
 		free(l->node);
 		free(l);
 	    }

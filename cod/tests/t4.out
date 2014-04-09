@@ -81,6 +81,9 @@ urn input * (output.j + input.k + input.m);
 ## Ecode Error:  Right hand side must be pointer type at line 2, char 16
      int *pi = 3.14;
                ^
+## Ecode Error:  Invalid assignment, left side is const at line 3, char 10
+				     pi = 5;
+				     ^
 ## Ecode Error:  External symbol lacking address "printf" at line 1, char 5
 int printf(string format, ...);
     ^
@@ -181,3 +184,9 @@ int printf(string format, ...);
 ## Ecode Error:  Control reaches end of non-void function. at line 0, char 0
 {
 ^
+## Ecode Error:  Invalid assignment, left side is const at line 2, char 9
+			input.val = 5.5;
+			     ^
+## Ecode Error:  Invalid assignment, left side is const at line 2, char 19
+			input.levels[0][0] = 5.5;
+			               ^

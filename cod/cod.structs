@@ -7,6 +7,7 @@ declaration:
 	sm_ref sm_complex_type;
 	sm_ref freeable_complex_type;
 	int static_var;
+	int const_var;
 	int param_num;
 	char *id;
 	sm_ref init_value;

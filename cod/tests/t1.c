@@ -1,3 +1,9 @@
+/*
+ *   cod - T1
+ *     
+ *       This test is relatively simple.  Local ints, int parameters,
+ *     simple struct parameters, structs with internal static arrays.
+ */
 #include "config.h"
 #include "data_funcs.h"
 #include "cod.h"
