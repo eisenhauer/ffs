@@ -1,3 +1,6 @@
+/*
+ *  T5 - was created to reproduce a bug in the handling of dynamic arrays of structured types
+ */
 #include "config.h"
 #include "data_funcs.h"
 #include "cod.h"

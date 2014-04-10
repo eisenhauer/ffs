@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 set (TESTS t1 t2 t3 t5 t6 t8 t9 t10 t12 compound_assignment gray general atl_test strings control)
+set (PROGS t7)
 
 INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR} 
 ${ffs_SOURCE_DIR}/cod ${ffs_BINARY_DIR}/cod 
@@ -34,6 +35,6 @@ add_test(compare_t4 ${CMAKE_COMMAND} -E compare_files t4.actual_out ${CMAKE_CURR
 foreach (PROG ${PROGS} )
     ADD_EXECUTABLE(${PROG} ${PROG}.c)
     TARGET_LINK_LIBRARIES(${PROG} ffs )
-    TARGET_LINK_LIBRARIES(${PROG} atl )
+    TARGET_LINK_LIBRARIES(${PROG} ${ATL_LIBRARIES} )
 endforeach()
 

@@ -589,6 +589,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	if (decl->node.declaration.is_typedef) {
 	    cg_decl(s, decl->node.declaration.sm_complex_type, descr);
 	}
+	if (decl->node.declaration.const_var && !ctype) {
+	    /* Nothing to do for SIMPLE const vars.  We'll CG them as consts on reference. */
+	    return;
+	}
 	if (decl->node.declaration.static_var && !ctype) {
 	    /* do SIMPLE statics */
 	    decl->node.declaration.cg_address = 
@@ -2163,6 +2167,10 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    oprnd.enc.byte_swap_on_fetch = 0;
 	    if (dill_target_byte_order(s) != typ->node.struct_type_decl.encode_info->byte_order)
 		oprnd.enc.byte_swap_on_fetch = 1;
+	}
+	if (expr->node.declaration.const_var && !typ) {
+	    oprnd = cg_expr(s, expr->node.declaration.init_value, 0, descr);
+	    return oprnd;
 	}
 	if (expr->node.declaration.static_var || 
 	    expr->node.declaration.is_extern) {

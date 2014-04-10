@@ -1,3 +1,6 @@
+/*
+ * t6 - was created to exercise a prior bug with arrays of polygon data
+ */
 #include "cod.h"
 #include <stdlib.h>
 #ifdef HAVE_MALLOC_H

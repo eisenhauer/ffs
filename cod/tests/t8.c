@@ -1,3 +1,6 @@
+/* 
+ * t8 - test the handling of pointers and basic pointer arithmetic.
+ */
 #include "config.h"
 #include "cod.h"
 #include "assert.h"
@@ -568,7 +571,7 @@ main(int argc, char** argv)
     }
     {
 	/*
-	 * Test postincrement to a parameter pointer
+	 * Test preincrement to a parameter pointer
 	 */
 	char code_string[] = "\
 {\n\
