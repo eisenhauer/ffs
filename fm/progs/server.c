@@ -237,7 +237,7 @@ LogAtomicRead(fs, fd, buffer, length)
 format_server fs;
 void *fd;
 void *buffer;
-int length;
+long length;
 {
     char *junk_result_str = NULL;
     int junk_errno;
@@ -491,7 +491,7 @@ read_formats_from_file(format_server fs)
 	char buffer[256];
 	unsigned char *tmp_id;
 
-	if (LogAtomicRead(fs, (void *) fd, &id_len, sizeof(id_len)) != sizeof(id_len)) {
+	if (LogAtomicRead(fs, (void *) fd, (void*)&id_len, sizeof(id_len)) != sizeof(id_len)) {
 	    close(fd);
 	    LOG(fs, "Successfully Read %d formats from file %s \n", server_format_count, FS_restart_file);
 	    return;
@@ -502,13 +502,13 @@ read_formats_from_file(format_server fs)
 	    LOG(fs, "Read %d formats from file %s \n", server_format_count, FS_restart_file);
 	    return;
 	}
-	if (LogAtomicRead(fs, (void *) fd, &id[0], id_len) != id_len) {
+	if (LogAtomicRead(fs, (void *) fd, &id[0], (long)id_len) != id_len) {
 	    close(fd);
 	    LOG(fs, "Abnormal restart termination after id_len read, truncated file?\n");
 	    LOG(fs, "Read %d formats from file %s \n", server_format_count, FS_restart_file);
 	    return;
 	}
-	if (LogAtomicRead(fs, (void *) fd, &rep_len, sizeof(rep_len)) != sizeof(rep_len)) {
+	if (LogAtomicRead(fs, (void *) fd, (void*)&rep_len, sizeof(rep_len)) != sizeof(rep_len)) {
 	    close(fd);
 	    LOG(fs, "Abnormal restart termination after id read, truncated file?\n");
 	    LOG(fs, "Read %d formats from file %s \n", server_format_count, FS_restart_file);
@@ -516,7 +516,7 @@ read_formats_from_file(format_server fs)
 	}
 	rep = malloc(rep_len);
 	rep->format_rep_length = htons(rep_len);
-	if (LogAtomicRead(fs, (void *) fd, ((char *) rep) + sizeof(rep_len),
+	if (LogAtomicRead(fs, (void *) fd, (void*)(((char *) rep) + sizeof(rep_len)),
 			     rep_len - sizeof(rep_len)) !=
 	    (rep_len - sizeof(rep_len))) {
 	    close(fd);
@@ -706,14 +706,14 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 	LOG(fs, "Write failed3\n");
 	return NULL;
     }
-    if (LogAtomicRead(fs, server_fd, &return_char, 1) != 1) {
+    if (LogAtomicRead(fs, server_fd, &return_char, (long)1) != 1) {
 	close((int)(long)server_fd);
 	fs->proxy_context_to_master->server_fd = (void*)-1;
 	LOG(fs, "Read failed4\n");
 	return NULL;
     }
     if (return_char == 'P') {
-	if (LogAtomicRead(fs, server_fd, &return_char, 1) != 1) {
+        if (LogAtomicRead(fs, server_fd, &return_char, (long)1) != 1) {
 	    close((int)(long)server_fd);
 	    fs->proxy_context_to_master->server_fd = (void*)-1;
 	    LOG(fs, "Read failed4\n");
@@ -726,7 +726,7 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 	LOG(fs, "Bad character\n");
 	return NULL;
     }
-    if (LogAtomicRead(fs, server_fd, &block_version, 1) != 1) {
+    if (LogAtomicRead(fs, server_fd, &block_version, (long)1) != 1) {
 	close((int)(long)server_fd);
 	fs->proxy_context_to_master->server_fd = (void*)-1;
 	LOG(fs, "Bad character\n");
@@ -736,7 +736,7 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 	fprintf(stderr, "Unknown version \"%d\"in block registration\n", block_version);
 	return NULL;
     }
-    if (LogAtomicRead(fs, server_fd, &length, sizeof(length)) !=
+    if (LogAtomicRead(fs, server_fd, (void*)&length, sizeof(length)) !=
 	sizeof(length)) {
 	close((int)(long)server_fd);
 	fs->proxy_context_to_master->server_fd = (void*)-1;
@@ -749,7 +749,7 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
     } else {
 	rep = malloc(length);
 	rep->format_rep_length = htons((short)length);
-	if (LogAtomicRead(fs, server_fd, ((char *) rep) + sizeof(length),
+	if (LogAtomicRead(fs, server_fd, (void*)(((char *) rep) + sizeof(length)),
 			     length - sizeof(length)) != (length - sizeof(length))) {
 	    close((int)(long)server_fd);
 	    fs->proxy_context_to_master->server_fd = (void*)-1;
@@ -1122,7 +1122,7 @@ FSClient fsc;
 	fsc->key_len = key_len;
 	if (key_len > 0) {
 	    key = malloc(key_len);
-	    LogAtomicRead(fsc->fs, fd, key, key_len);
+	    LogAtomicRead(fsc->fs, fd, key, (long)key_len);
 	    fsc->key = key;
 	    fsc->key_len = key_len;
 	}
@@ -1149,7 +1149,7 @@ FSClient fsc;
     int input_bytes = 0;
     void* fd = fsc->fd;
     LOG(fs, "    waiting for read on fd %d - %s", fsc->fd, fsc->hostname);
-    if (LogAtomicRead(fs, fd, &next_action, 1) != 1) {
+    if (LogAtomicRead(fs, fd, &next_action, (long)1) != 1) {
 	LOG(fs, "Close on atomic read fail");
 	FSClient_close(fsc);
 	return;
@@ -1174,7 +1174,7 @@ FSClient fsc;
 		printf("New style block format registration\n");
 	    }
 	    LOG(fs, "    Registration ");
-	    if (LogAtomicRead(fs, fd, &block_version, 1) != 1) {
+	    if (LogAtomicRead(fs, fd, &block_version, (long)1) != 1) {
 		LOG(fs, "Close on atomic read fail 2");
 		FSClient_close(fsc);
 		return;
@@ -1186,7 +1186,7 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
-	    if (LogAtomicRead(fs, fd, &length, sizeof(length)) !=
+	    if (LogAtomicRead(fs, fd, (void*)&length, sizeof(length)) !=
 		sizeof(length)) {
 		LOG(fs, "Close on atomic read fail 3");
 		FSClient_close(fsc);
@@ -1196,7 +1196,7 @@ FSClient fsc;
 	    length = ntohs(length);
 	    rep = malloc(length);
 	    rep->format_rep_length = htons((short)length);
-	    if (LogAtomicRead(fs, fd, ((char *) rep) + sizeof(length),
+	    if (LogAtomicRead(fs, fd, (void*)(((char *) rep) + sizeof(length)),
 				 length - sizeof(length)) !=
 		(length - sizeof(length))) {
 		LOG(fs, "Close on atomic read fail 4");
@@ -1254,7 +1254,7 @@ FSClient fsc;
 		printf("Push block format registration\n");
 	    }
 	    LOG(fs, "    Push Registration ");
-	    if (LogAtomicRead(fs, fd, &block_version, 1) != 1) {
+	    if (LogAtomicRead(fs, fd, &block_version, (long)1) != 1) {
 		LOG(fs, "Close on atomic read fail P1");
 		FSClient_close(fsc);
 		return;
@@ -1267,7 +1267,7 @@ FSClient fsc;
 		return;
 	    }
 	    /* read pushed format ID */
-	    if (LogAtomicRead(fs, fd, &length, sizeof(length)) !=
+	    if (LogAtomicRead(fs, fd, (void*)&length, sizeof(length)) !=
 		sizeof(length)) {
 		LOG(fs, "Close on atomic read fail P2");
 		FSClient_close(fsc);
@@ -1276,7 +1276,7 @@ FSClient fsc;
 	    input_bytes += sizeof(length);
 	    format_ID_len = length = ntohs(length);
 	    format_ID = malloc(format_ID_len);
-	    if (LogAtomicRead(fs, fd, ((char *) format_ID), format_ID_len)
+	    if (LogAtomicRead(fs, fd, ((char *) format_ID), (long)format_ID_len)
 		!= format_ID_len) {
 		LOG(fs, "Close on atomic read fail P3");
 		FSClient_close(fsc);
@@ -1285,7 +1285,7 @@ FSClient fsc;
 	    input_bytes += (length - sizeof(length));
 
 	    /* read body */
-	    if (LogAtomicRead(fs, fd, &length, sizeof(length)) !=
+	    if (LogAtomicRead(fs, fd, (void*)&length, sizeof(length)) !=
 		sizeof(length)) {
 		LOG(fs, "Close on atomic read fail P4");
 		FSClient_close(fsc);
@@ -1295,7 +1295,7 @@ FSClient fsc;
 	    length = ntohs(length);
 	    rep = malloc(length);
 	    rep->format_rep_length = htons(length);
-	    if (LogAtomicRead(fs, fd, ((char *) rep), length) != length) {
+	    if (LogAtomicRead(fs, fd, ((char *) rep), (long)length) != length) {
 		LOG(fs, "Close on atomic read fail P5");
 		FSClient_close(fsc);
 		return;
@@ -1338,7 +1338,7 @@ FSClient fsc;
 	    LOG(fs, "    new style get format");
 	    if (fs->stdout_verbose)
 		printf("new style Get Format   -> ");
-	    if (LogAtomicRead(fs, fd, &format_id_length, 1) != 1) {
+	    if (LogAtomicRead(fs, fd, &format_id_length, (long)1) != 1) {
 		LOG(fs, "Close on atomic read fail g1");
 		FSClient_close(fsc);
 		return;
@@ -1346,7 +1346,7 @@ FSClient fsc;
 	    input_bytes++;
 	    format_id_value = malloc(format_id_length);
 	    if (LogAtomicRead(fs, fd, format_id_value,
-				 format_id_length) != format_id_length) {
+			      (long)format_id_length) != format_id_length) {
 		LOG(fs, "Close on atomic read fail g2");
 		FSClient_close(fsc);
 		return;
@@ -1473,7 +1473,7 @@ FSClient fsc;
 	    if (my_IP_addr != htonl(in_sock.sin_addr.s_addr)) {
 		local_connection = 0;
 	    }
-	    if (LogAtomicRead(fs, fd, &next_action, 1) != 1) {
+	    if (LogAtomicRead(fs, fd, &next_action, (long)1) != 1) {
 		LOG(fs, "Close on atomic read fail c1");
 		FSClient_close(fsc);
 		return;
