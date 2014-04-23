@@ -2833,6 +2833,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
                 expr->node_type = cod_constant;
                 expr->node.constant.token = tmp->node.constant.token;
                 expr->node.constant.const_val = strdup(tmp->node.constant.const_val);
+		expr->node.constant.freeable_name = NULL;
                 expr->node.constant.lx_srcpos = old_srcpos;
                 return semanticize_expr(context, expr, scope);
             } else {
