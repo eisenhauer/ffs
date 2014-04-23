@@ -5146,14 +5146,16 @@ cod_remove_defined_types(sm_list decls_list, cod_parse_context context)
 }
 
 extern void
-cod_add_int_constant_to_parse_context(const char *name, int value, cod_parse_context context)
+cod_add_int_constant_to_parse_context(const char *const_name, int value, cod_parse_context context)
 {
     sm_ref constant;
     char str_value[64];
+    char *name = strdup(const_name);
     sprintf(str_value, "%d", value);
     constant = cod_new_constant();
     constant->node.constant.token = integer_constant;
     constant->node.constant.const_val = strdup(str_value);
+    constant->node.constant.freeable_name = name;
     cod_add_decl_to_scope((char*) name, constant, context);
     cod_add_decl_to_parse_context(name, constant, context);
 }
