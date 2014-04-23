@@ -81,8 +81,8 @@ identifier:
 constant:
 	int  token;
 	char *const_val;
-	srcpos lx_srcpos;
 	char *freeable_name;
+	srcpos lx_srcpos;
 
 type_specifier:
 	int token;
