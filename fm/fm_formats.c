@@ -2993,7 +2993,7 @@ int verbose;
 		char *tmp_str;
 		FMgetFieldStruct descr;  /* OK */
 		descr.offset = data_offset;
-		descr.size = field_size;
+		descr.size = fmformat->pointer_size;
 		descr.data_type = string_type;
 		descr.byte_swap = 0;
 		tmp_str = (char *) get_FMaddr(&descr, data, string_base, encode);
