@@ -229,6 +229,20 @@ comment\n\
      return 1;\n\
 }";
 
+	char code_string24[] = "\
+{\n\
+     const int pi = 3;\n				\
+     int array[input];\n					\
+     return 1;\n\
+}";
+
+	char code_string25[] = "\
+{\n\
+     const int pi = 3;\n				\
+     int array[pi+input.i];\n				\
+     return 1;\n\
+}";
+
 	typedef struct test {
 	    int i;
 	    int j;
@@ -295,6 +309,10 @@ comment\n\
 	ret = cod_code_verify(code_string22, context);
 	assert(ret == 0);
 	ret = cod_code_verify(code_string23, context);
+	assert(ret == 0);
+	ret = cod_code_verify(code_string24, context);
+	assert(ret == 0);
+	ret = cod_code_verify(code_string25, context);
 	assert(ret == 0);
 	cod_free_parse_context(context);
     }

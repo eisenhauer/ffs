@@ -84,6 +84,12 @@ urn input * (output.j + input.k + input.m);
 ## Ecode Error:  Invalid assignment, left side is const at line 3, char 10
 				     pi = 5;
 				     ^
+## Ecode Error:  Array size expression must be constant. at line 3, char 19
+				     int array[input];
+				              ^
+## Ecode Error:  Array size expression must be constant. at line 3, char 19
+				     int array[pi+input.i];
+				              ^
 ## Ecode Error:  External symbol lacking address "printf" at line 1, char 5
 int printf(string format, ...);
     ^

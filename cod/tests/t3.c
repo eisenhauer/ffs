@@ -354,7 +354,7 @@ char code_string[] = {"\
 	/* test static arrays */
 	char code_string[] = "\
 {\n\
-    static int n[4];\n\
+    static int n[2*2];\n\
     if (n[0] + n[1] + n[2] + n[3] == 0) {\n\
         /* first time */\n\
         n[0] = 4;\n\

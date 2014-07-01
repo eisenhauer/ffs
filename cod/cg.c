@@ -578,6 +578,125 @@ cg_generate_static_block(dill_stream s, cod_code descr)
     }
 }
 
+static int
+evaluate_constant_expr(sm_ref expr, long*value)
+{
+    switch(expr->node_type) {
+    case cod_constant: {
+	char *val = expr->node.constant.const_val;
+	long l;
+	if (val[0] == '0') {
+	    /* hex or octal */
+	    if (val[1] == 'x') {
+		/* hex */
+		if (sscanf(val+2, "%lx", &l) != 1) 
+		    printf("sscanf failed\n");
+	    } else {
+		if (sscanf(val, "%lo", &l) != 1) 
+		    printf("sscanf failed\n");
+	    }
+	} else {
+	    if (sscanf(val, "%ld", &l) != 1)
+		printf("sscanf failed\n");
+	}
+	*value = l;
+	return 1;
+	break;
+    }
+    case cod_identifier:
+	return evaluate_constant_expr(expr->node.identifier.sm_declaration, value);
+    case cod_declaration:
+	if (!expr->node.declaration.const_var) return 0;
+	return evaluate_constant_expr(expr->node.declaration.init_value, value);
+    case cod_operator: {
+	long left, right;
+	if (expr->node.operator.left != NULL) {
+	    if (!evaluate_constant_expr(expr->node.operator.left, &left)) return 0;
+	}
+	if (expr->node.operator.right != NULL) {
+	    if (!evaluate_constant_expr(expr->node.operator.right, &right)) return 0;
+	}
+	switch(expr->node.operator.op) {
+	case  op_modulus:
+	    *value = left % right;
+	    break;
+	case  op_plus:
+	    *value = left + right;
+	    break;
+	case  op_minus:
+	    *value = left - right;
+	    break;
+	case  op_leq:
+	    *value = left <= right;
+	    break;
+	case  op_lt:
+	    *value = left < right;
+	    break;
+	case  op_geq:
+	    *value = left >= right;
+	    break;
+	case  op_gt:
+	    *value = left > right;
+	    break;
+	case  op_eq:
+	    *value = left = right;
+	    break;
+	case  op_neq:
+	    *value = left != right;
+	    break;
+	case  op_log_or:
+	    *value = left || right;
+	    break;
+	case  op_arith_or:
+	    *value = left | right;
+	    break;
+	case  op_arith_xor:
+	    *value = left ^ right;
+	    break;
+	case  op_log_and:
+	    *value = left && right;
+	    break;
+	case  op_arith_and:
+	    *value = left & right;
+	    break;
+	case  op_mult:
+	    *value = left * right;
+	    break;
+	case  op_div:
+	    *value = left / right;
+	    break;
+	case op_log_neg:
+	    *value = !right;
+	    break;
+	case op_left_shift:
+	    *value = left << right;
+	    break;
+	case op_right_shift:
+	    *value = left >> right;
+	    break;
+	case  op_deref:
+	case  op_address:
+	case op_inc:
+	case op_dec:
+	case op_sizeof:
+	    assert(FALSE);
+	}
+	return 1;
+    }
+    case cod_cast:
+	return evaluate_constant_expr(expr->node.cast.expression, value);
+    case cod_assignment_expression:
+    case cod_field_ref:
+    case cod_element_ref:
+    case cod_subroutine_call:
+	assert(FALSE);
+    default:
+	assert(FALSE);
+    }
+    return 0;
+}
+
+	
 static void 
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
@@ -609,6 +728,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		memset(var_base, 0, cg_get_size(s, decl));
 	    } else {
 		sm_ref const_val = decl->node.declaration.init_value;
+		assert(const_val->node_type == cod_constant);
 		if (const_val->node.constant.token == string_constant) {
 		    assert(FALSE);
 		} else if (const_val->node.constant.token == floating_constant) {
@@ -721,6 +841,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		ctype->node.array_type_decl.cg_element_size = 
 		    dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
 		if (const_val != NULL) {
+		    assert(const_val->node_type == cod_constant);
 		    val = const_val->node.constant.const_val;
 		    if (val[0] == '0') {
 			/* hex or octal */
@@ -748,23 +869,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		    long i;
 		    char *val;
 		    sm_ref const_val = ctype->node.array_type_decl.size_expr;
+		    assert(evaluate_constant_expr(const_val, &i) == 1);
 		    ctype->node.array_type_decl.cg_element_size = 
 			dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
-		    val = const_val->node.constant.const_val;
-		    if (val[0] == '0') {
-			/* hex or octal */
-			if (val[1] == 'x') {
-			    /* hex */
-			    if (sscanf(val+2, "%lx", &i) != 1) 
-				printf("sscanf failed\n");
-			} else {
-			    if (sscanf(val, "%lo", &i) != 1) 
-				printf("sscanf failed\n");
-			}
-		    } else {
-			if (sscanf(val, "%ld", &i) != 1) 
-			    printf("sscanf failed\n");
-		    }
 		    ctype->node.array_type_decl.cg_static_size = i;
 		    if (decl->node.declaration.static_var) {
 			decl->node.declaration.cg_address = 

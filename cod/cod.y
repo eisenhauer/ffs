@@ -1882,6 +1882,10 @@ extern void
 cod_print_dimen_p(dimen_p d)
 {
     int i;
+    if (!d) {
+	printf("DIMENS NOT SET YET\n");
+	return;
+    }
     for (i=0; i < d->dimen_count; i++) {
 	if (d->dimens[i].static_size != -1) {
 	    printf("[%d]", d->dimens[i].static_size);
@@ -3959,6 +3963,72 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 static int semanticize_struct_type_node(cod_parse_context context, sm_ref decl, 
 					scope_ptr scope);
 
+static int
+is_constant_expr(sm_ref expr)
+{
+    switch(expr->node_type) {
+    case cod_constant: {
+	return 1;
+	break;
+    }
+    case cod_identifier:
+	if (!expr->node.identifier.sm_declaration) return 0;
+	return is_constant_expr(expr->node.identifier.sm_declaration);
+    case cod_declaration:
+	if (!expr->node.declaration.const_var) return 0;
+	return is_constant_expr(expr->node.declaration.init_value);
+    case cod_operator: {
+	long left, right;
+	if (expr->node.operator.left != NULL) {
+	    if (!is_constant_expr(expr->node.operator.left)) return 0;
+	}
+	if (expr->node.operator.right != NULL) {
+	    if (!is_constant_expr(expr->node.operator.right)) return 0;
+	}
+	switch(expr->node.operator.op) {
+	case  op_modulus:
+	case  op_plus:
+	case  op_minus:
+	case  op_leq:
+	case  op_lt:
+	case  op_geq:
+	case  op_gt:
+	case  op_eq:
+	case  op_neq:
+	case  op_log_or:
+	case  op_arith_or:
+	case  op_arith_xor:
+	case  op_log_and:
+	case  op_arith_and:
+	case  op_mult:
+	case  op_div:
+	case op_log_neg:
+	case op_left_shift:
+	case op_right_shift:
+	    return 1;
+	    break;
+	case  op_deref:
+	case  op_address:
+	case op_inc:
+	case op_dec:
+	case op_sizeof:
+	    return 0;
+	}
+	return 1;
+    }
+    case cod_cast:
+	return is_constant_expr(expr->node.cast.expression);
+    case cod_assignment_expression:
+    case cod_field_ref:
+    case cod_element_ref:
+    case cod_subroutine_call:
+	return 0;
+    default:
+	assert(0);
+    }
+    return 0;
+}
+
 static int semanticize_decl(cod_parse_context context, sm_ref decl, 
 			    scope_ptr scope)
 {
@@ -4680,6 +4750,11 @@ sm_list base_type_spec;
 scope_ptr scope;
 {
     if (array->node.array_type_decl.size_expr != NULL) {
+	if (!is_constant_expr(array->node.array_type_decl.size_expr)) {
+	    cod_src_error(context, array, 
+			  "Array size expression must be constant.");
+		return 0;
+	}
 	if (semanticize_expr(context,
 			     array->node.array_type_decl.size_expr, scope) == 0) {
 	    return 0;
