@@ -839,7 +839,11 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		char *val;
 		sm_ref const_val = ctype->node.array_type_decl.size_expr;
 		ctype->node.array_type_decl.cg_element_size = 
-		    dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
+		    dill_type_size(s, ctype->node.array_type_decl.cg_element_type);
+		if (dill_type_align(s, ctype->node.array_type_decl.cg_element_type) >
+		    ctype->node.array_type_decl.cg_element_size) 
+		    ctype->node.array_type_decl.cg_element_size = 
+			dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
 		if (const_val != NULL) {
 		    assert(const_val->node_type == cod_constant);
 		    val = const_val->node.constant.const_val;
@@ -871,7 +875,11 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		    sm_ref const_val = ctype->node.array_type_decl.size_expr;
 		    assert(evaluate_constant_expr(const_val, &i) == 1);
 		    ctype->node.array_type_decl.cg_element_size = 
-			dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
+			dill_type_size(s, ctype->node.array_type_decl.cg_element_type);
+		    if (dill_type_align(s, ctype->node.array_type_decl.cg_element_type) >
+			ctype->node.array_type_decl.cg_element_size) 
+			ctype->node.array_type_decl.cg_element_size = 
+			    dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
 		    ctype->node.array_type_decl.cg_static_size = i;
 		    if (decl->node.declaration.static_var) {
 			decl->node.declaration.cg_address = 
