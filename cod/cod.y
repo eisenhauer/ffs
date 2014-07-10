@@ -174,6 +174,7 @@ cod_dup_list(sm_list list)
 %token <info> LCURLY
 %token <info> RCURLY
 %token <info> COLON
+%token <info> QUESTION
 %token <info> LBRACKET
 %token <info> RBRACKET
 %token <info> DOT
@@ -681,9 +682,11 @@ logical_or_expression:
 	}
 	;
 
-/* missing ?: construction */
 conditional_expression:
 	logical_or_expression
+	| 
+	logical_or_expression QUESTION expression COLON conditional_expression
+	{assert(0);}
 	;
 
 assignment_operator
