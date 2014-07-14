@@ -1,3 +1,19 @@
+O   [0-7]
+D   [0-9]
+NZ  [1-9]
+L   [a-zA-Z_]
+A   [a-zA-Z_0-9]
+H   [a-fA-F0-9]
+HP  (0[xX])
+E   ([Ee][+-]?{D}+)
+P   ([Pp][+-]?{D}+)
+FS  (f|F|l|L)
+IS  (((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))
+CP  (u|U|L)
+SP  (u8|u|U|L)
+ES  (\\(['"\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
+WS  [ \t\v\n\f]
+
 %{
 static	int lex_offset = 1;
 static  int line_count = 1;
@@ -143,6 +159,7 @@ return			{RETURN(RETURN_TOKEN);}
 "!"			{RETURN(BANG);}
 ":"			{RETURN(COLON);}
 "?"			{RETURN(QUESTION);}
+{CP}?"'"([^'\\\n]|{ES})+"'"		{ RETURN(integer_constant); }
 [A-Za-z][A-Za-z0-9_]*	{
 				yylval.info.string = create_string_from_yytext();
 				if (is_defined_type(yylval.info.string)) {
@@ -215,6 +232,7 @@ return			{RETURN(RETURN_TOKEN);}
 <comment>"*"+[^*/\n]*   {lex_offset += yyleng;} /* eat up '*'s not followed by '/'s */
 <comment>\n             {++line_count;lex_offset = 1;}
 <comment>"*"+"/"        {lex_offset += yyleng;BEGIN(INITIAL);}
+"//".*                                    { /* consume //-comment */ }
 
 [0-9][0-9]*		{
 				yylval.info.string = create_string_from_yytext();

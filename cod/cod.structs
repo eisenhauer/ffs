@@ -72,6 +72,14 @@ operator:
 	int    operation_type;
 	int    result_type;
 
+conditional_operator:
+	sm_ref condition;
+	sm_ref e1;
+	sm_ref e2;
+	srcpos lx_srcpos;
+	int    operation_type;
+	int    result_type;
+
 identifier:
 	char *id;
 	srcpos lx_srcpos;

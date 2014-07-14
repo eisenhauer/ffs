@@ -686,7 +686,13 @@ conditional_expression:
 	logical_or_expression
 	| 
 	logical_or_expression QUESTION expression COLON conditional_expression
-	{assert(0);}
+	{
+	    $$ = cod_new_conditional_operator();
+	    $$->node.conditional_operator.lx_srcpos = $2.lx_srcpos;
+	    $$->node.conditional_operator.condition = $1;
+	    $$->node.conditional_operator.e1 = $3;
+	    $$->node.conditional_operator.e2 = $5;
+	}
 	;
 
 assignment_operator
@@ -1607,6 +1613,59 @@ void cod_set_dont_coerce_return(cod_parse_context context, int value)
     context->dont_coerce_return = value;
 }
 
+static 
+char *
+cod_preprocessor(char *input, cod_parse_context context)
+{
+    char *out;
+    char *ptr;
+    if (index(input, '#') == NULL) return NULL;
+    out = strdup(input);
+    ptr = out;
+    while (ptr && (*ptr)) {
+	if (isspace(*ptr)) ptr++;
+	if (*ptr == '#') {
+	    char *start = ptr;
+	    char *line_end;
+	    if ((strncmp(ptr, "#include", 8) == 0) && isspace(*(ptr+8))) {
+		/* got a #include */
+		char *include_end;
+		ptr += 8;
+		while(isspace(*ptr)) ptr++;
+		printf("Got a #include of %s\n", ptr);
+		line_end = index(ptr, '\n');
+		if (line_end) *line_end = 0;
+		if ((*ptr == '<') || (*ptr == '"')) {
+		    include_end = (*ptr == '<') ? index(ptr, '>') : index((ptr+1), '"');
+		    if (!include_end) {
+			printf("improper #include, \"%s\"\n", ptr);
+			goto skip;
+		    }
+		    *include_end = 0;
+		    cod_process_include((ptr+1), context);
+		} else {
+		    printf("improper #include, \"%s\"\n", ptr);
+		    goto skip;
+		}
+		/* good #include, replace with spaces */
+		if (line_end) *line_end = '\n';
+		*include_end = ' ';
+		while ((start != include_end) && (*start)) {
+		    *(start++) = ' ';
+		}
+	    }
+	}
+    skip:
+	/* skip to next line */
+	ptr = index(ptr, '\n');
+	while (ptr && (*(ptr - 1) == '\'')) {
+	    /* continued line */
+	    ptr = index(ptr, '\n');
+	}
+    }
+    return out;
+}
+	
 int
 cod_parse_for_context(code, context)
 char *code;
@@ -1614,10 +1673,15 @@ cod_parse_context context;
 {
     sm_list decls;
     int ret;
+    char *freeable_code = NULL;
 #if defined(YYDEBUG) && (YYDEBUG != 0)
     extern int yydebug;
     yydebug = 1;
 #endif
+    freeable_code = cod_preprocessor(code, context);
+    if (freeable_code) {
+	code = freeable_code;
+    }
     if (code != NULL) {
 	setup_for_string_parse(code, context->defined_type_count, context->defined_types);
 	cod_code_string = code;
@@ -1628,6 +1692,7 @@ cod_parse_context context;
     terminate_string_parse();
 
     if ((yyparse_value == NULL) || (yyerror_count != 0)) {
+	if (freeable_code) free(freeable_code);
 	return 0;
     }
 
@@ -1645,6 +1710,7 @@ cod_parse_context context;
 	cod_rfree_list(decls, NULL);
 	context->decls = NULL;
     }
+    if (freeable_code) free(freeable_code);
     return ret;
 }
 
