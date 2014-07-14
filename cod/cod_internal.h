@@ -51,6 +51,7 @@ extern int is_control_value(sm_ref expr, sm_ref strct);
 extern sm_ref get_complex_type(cod_parse_context context, sm_ref node);
 extern int are_compatible_ptrs(sm_ref left, sm_ref right);
 extern void cod_add_standard_elements(cod_parse_context context);
+extern void cod_process_include(char *name, cod_parse_context context);
 extern void cod_add_defined_type(char *id, cod_parse_context context);
 typedef struct list_struct *sm_list;
 extern void cod_remove_defined_types(sm_list l, cod_parse_context context);
