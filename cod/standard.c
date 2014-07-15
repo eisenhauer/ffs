@@ -293,7 +293,6 @@ cod_process_include(char *name, cod_parse_context context)
 {
     int char_count = index(name, '.') - name;
     if (char_count < 0) char_count = strlen(name);
-    printf("Char count is %d\n", char_count);
     if (strncmp(name, "string", char_count) == 0) {
 	cod_assoc_externs(context, string_externs);
 	cod_parse_for_context(string_extern_string, context);

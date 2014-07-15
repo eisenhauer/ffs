@@ -240,6 +240,7 @@ cod_dup_list(sm_list list)
 %token <info> COMMA
 %token <info> DOTDOTDOT
 %token <info> integer_constant
+%token <info> character_constant
 %token <info> string_constant
 %token <info> floating_constant
 %token <info> identifier_ref
@@ -1553,6 +1554,13 @@ constant :
 	    $$->node.constant.const_val = $1.string;
 	    $$->node.constant.lx_srcpos = $1.lx_srcpos;
 	}
+	|
+	character_constant {
+	    $$ = cod_new_constant();
+	    $$->node.constant.token = character_constant;
+	    $$->node.constant.const_val = $1.string;
+	    $$->node.constant.lx_srcpos = $1.lx_srcpos;
+	}
 	;
 
 %%
@@ -1632,7 +1640,6 @@ cod_preprocessor(char *input, cod_parse_context context)
 		char *include_end;
 		ptr += 8;
 		while(isspace(*ptr)) ptr++;
-		printf("Got a #include of %s\n", ptr);
 		line_end = index(ptr, '\n');
 		if (line_end) *line_end = 0;
 		if ((*ptr == '<') || (*ptr == '"')) {
@@ -2576,6 +2583,8 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 		break;
 	    case TYPEDEF:
 		break;
+	    case STATIC:
+		break;
 	    default:
 		printf("Unknown type\n");
 	    }
@@ -2902,7 +2911,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
             if (tmp->node_type == cod_constant) {
                 srcpos old_srcpos = expr->node.identifier.lx_srcpos;
 		free(expr->node.identifier.id);
-                /* morph idenfitfier into constant */
+                /* morph identifier into constant */
                 expr->node_type = cod_constant;
                 expr->node.constant.token = tmp->node.constant.token;
                 expr->node.constant.const_val = strdup(tmp->node.constant.const_val);
@@ -3734,6 +3743,8 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		break;
 	    case TYPEDEF:
 		if (is_typedef) (*is_typedef)++;
+		break;
+	    case STATIC:
 		break;
 	    default:
 		printf("Unknown type\n");
@@ -5247,7 +5258,19 @@ cod_free_parse_context(cod_parse_context parse_context)
 extern void
 cod_assoc_externs(cod_parse_context context, cod_extern_list externs)
 {
-    context->scope->externs = externs;
+    int new_count = 0;
+
+    while(externs[new_count++].extern_value);
+
+    if (context->scope->externs == NULL) {
+	context->scope->externs = malloc(new_count * sizeof(externs[0]));
+	memcpy(context->scope->externs, externs, new_count * sizeof(externs[0]));
+    } else {
+	int old_count = 0;
+	while(context->scope->externs[old_count++].extern_value);
+	context->scope->externs = realloc(context->scope->externs, (new_count + old_count -1) * sizeof(externs[0]));
+	memcpy(&context->scope->externs[old_count-1], externs, new_count * sizeof(externs[0]));
+    }
 }
 
 extern void

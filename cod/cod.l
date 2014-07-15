@@ -159,7 +159,6 @@ return			{RETURN(RETURN_TOKEN);}
 "!"			{RETURN(BANG);}
 ":"			{RETURN(COLON);}
 "?"			{RETURN(QUESTION);}
-{CP}?"'"([^'\\\n]|{ES})+"'"		{ RETURN(integer_constant); }
 [A-Za-z][A-Za-z0-9_]*	{
 				yylval.info.string = create_string_from_yytext();
 				if (is_defined_type(yylval.info.string)) {
@@ -234,6 +233,10 @@ return			{RETURN(RETURN_TOKEN);}
 <comment>"*"+"/"        {lex_offset += yyleng;BEGIN(INITIAL);}
 "//".*                                    { /* consume //-comment */ }
 
+{CP}?"'"([^'\\\n]|{ES})+"'"		{
+				yylval.info.string = create_string_from_yytext();
+				RETURN(character_constant);
+			}
 [0-9][0-9]*		{
 				yylval.info.string = create_string_from_yytext();
 				RETURN(integer_constant);

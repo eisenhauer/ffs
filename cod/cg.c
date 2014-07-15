@@ -2283,7 +2283,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    if (dill_target_byte_order(s) != typ->node.struct_type_decl.encode_info->byte_order)
 		oprnd.enc.byte_swap_on_fetch = 1;
 	}
-	if (expr->node.declaration.const_var && !typ) {
+	if (expr->node.declaration.const_var && expr->node.declaration.init_value && !typ) {
 	    oprnd = cg_expr(s, expr->node.declaration.init_value, 0, descr);
 	    return oprnd;
 	}
@@ -2398,7 +2398,64 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    lvar = dill_getreg(s, DILL_F);
 	    sscanf(expr->node.constant.const_val, "%f", &f);
 	    dill_setf(s, lvar, f);	/* op_i_setf */
-	} else {
+	} else if (expr->node.constant.token == character_constant) {
+	    long l;
+	    unsigned long ul;
+	    char *val = expr->node.constant.const_val;
+	    lvar = dill_getreg(s, DILL_I);
+	    if (*val == 'L') val++ ;
+	    if (*val == 'u') val++ ;
+	    if (*val == 'U') val++ ;
+	    val++ ; /* skip ' */
+	    if (*val != '\\') {
+		l = *val;
+	    } else {
+		val++;
+		switch(*val) {
+		case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+		    if (sscanf(val, "%lo", &l) != 1) 
+			printf("octal char sscanf failed %s\n", val);
+		    break;
+		case 'x':
+		    if (sscanf(val+1, "%lx", &l) != 1) 
+			printf("hex char sscanf failed, %s\n", val);
+		    break;
+		case '\\':
+		    l = 0134;
+		    break;
+		case '\'':
+		    l = 047;
+		    break;
+		case '\"':
+		    l = 042;
+		    break;
+		case '\?':
+		    l = 077;
+		    break;
+		case '\a':
+		    l = 07;
+		    break;
+		case '\b':
+		    l = 010;
+		    break;
+		case '\f':
+		    l = 06;
+		    break;
+		case '\n':
+		    l = 012;
+		    break;
+		case '\r':
+		    l = 015;
+		    break;
+		case '\t':
+		    l = 011;
+		    break;
+		default:
+		    printf("Bad character constant %s\n", val);
+		}
+	    }
+	    dill_seti(s, lvar, l);	/* op_i_seti */
+	} else {   /* integer_constant */
 	    long i;
 	    char *val = expr->node.constant.const_val;
 	    lvar = dill_getreg(s, DILL_I);

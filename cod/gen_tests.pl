@@ -2,14 +2,18 @@
 use strict;
 use warnings;
 use Text::Balanced qw/extract_multiple extract_bracketed/;
+use File::Basename;
 
 sub parse_c_test($);
 sub generate_cod_test($$$);
 
-my $filename = "960209-1.c";
+my $filename =  $ARGV[0];
+my $outputdir =  $ARGV[1];
+
+my $outputname = basename($filename);
 
 my ($decls, $subroutines) = parse_c_test($filename) ;
-generate_cod_test($filename, $decls, $subroutines);
+generate_cod_test($outputdir . "/" . $outputname , $decls, $subroutines);
 
 sub generate_cod_test($$$) 
 {
@@ -20,9 +24,8 @@ sub generate_cod_test($$$)
 	print "$name,   $decl,  $body\n";
     }
 
-    unless (open (INT, ">gnu_tests/$filename")) { die "Failed to open cm_interface.c";}
+    unless (open (INT, ">$outputdir/$outputname")) { die "Failed to open $outputdir/$outputname";}
 print INT<<EOF;
-#include "config.h"
 #include "cod.h"
 #include "assert.h"
 #include <stdio.h>
@@ -47,12 +50,19 @@ exit(int value)
 int
 main(int argc, char**argv)
 {
-    
+    int verbose = 0;
+    while (argc > 1) {
+	if (strcmp(argv[1], "-v") == 0) {
+	    verbose++;
+        }
+	argc--; argv++;
+    }
 EOF
     my $externs_table= "    cod_extern_entry externs[] = \n    {\n";
     my $externs_string = "    char extern_string[] = \"\\n\\\n";
     my $function_bodies = "    char *func_bodies[] = {\n";
     my $function_decls = "    char *func_decls[] = {\n";
+    my $global_decls = "    char *global_decls[] = {\n";
     foreach my $sub (@$subroutines) {
         my ($name, $decl, $body) = @$sub;
 	chomp($decl);
@@ -67,15 +77,29 @@ EOF
     $externs_string .= "    	void exit(int value);\\n\\\n        void abort();\";";
     $function_bodies .= "\"\"};\n";
     $function_decls .= "\t\"\"};\n";
+    my $global_decls = "    char *global_decls[] = {\n";
+    foreach my $decl (@$decls) {
+	chomp($decl);
+	$global_decls .=  "\t\"$decl\",\n";
+    }
+    $global_decls .= "\"\"};\n";
     print INT "$externs_table\n";
     print INT "$externs_string\n";
     print INT "$function_bodies\n";
     print INT "$function_decls\n";
+    print INT "$global_decls\n";
     print INT "    int i;\n";
     print INT "    cod_code gen_code[". scalar @$subroutines. "];\n";
     print INT "    for (i=0; i < ". scalar @$subroutines."; i++) {\n";
+    print INT "        int j;\n";
+    print INT "	       if (verbose) {\n";
+    print INT "             printf(\"Working on subroutine %s\\n\", externs[i].extern_name);\n";
+    print INT "        }\n";
     print INT "        cod_parse_context context = new_cod_parse_context();\n";
     print INT "        cod_assoc_externs(context, externs);\n";
+    print INT "        for (j=0; j < " . scalar @$decls . "; j++) {\n";
+    print INT "            cod_parse_for_context(global_decls[j], context);\n";
+    print INT "        }\n";
     print INT "        cod_parse_for_context(extern_string, context);\n";
     print INT "        cod_subroutine_declaration(func_decls[i], context);\n";
     print INT "        gen_code[i] = cod_code_gen(func_bodies[i], context);\n";
@@ -88,6 +112,8 @@ EOF
     print INT "            }\n";
     print INT "        }\n";
     print INT "    }\n";
+    print INT "    if (verbose) printf(\"Test $filename Succeeded\\n\");\n";
+    print INT "    return 0;\n";
     print INT "}\n";
 }
 
