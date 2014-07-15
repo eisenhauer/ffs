@@ -215,6 +215,7 @@ cod_dup_list(sm_list list)
 %token <info> IF
 %token <info> ELSE
 %token <info> FOR
+%token <info> DO
 %token <info> WHILE
 %token <info> CHAR
 %token <info> SHORT
@@ -1504,7 +1505,6 @@ selection_statement:
 	}
 	;
 
-/* missing do while */
 iteration_statement:
 	FOR LPAREN expression_opt SEMI expression_opt SEMI expression_opt RPAREN statement
 	{ 
@@ -1524,6 +1524,17 @@ iteration_statement:
 	    $$->node.iteration_statement.test_expr = $3;
 	    $$->node.iteration_statement.iter_expr = NULL;
 	    $$->node.iteration_statement.statement = $5;
+	} 
+	|
+	DO statement WHILE LPAREN expression RPAREN SEMI
+	{ 
+	    $$ = cod_new_iteration_statement();
+	    $$->node.selection_statement.lx_srcpos = $1.lx_srcpos;
+	    $$->node.iteration_statement.init_expr = NULL;
+	    $$->node.iteration_statement.test_expr = NULL;
+	    $$->node.iteration_statement.post_test_expr = $5;
+	    $$->node.iteration_statement.iter_expr = NULL;
+	    $$->node.iteration_statement.statement = $2;
 	} 
 
 	;
@@ -4275,6 +4286,7 @@ check_last_statement_return(cod_parse_context context, sm_list stmts)
     }
     if (!stmt) return 0;
 
+recurse_without_list:
     switch (stmt->node_type) {
     case cod_compound_statement: {
 	sm_list list = stmt->node.compound_statement.statements;
@@ -4284,6 +4296,20 @@ check_last_statement_return(cod_parse_context context, sm_list stmts)
     }
     case cod_return_statement:
 	return 1;
+    case cod_expression_statement:
+	stmt = stmt->node.expression_statement.expression;
+	goto recurse_without_list;
+    case cod_subroutine_call: {
+	sm_ref func_ref = stmt->node.subroutine_call.sm_func_ref;
+	char *id;
+	if (func_ref->node_type == cod_identifier) {
+	    id = func_ref->node.identifier.id;
+	} else {
+	    id = func_ref->node.declaration.id;
+	}
+	if (strcmp(id, "exit") == 0) return 1;
+	return 0;
+    }
     default:
 	return 0;
     }
@@ -4394,6 +4420,14 @@ semanticize_iteration_statement(cod_parse_context context, sm_ref iteration,
 	}
 	pop_scope(sub_scope);
     }
+    if (iteration->node.iteration_statement.post_test_expr != NULL) {
+	if (!semanticize_expr(context, 
+			      iteration->node.iteration_statement.post_test_expr,
+			      scope)) {
+	    ret = 0;
+	}
+    }
+
     return ret;
 }
 

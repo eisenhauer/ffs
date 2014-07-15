@@ -48,6 +48,7 @@ selection_statement:
 iteration_statement:
 	sm_ref init_expr;
 	sm_ref test_expr;
+	sm_ref post_test_expr;
 	sm_ref iter_expr;
 	sm_ref statement;
 	int cg_iter_label;

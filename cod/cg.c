@@ -105,7 +105,7 @@ static void gen_load(dill_stream s, dill_reg left, operand right, int type);
 static void gen_encoded_field_load(dill_stream s, dill_reg ret, operand base, int load_type, sm_ref field);
 static dill_reg coerce_type(dill_stream s, dill_reg local, int target_type, int item_type);
 static int is_comparison_operator(sm_ref expr);
-static void cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label, cod_code descr);
+static void cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label, cod_code descr, int reverse);
 static int is_complex_type(sm_ref expr);
 static int cg_get_size(dill_stream s, sm_ref node);
 
@@ -1376,7 +1376,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
     if (is_comparison_operator(expr)) {
 	dill_mark_label_type false_label = dill_alloc_label(s, "compare start");
 	dill_seti(s, result, 0);	/* op_i_seti */
-	cg_branch_if_false(s, expr, false_label, descr);
+	cg_branch_if_false(s, expr, false_label, descr, 0);
 	dill_seti(s, result, 1);	/* op_i_seti */
 	dill_mark_label(s, false_label);
 	ret_op.reg = result;
@@ -3503,7 +3503,7 @@ reverse_operator(int cod_op)
 
 static void
 cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label, 
-		   cod_code descr)
+		   cod_code descr, int reverse)
 {
     operator_t op;
     int string_op;
@@ -3514,7 +3514,11 @@ cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label,
 	operand conditional;
 	conditional = cg_expr(s, pred, 0, descr);
 	assert(conditional.is_addr == 0);
-	gen_bz(s, conditional.reg, label, cod_sm_get_type(pred));
+	if (reverse) {
+	    gen_bnz(s, conditional.reg, label, cod_sm_get_type(pred));
+	} else {
+	    gen_bz(s, conditional.reg, label, cod_sm_get_type(pred));
+	}
 	return;
     }
 
@@ -3535,11 +3539,19 @@ cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label,
 	    dill_push_argp(s, right);
 	}
 	rv = dill_calli(s, (void *)cod_streq, "cod_streq");
-	gen_bnz(s, rv, label, DILL_I);
+	if (reverse) {
+	    gen_bz(s, rv, label, DILL_I);
+	} else {
+	    gen_bnz(s, rv, label, DILL_I);
+	}
 	return;
     }
 
-    branch_operator = reverse_operator(op);
+    if (reverse) {
+	branch_operator = op;
+    } else {
+	branch_operator = reverse_operator(op);
+    }
     dill_pbr(s, branch_operator, pred->node.operator.operation_type, 
 	   left, right, label);
 }
@@ -3549,7 +3561,7 @@ static void cg_selection_statement(dill_stream s, sm_ref stmt, cod_code descr)
     dill_mark_label_type else_label = dill_alloc_label(s, "else");
     
     cg_branch_if_false(s, stmt->node.selection_statement.conditional, 
-		       else_label, descr);
+		       else_label, descr, 0);
     cg_statement(s, stmt->node.selection_statement.then_part, descr);
     if (stmt->node.selection_statement.else_part != NULL) {
 	dill_mark_label_type end_label = dill_alloc_label(s, "if-end");
@@ -3575,14 +3587,20 @@ static void cg_iteration_statement(dill_stream s, sm_ref stmt, cod_code descr)
     dill_mark_label(s, begin_label);
     if (stmt->node.iteration_statement.test_expr != NULL) {
 	cg_branch_if_false(s, stmt->node.iteration_statement.test_expr, 
-			   end_label, descr);
+			   end_label, descr, 0);
     }
     cg_statement(s, stmt->node.iteration_statement.statement, descr);
     dill_mark_label(s, iter_label);
     if (stmt->node.iteration_statement.iter_expr != NULL) {
 	(void) cg_expr(s, stmt->node.iteration_statement.iter_expr, 0, descr);
     }
-    dill_jv(s, begin_label);	/* op_i_jpi */
+    if (stmt->node.iteration_statement.post_test_expr == NULL) {
+	dill_jv(s, begin_label);	/* op_i_jpi */
+    } else {
+	/* specify reverse decision, so this is cg_branch_if_*true* */
+	cg_branch_if_false(s, stmt->node.iteration_statement.post_test_expr, 
+			   iter_label, descr, 1);
+    }
     dill_mark_label(s, end_label);
     
 }

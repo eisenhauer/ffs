@@ -134,6 +134,7 @@ static char *string_buf_ptr;
 "else"			{RETURN(ELSE);}
 "for"			{RETURN(FOR);}
 "while"			{RETURN(WHILE);}
+"do"			{RETURN(DO);}
 "unsigned"		{RETURN(UNSIGNED);}
 "signed"		{RETURN(SIGNED);}
 "short"			{RETURN(SHORT);}
