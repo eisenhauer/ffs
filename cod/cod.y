@@ -5273,6 +5273,9 @@ new_cod_parse_context()
 extern void
 cod_free_parse_context(cod_parse_context parse_context)
 {
+    if (parse_context->scope->externs) {
+	free(parse_context->scope->externs);
+    }
     pop_scope(parse_context->scope);
     if (parse_context->defined_types) {
 	free(parse_context->defined_types);
