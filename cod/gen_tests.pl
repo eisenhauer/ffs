@@ -3,14 +3,19 @@ use strict;
 use warnings;
 use Text::Balanced qw/extract_multiple extract_bracketed/;
 use File::Basename;
+use Getopt::Std;
+my %options=();
+getopts("v",\%options);
 
+print "Verbose\n" if defined $options{v};
+print "-v $options{v}\n" if defined $options{v};
 sub parse_c_test($);
 sub generate_cod_test($$$);
 
-my $filename =  $ARGV[0];
-my $outputdir =  $ARGV[1];
+my ($filename, $outputdir )  =  @ARGV;
 
 my $outputname = basename($filename);
+my $sourcedir = dirname($filename);
 
 my ($decls, $subroutines) = parse_c_test($filename) ;
 generate_cod_test($outputdir . "/" . $outputname , $decls, $subroutines);
@@ -21,7 +26,7 @@ sub generate_cod_test($$$)
 
     foreach my $sub (@$subroutines) {
         my ($name, $decl, $body) = @$sub;
-	print "$name,   $decl,  $body\n";
+	print "$name,   $decl,  $body\n" if ($options{v});
     }
 
     unless (open (INT, ">$outputdir/$outputname")) { die "Failed to open $outputdir/$outputname";}
@@ -31,20 +36,38 @@ print INT<<EOF;
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 int exit_value = 0; /* success */
 void
-abort()
+my_abort()
 {
     exit_value = 1; /* failure */
 }
 
 void
-exit(int value)
+test_exit(int value)
 {
     if (value != 0) {
 	exit_value = value;
     }
+}
+
+FILE *test_output = NULL;
+
+int test_printf(const char *format, ...)
+{
+    int ret;
+    va_list args;
+    va_start(args, format);
+
+    if (test_output == NULL) {
+	test_output = fopen("$outputname.output", "w");
+    }
+    ret = vfprintf(test_output, format, args);
+
+    va_end(args);
+    return ret;
 }
 
 int
@@ -68,18 +91,22 @@ EOF
 	chomp($decl);
 	$externs_table .= "	{\"$name\", (void*)(long)-1},\n";
 	$externs_string .= "	$decl;\\n\\\n";
+	$body =~ s/\\/\\\\/g;
 	$body =~ s/\n/\\n\\\n/g;
 	$body =~ s/"/\\"/g;
+	$body =~ s/printf\(/test_printf\(/g;
 	$function_bodies .= "\n/* body for $name */\n\"$body\",\n";
 	$function_decls .= "\t\"$decl;\",\n";
     }
-    $externs_table .= "	{\"abort\", (void*)abort},\n	{\"exit\", (void*)exit},\n	{(void*)0, (void*)0}\n    };\n";
-    $externs_string .= "    	void exit(int value);\\n\\\n        void abort();\";";
+    $externs_table .= "	{\"abort\", (void*)my_abort},\n	{\"exit\", (void*)test_exit},\n	{\"test_printf\", (void*)test_printf},\n	{(void*)0, (void*)0}\n    };\n";
+    $externs_string .= "    	void exit(int value);\\n\\\n        void abort();\\n\\\n        int test_printf(const char *format, ...);\";";
+    $externs_string =~ s/\(void\)/\(\)/g;
     $function_bodies .= "\"\"};\n";
     $function_decls .= "\t\"\"};\n";
-    my $global_decls = "    char *global_decls[] = {\n";
+    $function_decls =~ s/\(void\)/\(\)/g;
     foreach my $decl (@$decls) {
 	chomp($decl);
+	$decl =~ s/\n/\\n\\\n/g;
 	$global_decls .=  "\t\"$decl\",\n";
     }
     $global_decls .= "\"\"};\n";
@@ -106,10 +133,26 @@ EOF
     print INT "        externs[i].extern_value = (void*) gen_code[i]->func;\n";
     print INT "        if (i == ". scalar @$subroutines - 1 . ") {\n";
     print INT "            int (*func)() = (int(*)()) externs[i].extern_value;\n";
+    print INT "            func();\n";
     print INT "            if (exit_value != 0) {\n";
     print INT "                printf(\"Test $filename failed\\n\");\n";
     print INT "                exit(exit_value);\n";
     print INT "            }\n";
+    print INT "        }\n";
+    print INT "    }\n";
+    print INT "    if (test_output) {\n";
+    print INT "        /* there was output, test expected */\n";
+    my $expectedname = "$sourcedir/$outputname";
+    $expectedname =~ s/\.c/\.expect/g;
+    print INT "        int ret = system(\"cmp $filename.output $expectedname\");\n";
+    print INT "        ret = ret >> 8;\n";
+    print INT "        if (ret == 1) {\n";
+    print INT "            printf(\"Test $filename failed, output differs\\n\");\n";
+    print INT "            exit(1);\n";
+    print INT "        }\n";
+    print INT "        if (ret != 0) {\n";
+    print INT "            printf(\"Test $filename failed, output missing\\n\");\n";
+    print INT "            exit(1);\n";
     print INT "        }\n";
     print INT "    }\n";
     print INT "    if (verbose) printf(\"Test $filename Succeeded\\n\");\n";
@@ -146,6 +189,7 @@ sub parse_c_test($) {
 	$non_bracket_item =~ s/^\s+//;
 	next if ($non_bracket_item eq "");
 	
+	next if (substr($non_bracket_item, 0, 2) eq "//");
 	if (substr($non_bracket_item, 0, 1) eq "{") {
 	    print "Failure in item {$non_bracket_item }\n";
 	    next;
@@ -157,7 +201,7 @@ sub parse_c_test($) {
 	    my $item = join ("\n\n", @bits);
 	    $item =~ s/\s+$//;
 	    next if ($item eq "");
-	    print "This is a 1 declaration set [\n $item\n]\n\n\n";
+	    print "This is a 1 declaration set [\n $item\n]\n\n\n" if ($options{v});
 	    push @decls, $item;
 	}
 	#
@@ -177,10 +221,11 @@ sub parse_c_test($) {
 		$decl_set .= ";";
 	    }
 	    unshift @array, substr($next, 1);
-	    print "This is a declaration set [\n $decl_set\n]\n\n\n";
+	    print "This is a declaration set [\n $decl_set\n]\n\n\n" if ($options{v});
 	    push @decls, $decl_set;
 	    next;
 	}
+	$last_segment =~ s/\s+$//;
 	if (substr($last_segment, -1) eq ")") {
 	    my $subroutine_name;
 	    if ($last_segment =~ /^\W*\w+\W*$/)   {
@@ -189,7 +234,7 @@ sub parse_c_test($) {
 	    if ($last_segment =~ /(\w+)\W*\(/)   {
 		$subroutine_name = $1;
 	    }
-	    print "Ha, must be a subroutine 1, name $subroutine_name, profile $last_segment\n";
+	    print "Ha, must be a subroutine 1, name $subroutine_name, profile $last_segment\n" if ($options{v});
 	    push @subroutines, [($subroutine_name, $last_segment, shift(@array))];
 	    next;
 	}
@@ -237,7 +282,7 @@ sub parse_c_test($) {
 	    $count--;
 	}
 	$subroutine_header .= ")";
-	print "Ha, must be a subroutine 2, name $subroutine_name, profile $subroutine_header\n";
+	print "Ha, must be a subroutine 2, name $subroutine_name, profile $subroutine_header\n" if ($options{v});
 	push @subroutines, [($subroutine_name, $subroutine_header, shift(@array))];
 	next;
 	
