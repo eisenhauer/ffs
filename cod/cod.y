@@ -2114,11 +2114,18 @@ cod_parse_context context;
     cod_parse_context new_context = new_cod_parse_context();
     new_context->has_exec_context = context->has_exec_context;
     new_context->decls = cod_copy_list(context->decls);
-    new_context->scope->externs = context->scope->externs;
+    i = 0;
+    while (context->scope->externs && context->scope->externs[i].extern_value) i++;
+    free(new_context->scope->externs);
+    new_context->scope->externs = malloc(sizeof(context->scope->externs[0]) *
+					 (i+1));
+    memcpy(new_context->scope->externs, context->scope->externs, 
+	   sizeof(context->scope->externs[0]) * (i+1));
     new_context->error_func = context->error_func;
     new_context->client_data = context->client_data;
     semanticize_decls_list(new_context, new_context->decls, 
 			   new_context->scope);
+    free(new_context->defined_types);
     new_context->defined_types = malloc(sizeof(char*) *
 					context->defined_type_count);
     for (i=0; i< context->defined_type_count; i++) {
