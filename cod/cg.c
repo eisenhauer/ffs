@@ -2465,6 +2465,17 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		    /* hex */
 		    if (sscanf(val+2, "%lx", &i) != 1) 
 			printf("hex sscanf failed, %s\n", val);
+		} else if (val[1] == 'b') {
+		    /* binary */
+		    int j = 2;
+		    i = 0;
+		    while (val[j]) {
+			i <<= 1;
+			if (val[j] == '1') {
+			    i += 1;
+			}
+			j++;
+		    }
 		} else {
 		    if (sscanf(val, "%lo", &i) != 1) 
 			printf("octal sscanf failed %s\n", val);

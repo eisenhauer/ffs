@@ -247,6 +247,11 @@ return			{RETURN(RETURN_TOKEN);}
 				RETURN(integer_constant);
 			}
 
+0b[01]+			{
+				yylval.info.string = create_string_from_yytext();
+				RETURN(integer_constant);
+			}
+
 [0-9]*\.[0-9]*		{
 				yylval.info.string = create_string_from_yytext();
 				RETURN(floating_constant);
