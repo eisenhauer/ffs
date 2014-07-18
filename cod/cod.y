@@ -4284,28 +4284,27 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 static int semanticize_statement(cod_parse_context context, sm_ref stmt, 
 				 scope_ptr scope);
 static int 
-check_last_statement_return(cod_parse_context context, sm_list stmts)
-{
-    sm_ref stmt;
-    while (stmts != NULL) {
-	stmt = stmts->node;
-	stmts = stmts->next;
-    }
-    if (!stmt) return 0;
+check_last_statement_return_list(cod_parse_context context, sm_list stmts);
 
-recurse_without_list:
+static int 
+check_last_statement_return(cod_parse_context context, sm_ref stmt)
+{
     switch (stmt->node_type) {
+    case cod_selection_statement:
+	if (!check_last_statement_return(context, stmt->node.selection_statement.then_part)) return 0;
+	if (stmt->node.selection_statement.else_part && 
+	    !check_last_statement_return(context, stmt->node.selection_statement.else_part)) return 0;
+	return 1;
     case cod_compound_statement: {
 	sm_list list = stmt->node.compound_statement.statements;
 	if (!list) list = stmt->node.compound_statement.decls;
 
-	return check_last_statement_return(context, list);
+	return check_last_statement_return_list(context, list);
     }
     case cod_return_statement:
 	return 1;
     case cod_expression_statement:
-	stmt = stmt->node.expression_statement.expression;
-	goto recurse_without_list;
+	return check_last_statement_return(context, stmt->node.expression_statement.expression);
     case cod_subroutine_call: {
 	sm_ref func_ref = stmt->node.subroutine_call.sm_func_ref;
 	char *id;
@@ -4320,6 +4319,18 @@ recurse_without_list:
     default:
 	return 0;
     }
+}
+
+static int 
+check_last_statement_return_list(cod_parse_context context, sm_list stmts)
+{
+    sm_ref stmt;
+    while (stmts != NULL) {
+	stmt = stmts->node;
+	stmts = stmts->next;
+    }
+    if (!stmt) return 0;
+    return check_last_statement_return(context, stmt);
 }
 
 static int
@@ -4547,7 +4558,7 @@ semanticize_compound_statement(cod_parse_context context, sm_ref compound,
 	int tmp;
 	sm_list list = compound->node.compound_statement.statements;
 	if (!list) list = compound->node.compound_statement.decls;
-	tmp = check_last_statement_return(context, compound->node.compound_statement.statements);
+	tmp = check_last_statement_return_list(context, compound->node.compound_statement.statements);
 	if (!tmp) {
 	    cod_src_error(context, NULL, 
 			  "Control reaches end of non-void function.");
