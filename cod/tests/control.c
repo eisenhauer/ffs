@@ -361,5 +361,43 @@ top:\n\
 	cod_exec_context_free(ec);
 	cod_free_parse_context(context);
     }
+    test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {
+	/* test 7  -  do while */
+	static char extern_string[] = "int printf(string format, ...);";
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {(void*)0, (void*)0}
+	};
+	char code_string[] = "\
+{\n\
+	int i = 0;\n\
+	do {\n\
+	   i += 7;\n\
+	} while (i < 40);\n\
+	return i;\n\
+}";
+
+	cod_parse_context context;
+	cod_exec_context ec;
+	cod_code gen_code;
+	long (*func)();
+	long result;
+
+	GEN_PARSE_CONTEXT(context);
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+
+	gen_code = cod_code_gen(code_string, context);
+	ec = cod_create_exec_context(gen_code);
+	func = (long(*)()) (long) gen_code->func;
+	if (verbose) cod_dump(gen_code);
+	result = func(EC_param0);
+	assert(result == 42);
+	cod_code_free(gen_code);
+	cod_exec_context_free(ec);
+	cod_free_parse_context(context);
+    }
     return 0;
 }
