@@ -1,8 +1,8 @@
 #perl
 use File::Basename;
-$TESTSUITE_PATH="$ENV{HOME}/prog/gcc-3.3.1-3/gcc/testsuite/gcc.c-torture/execute";
+#$TESTSUITE_PATH="$ENV{HOME}/prog/gcc-3.3.1-3/gcc/testsuite/gcc.c-torture/execute";
 
-#$TESTSUITE_PATH="$ENV{HOME}/prog/tinycc/tests/tests2";
+$TESTSUITE_PATH="$ENV{HOME}/prog/tinycc/tests/tests2";
 
 $BUILD_PATH="$ENV{HOME}/";
 
@@ -11,6 +11,12 @@ $BUILD_PATH="$ENV{HOME}/";
 my $compile_failed_count = 0;
 my $execute_failed_count = 0;
 my $expected_failure_count = 0;
+
+%tcc_exceptions =  ( "06_case" => "No CASE!",
+		     "13_hashdefine" => "Uses #define",
+		     "15_recursion" => "CoD can't do recursion",
+		     "18_include" => "No #include of body code",
+		     "test" => "reason");
 
 %gcc_exceptions =  ( "20000113-1" => "Uses bitfields",
 		     "20000223-1" => "Uses #define",
@@ -153,6 +159,11 @@ foreach $file (@files) {
   next if ("$suffix" ne ".c");
   if (defined $gcc_exceptions{$filename}) {
       print "$filename skipped : $gcc_exceptions{$filename}\n";
+      $expected_failure_count++;
+      next;
+  }
+  if (defined $tcc_exceptions{$filename}) {
+      print "$filename skipped : $tcc_exceptions{$filename}\n";
       $expected_failure_count++;
       next;
   }

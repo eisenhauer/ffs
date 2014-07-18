@@ -54,6 +54,7 @@ test_exit(int value)
 }
 
 FILE *test_output = NULL;
+int verbose = 0;
 
 int test_printf(const char *format, ...)
 {
@@ -62,8 +63,9 @@ int test_printf(const char *format, ...)
     va_start(args, format);
 
     if (test_output == NULL) {
-	test_output = fopen("$outputname.output", "w");
+	test_output = fopen("$filename.output", "w");
     }
+    if (verbose) vprintf(format, args);
     ret = vfprintf(test_output, format, args);
 
     va_end(args);
@@ -73,7 +75,6 @@ int test_printf(const char *format, ...)
 int
 main(int argc, char**argv)
 {
-    int verbose = 0;
     while (argc > 1) {
 	if (strcmp(argv[1], "-v") == 0) {
 	    verbose++;
@@ -119,7 +120,7 @@ EOF
     print INT "    cod_code gen_code[". scalar @$subroutines. "];\n";
     print INT "    for (i=0; i < ". scalar @$subroutines."; i++) {\n";
     print INT "        int j;\n";
-    print INT "	       if (verbose) {\n";
+    print INT "        if (verbose) {\n";
     print INT "             printf(\"Working on subroutine %s\\n\", externs[i].extern_name);\n";
     print INT "        }\n";
     print INT "        cod_parse_context context = new_cod_parse_context();\n";
@@ -144,6 +145,7 @@ EOF
     print INT "        /* there was output, test expected */\n";
     my $expectedname = "$sourcedir/$outputname";
     $expectedname =~ s/\.c/\.expect/g;
+    print INT "        fclose(test_output);\n";
     print INT "        int ret = system(\"cmp $filename.output $expectedname\");\n";
     print INT "        ret = ret >> 8;\n";
     print INT "        if (ret == 1) {\n";
@@ -190,6 +192,11 @@ sub parse_c_test($) {
 	next if ($non_bracket_item eq "");
 	
 	next if (substr($non_bracket_item, 0, 2) eq "//");
+	if (substr($non_bracket_item, 0, 2) eq "/*") {
+	  $non_bracket_item =~ s/.*\*\///g;
+	  $non_bracket_item =~ s/^\s+//;
+	  next if ($non_bracket_item eq "");
+	}
 	if (substr($non_bracket_item, 0, 1) eq "{") {
 	    print "Failure in item {$non_bracket_item }\n";
 	    next;
@@ -250,7 +257,7 @@ sub parse_c_test($) {
 		next;
 	    }
 	    if (substr($last_line, -1) ne ")") {
-		print "Didn't get it\n";
+		print "Didn't get it, last line $last_line\n";
 	    }
 	    while(@lines) {
 		$last_line = pop(@lines) . "\n" . $last_line;
