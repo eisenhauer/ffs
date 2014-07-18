@@ -3599,7 +3599,7 @@ static void cg_iteration_statement(dill_stream s, sm_ref stmt, cod_code descr)
     } else {
 	/* specify reverse decision, so this is cg_branch_if_*true* */
 	cg_branch_if_false(s, stmt->node.iteration_statement.post_test_expr, 
-			   iter_label, descr, 1);
+			   begin_label, descr, 1);
     }
     dill_mark_label(s, end_label);
     
