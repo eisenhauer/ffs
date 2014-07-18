@@ -189,6 +189,20 @@ return			{RETURN(RETURN_TOKEN);}
 	yyerror("Unterminated string constant");
 }
 
+<string_cond>\\x[0-9A-Fa-f]+ {
+        /* hex escape sequence */
+        int result;
+
+        (void) sscanf( yytext + 2, "%x", &result );
+
+        if ( result > 0xff ) {
+	   yyerror("bad hex escape character");
+	}
+
+        check_strbuf();
+	*string_buf_ptr++ = result;
+}
+
 <string_cond>\\[0-7]{1,3} {
         /* octal escape sequence */
         int result;
