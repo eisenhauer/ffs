@@ -3415,16 +3415,13 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		int mismatch = 0;
 		switch (cod_sm_get_type(arg)) {
 		case DILL_D: case DILL_F:
-		    if ((formal->node.declaration.cg_type != DILL_D) &&
-			(formal->node.declaration.cg_type != DILL_F)) {
+		    if (formal->node.declaration.cg_type >= DILL_V) {
 			mismatch++;
 		    }
 		    break;
 		case DILL_I: case DILL_U:
 		case DILL_L: case DILL_UL:
-		    if ((formal->node.declaration.cg_type == DILL_D) ||
-			(formal->node.declaration.cg_type == DILL_F) ||
-			(formal->node.declaration.cg_type == DILL_P)) {
+		    if (formal->node.declaration.cg_type == DILL_P) {
 			sm_ref ct = formal->node.declaration.sm_complex_type;
 			if (!ct || 
 			    (ct->node_type != cod_reference_type_decl) ||
