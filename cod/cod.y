@@ -3487,6 +3487,27 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	}
 	return ret;
     }
+    case cod_conditional_operator: {
+	int ret = 1;
+	if (expr->node.conditional_operator.condition != NULL) {
+	    if (!semanticize_expr(context, expr->node.conditional_operator.condition, scope)) {
+		ret = 0;
+	    }
+	}
+	if (expr->node.conditional_operator.e1 != NULL) {
+	    if (!semanticize_expr(context, expr->node.conditional_operator.e1, scope)) {
+		ret = 0;
+	    }
+	}
+	if (expr->node.conditional_operator.e2 != NULL) {
+	    if (!semanticize_expr(context, expr->node.conditional_operator.e2, scope)) {
+		ret = 0;
+	    }
+	}
+	expr->node.conditional_operator.result_type = 
+	    determine_unary_type(context, expr, expr->node.conditional_operator.e1);
+	return ret;
+    }
     default:
 	fprintf(stderr, "Unknown case in semanticize_expression\n");
 	cod_print(expr);
@@ -3535,6 +3556,8 @@ cod_sm_get_type(sm_ref node)
 	return node->node.identifier.cg_type;
     case cod_operator:
 	return node->node.operator.result_type;
+    case cod_conditional_operator:
+	return node->node.conditional_operator.result_type;
     case cod_cast:
 	return node->node.cast.cg_type;
     case cod_assignment_expression:

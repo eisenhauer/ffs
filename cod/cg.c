@@ -293,6 +293,10 @@ cg_preprocess(sm_ref node, void *data) {
 	inst_count_guess += 6;
 	break;
     }
+    case cod_conditional_operator: {
+	inst_count_guess += 8;
+	break;
+    }
     case cod_array_type_decl:
 	break;
     case cod_struct_type_decl:
@@ -2686,6 +2690,32 @@ ROW MAJOR  (C-style):
     }
     case cod_subroutine_call:
 	return cg_subroutine_call(s, expr, descr);
+    case cod_conditional_operator: {
+	dill_reg e1, e2 = 0;
+	operand ret_op;
+	dill_reg result = dill_getreg(s, expr->node.conditional_operator.result_type);
+	int result_type = expr->node.conditional_operator.result_type;
+	operand e1_op, e2_op;
+
+	init_operand(&ret_op);
+	ret_op.is_addr = 0;
+	ret_op.offset = 0;
+
+	dill_mark_label_type false_label = dill_alloc_label(s, "conditional e2");
+	dill_mark_label_type end_label = dill_alloc_label(s, "end conditional");
+	cg_branch_if_false(s, expr->node.conditional_operator.condition, false_label, descr, 0);
+	e1_op = cg_expr(s, expr->node.conditional_operator.e1, need_assignable, descr);
+	dill_pmov(s, result_type, result, e1_op.reg);	/* op_i_movp */
+	dill_jv(s, end_label);
+	dill_mark_label(s, false_label);
+	e2_op = cg_expr(s, expr->node.conditional_operator.e2, need_assignable, descr);
+	e2_op.reg = coerce_type(s, e2_op.reg, result_type, 
+				cod_sm_get_type(expr->node.conditional_operator.e2));
+	dill_pmov(s, result_type, result, e2_op.reg);	/* op_i_movp */
+	dill_mark_label(s, end_label);
+	ret_op.reg = result;
+	return ret_op;
+    }
     default:
 	fprintf(stderr, "Unknown case in cg_expression\n");
 	cod_print(expr);
