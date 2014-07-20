@@ -288,6 +288,114 @@ static char string_extern_string[] = "\n\
 	char	*strchr(const char *str, int chr);\n\
 ";
 
+#include <math.h>
+
+static cod_extern_entry math_externs[] = 
+{
+    {"acos", (void*)(long)acos},
+    {"asin", (void*)(long)asin},
+    {"atan", (void*)(long)atan},
+    {"atan2", (void*)(long)atan2},
+    {"cos", (void*)(long)cos},
+    {"sin", (void*)(long)sin},
+    {"tan", (void*)(long)tan},
+    {"acosh", (void*)(long)acosh},
+    {"asinh", (void*)(long)asinh},
+    {"atanh", (void*)(long)atanh},
+    {"cosh", (void*)(long)cosh},
+    {"sinh", (void*)(long)sinh},
+    {"tanh", (void*)(long)tanh},
+    {"exp", (void*)(long)exp},
+    {"exp2", (void*)(long)exp2},
+    {"expm1", (void*)(long)expm1},
+    {"log", (void*)(long)log},
+    {"log10", (void*)(long)log10},
+    {"log2", (void*)(long)log2},
+    {"log1p", (void*)(long)log1p},
+    {"logb", (void*)(long)logb},
+    {"modf", (void*)(long)modf},
+    {"ldexp", (void*)(long)ldexp},
+    {"frexp", (void*)(long)frexp},
+    {"ilogb", (void*)(long)ilogb},
+    {"scalbn", (void*)(long)scalbn},
+    {"scalbln", (void*)(long)scalbln},
+    {"fabs", (void*)(long)fabs},
+    {"cbrt", (void*)(long)cbrt},
+    {"hypot", (void*)(long)hypot},
+    {"pow", (void*)(long)pow},
+    {"sqrt", (void*)(long)sqrt},
+    {"erf", (void*)(long)erf},
+    {"erfc", (void*)(long)erfc},
+    {"lgamma", (void*)(long)lgamma},
+    {"tgamma", (void*)(long)tgamma},
+    {"ceil", (void*)(long)ceil},
+    {"floor", (void*)(long)floor},
+    {"nearbyint", (void*)(long)nearbyint},
+    {"rint", (void*)(long)rint},
+    {"lrint", (void*)(long)lrint},
+    {"round", (void*)(long)round},
+    {"lround", (void*)(long)lround},
+    {"trunc", (void*)(long)trunc},
+    {"fmod", (void*)(long)fmod},
+    {"remainder", (void*)(long)remainder},
+    {"remquo", (void*)(long)remquo},
+    {"copysign", (void*)(long)copysign},
+    {"nan", (void*)(long)nan},
+    {NULL, NULL}
+};
+
+static char math_extern_string[] = "\n\
+double acos(double a);\n\
+double asin(double a);\n\
+double atan(double a);\n\
+double atan2(double b, double a);\n\
+double cos(double a);\n\
+double sin(double a);\n\
+double tan(double a);\n\
+double acosh(double a);\n\
+double asinh(double a);\n\
+double atanh(double a);\n\
+double cosh(double a);\n\
+double sinh(double a);\n\
+double tanh(double a);\n\
+double exp(double a);\n\
+double exp2(double a); \n\
+double expm1(double a); \n\
+double log(double a);\n\
+double log10(double a);\n\
+double log2(double a);\n\
+double log1p(double a);\n\
+double logb(double a);\n\
+double modf(double b, double * a);\n\
+double ldexp(double b, int a);\n\
+double frexp(double b, int * a);\n\
+int ilogb(double a);\n\
+double scalbn(double b, int a);\n\
+double scalbln(double b, long int a);\n\
+double fabs(double a);\n\
+double cbrt(double a);\n\
+double hypot(double b, double a);\n\
+double pow(double b, double a);\n\
+double sqrt(double a);\n\
+double erf(double a);\n\
+double erfc(double a);\n\
+double lgamma(double a);\n\
+double tgamma(double a);\n\
+double ceil(double a);\n\
+double floor(double a);\n\
+double nearbyint(double a);\n\
+double rint(double a);\n\
+long   lrint(double a);\n\
+double round(double a);\n\
+long   lround(double a);\n\
+double trunc(double a);\n\
+double fmod(double a, double b);\n\
+double remainder(double a, double b);\n\
+double remquo(double a, double b, int *c);\n\
+double copysign(double a, double b);\n\
+double nan(const char * a);\n\
+";
+
 extern void
 cod_process_include(char *name, cod_parse_context context)
 {
@@ -296,6 +404,10 @@ cod_process_include(char *name, cod_parse_context context)
     if (strncmp(name, "string", char_count) == 0) {
 	cod_assoc_externs(context, string_externs);
 	cod_parse_for_context(string_extern_string, context);
+    } else if (strncmp(name, "math", char_count) == 0) {
+	cod_assoc_externs(context, math_externs);
+	cod_parse_for_context(math_extern_string, context);
     }
+
 }
 
