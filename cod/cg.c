@@ -2033,8 +2033,24 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 					actual_type);
 	    }
 	} else {
-	    param = cg_expr(s, arg, 0, descr);
-	    formal_type = cod_sm_get_type(arg);
+	    int actual_type = cod_sm_get_type(arg);
+	    if ((actual_type == DILL_B) || is_array(arg)) {
+		/* structure param */
+		param = cg_expr(s, arg, 1, descr);
+		if (is_complex_type(arg) && (param.is_addr == 0)) {
+		    param.is_addr = 1;
+		}
+		if (param.offset != 0) {
+		    dill_reg tmp = dill_getreg(s, DILL_P);
+		    dill_addpi(s, tmp, param.reg, param.offset);
+		    param.reg = tmp;
+		    param.offset = 0;
+		}
+		formal_type = DILL_P;
+	    } else {
+		param = cg_expr(s, arg, 0, descr);
+		formal_type = cod_sm_get_type(arg);
+	    }
 	}
 	if (arg_count < MAX_ARG) {
 	    args_array[arg_count] = param.reg;
