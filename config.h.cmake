@@ -142,3 +142,5 @@
    default */
 #define FFS_CONVERSION_GENERATION_DEFAULT @FFS_CONVERSION_GENERATION_DEFAULT@
 
+/* define to the string value of shared library suffix */
+#define LIBRARY_EXT "@CMAKE_SHARED_LIBRARY_SUFFIX@"

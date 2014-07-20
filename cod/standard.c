@@ -278,9 +278,15 @@ cod_add_standard_elements(cod_parse_context context)
 }
 #endif /* LINUX_KERNEL_MODULE */
 
+#if NO_DYNAMIC_LINKING
+#define sym(x) (void*)(long)x
+#else
+#define sym(x) (void*)0
+#endif
+
 static cod_extern_entry string_externs[] = 
 {
-    {"strchr", (void*)(long)strchr},
+    {"strchr", sym(strchr)},
     {NULL, NULL}
 };
 
@@ -292,55 +298,55 @@ static char string_extern_string[] = "\n\
 
 static cod_extern_entry math_externs[] = 
 {
-    {"acos", (void*)(long)acos},
-    {"asin", (void*)(long)asin},
-    {"atan", (void*)(long)atan},
-    {"atan2", (void*)(long)atan2},
-    {"cos", (void*)(long)cos},
-    {"sin", (void*)(long)sin},
-    {"tan", (void*)(long)tan},
-    {"acosh", (void*)(long)acosh},
-    {"asinh", (void*)(long)asinh},
-    {"atanh", (void*)(long)atanh},
-    {"cosh", (void*)(long)cosh},
-    {"sinh", (void*)(long)sinh},
-    {"tanh", (void*)(long)tanh},
-    {"exp", (void*)(long)exp},
-    {"exp2", (void*)(long)exp2},
-    {"expm1", (void*)(long)expm1},
-    {"log", (void*)(long)log},
-    {"log10", (void*)(long)log10},
-    {"log2", (void*)(long)log2},
-    {"log1p", (void*)(long)log1p},
-    {"logb", (void*)(long)logb},
-    {"modf", (void*)(long)modf},
-    {"ldexp", (void*)(long)ldexp},
-    {"frexp", (void*)(long)frexp},
-    {"ilogb", (void*)(long)ilogb},
-    {"scalbn", (void*)(long)scalbn},
-    {"scalbln", (void*)(long)scalbln},
-    {"fabs", (void*)(long)fabs},
-    {"cbrt", (void*)(long)cbrt},
-    {"hypot", (void*)(long)hypot},
-    {"pow", (void*)(long)pow},
-    {"sqrt", (void*)(long)sqrt},
-    {"erf", (void*)(long)erf},
-    {"erfc", (void*)(long)erfc},
-    {"lgamma", (void*)(long)lgamma},
-    {"tgamma", (void*)(long)tgamma},
-    {"ceil", (void*)(long)ceil},
-    {"floor", (void*)(long)floor},
-    {"nearbyint", (void*)(long)nearbyint},
-    {"rint", (void*)(long)rint},
-    {"lrint", (void*)(long)lrint},
-    {"round", (void*)(long)round},
-    {"lround", (void*)(long)lround},
-    {"trunc", (void*)(long)trunc},
-    {"fmod", (void*)(long)fmod},
-    {"remainder", (void*)(long)remainder},
-    {"remquo", (void*)(long)remquo},
-    {"copysign", (void*)(long)copysign},
-    {"nan", (void*)(long)nan},
+    {"acos", sym(acos)},
+    {"asin", sym(asin)},
+    {"atan", sym(atan)},
+    {"atan2", sym(atan2)},
+    {"cos", sym(cos)},
+    {"sin", sym(sin)},
+    {"tan", sym(tan)},
+    {"acosh", sym(acosh)},
+    {"asinh", sym(asinh)},
+    {"atanh", sym(atanh)},
+    {"cosh", sym(cosh)},
+    {"sinh", sym(sinh)},
+    {"tanh", sym(tanh)},
+    {"exp", sym(exp)},
+    {"exp2", sym(exp2)},
+    {"expm1", sym(expm1)},
+    {"log", sym(log)},
+    {"log10", sym(log10)},
+    {"log2", sym(log2)},
+    {"log1p", sym(log1p)},
+    {"logb", sym(logb)},
+    {"modf", sym(modf)},
+    {"ldexp", sym(ldexp)},
+    {"frexp", sym(frexp)},
+    {"ilogb", sym(ilogb)},
+    {"scalbn", sym(scalbn)},
+    {"scalbln", sym(scalbln)},
+    {"fabs", sym(fabs)},
+    {"cbrt", sym(cbrt)},
+    {"hypot", sym(hypot)},
+    {"pow", sym(pow)},
+    {"sqrt", sym(sqrt)},
+    {"erf", sym(erf)},
+    {"erfc", sym(erfc)},
+    {"lgamma", sym(lgamma)},
+    {"tgamma", sym(tgamma)},
+    {"ceil", sym(ceil)},
+    {"floor", sym(floor)},
+    {"nearbyint", sym(nearbyint)},
+    {"rint", sym(rint)},
+    {"lrint", sym(lrint)},
+    {"round", sym(round)},
+    {"lround", sym(lround)},
+    {"trunc", sym(trunc)},
+    {"fmod", sym(fmod)},
+    {"remainder", sym(remainder)},
+    {"remquo", sym(remquo)},
+    {"copysign", sym(copysign)},
+    {"nan", sym(nan)},
     {NULL, NULL}
 };
 
@@ -396,6 +402,8 @@ double copysign(double a, double b);\n\
 double nan(const char * a);\n\
 ";
 
+static void dlload_externs(char *libname, cod_extern_entry *externs);
+
 extern void
 cod_process_include(char *name, cod_parse_context context)
 {
@@ -405,9 +413,28 @@ cod_process_include(char *name, cod_parse_context context)
 	cod_assoc_externs(context, string_externs);
 	cod_parse_for_context(string_extern_string, context);
     } else if (strncmp(name, "math", char_count) == 0) {
+	dlload_externs("libm", math_externs);
 	cod_assoc_externs(context, math_externs);
 	cod_parse_for_context(math_extern_string, context);
     }
 
 }
-
+#include <dlfcn.h>
+static void 
+dlload_externs(char *libname, cod_extern_entry *externs)
+{
+#if NO_DYNAMIC_LINKING
+    return;
+#else
+    int i = 0;
+    char *name = malloc(strlen(libname) + strlen(LIBRARY_EXT) + 1);
+    strcpy(name, libname);
+    strcat(name, LIBRARY_EXT);
+    void *handle = dlopen(name, RTLD_LAZY);
+    free(name);
+    while(externs[i].extern_name) {
+	externs[i].extern_value = dlsym(handle, externs[i].extern_name);
+	i++;
+    }
+#endif
+}
