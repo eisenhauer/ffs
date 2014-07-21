@@ -341,6 +341,18 @@ extern int cod_install_state(cod_exec_context ec, void *state, int length);
 int cod_parse_for_context ARGS((char *code, cod_parse_context context));
 
 /*!
+ * \brief This parses a string to setup global variables that are 
+ *  visible during code generation.
+ *
+ * The input string is of standard C syntax for external variable and
+ * function declarations.  All previously registered types are available.
+ * \param code The input string containing declarations.
+ * \param context The parse context in which the declarations should be
+ * visible.
+*/
+int cod_parse_for_globals ARGS((char *code, cod_parse_context context));
+
+/*!
  * Duplicate a handle to an cod_parse_context.
  *
  * \param context the cod_parse_context to be duplicated.

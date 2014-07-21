@@ -700,6 +700,11 @@ evaluate_constant_expr(sm_ref expr, long*value)
     return 0;
 }
 
+static void *
+add_global(cod_code descr, char *name, int size)
+{
+    return malloc(size);
+}
 	
 static void 
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
@@ -708,13 +713,22 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
     sm_ref ctype = decl->node.declaration.sm_complex_type;
     void *var_base = NULL;
     switch(decl->node_type) {
-    case cod_declaration:
+    case cod_declaration: {
+	void *var_base = NULL;
 	if (decl->node.declaration.is_typedef) {
 	    cg_decl(s, decl->node.declaration.sm_complex_type, descr);
 	}
 	if (decl->node.declaration.const_var && !ctype) {
 	    /* Nothing to do for SIMPLE const vars.  We'll CG them as consts on reference. */
 	    return;
+	}
+	if (decl->node.declaration.is_extern && !decl->node.declaration.cg_address) {
+	    /* GLOBAL.  Need to allocate */
+	    int size = cg_get_size(s, decl);
+	    void *extern_value = add_global(descr, decl->node.declaration.id, size);
+	    decl->node.declaration.cg_address = extern_value;
+	    decl->node.declaration.is_extern = 1;
+	    var_base = extern_value;
 	}
 	if (decl->node.declaration.static_var && !ctype) {
 	    /* do SIMPLE statics */
@@ -727,6 +741,8 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		descr->data = realloc(descr->data, descr->static_size_required);
 	    }
 	    var_base = (char*)descr->data + (long)decl->node.declaration.cg_address;
+	}
+	if (var_base) {
 	    if (decl->node.declaration.init_value == NULL) {
 		/* init to zero's */
 		memset(var_base, 0, cg_get_size(s, decl));
@@ -985,6 +1001,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    }
 	}
 	break;
+    }
     case cod_struct_type_decl: {
 	    sm_list fields = decl->node.struct_type_decl.fields;
 	    int do_cg = 0, last_offset = 0;

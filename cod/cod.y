@@ -1592,6 +1592,7 @@ struct parse_struct {
     sm_ref freeable_declaration;
     int has_exec_context;
     int dont_coerce_return;
+    int alloc_globals;
 };
 
 static int
@@ -1684,6 +1685,15 @@ cod_preprocessor(char *input, cod_parse_context context)
     return out;
 }
 	
+int
+cod_parse_for_globals(code, context)
+char *code;
+cod_parse_context context;
+{
+    context->alloc_globals = 1;
+    cod_parse_for_context(code, context);
+    context->alloc_globals = 0;
+}
 int
 cod_parse_for_context(code, context)
 char *code;
@@ -2547,6 +2557,7 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
     sm_list orig_list = type_list;
     int short_appeared = 0;
     int long_appeared = 0;
+    int long_long_appeared = 0;
     int int_appeared = 0;
     int double_appeared = 0;
     int float_appeared = 0;
@@ -2633,7 +2644,7 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	cg_type = DILL_P;
 	goto finalize;
     }
-    if (short_appeared + long_appeared > 1) {
+    if (short_appeared && long_appeared) {
 	cod_src_error(context, orig_list->node, 
 		      "Only one of long or short permitted");
 	cg_type = DILL_ERR;
@@ -2663,7 +2674,11 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
     }
 
     /* neither float or double appeared */
-    if (short_appeared + char_appeared + long_appeared >= 2) {
+    if (long_appeared == 2) {
+	long_long_appeared++;
+	long_appeared = 0;
+    }
+    if (short_appeared + char_appeared + long_appeared + long_long_appeared >= 2) {
 	cod_src_error(context, orig_list->node, 
 		      "Only one integer size spec may be specified");
 	cg_type = DILL_ERR;
@@ -2681,7 +2696,7 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	} else if (short_appeared) {
 	    cg_type = DILL_US;
 	    goto finalize;
-	} else if (long_appeared) {
+	} else if (long_appeared || long_long_appeared) {
 	    cg_type = DILL_UL;
 	    goto finalize;
 	} else {
@@ -2695,7 +2710,7 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	} else if (short_appeared) {
 	    cg_type = DILL_S;
 	    goto finalize;
-	} else if (long_appeared) {
+	} else if (long_appeared || long_long_appeared) {
 	    cg_type = DILL_L;
 	    goto finalize;
 	} else {
@@ -3727,6 +3742,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
     sm_list orig_list = type_list;
     int short_appeared = 0;
     int long_appeared = 0;
+    int long_long_appeared = 0;
     int int_appeared = 0;
     int double_appeared = 0;
     int float_appeared = 0;
@@ -3814,7 +3830,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	*cg_type = DILL_P;
 	goto finalize;
     }
-    if (short_appeared + long_appeared > 1) {
+    if (short_appeared && long_appeared ) {
 	cod_src_error(context, orig_list->node, 
 		      "Only one of long or short permitted");
 	*cg_type = DILL_ERR;
@@ -3844,7 +3860,11 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
     }
 
     /* neither float or double appeared */
-    if (short_appeared + char_appeared + long_appeared >= 2) {
+    if (long_appeared == 2) {
+	long_long_appeared++;
+	long_appeared = 0;
+    }
+    if (short_appeared + char_appeared + long_appeared + long_long_appeared >= 2) {
 	cod_src_error(context, orig_list->node, 
 		      "Only one integer size spec may be specified");
 	*cg_type = DILL_ERR;
@@ -3862,7 +3882,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	} else if (short_appeared) {
 	    *cg_type = DILL_US;
 	    goto finalize;
-	} else if (long_appeared) {
+	} else if (long_appeared || long_long_appeared) {
 	    *cg_type = DILL_UL;
 	    goto finalize;
 	} else {
@@ -3876,7 +3896,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	} else if (short_appeared) {
 	    *cg_type = DILL_S;
 	    goto finalize;
-	} else if (long_appeared) {
+	} else if (long_appeared || long_long_appeared) {
 	    *cg_type = DILL_L;
 	    goto finalize;
 	} else {
@@ -4168,7 +4188,9 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	    /* must be external variable */
 	    void *extern_value = 
 		resolve_extern(decl->node.declaration.id, scope);
-	    if (extern_value == NULL) {
+	    if ((extern_value == NULL) && (context->alloc_globals)) {
+		;
+	    } else if (extern_value == NULL) {
 		cod_src_error(context, decl, 
 			      "External symbol lacking address \"%s\"", 
 			decl->node.declaration.id);
@@ -4182,7 +4204,8 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	    if ((l->node->node_type == cod_type_specifier) && 
 		((l->node->node.type_specifier.token == STATIC) ||
 		 (l->node->node.type_specifier.token == CONST))) {
-		if (l->node->node.type_specifier.token == STATIC) {
+		if ((l->node->node.type_specifier.token == STATIC) &&
+		    !decl->node.declaration.is_subroutine) {
 		    decl->node.declaration.static_var = 1;
 		} else {
 		    decl->node.declaration.const_var = 1;
@@ -5304,6 +5327,7 @@ new_cod_parse_context()
     context->freeable_declaration = NULL;
     context->has_exec_context = 0;
     context->dont_coerce_return = 0;
+    context->alloc_globals = 0;
     cod_add_standard_elements(context);
     return context;
 }
