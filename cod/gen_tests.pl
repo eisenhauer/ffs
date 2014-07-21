@@ -90,12 +90,14 @@ EOF
     foreach my $sub (@$subroutines) {
         my ($name, $decl, $body) = @$sub;
 	chomp($decl);
+	$decl =~ s/\n/ /s;
 	$externs_table .= "	{\"$name\", (void*)(long)-1},\n";
 	$externs_string .= "	$decl;\\n\\\n";
 	$body =~ s/\\/\\\\/g;
 	$body =~ s/\n/\\n\\\n/g;
 	$body =~ s/"/\\"/g;
 	$body =~ s/printf\(/test_printf\(/g;
+	$body =~ s/NULL/\(void*\)0/g;
 	$function_bodies .= "\n/* body for $name */\n\"$body\",\n";
 	$function_decls .= "\t\"$decl;\",\n";
     }
@@ -108,6 +110,8 @@ EOF
     foreach my $decl (@$decls) {
 	chomp($decl);
 	$decl =~ s/\n/\\n\\\n/g;
+	$decl =~ s/\n/ /g;
+	$decl =~ s/\\n\\ /\\n\\\n/g;
 	$global_decls .=  "\t\"$decl\",\n";
     }
     $global_decls .= "\"\"};\n";
@@ -126,7 +130,7 @@ EOF
     print INT "        cod_parse_context context = new_cod_parse_context();\n";
     print INT "        cod_assoc_externs(context, externs);\n";
     print INT "        for (j=0; j < " . scalar @$decls . "; j++) {\n";
-    print INT "            cod_parse_for_context(global_decls[j], context);\n";
+    print INT "            cod_parse_for_globals(global_decls[j], context);\n";
     print INT "        }\n";
     print INT "        cod_parse_for_context(extern_string, context);\n";
     print INT "        cod_subroutine_declaration(func_decls[i], context);\n";
@@ -264,6 +268,11 @@ sub parse_c_test($) {
 	    }
 	}
 	my ($subroutine_prefix, $params) = split /\(/, $last_line;
+	if (!defined $params) {
+	  print "This is a declaration set [\n $subroutine_prefix\n]\n\n\n" if ($options{v});
+	  push @decls, $subroutine_prefix;
+	  next;
+	}
 	my @params = split(/,/, $params);
 	if (($count != 0) && (@params != $count)) {
 	    print "Param count didn't match " . scalar @params . " vs $count\n";
