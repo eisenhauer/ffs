@@ -286,7 +286,7 @@ cod_add_standard_elements(cod_parse_context context)
 
 static cod_extern_entry string_externs[] = 
 {
-    {"strchr", sym(strchr)},
+    {"strchr", (void*)(long)strchr},
     {NULL, NULL}
 };
 
