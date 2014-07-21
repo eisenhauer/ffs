@@ -3,7 +3,7 @@ typedef struct {
     int character;
 } srcpos;
 
-typedef enum {op_modulus, op_plus, op_minus, op_leq, op_lt, op_geq, op_gt, op_eq, op_neq, op_log_neg, op_log_or, op_log_and, op_arith_and, op_arith_or, op_arith_xor, op_left_shift, op_right_shift, op_mult, op_div, op_deref, op_inc, op_dec, op_address, op_sizeof} operator_t;
+typedef enum {op_modulus, op_plus, op_minus, op_leq, op_lt, op_geq, op_gt, op_eq, op_neq, op_log_neg, op_log_or, op_log_and, op_arith_and, op_arith_or, op_arith_xor, op_left_shift, op_right_shift, op_mult, op_div, op_deref, op_inc, op_dec, op_address, op_sizeof, op_not} operator_t;
 
 typedef struct {
     srcpos lx_srcpos;

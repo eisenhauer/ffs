@@ -103,6 +103,7 @@ static char *string_buf_ptr;
 "%"			{RETURN(MODULUS);}
 "+"			{RETURN(PLUS);}
 "-"			{RETURN(MINUS);}
+"~"			{RETURN(TILDE);}
 "<="			{RETURN(LEQ);}
 "<"			{RETURN(LT);}
 ">="			{RETURN(GEQ);}

@@ -184,6 +184,7 @@ cod_dup_list(sm_list list)
 %token <info> MODULUS
 %token <info> PLUS
 %token <info> MINUS
+%token <info> TILDE
 %token <info> LEQ
 %token <info> LT
 %token <info> GEQ
@@ -448,6 +449,13 @@ unary_expression:
 	    $$ = cod_new_operator();
 	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
 	    $$->node.operator.op = op_minus;
+	    $$->node.operator.right = $2;
+	    $$->node.operator.left = NULL;
+	}
+	| TILDE cast_expression {
+	    $$ = cod_new_operator();
+	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
+	    $$->node.operator.op = op_not;
 	    $$->node.operator.right = $2;
 	    $$->node.operator.left = NULL;
 	}
@@ -1690,9 +1698,11 @@ cod_parse_for_globals(code, context)
 char *code;
 cod_parse_context context;
 {
+    int ret;
     context->alloc_globals = 1;
-    cod_parse_for_context(code, context);
+    ret = cod_parse_for_context(code, context);
     context->alloc_globals = 0;
+    return ret;
 }
 int
 cod_parse_for_context(code, context)
@@ -2060,6 +2070,9 @@ cod_print_operator_t(operator_t o)
 	break;
     case  op_inc:
 	printf("INCREMENT");
+	break;
+    case  op_not:
+	printf("BITWISE NOT");
 	break;
     case  op_dec:
 	printf("DECREMENT");
@@ -3724,8 +3737,7 @@ get_complex_type(cod_parse_context context, sm_ref node)
 	}
 
     case cod_cast:
-	/* GANEV: can we have casts to complex types? */
-	return NULL;
+	return node->node.cast.sm_complex_type;
 	break;
 
     default:
@@ -4125,6 +4137,7 @@ is_constant_expr(sm_ref expr)
 	}
 	switch(expr->node.operator.op) {
 	case  op_modulus:
+	case  op_not:
 	case  op_plus:
 	case  op_minus:
 	case  op_leq:
@@ -4357,6 +4370,7 @@ check_last_statement_return(cod_parse_context context, sm_ref stmt)
 	    id = func_ref->node.declaration.id;
 	}
 	if (strcmp(id, "exit") == 0) return 1;
+	if (strcmp(id, "abort") == 0) return 1;
 	return 0;
     }
     default:

@@ -672,6 +672,9 @@ evaluate_constant_expr(sm_ref expr, long*value)
 	case op_log_neg:
 	    *value = !right;
 	    break;
+	case op_not:
+	    *value = ~right;
+	    break;
 	case op_left_shift:
 	    *value = left << right;
 	    break;
@@ -1865,7 +1868,15 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	    dill_Por(s, op_type, result, left, right);
 	}
 	break;
-    case  op_arith_xor:
+    case op_not:
+	left = dill_getreg(s, op_type);
+	switch (op_type) {
+	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
+	case DILL_I: case DILL_U: case DILL_L: case DILL_UL:
+	    dill_piset(s, op_type, left, ~0); break;
+	}
+	/* falling through */
+    case op_arith_xor:
         dill_Pxor(s, op_type, result, left, right);
 	break;
     case  op_log_and:
@@ -3387,9 +3398,11 @@ static void
 gen_bz(dill_stream s, int conditional, int target_label, int op_type)
 {
     switch(op_type) {
+    case DILL_C: case DILL_S:
     case DILL_I:
 	dill_beqii(s, conditional, 0, target_label);	/* op_i_beqii */
 	break;
+    case DILL_UC: case DILL_US:
     case DILL_U:
 	dill_bequi(s, conditional, 0, target_label);	/* op_i_bequi */
 	break;
@@ -3413,7 +3426,7 @@ gen_bz(dill_stream s, int conditional, int target_label, int op_type)
 	break;
     }
     default:
-	fprintf(stderr, "unhandled case in gen_bz\n");
+	fprintf(stderr, "unhandled case in gen_bz op_type %d\n", op_type);
     }
 }
 
