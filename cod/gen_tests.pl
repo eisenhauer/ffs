@@ -37,12 +37,16 @@ print INT<<EOF;
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <setjmp.h>
 
 int exit_value = 0; /* success */
+jmp_buf env;
+
 void
 my_abort()
 {
     exit_value = 1; /* failure */
+    longjmp(env, 1);
 }
 
 void
@@ -51,6 +55,7 @@ test_exit(int value)
     if (value != 0) {
 	exit_value = value;
     }
+    longjmp(env, 1);
 }
 
 FILE *test_output = NULL;
@@ -138,7 +143,9 @@ EOF
     print INT "        externs[i].extern_value = (void*) gen_code[i]->func;\n";
     print INT "        if (i == ". scalar @$subroutines - 1 . ") {\n";
     print INT "            int (*func)() = (int(*)()) externs[i].extern_value;\n";
-    print INT "            func();\n";
+    print INT "            if (setjmp(env) == 0) {\n";
+    print INT "                func();\n";
+    print INT "            }\n";
     print INT "            if (exit_value != 0) {\n";
     print INT "                printf(\"Test $filename failed\\n\");\n";
     print INT "                exit(exit_value);\n";
