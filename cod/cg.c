@@ -300,7 +300,8 @@ cg_preprocess(sm_ref node, void *data) {
     case cod_array_type_decl:
 	break;
     case cod_struct_type_decl:
-	if (node->node.struct_type_decl.fields->node->node.field.cg_offset == -1) {
+	if (node->node.struct_type_decl.fields && 
+	    (node->node.struct_type_decl.fields->node->node.field.cg_offset == -1)) {
 	    /* we need to do structure layout */
 	    dill_stream s = code_descriptor->drisc_context;
 	    int last_offset = 0;
@@ -713,11 +714,11 @@ static void
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
     dill_reg lvar = -1;
-    sm_ref ctype = decl->node.declaration.sm_complex_type;
     void *var_base = NULL;
     switch(decl->node_type) {
     case cod_declaration: {
 	void *var_base = NULL;
+	sm_ref ctype = decl->node.declaration.sm_complex_type;
 	if (decl->node.declaration.is_typedef) {
 	    cg_decl(s, decl->node.declaration.sm_complex_type, descr);
 	}
@@ -920,7 +921,8 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			lvar = 
 			    dill_getvblock(s, i * ctype->node.array_type_decl.cg_element_size);
 		    }
-		} else if (decl->node.declaration.cg_type != DILL_B) {
+		} else if ((decl->node.declaration.cg_type != DILL_B) ||
+			   (ctype->node_type != cod_struct_type_decl)) {
 		    if (decl->node.declaration.static_var) {
 			decl->node.declaration.cg_address = 
 			    (void*)(long)descr->static_size_required;
@@ -931,7 +933,8 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			    descr->data = realloc(descr->data, descr->static_size_required);
 			}
 			var_base = (char*)descr->data + (long)decl->node.declaration.cg_address;
-		    } else if (decl->node.declaration.addr_taken) {
+		    } else if ((decl->node.declaration.addr_taken) || 
+			       (ctype && (ctype->node_type == cod_struct_type_decl))) {
 		        /* make sure it's in memory if its address is taken */
 		        lvar = dill_getvblock(s, 8);
 		    } else {
@@ -939,6 +942,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		    }
 		} else {
 		    sm_ref struct_type = decl->node.declaration.sm_complex_type;
+		    assert(struct_type->node_type == cod_struct_type_decl);
 		    if (decl->node.declaration.static_var) {
 			decl->node.declaration.cg_address = 
 			    (void*)(long)descr->static_size_required;
@@ -1017,7 +1021,6 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    }
 	    if (do_cg == 0) return;
 	    fields = decl->node.struct_type_decl.fields;
-	    decl->node.declaration.cg_type = DILL_B;
 	    while(fields != NULL) {
 		sm_ref field = fields->node;
 		int field_size = cg_get_size(s, field);
@@ -1033,7 +1036,6 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    }
 	    last_offset += (dill_type_align(s, DILL_D) - (last_offset % dill_type_align(s, DILL_D))) % dill_type_align(s, DILL_D);
 	    decl->node.struct_type_decl.cg_size = last_offset;
-	
         }
 	break;
     case cod_reference_type_decl:

@@ -95,6 +95,15 @@ char *strdup(const char *s)
 	return p;
 }
 #endif
+static char*
+gen_anon()
+{
+    static int anon_count = 0;
+    char *ret = malloc(strlen("Anonymous-xxxxxxxxxxxxxxxxx"));
+    sprintf(ret, "Anonymous-%d", anon_count++);
+    return ret;
+}
+
 #define yyparse cod_yyparse
 #define yylex cod_yylex
 #define yyrestart cod_yyrestart
@@ -229,7 +238,9 @@ cod_dup_list(sm_list list)
 %token <info> VOID
 %token <info> STRING
 %token <info> STATIC
+%token <info> EXTERN_TOKEN
 %token <info> STRUCT
+%token <info> ENUM
 %token <info> UNION
 %token <info> CONST
 %token <info> SIZEOF
@@ -247,9 +258,11 @@ cod_dup_list(sm_list list)
 %token <info> floating_constant
 %token <info> identifier_ref
 %token <info> type_id
+%token <info> enumeration_constant
 
 %type <info> struct_or_union;
 %type <info> assignment_operator
+%type <info> unary_operator
 %type <reference> compound_statement;
 %type <reference> labeled_statement;
 %type <list> declaration_list decls_stmts_list;
@@ -273,6 +286,7 @@ cod_dup_list(sm_list list)
 %type <list> parameter_type_list;
 %type <list> argument_expression_list;
 %type <reference> struct_or_union_specifier
+%type <reference> enum_specifier
 %type <reference> parameter_declaration;
 %type <reference> type_specifier;
 %type <reference> type_qualifier;
@@ -328,7 +342,8 @@ primary_expression:
 	{ $$ = $2; }
 	;
 
-/* missing ->  */
+/* missing ->  	| '(' type_name ')' '{' initializer_list '}'
+	| '(' type_name ')' '{' initializer_list ',' '}'  */
 postfix_expression:
 	primary_expression
 	|
@@ -400,7 +415,7 @@ argument_expression_list:
 	};
 
 
-/* missing ~, */
+/* missing ALIGNOF */
 unary_expression:
 	postfix_expression
         | INC_OP unary_expression {
@@ -417,45 +432,10 @@ unary_expression:
 	    $$->node.operator.right = $2;
 	    $$->node.operator.left = NULL;
 	}
-	| STAR cast_expression {
+	| unary_operator cast_expression {
 	    $$ = cod_new_operator();
 	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
-	    $$->node.operator.op = op_deref;
-	    $$->node.operator.right = $2;
-	    $$->node.operator.left = NULL;
-	}
-	| BANG cast_expression {
-	    $$ = cod_new_operator();
-	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
-	    $$->node.operator.op = op_log_neg;
-	    $$->node.operator.right = $2;
-	    $$->node.operator.left = NULL;
-	}
-	| ARITH_AND cast_expression {
-	    $$ = cod_new_operator();
-	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
-	    $$->node.operator.op = op_address;
-	    $$->node.operator.right = $2;
-	    $$->node.operator.left = NULL;
-	}
-	| PLUS cast_expression {
-	    $$ = cod_new_operator();
-	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
-	    $$->node.operator.op = op_plus;
-	    $$->node.operator.right = $2;
-	    $$->node.operator.left = NULL;
-	}
-	| MINUS cast_expression {
-	    $$ = cod_new_operator();
-	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
-	    $$->node.operator.op = op_minus;
-	    $$->node.operator.right = $2;
-	    $$->node.operator.left = NULL;
-	}
-	| TILDE cast_expression {
-	    $$ = cod_new_operator();
-	    $$->node.operator.lx_srcpos = $1.lx_srcpos;
-	    $$->node.operator.op = op_not;
+	    $$->node.operator.op = $1.op;
 	    $$->node.operator.right = $2;
 	    $$->node.operator.left = NULL;
 	}
@@ -479,6 +459,27 @@ unary_expression:
 	    $$->node.operator.right = cast;
 	    $$->node.operator.left = NULL;
 	};
+
+unary_operator
+	: ARITH_AND {
+	    $$.op = op_address;
+	}
+	| STAR {
+	    $$.op = op_deref;
+	}
+	| PLUS {
+	    $$.op = op_plus;
+	}
+	| MINUS {
+	    $$.op = op_minus;
+	}
+	| TILDE {
+	    $$.op = op_not;
+	}
+	| BANG {
+	    $$.op = op_log_neg;
+	  }
+	;
 
 cast_expression:
 	unary_expression
@@ -773,8 +774,12 @@ init_declarator_list
 	}
 	;
 
-declaration:
-	declaration_specifiers 
+/*
+missing :
+	| static_assert_declaration
+*/
+declaration
+	: declaration_specifiers 
 	     { 
 		 if (parsing_type) {
 		     yyparse_value = (sm_ref) $1;
@@ -865,6 +870,9 @@ declaration:
 		}
 		(void)$<reference>4;
 	    }
+	| declaration_specifiers SEMI {
+	    $$ = $1;
+	}
 	;
 
 declaration_specifiers
@@ -923,8 +931,12 @@ storage_class_specifier
 	    $$->node.type_specifier.lx_srcpos = $1.lx_srcpos;
 	    $$->node.type_specifier.token = STATIC;
 	}
+	| EXTERN_TOKEN {
+	    $$ = NULL;
+	}
 	;
 
+/* missing BOOL  COMPLEX IMAGINARY */
 type_specifier:
 	CHAR {
 	    $$ = cod_new_type_specifier();
@@ -984,6 +996,9 @@ type_specifier:
 	| struct_or_union_specifier {
 	    $$ = $1;
 	}
+	| enum_specifier {
+	    $$ = $1;
+	}
 	;
 
 struct_or_union_specifier
@@ -1017,8 +1032,10 @@ struct_declaration_list
 	}
 	;
 
+/* missing static_assert_declaration */
 struct_declaration
-	: specifier_qualifier_list struct_declarator_list SEMI {
+	: specifier_qualifier_list SEMI { }
+	| specifier_qualifier_list struct_declarator_list SEMI {
 	    sm_list type_spec = $1;
 	    sm_list decl_list = $2;
  	    $$ = $2;
@@ -1111,6 +1128,24 @@ specifier_qualifier_list
 	    $$->node = $1;
 	    $$->next = NULL;
 	}
+	;
+
+enum_specifier
+	: ENUM LCURLY enumerator_list RCURLY {$$ = NULL;}
+	| ENUM LCURLY enumerator_list COMMA RCURLY {$$ = NULL;}
+	| ENUM identifier_ref LCURLY enumerator_list RCURLY {$$ = NULL;}
+	| ENUM identifier_ref LCURLY enumerator_list COMMA RCURLY {$$ = NULL;}
+	| ENUM identifier_ref {$$ = NULL;}
+	;
+
+enumerator_list
+	: enumerator
+	| enumerator_list ',' enumerator
+	;
+
+enumerator	/* identifiers must be flagged as ENUMERATION_CONSTANT */
+	: identifier_ref '=' constant_expression
+	| identifier_ref
 	;
 
 type_qualifier
@@ -1329,10 +1364,18 @@ parameter_list:
 	
 /* missing
  	| declaration_specifiers abstract_declarator
-	| declaration_specifiers
 */
-parameter_declaration:
-	declaration_specifiers declarator {
+parameter_declaration
+	: declaration_specifiers {
+	    $$ = cod_new_declaration();
+	    $$->node.declaration.param_num = -1;
+	    $$->node.declaration.id = gen_anon();
+	    $$->node.declaration.init_value = NULL;
+	    $$->node.declaration.is_subroutine = 0;
+	    $$->node.declaration.params = NULL;
+	    $$->node.declaration.type_spec = $1;
+	}
+	| declaration_specifiers declarator {
 		$$ = $2;
 		if ($$->node_type == cod_declaration) {
 		    $$->node.declaration.static_var = 0;
@@ -1382,10 +1425,71 @@ type_name:
 	}
 	;
 
+/* missing 
+	: pointer direct_abstract_declarator
+	| direct_abstract_declarator
+
+identifier_list
+	: IDENTIFIER
+	| identifier_list ',' IDENTIFIER
+	;
+
+direct_abstract_declarator
+	: '(' abstract_declarator ')'
+	| '[' ']'
+	| '[' '*' ']'
+	| '[' STATIC type_qualifier_list assignment_expression ']'
+	| '[' STATIC assignment_expression ']'
+	| '[' type_qualifier_list STATIC assignment_expression ']'
+	| '[' type_qualifier_list assignment_expression ']'
+	| '[' type_qualifier_list ']'
+	| '[' assignment_expression ']'
+	| direct_abstract_declarator '[' ']'
+	| direct_abstract_declarator '[' '*' ']'
+	| direct_abstract_declarator '[' STATIC type_qualifier_list assignment_expression ']'
+	| direct_abstract_declarator '[' STATIC assignment_expression ']'
+	| direct_abstract_declarator '[' type_qualifier_list assignment_expression ']'
+	| direct_abstract_declarator '[' type_qualifier_list STATIC assignment_expression ']'
+	| direct_abstract_declarator '[' type_qualifier_list ']'
+	| direct_abstract_declarator '[' assignment_expression ']'
+	| '(' ')'
+	| '(' parameter_type_list ')'
+	| direct_abstract_declarator '(' ')'
+	| direct_abstract_declarator '(' parameter_type_list ')'
+	;
+
+*/
+
 abstract_declarator:
 	pointer
 	;
 
+/* missing
+	: '{' initializer_list '}'
+	| '{' initializer_list ',' '}'
+
+initializer_list
+	: designation initializer
+	| initializer
+	| initializer_list ',' designation initializer
+	| initializer_list ',' initializer
+	;
+
+designation
+	: designator_list '='
+	;
+
+designator_list
+	: designator
+	| designator_list designator
+	;
+
+designator
+	: '[' constant_expression ']'
+	| '.' IDENTIFIER
+	;
+
+*/
 initializer:
 	assignment_expression { $$ = $1;}
 	;
@@ -1422,6 +1526,9 @@ statement:
 	| jump_statement
 	;
 
+/* missing
+	| CASE constant_expression ':' statement
+	| DEFAULT ':' statement*/
 labeled_statement:
 	identifier_ref COLON statement {
 	    $$ = cod_new_label_statement();
@@ -1440,29 +1547,30 @@ compound_statement:
 	};
 
 declaration_list:
-	/* empty */ { $$ = NULL; }
+	declaration { $$ = $1; }
 	|
 	declaration_list declaration {
-	    if ($2 == NULL) {
-		$$ = $1;
+	    if ($1 == NULL) {
+		$$ = $2;
 	    } else {
-		if ($1 == NULL) {
-		    $$ = $2;
-		} else {
-		    sm_list tmp = $1;
-		    while (tmp->next != NULL) {
-			tmp = tmp->next;
-		    }
-		    tmp->next = $2;
-		    $$ = $1;
+		sm_list tmp = $1;
+		while (tmp->next != NULL) {
+		    tmp = tmp->next;
 		}
+		tmp->next = $2;
+		$$ = $1;
 	    }
 	};
 
 jump_statement:
-	RETURN_TOKEN expression_opt SEMI {
+	RETURN_TOKEN expression SEMI {
 	    $$ = cod_new_return_statement();
 	    $$->node.return_statement.expression = $2;
+	    $$->node.return_statement.lx_srcpos = $1.lx_srcpos;
+	}
+	| RETURN_TOKEN SEMI {
+	    $$ = cod_new_return_statement();
+	    $$->node.return_statement.expression = NULL;
 	    $$->node.return_statement.lx_srcpos = $1.lx_srcpos;
 	}
 	| CONTINUE SEMI {
@@ -1486,13 +1594,19 @@ jump_statement:
 	;
 
 expression_statement:
+	SEMI {
+	    $$ = NULL;
+	}
+	|
 	expression SEMI	{ 
 	    $$ = cod_new_expression_statement();
 	    $$->node.expression_statement.expression = $1;
 	}
 	;
 
-/* missing switch */
+/* missing switch 
+	| SWITCH '(' expression ')' statement
+*/
 selection_statement:
 	IF LPAREN expression RPAREN statement
 	{ 
@@ -1513,6 +1627,12 @@ selection_statement:
 	}
 	;
 
+/* Could do this instead 
+	| FOR '(' expression_statement expression_statement ')' statement
+	| FOR '(' expression_statement expression_statement expression ')' statement
+	| FOR '(' declaration expression_statement ')' statement
+	| FOR '(' declaration expression_statement expression ')' statement
+*/
 iteration_statement:
 	FOR LPAREN expression_opt SEMI expression_opt SEMI expression_opt RPAREN statement
 	{ 
@@ -1575,6 +1695,13 @@ constant :
 	}
 	|
 	character_constant {
+	    $$ = cod_new_constant();
+	    $$->node.constant.token = character_constant;
+	    $$->node.constant.const_val = $1.string;
+	    $$->node.constant.lx_srcpos = $1.lx_srcpos;
+	}
+	|
+	enumeration_constant {
 	    $$ = cod_new_constant();
 	    $$->node.constant.token = character_constant;
 	    $$->node.constant.const_val = $1.string;
@@ -1643,13 +1770,14 @@ void cod_set_dont_coerce_return(cod_parse_context context, int value)
 
 static 
 char *
-cod_preprocessor(char *input, cod_parse_context context)
+cod_preprocessor(char *input, cod_parse_context context, int*white)
 {
     char *out;
     char *ptr;
     if (index(input, '#') == NULL) return NULL;
     out = strdup(input);
     ptr = out;
+    *white = 0;
     while (ptr && (*ptr)) {
 	if (isspace(*ptr)) ptr++;
 	if (*ptr == '#') {
@@ -1690,6 +1818,14 @@ cod_preprocessor(char *input, cod_parse_context context)
 	    ptr = index(ptr, '\n');
 	}
     }
+    { 
+	char *tmp = out;
+	while(isspace(*tmp)) tmp++;
+	if(*tmp == 0) {
+	    free(out);
+	    *white = 1;
+	}
+    }
     return out;
 }
 	
@@ -1711,12 +1847,14 @@ cod_parse_context context;
 {
     sm_list decls;
     int ret;
+    int all_whitespace = 0;
     char *freeable_code = NULL;
 #if defined(YYDEBUG) && (YYDEBUG != 0)
     extern int yydebug;
     yydebug = 1;
 #endif
-    freeable_code = cod_preprocessor(code, context);
+    freeable_code = cod_preprocessor(code, context, &all_whitespace);
+    if (all_whitespace) return 1;
     if (freeable_code) {
 	code = freeable_code;
     }
@@ -2115,9 +2253,14 @@ free_enc_info(enc_info enc)
     free(enc);
 }
 
+enum namespace { NS_DEFAULT, NS_STRUCT };
+
+char *namespace_str[] = {"DEFAULT", "STRUCT"};
+
 typedef struct st_entry {
     char *id;
     sm_ref node;
+    enum namespace ns;
     struct st_entry *next;
 } *st_entry;
 
@@ -2235,7 +2378,7 @@ dump_scope(scope_ptr scope)
     if (scope->entry_list != NULL) {
 	st_entry e = scope->entry_list;
 	while (e != NULL) {
-	    printf("\t\"%s\" -> 0x%p\n", e->id, e->node);
+	    printf("\t\"%s\" -> 0x%p   [%s]\n", e->id, e->node, namespace_str[e->ns]);
 	    cod_print(e->node);
 	    e = e->next;
 	}
@@ -2247,6 +2390,18 @@ add_decl(char *id, sm_ref node, scope_ptr scope)
     st_entry entry = malloc(sizeof(*entry));
     entry->node = node;
     entry->id = id;
+    entry->ns = NS_DEFAULT;
+    entry->next = scope->entry_list;
+    scope->entry_list = entry;
+}
+
+static void
+add_decl_ns(char *id, sm_ref node, scope_ptr scope, enum namespace ns)
+{
+    st_entry entry = malloc(sizeof(*entry));
+    entry->node = node;
+    entry->id = id;
+    entry->ns = ns;
     entry->next = scope->entry_list;
     scope->entry_list = entry;
 }
@@ -2280,15 +2435,6 @@ resolve(char *id, scope_ptr scope)
 	return tmp;
     }
     return resolve(id, scope->containing_scope);
-}
-
-static char*
-gen_anon()
-{
-    static int anon_count = 0;
-    char *ret = malloc(strlen("Anonymous-xxxxxxxxxxxxxxxxx"));
-    sprintf(ret, "Anonymous-%d", anon_count++);
-    return ret;
 }
 
 static int
@@ -4018,7 +4164,17 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	    }
 	    break;
 	case cod_struct_type_decl: {
-	    complex_return_type = node;
+	    if (node->node.struct_type_decl.fields != NULL) {
+		complex_return_type = node;
+	    } else {
+		complex_return_type = resolve(node->node.struct_type_decl.id, scope);
+		if (complex_return_type == NULL) {
+		    cod_src_error(context, node,
+				  "Struct declaration not found");
+		    return NULL;
+		}
+	    }
+	    *cg_type = DILL_B;
 	    break;
 	}
 	default:
@@ -5032,7 +5188,7 @@ semanticize_struct_type_node(cod_parse_context context, sm_ref decl,
     int ret = 1;
     int struct_size = 0;
     sm_list fields = decl->node.struct_type_decl.fields;
-    add_decl(decl->node.struct_type_decl.id, decl, scope);
+    add_decl_ns(decl->node.struct_type_decl.id, decl, scope, NS_STRUCT);
     while(fields != NULL) {
 	field *f = &fields->node->node.field;
 	fl[field_num].field_name = f->name;

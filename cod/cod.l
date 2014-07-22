@@ -79,6 +79,17 @@ char *id;
     }
     return 0;
 }
+static
+int
+is_enumeration_constant(id)
+char *id;
+{
+    int i;
+    for(i=0; i< type_count; i++) {
+	if (strcmp(id, types[i]) == 0) return 1;
+    }
+    return 0;
+}
 static void check_strbuf();
 static int buffer_len;
 static char *string_buffer;
@@ -147,6 +158,7 @@ static char *string_buf_ptr;
 "double"		{RETURN(DOUBLE);}
 "void"			{RETURN(VOID);}
 static			{RETURN(STATIC);}
+extern			{RETURN(EXTERN_TOKEN);}
 typedef			{RETURN(TYPEDEF);}
 continue		{RETURN(CONTINUE);}
 break			{RETURN(BREAK);}
@@ -154,6 +166,7 @@ goto			{RETURN(GOTO);}
 const			{RETURN(CONST);}
 sizeof			{RETURN(SIZEOF);}
 struct			{RETURN(STRUCT);}
+enum			{RETURN(ENUM);}
 union			{RETURN(UNION);}
 return			{RETURN(RETURN_TOKEN);}
 "{"			{RETURN(LCURLY);}
@@ -165,6 +178,8 @@ return			{RETURN(RETURN_TOKEN);}
 				yylval.info.string = create_string_from_yytext();
 				if (is_defined_type(yylval.info.string)) {
 				    RETURN(type_id);
+				} else if (is_enumeration_constant(yylval.info.string)) {
+				    RETURN(enumeration_constant);
 				} else {
 				    RETURN(identifier_ref);
 				}
@@ -253,16 +268,16 @@ return			{RETURN(RETURN_TOKEN);}
 				yylval.info.string = create_string_from_yytext();
 				RETURN(character_constant);
 			}
-[0-9][0-9]*		{
+[0-9][0-9]*{IS}?	{
 				yylval.info.string = create_string_from_yytext();
 				RETURN(integer_constant);
 			}
-0x[0-9a-fA-F]+		{
+0x[0-9a-fA-F]+{IS}?	{
 				yylval.info.string = create_string_from_yytext();
 				RETURN(integer_constant);
 			}
 
-0b[01]+			{
+0b[01]+{IS}?			{
 				yylval.info.string = create_string_from_yytext();
 				RETURN(integer_constant);
 			}
