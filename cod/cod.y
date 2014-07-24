@@ -272,6 +272,8 @@ cod_dup_list(sm_list list)
 %type <list> init_declarator_list;
 %type <reference> declarator;
 %type <reference> direct_declarator;
+%type <list> enumerator_list;
+%type <reference> enumerator;
 %type <list> declaration_specifiers;
 %type <list> type_qualifier_list;
 %type <list> specifier_qualifier_list;
@@ -1131,21 +1133,71 @@ specifier_qualifier_list
 	;
 
 enum_specifier
-	: ENUM LCURLY enumerator_list RCURLY {$$ = NULL;}
-	| ENUM LCURLY enumerator_list COMMA RCURLY {$$ = NULL;}
-	| ENUM identifier_ref LCURLY enumerator_list RCURLY {$$ = NULL;}
-	| ENUM identifier_ref LCURLY enumerator_list COMMA RCURLY {$$ = NULL;}
-	| ENUM identifier_ref {$$ = NULL;}
+	: ENUM LCURLY enumerator_list RCURLY {
+	    $$ = cod_new_enum_type_decl();
+	    $$->node.enum_type_decl.id = gen_anon();
+	    $$->node.enum_type_decl.enums = $3;
+	    $$->node.enum_type_decl.lx_srcpos = $1.lx_srcpos;
+	    // cod_add_defined_type(decl->node.declaration.id, yycontext);
+	}
+	| ENUM LCURLY enumerator_list COMMA RCURLY {
+	    $$ = cod_new_enum_type_decl();
+	    $$->node.enum_type_decl.id = gen_anon();
+	    $$->node.enum_type_decl.enums = $3;
+	    $$->node.enum_type_decl.lx_srcpos = $1.lx_srcpos;
+	    // cod_add_defined_type(decl->node.declaration.id, yycontext);
+	}
+	| ENUM identifier_ref LCURLY enumerator_list RCURLY {
+	    $$ = cod_new_enum_type_decl();
+	    $$->node.enum_type_decl.id = $2.string;
+	    $$->node.enum_type_decl.enums = $4;
+	    $$->node.enum_type_decl.lx_srcpos = $1.lx_srcpos;
+	    // cod_add_defined_type(decl->node.declaration.id, yycontext);
+	}
+	| ENUM identifier_ref LCURLY enumerator_list COMMA RCURLY {
+	    $$ = cod_new_enum_type_decl();
+	    $$->node.enum_type_decl.id = $2.string;
+	    $$->node.enum_type_decl.enums = $4;
+	    $$->node.enum_type_decl.lx_srcpos = $1.lx_srcpos;
+	    // cod_add_defined_type(decl->node.declaration.id, yycontext);
+	}
+	| ENUM identifier_ref {
+	    $$ = cod_new_enum_type_decl();
+	    $$->node.enum_type_decl.id = $2.string;
+	    $$->node.enum_type_decl.enums = NULL;
+	    $$->node.enum_type_decl.lx_srcpos = $1.lx_srcpos;
+	    // cod_add_defined_type(decl->node.declaration.id, yycontext);
+	}
 	;
 
 enumerator_list
-	: enumerator
-	| enumerator_list ',' enumerator
+	: enumerator {
+	    sm_list tmp = malloc(sizeof(struct list_struct));
+	    tmp->node = $1;
+	    tmp->next = NULL;
+	    $$ = tmp;
+	}
+	| enumerator_list COMMA enumerator {
+	    sm_list tmp = malloc(sizeof(struct list_struct));
+	    tmp->node = $3;
+	    tmp->next = $1;
+	    $$ = tmp;
+	}
+
 	;
 
 enumerator	/* identifiers must be flagged as ENUMERATION_CONSTANT */
-	: identifier_ref '=' constant_expression
-	| identifier_ref
+	: identifier_ref ASSIGN constant_expression {
+	    $$ = cod_new_enumerator();
+	    $$->node.enumerator.id = $1.string;
+	    $$->node.enumerator.const_expression = $3;
+	}
+
+	| identifier_ref {
+	    $$ = cod_new_enumerator();
+	    $$->node.enumerator.id = $1.string;
+	    $$->node.enumerator.const_expression = NULL;
+	}
 	;
 
 type_qualifier
@@ -1431,7 +1483,7 @@ type_name:
 
 identifier_list
 	: IDENTIFIER
-	| identifier_list ',' IDENTIFIER
+	| identifier_list COMMA IDENTIFIER
 	;
 
 direct_abstract_declarator
@@ -1527,8 +1579,8 @@ statement:
 	;
 
 /* missing
-	| CASE constant_expression ':' statement
-	| DEFAULT ':' statement*/
+	| CASE constant_expression COLON statement
+	| DEFAULT COLON statement*/
 labeled_statement:
 	identifier_ref COLON statement {
 	    $$ = cod_new_label_statement();
@@ -1605,7 +1657,7 @@ expression_statement:
 	;
 
 /* missing switch 
-	| SWITCH '(' expression ')' statement
+	| SWITCH LPAREN expression RPAREN statement
 */
 selection_statement:
 	IF LPAREN expression RPAREN statement
@@ -1718,8 +1770,8 @@ struct parse_struct {
     sm_list decls;
     sm_list standard_decls;
     scope_ptr scope;
-    int defined_type_count;
     char **defined_types;
+    char **enumerated_constants;
     err_out_func_t error_func;
     void *client_data;
     sm_list return_type_list;
@@ -1859,7 +1911,7 @@ cod_parse_context context;
 	code = freeable_code;
     }
     if (code != NULL) {
-	setup_for_string_parse(code, context->defined_type_count, context->defined_types);
+	setup_for_string_parse(code, context->defined_types, context->enumerated_constants);
 	cod_code_string = code;
     }
     yyerror_count = 0;
@@ -1901,7 +1953,7 @@ cod_parse_context context;
     void *func;
 
     if (code != NULL) {
-	setup_for_string_parse(code, context->defined_type_count, context->defined_types);
+	setup_for_string_parse(code, context->defined_types, context->enumerated_constants);
 	cod_code_string = code;
     }
 
@@ -1967,7 +2019,7 @@ cod_parse_context context;
     sm_ref tmp;
 
     if (code != NULL) {
-	setup_for_string_parse(code, context->defined_type_count, context->defined_types);
+	setup_for_string_parse(code, context->defined_types, context->enumerated_constants);
 	cod_code_string = code;
     }
 
@@ -2253,7 +2305,7 @@ free_enc_info(enc_info enc)
     free(enc);
 }
 
-enum namespace { NS_DEFAULT, NS_STRUCT };
+enum namespace { NS_DEFAULT, NS_STRUCT, NS_ENUM };
 
 char *namespace_str[] = {"DEFAULT", "STRUCT"};
 
@@ -2277,6 +2329,7 @@ cod_copy_context(context)
 cod_parse_context context;
 {
     int i;
+    int type_count = 0;
     cod_parse_context new_context = new_cod_parse_context();
     new_context->has_exec_context = context->has_exec_context;
     new_context->decls = cod_copy_list(context->decls);
@@ -2292,9 +2345,9 @@ cod_parse_context context;
     semanticize_decls_list(new_context, new_context->decls, 
 			   new_context->scope);
     free(new_context->defined_types);
-    new_context->defined_types = malloc(sizeof(char*) *
-					context->defined_type_count);
-    for (i=0; i< context->defined_type_count; i++) {
+    while(context->defined_types && context->defined_types[type_count]) type_count++;
+    new_context->defined_types = malloc(sizeof(char*) * (type_count + 2));
+    for (i=0; i<= type_count; i++) {
 	new_context->defined_types[i] = context->defined_types[i];
     }
     return new_context;
@@ -3725,6 +3778,8 @@ cod_sm_get_type(sm_ref node)
 	    return cod_sm_get_type(node->node.identifier.sm_declaration);
 	}
 	return node->node.identifier.cg_type;
+    case cod_enumerator:
+	return DILL_I;
     case cod_operator:
 	return node->node.operator.result_type;
     case cod_conditional_operator:
@@ -3885,7 +3940,8 @@ get_complex_type(cod_parse_context context, sm_ref node)
     case cod_cast:
 	return node->node.cast.sm_complex_type;
 	break;
-
+    case cod_enumerator:
+	return NULL;
     default:
 	fprintf(stderr, "Unknown case in get_complex_type()\n");
 	cod_print(node);
@@ -4177,6 +4233,20 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	    *cg_type = DILL_B;
 	    break;
 	}
+	case cod_enum_type_decl: {
+	    if (node->node.enum_type_decl.enums != NULL) {
+		complex_return_type = node;
+	    } else {
+		complex_return_type = resolve(node->node.enum_type_decl.id, scope);
+		if (complex_return_type == NULL) {
+		    cod_src_error(context, node,
+				  "Enum declaration not found");
+		    return NULL;
+		}
+	    }
+	    *cg_type = DILL_I;
+	    break;
+	}
 	default:
 	    printf("Unexpected node in reduce_type_list\n");
 	    return NULL;
@@ -4222,16 +4292,19 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 	}
     }
     if ((left_smt != NULL) && 
-	(left_smt->node_type != cod_reference_type_decl)) {
-	cod_src_error(context, left, "Only pointer complex types allowed as LHS in assignment");
+	((left_smt->node_type != cod_reference_type_decl) &&
+	 (left_smt->node_type != cod_enum_type_decl))) {
+	cod_src_error(context, left, "Only pointer or enum complex types allowed as LHS in assignment");
 	return 0;
     }
     if ((right_smt != NULL) && 
-	(right_smt->node_type != cod_reference_type_decl)) {
-	cod_src_error(context, right, "Only pointer complex types allowed as RHS in assignment");
+	((right_smt->node_type != cod_reference_type_decl) &&
+	 (right_smt->node_type != cod_enum_type_decl))) {
+	cod_src_error(context, right, "Only pointer or enum complex types allowed as RHS in assignment");
 	return 0;
     }
-    if (left_smt && (right_smt == NULL)) {
+    if (left_smt && (left_smt->node_type == cod_reference_type_decl) &&
+	(right_smt == NULL)) {
 
 	switch(right_cgt) {
 	case DILL_P:
@@ -4268,6 +4341,9 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 
 static int semanticize_struct_type_node(cod_parse_context context, sm_ref decl, 
 					scope_ptr scope);
+
+static int semanticize_enum_type_node(cod_parse_context context, sm_ref decl, 
+				      scope_ptr scope);
 
 static int
 is_constant_expr(sm_ref expr)
@@ -4486,6 +4562,9 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
     case cod_constant:
         return 1;
         break;
+    case cod_enum_type_decl:
+	return semanticize_enum_type_node(context, decl, scope);
+	break;
     default:
 	printf("Unhandled case in semanticize decls_list\n");
 	cod_print(decl);
@@ -4557,6 +4636,7 @@ semanticize_decls_stmts_list(cod_parse_context context, sm_list decls_stmts, sco
 	case cod_struct_type_decl:
 	case cod_array_type_decl:
 	case cod_reference_type_decl:
+	case cod_enum_type_decl:
 	case cod_constant:
 	    if (!semanticize_decl(context, item, scope)) {
 		ret = 0;
@@ -4812,16 +4892,36 @@ cod_add_defined_type(id, context)
 char *id;
 cod_parse_context context;
 {
-    int count = context->defined_type_count;
+    int count = 0;
+    while(context->defined_types && context->defined_types[count]) count++;
     if (count == 0) {
-	context->defined_types = malloc(sizeof(char*));
+	context->defined_types = malloc(sizeof(char*) * 2);
     } else {
 	context->defined_types = realloc(context->defined_types,
-					 (count+1)*sizeof(char*));
+					 (count+2)*sizeof(char*));
     }
     context->defined_types[count] = id;
-    context->defined_type_count++;
-    reset_types_table(context->defined_type_count, context->defined_types);
+    context->defined_types[count+1] = NULL;
+    reset_types_table(context->defined_types, context->enumerated_constants);
+		      
+}
+
+void
+cod_add_enum_const(id, context)
+char *id;
+cod_parse_context context;
+{
+    int count = 0;
+    while(context->enumerated_constants && context->enumerated_constants[count]) count++;
+    if (count == 0) {
+	context->enumerated_constants = malloc(sizeof(char*) * 2);
+    } else {
+	context->enumerated_constants = realloc(context->enumerated_constants,
+					 (count+2)*sizeof(char*));
+    }
+    context->enumerated_constants[count] = id;
+    context->enumerated_constants[count+1] = NULL;
+    reset_types_table(context->defined_types, context->enumerated_constants);
 }
 
 extern void
@@ -5257,6 +5357,27 @@ semanticize_struct_type_node(cod_parse_context context, sm_ref decl,
 }
 
 static int
+semanticize_enum_type_node(cod_parse_context context, sm_ref decl, 
+		      scope_ptr scope)
+{
+    sm_list enums = decl->node.enum_type_decl.enums;
+    int value = 0;
+    while(enums != NULL) {
+	if (enums->node->node.enumerator.const_expression) {
+	    if (!is_constant_expr(enums->node->node.enumerator.const_expression)) {
+		cod_src_error(context, enums->node, 
+			      "Enumerator value expression must be constant.");
+		return 0;
+	    }
+	}
+	add_decl(enums->node->node.enumerator.id, enums->node, context->scope);
+	enums = enums->next;
+    }
+    add_decl_ns(decl->node.enum_type_decl.id, decl, scope, NS_ENUM);
+    return 1;
+}
+
+static int
 semanticize_reference_type_node(cod_parse_context context, sm_ref decl, 
 				scope_ptr scope)
 {
@@ -5368,7 +5489,7 @@ cod_add_param(const char *id, const char *typ, int param_num,
 {
     sm_list type_list;
     sm_ref node;
-    setup_for_string_parse(typ, context->defined_type_count, context->defined_types);
+    setup_for_string_parse(typ, context->defined_types, context->enumerated_constants);
     cod_code_string = typ;
     parsing_type = 1;
     yyerror_count = 0;
@@ -5394,8 +5515,7 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
     sm_ref complex_type, declaration, freeable_complex_type = NULL;
     int cg_type, param_num;
 
-    setup_for_string_parse(decl, context->defined_type_count, 
-			   context->defined_types);
+    setup_for_string_parse(decl, context->defined_types, context->enumerated_constants);
     cod_code_string = decl;
     parsing_param_spec = 1;
     yyerror_count = 0;
@@ -5451,7 +5571,7 @@ cod_set_return_type(char *typ, cod_parse_context context)
     sm_list type_list;
     int cg_type;
     sm_ref complex_type, freeable_complex_type = NULL;
-    setup_for_string_parse(typ, context->defined_type_count, context->defined_types);
+    setup_for_string_parse(typ, context->defined_types, context->enumerated_constants);
     cod_code_string = typ;
     parsing_type = 1;
     yyerror_count = 0;
@@ -5488,8 +5608,8 @@ new_cod_parse_context()
     context->decls = NULL;
     context->standard_decls = NULL;
     context->scope = push_scope(NULL);
-    context->defined_type_count = 0;
     context->defined_types = NULL;
+    context->enumerated_constants = NULL;
     context->error_func = default_error_out;
     context->client_data = NULL;
     context->return_type_list = NULL;
@@ -5563,19 +5683,22 @@ extern void
 cod_remove_defined_types(sm_list decls_list, cod_parse_context context)
 {
     sm_list l = decls_list;
+    int type_count = 0;
+    while(context->defined_types && context->defined_types[type_count]) type_count++;
+
     while (l != NULL) {
 	if (l->node->node_type == cod_declaration) {
 	    int i = 0;
-	    while ((i < context->defined_type_count) && 
+	    while ((i < type_count) && 
 	           (l->node->node.declaration.id != context->defined_types[i])) {
 		i++;
 	    }
-	    if (i < context->defined_type_count) {
-		while (i < (context->defined_type_count-1)) {
+	    if (i < type_count) {
+		while (i < (type_count-1)) {
 		    context->defined_types[i] = context->defined_types[i+1];
 		    i++;
 		}
-		context->defined_type_count--;
+		type_count--;
 	    }
 	}
 	l = l->next;

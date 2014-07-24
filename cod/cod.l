@@ -21,6 +21,7 @@ static char *create_string_from_yytext();
 #define RETURN(val) {yylval.info.lx_srcpos.line = line_count; yylval.info.lx_srcpos.character = lex_offset; lex_offset +=yyleng; return(val);}
 static int type_count;
 static char**types;
+static char**enums;
 #ifdef input
 /* lex, not flex */
 static char *saved_input_str = NULL;
@@ -35,15 +36,15 @@ terminate_string_parse()
 
 static char *input_str = NULL;
 static void
-setup_for_string_parse(string, defined_type_count, defined_types)
+setup_for_string_parse(string, defined_types, enum_constants)
 const char *string;
-int defined_type_count;
 char **defined_types;
+char **enum_constants;
 {
     int len = strlen(string);
 
-    type_count = defined_type_count;
     types = defined_types;
+    enums = enum_constants;
     if (saved_input_str != NULL) free(input_str);
     input_str = malloc(len + 2);
     saved_input_str = input_str;
@@ -73,9 +74,10 @@ int
 is_defined_type(id)
 char *id;
 {
-    int i;
-    for(i=0; i< type_count; i++) {
+    int i = 0;
+    while(types && types[i]) {
 	if (strcmp(id, types[i]) == 0) return 1;
+	i++;
     }
     return 0;
 }
@@ -84,9 +86,10 @@ int
 is_enumeration_constant(id)
 char *id;
 {
-    int i;
-    for(i=0; i< type_count; i++) {
-	if (strcmp(id, types[i]) == 0) return 1;
+    int i = 0;
+    while(enums && enums[i]) {
+	if (strcmp(id, enums[i]) == 0) return 1;
+	i++;
     }
     return 0;
 }
@@ -381,13 +384,14 @@ int my_yy_input(buf,result,max_size) {
 }
 
 static void
-setup_for_string_parse(string, defined_type_count, defined_types)
+setup_for_string_parse(string, defined_types, enum_constants)
 const char *string;
-int defined_type_count;
 char **defined_types;
+char **enum_constants;
 {
     type_count = defined_type_count;
     types = defined_types;
+    enums = enum_constants;
 
     current_input_string = string;
     lex_offset = 1;
@@ -398,22 +402,22 @@ char **defined_types;
 static YY_BUFFER_STATE bb = NULL;
 
 static void
-reset_types_table(defined_type_count, defined_types)
-int defined_type_count;
+reset_types_table(defined_types, enumerated_constants)
 char **defined_types;
+char **enumerated_constants;
 {
-    type_count = defined_type_count;
     types = defined_types;
+    enums = enumerated_constants;
 }
 
 static void
-setup_for_string_parse(string, defined_type_count, defined_types)
+setup_for_string_parse(string, defined_types, enum_constants)
 const char *string;
-int defined_type_count;
 char **defined_types;
+char **enum_constants;
 {
-    type_count = defined_type_count;
     types = defined_types;
+    enums = enum_constants;
 
     if ((bb = yy_scan_string(string)) == NULL) {
        fprintf(stderr, "yyscan_buffer_failed\n");

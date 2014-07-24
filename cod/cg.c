@@ -297,7 +297,12 @@ cg_preprocess(sm_ref node, void *data) {
 	inst_count_guess += 8;
 	break;
     }
+    case cod_enumerator: {
+	inst_count_guess += 1;
+	break;
+    }
     case cod_array_type_decl:
+    case cod_enum_type_decl:
 	break;
     case cod_struct_type_decl:
 	if (node->node.struct_type_decl.fields && 
@@ -530,6 +535,7 @@ cg_decls_stmts(dill_stream s, sm_list list, cod_code descr)
 	case cod_array_type_decl:
 	case cod_reference_type_decl:
 	case cod_constant:
+	case cod_enum_type_decl:
 	    cg_decl(s, item, descr);
 	    break;
 	default:
@@ -710,6 +716,29 @@ add_global(cod_code descr, char *name, int size)
     return malloc(size);
 }
 	
+static void
+assign_enum_value(sm_list enums, int *enum_value_p)
+{
+    sm_ref en;
+    if (enums == NULL) return;
+    en = enums->node;
+    assign_enum_value(enums->next, enum_value_p);
+    if (en->node.enumerator.const_expression) {
+	long tmp;
+	assert(evaluate_constant_expr(en->node.enumerator.const_expression, &tmp));
+	*enum_value_p = tmp;
+    }
+    en->node.enumerator.enum_value = (*enum_value_p)++;
+    return;
+}
+
+static void
+cg_enum_type_decl(dill_stream s, sm_ref decl, cod_code descr)
+{
+    int enum_value = 0;
+    assign_enum_value(decl->node.enum_type_decl.enums, &enum_value);
+}
+
 static void 
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
@@ -1037,6 +1066,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    last_offset += (dill_type_align(s, DILL_D) - (last_offset % dill_type_align(s, DILL_D))) % dill_type_align(s, DILL_D);
 	    decl->node.struct_type_decl.cg_size = last_offset;
         }
+	break;
+    case cod_enum_type_decl:
+	cg_enum_type_decl(s, decl, descr);
 	break;
     case cod_reference_type_decl:
 	printf("got a reference type decl\n");
@@ -2536,6 +2568,15 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 	    dill_seti(s, lvar, i);	/* op_i_seti */
 	}
+	oprnd.reg = lvar;
+	oprnd.is_addr = 0;
+	oprnd.offset = 0;
+	return oprnd;
+    }
+    case cod_enumerator:{
+	dill_reg lvar = -1;
+	lvar = dill_getreg(s, DILL_I);
+	dill_seti(s, lvar, expr->node.enumerator.enum_value);	/* op_i_seti */
 	oprnd.reg = lvar;
 	oprnd.is_addr = 0;
 	oprnd.offset = 0;

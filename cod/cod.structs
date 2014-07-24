@@ -2,6 +2,11 @@ compound_statement:
 	sm_list decls;
 	sm_list statements;
 
+enumerator:
+	char *id;
+	sm_ref const_expression;
+	int enum_value;
+
 declaration:
 	sm_list type_spec;
 	sm_ref sm_complex_type;
@@ -103,6 +108,11 @@ struct_type_decl:
 	sm_list fields;
 	int cg_size;
 	enc_info encode_info;
+
+enum_type_decl:
+	srcpos lx_srcpos;
+	char *id;
+	sm_list enums;
 
 array_type_decl:
 	srcpos lx_srcpos;
