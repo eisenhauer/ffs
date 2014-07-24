@@ -2328,18 +2328,23 @@ extern cod_parse_context
 cod_copy_context(context)
 cod_parse_context context;
 {
-    int i;
+    int i, count;
     int type_count = 0;
     cod_parse_context new_context = new_cod_parse_context();
     new_context->has_exec_context = context->has_exec_context;
     new_context->decls = cod_copy_list(context->decls);
-    i = 0;
-    while (context->scope->externs && context->scope->externs[i].extern_value) i++;
+    count = 0;
+    while (context->scope->externs && context->scope->externs[count].extern_value) count++;
     free(new_context->scope->externs);
     new_context->scope->externs = malloc(sizeof(context->scope->externs[0]) *
-					 (i+1));
-    memcpy(new_context->scope->externs, context->scope->externs, 
-	   sizeof(context->scope->externs[0]) * (i+1));
+					 (count+1));
+    for (i=0; i < count; i++) {
+      new_context->scope->externs[i].extern_name = strdup(context->scope->externs[i].extern_name);
+      new_context->scope->externs[i].extern_value = context->scope->externs[i].extern_value;
+    }
+    new_context->scope->externs[count].extern_name = NULL;
+    new_context->scope->externs[count].extern_value = NULL;
+
     new_context->error_func = context->error_func;
     new_context->client_data = context->client_data;
     semanticize_decls_list(new_context, new_context->decls, 
@@ -5636,6 +5641,11 @@ extern void
 cod_free_parse_context(cod_parse_context parse_context)
 {
     if (parse_context->scope->externs) {
+        int i = 0;
+	while(parse_context->scope->externs[i].extern_name) {
+	  free(parse_context->scope->externs[i].extern_name);
+	  i++;
+	}
 	free(parse_context->scope->externs);
     }
     pop_scope(parse_context->scope);
@@ -5659,16 +5669,29 @@ cod_assoc_externs(cod_parse_context context, cod_extern_list externs)
 {
     int new_count = 0;
 
-    while(externs[new_count++].extern_value);
+    while(externs[new_count].extern_value) new_count++;
 
     if (context->scope->externs == NULL) {
-	context->scope->externs = malloc(new_count * sizeof(externs[0]));
-	memcpy(context->scope->externs, externs, new_count * sizeof(externs[0]));
+        int i;
+	context->scope->externs = malloc((new_count+1) * sizeof(externs[0]));
+	for (i=0; i < new_count; i++) {
+	  context->scope->externs[i].extern_name = strdup(externs[i].extern_name);
+	  context->scope->externs[i].extern_value = externs[i].extern_value;
+	}
+	context->scope->externs[new_count].extern_name = NULL;
+	context->scope->externs[new_count].extern_value = NULL;
     } else {
 	int old_count = 0;
+        int i;
 	while(context->scope->externs[old_count++].extern_value);
-	context->scope->externs = realloc(context->scope->externs, (new_count + old_count -1) * sizeof(externs[0]));
-	memcpy(&context->scope->externs[old_count-1], externs, new_count * sizeof(externs[0]));
+	context->scope->externs = realloc(context->scope->externs, (new_count + old_count) * sizeof(externs[0]));
+	
+	for (i=0; i < new_count; i++) {
+	  context->scope->externs[old_count + i - 1].extern_name = strdup(externs[i].extern_name);
+	  context->scope->externs[old_count + i - 1].extern_value = externs[i].extern_value;
+	}
+	context->scope->externs[new_count + old_count -1].extern_name = NULL;
+	context->scope->externs[new_count + old_count -1].extern_value = NULL;
     }
 }
 
