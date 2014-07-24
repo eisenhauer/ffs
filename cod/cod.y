@@ -3852,7 +3852,13 @@ are_compatible_ptrs(sm_ref left, sm_ref right) {
 extern sm_ref
 get_complex_type(cod_parse_context context, sm_ref node)
 {
+    if (!node) return NULL;
     switch(node->node_type) {
+    case cod_array_type_decl:
+    case cod_reference_type_decl:
+    case cod_struct_type_decl:
+    case cod_enum_type_decl:
+	return node;
     case cod_subroutine_call:
 	return get_complex_type(context,
 				node->node.subroutine_call.sm_func_ref);
@@ -3864,7 +3870,7 @@ get_complex_type(cod_parse_context context, sm_ref node)
     case cod_field:
 	return node->node.field.sm_complex_type;
     case cod_declaration:
-	return node->node.declaration.sm_complex_type;
+	return get_complex_type(context, node->node.declaration.sm_complex_type);
     case cod_field_ref:{
 	sm_ref typ;
 	sm_list fields;
@@ -4113,7 +4119,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	} else if (long_appeared || long_long_appeared) {
 	    *cg_type = DILL_L;
 	    goto finalize;
-	} else {
+	} else if (int_appeared) {
 	    *cg_type = DILL_I;
 	    goto finalize;
 	}
@@ -4140,7 +4146,11 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	    complex_return_type = find_complex_type(node, scope);
 	    if ((complex_return_type != NULL)&&
 		(complex_return_type->node_type == cod_declaration)) {
-		complex_return_type = complex_return_type->node.declaration.sm_complex_type;
+		if (complex_return_type->node.declaration.sm_complex_type) {
+		    complex_return_type = complex_return_type->node.declaration.sm_complex_type;
+		} else {
+		    *cg_type = complex_return_type->node.declaration.cg_type;
+		}
 	    }
 	    if ((complex_return_type != NULL)&&
 		(complex_return_type->node_type == cod_reference_type_decl)) {
@@ -4172,7 +4182,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		complex_return_type = typ;
 		*freeable_type = typ;
 	    }
-	    assert(complex_return_type != NULL);
+	    assert((complex_return_type != NULL) || (*cg_type != DILL_ERR));
 	    type_found++;
 	}
 	break;
@@ -4493,7 +4503,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		if (type_def) {
 		    decl->node.declaration.is_typedef = 1;
 		}
-		if (type_def != 0) {
+		if ((type_def != 0) && typ) {
 		    semanticize_decl(context, typ, scope);
 		}
 	    } else {

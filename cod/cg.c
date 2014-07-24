@@ -748,7 +748,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
     case cod_declaration: {
 	void *var_base = NULL;
 	sm_ref ctype = decl->node.declaration.sm_complex_type;
-	if (decl->node.declaration.is_typedef) {
+	if (decl->node.declaration.is_typedef && decl->node.declaration.sm_complex_type) {
 	    cg_decl(s, decl->node.declaration.sm_complex_type, descr);
 	}
 	if (decl->node.declaration.const_var && !ctype) {
@@ -1071,7 +1071,6 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	cg_enum_type_decl(s, decl, descr);
 	break;
     case cod_reference_type_decl:
-	printf("got a reference type decl\n");
 	break;
     case cod_array_type_decl:
 	cg_decl(s, decl->node.array_type_decl.element_ref, descr);
