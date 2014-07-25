@@ -172,7 +172,12 @@ struct			{RETURN(STRUCT);}
 enum			{RETURN(ENUM);}
 union			{RETURN(UNION);}
 return			{RETURN(RETURN_TOKEN);}
-"{"			{RETURN(LCURLY);}
+"{"			{
+			    int count = 0;
+			    while(types && types[count]) count++;
+			    yylval.info.type_stack_count = count;
+			    RETURN(LCURLY);
+			}
 "}"			{RETURN(RCURLY);}
 "!"			{RETURN(BANG);}
 ":"			{RETURN(COLON);}

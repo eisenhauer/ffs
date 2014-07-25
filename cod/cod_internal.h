@@ -9,6 +9,7 @@ typedef struct {
     srcpos lx_srcpos;
     char *string;
     operator_t op;
+    int type_stack_count;
 } lx_info;
 
 typedef struct {
@@ -54,7 +55,7 @@ extern void cod_add_standard_elements(cod_parse_context context);
 extern void cod_process_include(char *name, cod_parse_context context);
 extern void cod_add_defined_type(char *id, cod_parse_context context);
 typedef struct list_struct *sm_list;
-extern void cod_remove_defined_types(sm_list l, cod_parse_context context);
+extern void cod_remove_defined_types(cod_parse_context context, int count);
 extern void cod_add_decl_to_scope(char *id, sm_ref node, cod_parse_context context);
 extern int cod_semanticize_added_decls(cod_parse_context context);
 extern void cod_swap_decls_to_standard(cod_parse_context context);

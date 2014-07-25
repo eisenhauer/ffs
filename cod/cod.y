@@ -1593,9 +1593,10 @@ compound_statement:
 	    $$ = cod_new_compound_statement();
 	}
 	| LCURLY decls_stmts_list RCURLY {
+	    int count = $1.type_stack_count;
 	    $$ = cod_new_compound_statement();
 	    $$->node.compound_statement.decls = $2;
-	    cod_remove_defined_types($$->node.compound_statement.decls, yycontext);
+	    cod_remove_defined_types(yycontext, count);
 	};
 
 declaration_list:
@@ -4902,6 +4903,13 @@ cod_build_type_node(const char *name, FMFieldList field_list)
 }
 
 
+extern void
+cod_remove_defined_types(cod_parse_context context, int count)
+{
+    char **types = context->defined_types;
+    while(types && types[count]) types[count++] = NULL;
+}
+
 void
 cod_add_defined_type(id, context)
 char *id;
@@ -5709,32 +5717,6 @@ cod_add_decl_to_parse_context(const char *name, sm_ref item, cod_parse_context c
     (*last_ptr)->node = item;
     if (item->node_type == cod_struct_type_decl) {
 	cod_add_defined_type((char *)name, context);
-    }
-}
-
-extern void 
-cod_remove_defined_types(sm_list decls_list, cod_parse_context context)
-{
-    sm_list l = decls_list;
-    int type_count = 0;
-    while(context->defined_types && context->defined_types[type_count]) type_count++;
-
-    while (l != NULL) {
-	if (l->node->node_type == cod_declaration) {
-	    int i = 0;
-	    while ((i < type_count) && 
-	           (l->node->node.declaration.id != context->defined_types[i])) {
-		i++;
-	    }
-	    if (i < type_count) {
-		while (i < (type_count-1)) {
-		    context->defined_types[i] = context->defined_types[i+1];
-		    i++;
-		}
-		type_count--;
-	    }
-	}
-	l = l->next;
     }
 }
 
