@@ -1,8 +1,8 @@
 #perl
 use File::Basename;
-$TESTSUITE_PATH="$ENV{HOME}/prog/gcc-3.3.1-3/gcc/testsuite/gcc.c-torture/execute";
+#$TESTSUITE_PATH="$ENV{HOME}/prog/gcc-3.3.1-3/gcc/testsuite/gcc.c-torture/execute";
 
-#$TESTSUITE_PATH="$ENV{HOME}/prog/tinycc/tests/tests2";
+$TESTSUITE_PATH="$ENV{HOME}/prog/tinycc/tests/tests2";
 
 $BUILD_PATH="$ENV{HOME}/";
 
@@ -15,8 +15,14 @@ my $expected_failure_count = 0;
 %tcc_exceptions =  ( "06_case" => "No CASE!",
 		     "12_hashdefine" => "Uses #define",
 		     "15_recursion" => "CoD can't do recursion",
+		     "18_include" => "CoD has special #include",
+		     "25_quicksort" => "CoD can't do recursion",
+		     "30_hanoi" => "Uses #define, recurses",
 		     "31_args" => "CoD doesn't have ARGV",
+		     "32_led" => "Uses #define",
+		     "40_stdio" => "No stdio in CoD",
 		     "41_hashif" => "Uses #if",
+		     "42_function_pointer" => "No function pointers in CoD",
 		     "46_grep" => "Grep requires ARGV, opening files, etc.  Too ambitious",
 		     "47_switch_return" => "No CASE!",
 		     "59_function_array" => "No function pointers",
@@ -29,9 +35,12 @@ my $expected_failure_count = 0;
 		     "69_macro_param_list_err_2" => "No Macros",
 		     "test" => "reason");
 
-%gcc_exceptions =  ( "20000113-1" => "Uses bitfields",
+%gcc_exceptions =  ( "20000205-1" => "Recurses",
+		     "20000113-1" => "Uses bitfields",
 		     "20000223-1" => "Uses #define",
 		     "20000402-1" => "Uses #if",
+		     "20000403-1" => "forward declarations",
+		     "20000412-1" => "Recurses",
 		     "20000818-1" => "Uses #if",
 		     "20000822-1" => "Uses #if",
 		     "20001229-1" => "Uses #if",
