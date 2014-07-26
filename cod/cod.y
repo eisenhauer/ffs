@@ -3958,6 +3958,8 @@ get_complex_type(cod_parse_context context, sm_ref node)
 	break;
     case cod_enumerator:
 	return NULL;
+    case cod_assignment_expression:
+	return get_complex_type(context, node->node.assignment_expression.left);
     default:
 	fprintf(stderr, "Unknown case in get_complex_type()\n");
 	cod_print(node);
@@ -5378,6 +5380,12 @@ scope_ptr scope;
 	}
 	    
     }
+    dimen_p d = super_type->node.array_type_decl.dimensions;
+    d->dimen_count++;
+    d = realloc(d, sizeof(*d) + (sizeof(d->dimens[0]) * d->dimen_count));
+    d->dimens[d->dimen_count].control_field = NULL;
+    super_type->node.array_type_decl.dimensions = d;
+
     if (array->node.array_type_decl.element_ref->node_type 
 	== cod_declaration) {
 	/* we're the last in line */
@@ -5422,6 +5430,8 @@ cod_parse_context context;
 sm_ref array;
 scope_ptr scope;
 {
+    array->node.array_type_decl.dimensions = malloc(sizeof(dimen_s));
+    array->node.array_type_decl.dimensions->dimen_count = 0;
     return semanticize_array_element_node(context, array, array,  
 					  array->node.array_type_decl.type_spec,
 					  scope);

@@ -739,6 +739,17 @@ cg_enum_type_decl(dill_stream s, sm_ref decl, cod_code descr)
     assign_enum_value(decl->node.enum_type_decl.enums, &enum_value);
 }
 
+static void
+set_dimen_values(dill_stream s, sm_ref top, sm_ref this, int dimension)
+{
+    long size = -1;
+    if (this->node_type != cod_array_type_decl) return;
+    if (this->node.array_type_decl.size_expr)
+	evaluate_constant_expr(this->node.array_type_decl.size_expr, &size);
+    top->node.array_type_decl.dimensions->dimens[dimension].static_size = size;
+    set_dimen_values(s, top, this->node.array_type_decl.element_ref, dimension+1);
+}
+
 static void 
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
@@ -1073,6 +1084,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
     case cod_reference_type_decl:
 	break;
     case cod_array_type_decl:
+	if (decl->node.array_type_decl.dimensions != NULL) {
+	    set_dimen_values(s, decl, decl, 0);
+	}
 	cg_decl(s, decl->node.array_type_decl.element_ref, descr);
 	break;
     case cod_constant:
