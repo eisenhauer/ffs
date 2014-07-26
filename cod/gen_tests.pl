@@ -101,7 +101,7 @@ EOF
 	$body =~ s/\\/\\\\/g;
 	$body =~ s/\n/\\n\\\n/g;
 	$body =~ s/"/\\"/g;
-	$body =~ s/printf\(/test_printf\(/g;
+	$body =~ s/(\W)printf\(/$1test_printf\(/g;
 	$body =~ s/NULL/\(void*\)0/g;
 	$function_bodies .= "\n/* body for $name */\n\"$body\",\n";
 	$function_decls .= "\t\"$decl;\",\n";
@@ -235,8 +235,11 @@ sub parse_c_test($) {
 	if (($before_last eq "struct") || ($before_last eq "enum")) {
 	    my $decl_set = $last_segment . shift(@array);
 	    my $next = shift(@array);
-	    if (substr($next, 0, 1) eq ";") {
-		$decl_set .= ";";
+	    if ($next =~ m/(.*;)(.*)/) { 
+	        $decl_set .= $1;
+		$next = $2;
+	    } else {
+	      print "No match\n";
 	    }
 	    unshift @array, substr($next, 1);
 	    print "This is a declaration set [\n $decl_set\n]\n\n\n" if ($options{v});
