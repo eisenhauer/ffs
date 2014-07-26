@@ -102,7 +102,7 @@ EOF
 	$body =~ s/\n/\\n\\\n/g;
 	$body =~ s/"/\\"/g;
 	$body =~ s/(\W)printf\(/$1test_printf\(/g;
-	$body =~ s/NULL/\(void*\)0/g;
+	$body =~ s/ = NULL/ = \(void*\)0/g;
 	$function_bodies .= "\n/* body for $name */\n\"$body\",\n";
 	$function_decls .= "\t\"$decl;\",\n";
     }
@@ -238,10 +238,8 @@ sub parse_c_test($) {
 	    if ($next =~ m/(.*;)(.*)/) { 
 	        $decl_set .= $1;
 		$next = $2;
-	    } else {
-	      print "No match\n";
 	    }
-	    unshift @array, substr($next, 1);
+	    unshift @array, $next;
 	    print "This is a declaration set [\n $decl_set\n]\n\n\n" if ($options{v});
 	    push @decls, $decl_set;
 	    next;
