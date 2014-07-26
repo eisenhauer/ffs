@@ -178,7 +178,7 @@ int printf(string format, ...);
 ## Ecode Error:  Label "where" not found.  Goto has no target. at line 2, char 5
     goto where;
     ^
-## Ecode Error:  Goto target "what" is not a label. at line 3, char 5
+## Ecode Error:  Label "what" not found.  Goto has no target. at line 3, char 5
     goto what;
     ^
 ## Ecode Error:  Continue or Break statement not contained inside an iterator. at line 4, char 2
