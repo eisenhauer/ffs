@@ -1943,6 +1943,9 @@ cod_parse_context context;
     return ret;
 }
 
+static int
+semanticize_gotos(cod_parse_context context, sm_ref stmt, sm_list function_context);
+
 cod_code
 cod_code_gen(code, context)
 char *code;
@@ -1979,7 +1982,8 @@ cod_parse_context context;
 	malloc(sizeof(struct list_struct));
     tmp2->node.compound_statement.statements->next = NULL;
     tmp2->node.compound_statement.statements->node = tmp;
-    if (!semanticize_compound_statement(context, tmp, context->scope, (context->return_cg_type != DILL_V))) {
+    if (!semanticize_gotos(context, tmp, tmp2->node.compound_statement.statements) ||
+	!semanticize_compound_statement(context, tmp, context->scope, (context->return_cg_type != DILL_V))) {
 	tmp->node.compound_statement.decls = NULL;
 	tmp2->node.compound_statement.decls = NULL;
 	cod_rfree(tmp2);
@@ -4813,24 +4817,16 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
 	return 1;
     }
     case cod_label_statement:{
-	add_decl(stmt->node.label_statement.name, stmt, scope);
+//	add_decl(stmt->node.label_statement.name, stmt, scope);
 	return semanticize_statement(context, stmt->node.label_statement.statement, scope);
     }
     case cod_jump_statement:{
 	if (stmt->node.jump_statement.goto_target != NULL) {
-	    /* this is a goto */
-	    sm_ref tmp = resolve(stmt->node.jump_statement.goto_target, scope);
-	    if (!tmp) {
+	    if (!stmt->node.jump_statement.sm_target_stmt) {
 		cod_src_error(context, stmt, 
 			      "Label \"%s\" not found.  Goto has no target.", stmt->node.jump_statement.goto_target);
 		return 0;
 	    }
-	    if (tmp->node_type != cod_label_statement) {
-		cod_src_error(context, stmt, 
-			      "Goto target \"%s\" is not a label.", stmt->node.jump_statement.goto_target);
-		return 0;
-	    }
-	    stmt->node.jump_statement.sm_target_stmt = tmp;
 	} else {
 	    /* this is a continue or a break */
 	    sm_ref tmp = find_containing_iterator(scope);
@@ -4851,12 +4847,157 @@ semanticize_statement(cod_parse_context context, sm_ref stmt,
     return 1;
 }
 
+typedef struct goto_semantic_state {
+    int backward_jump;
+    int passed_init_decl;
+    int already_found;
+} *goto_state;
+
+static int semanticize_goto_l(cod_parse_context context, sm_ref this_goto, sm_list stmts, goto_state gs);
+
+static int semanticize_goto(cod_parse_context context, sm_ref this_goto, sm_ref stmt, goto_state gs)
+{
+    int ret = 1;
+    switch (stmt->node_type) {
+    case cod_declaration: 
+	if (!gs->backward_jump && stmt->node.declaration.init_value) {
+	    gs->passed_init_decl = 1;
+	}
+	break;
+    case cod_struct_type_decl:
+    case cod_array_type_decl:
+    case cod_reference_type_decl:
+    case cod_enum_type_decl:
+    case cod_constant:
+	/* no action for decls */
+	break;
+    case cod_selection_statement:
+	ret &= semanticize_goto(context, this_goto, stmt->node.selection_statement.then_part, gs);
+	if (stmt->node.selection_statement.else_part)
+	    ret &= semanticize_goto(context, this_goto, stmt->node.selection_statement.else_part, gs);
+	break;
+    case cod_iteration_statement:
+	ret &= semanticize_goto(context, this_goto, stmt->node.iteration_statement.statement, gs);
+	break;
+    case cod_compound_statement:
+	ret &= semanticize_goto_l(context, this_goto, stmt->node.compound_statement.decls, gs);
+	ret &= semanticize_goto_l(context, this_goto, stmt->node.compound_statement.statements, gs);
+	break;
+    case cod_return_statement:
+	break;
+    case cod_label_statement:
+	if (strcmp(this_goto->node.jump_statement.goto_target, stmt->node.label_statement.name) == 0) {
+	    /* found target */
+	    if (!gs->backward_jump && gs->passed_init_decl) {
+		cod_src_error(context, stmt, "Goto jumps over initialized declaration, illegal forward jump.");
+		ret = 0;
+	    } else if (gs->already_found) {
+		cod_src_error(context, stmt, "Duplicate label \"%s\".", stmt->node.label_statement.name);
+		ret = 0;
+	    } else {
+		this_goto->node.jump_statement.sm_target_stmt = stmt;
+		gs->already_found = 1;
+	    }
+	}
+	ret &= semanticize_goto(context, this_goto, stmt->node.label_statement.statement, gs);
+	break;
+    case cod_jump_statement:
+	if (stmt == this_goto) {
+	    gs->backward_jump = 0;
+	}
+	break;
+    case cod_expression_statement:
+	break;
+    default:
+	printf("unhandled case in semanticize goto\n");
+	return 0;
+    }
+    return ret;
+}
+
+static int semanticize_goto_l(cod_parse_context context, sm_ref this_goto, sm_list stmts, goto_state gs)
+{
+    int saved_passed_init_decl = gs->passed_init_decl;
+    int ret = 1;
+    while(stmts) {
+	ret &= semanticize_goto(context, this_goto, stmts->node, gs);
+	stmts = stmts->next;
+    }
+    gs->passed_init_decl = saved_passed_init_decl;
+    return ret;
+}
+    
+static int
+semanticize_gotos_list(cod_parse_context context, sm_list stmts, sm_list function_context)
+{
+    int ret = 1;
+    while(stmts) {
+	ret &= semanticize_gotos(context, stmts->node, function_context);
+	stmts = stmts->next;
+    }
+    return ret;
+}
+
+static int
+semanticize_gotos(cod_parse_context context, sm_ref stmt, sm_list function_context)
+{
+    /* 
+     * recursive descent looking for goto's, followed by a recursive descent in 
+     * the entire scope looking for their target 
+     */
+    int ret = 1;
+    switch (stmt->node_type) {
+    case cod_declaration: 
+    case cod_struct_type_decl:
+    case cod_array_type_decl:
+    case cod_reference_type_decl:
+    case cod_enum_type_decl:
+    case cod_constant:
+	/* no action for most decls */
+	break;
+    case cod_selection_statement:
+	ret &= semanticize_gotos(context, stmt->node.selection_statement.then_part, function_context);
+	if (stmt->node.selection_statement.else_part)
+	    ret &= semanticize_gotos(context, stmt->node.selection_statement.else_part, function_context);
+	break;
+    case cod_iteration_statement:
+	ret &= semanticize_gotos(context, stmt->node.iteration_statement.statement, function_context);
+	break;
+    case cod_compound_statement:
+	ret &= semanticize_gotos_list(context, stmt->node.compound_statement.decls, function_context);
+	ret &= semanticize_gotos_list(context, stmt->node.compound_statement.statements, function_context);
+	break;
+    case cod_return_statement:
+	break;
+    case cod_label_statement:
+	ret &= semanticize_gotos(context, stmt->node.label_statement.statement, function_context);
+	break;
+    case cod_jump_statement:
+	if (stmt->node.jump_statement.goto_target != NULL) {
+	    /* this is a goto */
+	    struct goto_semantic_state gs;
+	    gs.backward_jump = 1;
+	    gs.passed_init_decl = 0;
+	    gs.already_found = 0;
+	    ret &= semanticize_goto_l(context, stmt, function_context, &gs);
+	}
+	break;
+    case cod_expression_statement:
+	break;
+    default:
+	printf("unhandled case in semanticize gotos\n");
+	return 0;
+    }
+    return ret;
+}
+
 extern int
 semanticize_compound_statement(cod_parse_context context, sm_ref compound, 
 			       scope_ptr containing_scope, int require_last_return)
 {
     int ret = 1;
     scope_ptr current_scope = push_scope(containing_scope);
+
     ret &= semanticize_decls_stmts_list(context,
 					compound->node.compound_statement.decls,
 					current_scope);
