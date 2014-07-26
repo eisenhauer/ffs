@@ -253,6 +253,7 @@ cod_add_standard_elements(cod_parse_context context)
     cod_add_decl_to_scope("attr_list", attr_node, context);
     cod_add_defined_type("attr_list", context);
 #endif
+    cod_add_int_constant_to_parse_context("NULL", 0, context);
 #ifdef HAVE_CERCS_ENV_H
     cod_add_simple_struct_type("chr_time", chr_time_list, context);
 #endif
@@ -286,13 +287,79 @@ cod_add_standard_elements(cod_parse_context context)
 
 static cod_extern_entry string_externs[] = 
 {
+    {"memchr", (void*)(long)memchr},
+    {"memcmp", (void*)(long)memcmp},
+    {"memcpy", (void*)(long)memcpy},
+    {"memmove", (void*)(long)memmove},
+    {"memset", (void*)(long)memset},
+    {"strcat", (void*)(long)strcat},
     {"strchr", (void*)(long)strchr},
+    {"strcmp", (void*)(long)strcmp},
+    {"strcoll", (void*)(long)strcoll},
+    {"strcpy", (void*)(long)strcpy},
+    {"strcspn", (void*)(long)strcspn},
+    {"strerror", (void*)(long)strerror},
+    {"strlen", (void*)(long)strlen},
+    {"strncat", (void*)(long)strncat},
+    {"strncmp", (void*)(long)strncmp},
+    {"strncpy", (void*)(long)strncpy},
+    {"strpbrk", (void*)(long)strpbrk},
+    {"strrchr", (void*)(long)strrchr},
+    {"strspn", (void*)(long)strspn},
+    {"strstr", (void*)(long)strstr},
+    {"strtok", (void*)(long)strtok},
+    {"strxfrm", (void*)(long)strxfrm},
     {NULL, NULL}
 };
 
 static char string_extern_string[] = "\n\
-	char	*strchr(const char *str, int chr);\n\
+void	*memchr(const void *s, int c, int size);\n\
+int	 memcmp(const void *m, const void *s, int size);\n\
+void	*memcpy(void *m, const void *s, int size);\n\
+void	*memmove(void *m, const void *s, int size);\n\
+void	*memset(void *m, int c, int size);\n\
+char	*strcat(char *s1, const char *s2);\n\
+char	*strchr(const char *s1, int c);\n\
+int	 strcmp(const char *s1, const char *s2);\n\
+int	 strcoll(const char *s1, const char *s2);\n\
+char	*strcpy(char *s1, const char *s2);\n\
+int	 strcspn(const char *s1, const char *s2);\n\
+int	 strlen(const char *s);\n\
+char	*strncat(char *s1, const char *s2, int s);\n\
+int	 strncmp(const char *s1, const char *s2, int s);\n\
+char	*strncpy(char *s1, const char *s2, int s);\n\
+char	*strpbrk(const char *s1, const char *s2);\n\
+char	*strrchr(const char *s1, int c);\n\
+int	 strspn(const char *s1, const char *s2);\n\
+char	*strstr(const char *s1, const char *s2);\n\
+char	*strtok(char *s1, const char *s2);\n\
+int	 strxfrm(char *s1, const char *s2, int size);\n\
 ";
+
+static cod_extern_entry strings_externs[] = 
+{
+    {"bcmp", (void*)(long)bcmp},
+    {"bcopy", (void*)(long)bcopy},
+    {"bzero", (void*)(long)bzero},
+    {"index", (void*)(long)index},
+    {"rindex", (void*)(long)rindex},
+    {"ffs", (void*)(long)ffs},
+    {"strcasecmp", (void*)(long)strcasecmp},
+    {"strncasecmp", (void*)(long)strncasecmp},
+    {NULL, NULL}
+};
+
+static char strings_extern_string[] = "\n\
+int	 bcmp(const void *m1, const void *m2, int size);\n\
+void	 bcopy(const void *m1, void *m2, int size);\n\
+void	 bzero(void *m, int size);\n\
+char	*index(const char *s1, int c);\n\
+char	*rindex(const char *s1, int c);\n\
+int	 ffs(int);\n\
+int	 strcasecmp(const char *s1, const char *s2);\n\
+int	 strncasecmp(const char *s1, const char *s2, int size);\n\
+";
+
 
 #include <math.h>
 
@@ -402,6 +469,7 @@ double copysign(double a, double b);\n\
 double nan(const char * a);\n\
 ";
 
+
 static void dlload_externs(char *libname, cod_extern_entry *externs);
 
 extern void
@@ -412,6 +480,9 @@ cod_process_include(char *name, cod_parse_context context)
     if (strncmp(name, "string", char_count) == 0) {
 	cod_assoc_externs(context, string_externs);
 	cod_parse_for_context(string_extern_string, context);
+    } else if (strncmp(name, "strings", char_count) == 0) {
+	cod_assoc_externs(context, strings_externs);
+	cod_parse_for_context(strings_extern_string, context);
     } else if (strncmp(name, "math", char_count) == 0) {
 	dlload_externs("libm", math_externs);
 	cod_assoc_externs(context, math_externs);
