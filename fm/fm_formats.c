@@ -3815,6 +3815,14 @@ unsigned char *ID;
 }
 
 extern void
+fprint_server_ID(void *file, unsigned char *ID)
+{
+    char buffer[256];
+    stringify_server_ID(ID, buffer, sizeof(buffer));
+    fprintf((FILE*)file, "%s", buffer);
+}
+
+extern void
 print_format_ID(format)
 FMFormat format;
 {

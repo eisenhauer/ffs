@@ -181,6 +181,7 @@ count_FMfield(FMFieldList list);
 
 extern void print_server_ID(unsigned char *ID);
 extern void print_format_ID(FMFormat ioformat);
+extern void fprint_server_ID(void * file,unsigned char *ID);
 
 extern int FMformatID_len(char *buffer);
 
