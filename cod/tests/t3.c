@@ -95,6 +95,7 @@ main(int argc, char **argv)
 	long ret;
 	long (*func)();
 
+	if (verbose) printf("Running test 1 (-o 1)\n");
 	GEN_PARSE_CONTEXT(context);
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
@@ -129,6 +130,7 @@ main(int argc, char **argv)
 	cod_code gen_code;
     	long (*func)();
 
+	if (verbose) printf("Running test 2 (-o 2)\n");
 #ifdef NO_EMULATION
 	cod_subroutine_declaration("int proc(int i)", context);
 #else
@@ -170,6 +172,7 @@ main(int argc, char **argv)
 	cod_code gen_code;
 	long (*func)();
 
+	if (verbose) printf("Running test 3 (-o 3)\n");
 	cod_add_simple_struct_type("struct_type", struct_fields, context);
 #ifdef NO_EMULATION
 	cod_subroutine_declaration("int proc(struct_type *input)", context);
@@ -226,6 +229,7 @@ char code_string[] = {"\
 	cod_code gen_code;
 	long (*func)();
 
+	if (verbose) printf("Running test 4 (-o 4)\n");
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
 
@@ -285,6 +289,7 @@ char code_string[] = {"\
 	double (*func)();
 
 
+	if (verbose) printf("Running test 5 (-o 5)\n");
 	cod_add_simple_struct_type("input_type", input_field_list, context);
 #ifdef NO_EMULATION
 	cod_subroutine_declaration("double proc(input_type *input)", context);
@@ -330,6 +335,7 @@ char code_string[] = {"\
 	cod_code gen_code;
 	double (*func)();
 
+	if (verbose) printf("Running test 6 (-o 6)\n");
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
 
@@ -380,6 +386,7 @@ char code_string[] = {"\
 	long (*func)();
 	int ret;
 
+	if (verbose) printf("Running test 7 (-o 7)\n");
 	GEN_PARSE_CONTEXT(context);
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
@@ -414,6 +421,7 @@ char code_string[] = {"\
 	cod_code gen_code;
 	int (*func)();
 
+	if (verbose) printf("Running test 8 (-o 8)\n");
 	cod_assoc_externs(context, externs);
 	cod_parse_for_context(extern_string, context);
 
@@ -424,6 +432,7 @@ char code_string[] = {"\
 #endif
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
+	cod_dump(gen_code);
 	func = (int (*)())(long) gen_code->func;
 	result = (func)(EC_param0);
 	if (result != 0) {
