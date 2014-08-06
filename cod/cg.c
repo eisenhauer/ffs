@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #endif
 
+#undef NDEBUG
 #include "assert.h"
 #ifndef LINUX_KERNEL_MODULE
 #ifdef HAVE_MALLOC_H
@@ -50,7 +51,6 @@ enum {
 #include "cod.h"
 #include "cod_internal.h"
 #include "structs.h"
-#include "assert.h"
 #ifndef LINUX_KERNEL_MODULE
 #include "string.h"
 #endif

@@ -35,6 +35,7 @@ int cod_kplugins_integration = 0;
 #include "fm_internal.h"
 #include "cod.h"
 #include "cod_internal.h"
+#undef NDEBUG
 #include "assert.h"
 #ifndef LINUX_KERNEL_MODULE
 #include <ctype.h>

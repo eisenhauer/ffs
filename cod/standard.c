@@ -20,6 +20,7 @@
 #include "cod.h"
 #include "cod_internal.h"
 #include "structs.h"
+#undef NDEBUG
 #include "assert.h"
 #ifndef LINUX_KERNEL_MODULE
 #include <ctype.h>

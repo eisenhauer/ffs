@@ -310,6 +310,7 @@ gen_typedef(HOUTFILE);
 print HOUTFILE "#endif\n";
 open(COUTFILE, ">cod_node.c");
 print COUTFILE "#include \"config.h\"\n";
+print COUTFILE "#undef NDEBUG\n";
 print COUTFILE "#include \"assert.h\"\n";
 print COUTFILE "#ifndef LINUX_KERNEL_MODULE\n";
 print COUTFILE "#include \<stdio.h\>\n";
