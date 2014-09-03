@@ -450,9 +450,9 @@ long *high_long;
 		}
 	    } else {
 		if (field->byte_swap) {
-		    high_bytes_offset += sizeof(long);
-		} else {
 		    low_bytes_offset += sizeof(long);
+		} else {
+		    high_bytes_offset += sizeof(long);
 		}
 	    }
 	    tmp_field.size = sizeof(long);
