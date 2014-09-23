@@ -71,6 +71,9 @@ FIND_PACKAGE (BISON)
 FIND_PACKAGE (FLEX)
 FIND_PACKAGE(DL)
 
+IF (TARGET_CNL)   # This should be set to true if compiling for compute note linux
+  set (NO_DYNAMIC_LINKING 1)   # dummy dyn linking in cm.c and cm_transport.c
+ENDIF ()
 BISON_TARGET(CODParser cod/cod.y ${CMAKE_CURRENT_BINARY_DIR}/cod.tab.c COMPILE_FLAGS -d)
 set (HAVE_COD_PARSER_H)
 FLEX_TARGET(CODScanner cod/cod.l  ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.c)

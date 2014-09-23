@@ -144,3 +144,7 @@
 
 /* define to the string value of shared library suffix */
 #define LIBRARY_EXT "@CMAKE_SHARED_LIBRARY_SUFFIX@"
+
+/* Set to 1 to build without dynamic linking  */
+#cmakedefine NO_DYNAMIC_LINKING @NO_DYNAMIC_LINKING@
+
