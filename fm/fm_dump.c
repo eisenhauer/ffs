@@ -258,6 +258,7 @@ int character_limit;
     init_dump_state(&state);
     state.encoded = 0;
     state.output_limit = character_limit;
+    state.out = (FILE*)out;
     internal_dump_data(format, data, &state);
     return 0;
 }
