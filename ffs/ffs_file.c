@@ -807,8 +807,8 @@ parse_index_block(char *index_base)
 	case Data_Item: {
 	    unsigned int *ielem = (unsigned int *)((char*) index_base + cur_offset);
 	    int total_len = htonl(*(unsigned int *)elem) >> 8;
-	    int id_len = htonl(*(unsigned int *)elem) >> 8;
-	    int attr_len = total_len - id_len - 4 + 1;
+	    int id_len;
+	    int attr_len;
 
 #if SIZEOF_OFF_T == 4
 	    off_t fpos = 0;
@@ -816,6 +816,8 @@ parse_index_block(char *index_base)
 	    off_t fpos = ((off_t)htonl(ielem[1])) << 32;
 #endif
 	    fpos += htonl(ielem[2]);
+	    id_len = htonl(ielem[3]);
+	    attr_len = total_len - id_len - 4;
 	    item->elements[item_count-1].type = FFSdata;
 	    item->elements[item_count-1].fpos = fpos;
 	    item->elements[item_count-1].format_id = malloc(id_len);
@@ -827,7 +829,7 @@ parse_index_block(char *index_base)
 	    }
 	    memcpy(item->elements[item_count-1].format_id,
 		   elem + 12, id_len);
-	    cur_offset += (id_len + 12 + 3) & -4;
+	    cur_offset += (id_len + attr_len + 12 + 4) & -4;
 	    break;
 	}
 	case End_Item:
