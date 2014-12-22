@@ -1208,7 +1208,12 @@ FFSdump_index(FFSIndexItem index_item)
 	    for(j=0; j<elem->fid_len; j++) {
 		printf("%02x", (unsigned char)(elem->format_id[j]));
 	    }
-	    printf("\n");
+	    if (elem->attrs) {
+		printf(", attribute list:");
+		dump_attr_list(elem->attrs);
+	    } else {
+		printf("\n");
+	    }
 	    break;
 	case FFSformat:
 	    printf("   Format item at fpos %ld, format ", elem->fpos);
