@@ -2842,6 +2842,16 @@ FMFormat fmformat;
 	       fmformat->field_list[index].field_size,
 	       fmformat->field_list[index].field_offset);
     }
+    if (fmformat->subformats) {
+	int i = 0;
+	printf("SUBFORMATS : \n");
+	while(fmformat->subformats[i]) {
+	    if (fmformat->subformats[i] != fmformat) {
+		dump_FMFormat(fmformat->subformats[i]);
+	    }
+	    i++;
+	}
+    }
     if (fmformat->opt_info == NULL) {
 	printf("\tNo Optional Format Info\n");
     } else {
