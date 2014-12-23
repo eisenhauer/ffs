@@ -23,16 +23,22 @@ char *comment_array[] =
  "this is another comment in the file"};
 
 first_rec rec1_array[13];
+int rec1_attr_val[13] = {1, 4, 6};
 
 second_rec rec2_array[4];
+int rec2_attr_val[4] = {4, 3, 5, 9};
 
 third_rec rec3_array[5];
+int rec3_attr_val[5] = {7, 8, -1, -1, 9};
 
 fourth_rec rec4;
+int rec4_attr_val;
 
 fifth_rec rec5;
+int rec5_attr_val = 2;
 
 sixth_rec rec6_array[4];
+int rec6_attr_val[4] = {};
 
 nested_rec rec7_array[1];
 

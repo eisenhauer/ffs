@@ -278,14 +278,18 @@ extern void free_written_data();
 extern char *comment_array[];
 
 extern first_rec rec1_array[13];
+extern int rec1_attr_val[13];
 
 extern second_rec rec2_array[4];
+extern int rec2_attr_val[4];
 
 extern third_rec rec3_array[5];
+extern int rec3_attr_val[5];
 
 extern fourth_rec rec4;
 
 extern fifth_rec rec5;
+extern int rec5_attr_val;
 
 extern sixth_rec rec6_array[4];
 

@@ -15,6 +15,13 @@
 #include "ffs.h"
 
 #include "test_funcs.h"
+#define UPDATE_ATTR(x)     if (x) {\
+	int tmp;\
+	get_int_attr(x, iteration_atom, &tmp);	\
+	tmp++;\
+	set_int_attr(x, iteration_atom, tmp);\
+    }\
+	
 
 int
 main(int argc, char **argv)
@@ -49,12 +56,6 @@ main(int argc, char **argv)
     attr_list a1 = NULL;
     attr_list a2 = NULL;
 
-    a1 = create_attr_list();
-    a2 = create_attr_list();
-    set_int_attr(a1, level_atom, 5);
-    set_int_attr(a1, iteration_atom, 1);
-    set_int_attr(a2, iteration_atom, 4);
-
     for (i = 1; i < argc; i++) {
 	if (argv[i][0] == '-') {
 	    /* argument */
@@ -64,6 +65,7 @@ main(int argc, char **argv)
 		indexed++;
 	    } else if (argv[i][1] == 'a') {
 		attributes++;
+		indexed++;
 	    } else {
 		printf("Unknown argument \"%s\"\n", argv[i]);
 	    }
@@ -72,6 +74,13 @@ main(int argc, char **argv)
 	}
     }
 
+    if (attributes) {
+	a1 = create_attr_list();
+	a2 = create_attr_list();
+	set_int_attr(a1, level_atom, 5);
+	set_int_attr(a1, iteration_atom, 1);
+	set_int_attr(a2, iteration_atom, 4);
+    }
     if (!indexed) {
 	ffsfile = open_FFSfile(output_file, "w");
     } else {
@@ -156,8 +165,9 @@ main(int argc, char **argv)
     rec1.integer_field = 14;
     rec1.double_field = 2.717;
     rec1.char_field = 'A';
-    if (!write_FFSfile(ffsfile, first_rec_ioformat, &rec1))
+    if (!write_FFSfile_attrs(ffsfile, first_rec_ioformat, &rec1, a1))
 	printf("write failed\n");
+    UPDATE_ATTR(a1); /* new 2 */
     memset((char *) &emb_array, 0, sizeof(emb_array));
     memset((char *) &var_array, 0, sizeof(var_array));
     emb_array.earray[0].dfield = 4.0;
@@ -179,6 +189,7 @@ main(int argc, char **argv)
     if (attributes) {
 	if (!write_FFSfile_attrs(ffsfile, fifth_rec_ioformat, &emb_array, a1))
 	    printf("write failed\n");
+	UPDATE_ATTR(a1);  /* new 3 */
     } else {
 	if (!write_FFSfile(ffsfile, fifth_rec_ioformat, &emb_array))
 	    printf("write failed\n");
@@ -195,33 +206,38 @@ main(int argc, char **argv)
     rec2.string = "testing";
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a2))
+    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a2))  /* attr = 4 */
 	printf("write failed\n");
+    UPDATE_ATTR(a2); 
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
     rec2.string = NULL;
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a1))
 	printf("write failed\n");
+    UPDATE_ATTR(a1); /* new 4 */
     rec1.integer_field = 17;
     rec1.double_field *= 3.0;
     rec1.char_field = 'B';
-    write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
+    write_FFSfile_attrs(ffsfile, first_rec_ioformat, &rec1, a1);
+    UPDATE_ATTR(a1); /* new 5 */
     rec2.integer_field = 14;
     rec2.short_field = 27;
     rec2.long_field = 987234;
     rec2.string = NULL;
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a1))
 	printf("write failed\n");
+    UPDATE_ATTR(a1); /* new 6 */
     rec1.integer_field *= 2;
     rec1.double_field *= 2.717;
     rec1.char_field = 'C';
     write_comment_FFSfile(ffsfile, "this is another comment in the file");
-    write_FFSfile(ffsfile, first_rec_ioformat, &rec1);
+    write_FFSfile_attrs(ffsfile, first_rec_ioformat, &rec1, a1);
+    UPDATE_ATTR(a1); /* new 7 */
     memset((char *) &rec3, 0, sizeof(rec3));
     rec3.integer_field = 14;
     rec3.long_field = 987234;
@@ -236,9 +252,10 @@ main(int argc, char **argv)
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Red_Stripe;
-    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+    if (!write_FFSfile_attrs(ffsfile, third_rec_ioformat, &rec3), a1)
 	printf("write failed\n");
 
+    UPDATE_ATTR(a1); /* new 8 */
     str_list[0].format_name = "later format";
     str_list[0].field_list = later_field_list;
     str_list[0].struct_size = sizeof(later_rec);
@@ -268,8 +285,9 @@ main(int argc, char **argv)
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Paulaner;
-    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+    if (!write_FFSfile_attr(ffsfile, third_rec_ioformat, &rec3, a1))
 	printf("write failed\n");
+    UPDATE_ATTR(a1); /* new 9 */
     memset((char *) &rec7, 0, sizeof(rec7));
     rec7.integer_field = 47;
     rec7.nested_rec.integer_field = 14;
@@ -313,7 +331,7 @@ main(int argc, char **argv)
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Pilsner;
-    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3))
+    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3, a1))
 	printf("write failed\n");
 
     rec2.integer_field = 14;
@@ -322,7 +340,7 @@ main(int argc, char **argv)
     rec2.string = "the end";
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2))
+    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2, a1))
 	printf("writev failed\n");
 
     str_list[0].format_name = "later format";

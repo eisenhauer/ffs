@@ -35,13 +35,15 @@ int size;
     return FFSfile_next_decode_length(iofile);
 }
 
+attr_list last_attrs = NULL;
+
 int
 read_func_no_buffer(iofile, data, size)
 FFSFile iofile;
 void *data;
 int size;
 {
-    return FFSread(iofile, data);
+    return FFSread_attr(iofile, data, &last_attrs);
 }
 
 int
@@ -53,6 +55,7 @@ int size;
     FFSBuffer b = create_fixed_FFSBuffer(data, size);
     int ret = FFSread_to_buffer(iofile, b, NULL);
     free(b);
+    last_attrs = FFSattrs_from_last_read(iofile);
     return ret;
 }
 
@@ -124,7 +127,8 @@ int (*read_func) ();
     int string_array_rec_count = 0;
 
     int unknown_rec_count = 0;
-    iofile = open_FFSfile(input_file, "r");
+    atom_t iteration_atom = attr_atom_from_string("iteration");
+    iofile = open_FFSfile(input_file, "rR");
 
     if (!iofile) {
 	printf("Open of file \"%s\" failed.  Exitting.\n", input_file);
@@ -133,10 +137,9 @@ int (*read_func) ();
 
     init_written_data();
 
-    //FFSseek(iofile, 3);
-    //printf("Seeked to 3\n");
-
     set_targets(FFSContext_of_file(iofile));
+    
+
     while (!finished) {
 	char *comment;
 	FFSRecordType next;
@@ -154,9 +157,11 @@ int (*read_func) ();
 	    assert(0);
 	case FFScomment:
 	    comment = FFSread_comment(iofile);
+	    if (verbose)  printf("Got a comment %s\n", comment);
 	    break;
 	case FFSformat:
 	    /* ignore format, get to the next data record */
+	    if (verbose)  printf("Got a Format\n");
 	    (void) FFSnext_type_handle(iofile);
 	    break;
 	case FFSdata:
@@ -165,11 +170,15 @@ int (*read_func) ();
 		       FFSTypeHandle_name(FFSnext_type_handle(iofile)));
 	    if (FFSnext_type_handle(iofile) == first_rec_ioformat) {
 		first_rec read_data[10];
+		attr_list attr;
+		int iter_attr = -1;
 		memset(&read_data[0], 0, sizeof(first_rec));
-		if (!FFSread(iofile, &read_data[0]))
+		if (!FFSread_attr(iofile, &read_data[0], &attr))
 		    printf("read first data");
-		if (memcmp(&read_data[0], &rec1_array[first_rec_count++],
-			   sizeof(first_rec)) != 0) {
+		if (attr) dump_attr_list(attr);
+		get_int_attr(attr, iteration_atom, &iter_attr);
+		if ((memcmp(&read_data[0], &rec1_array[first_rec_count++],
+			    sizeof(first_rec)) != 0) || (iter_attr != rec1_attr_val[first_rec_count-1])) {
 		    if (read_data[0].integer_field != 
 			rec1_array[first_rec_count-1].integer_field) {
 			printf("read integer = %d (0x%x), exp integer = %d"
@@ -191,32 +200,45 @@ int (*read_func) ();
 			       read_data[0].char_field, 
 			       rec1_array[first_rec_count-1].char_field);
 		    }
-		    printf("Rec1 failure\n");
+		    if (iter_attr != rec1_attr_val[first_rec_count-1]) {
+			printf("iteration attribute = %d, exp %d\n", iter_attr, rec1_attr_val[first_rec_count-1]);
+		    }
+		    printf("Rec1 failure at count %d\n", first_rec_count-1);
 		    exit(1);
 		}
 	    } else if (FFSnext_type_handle(iofile) == second_rec_ioformat) {
 		int size = size_func(iofile, sizeof(second_rec));
 		second_rec *read_data = malloc(size);
+		int iter_attr = -1;
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
 		    printf("read second data failed\n");
-		if (!second_rec_eq(read_data,
-                                   &rec2_array[second_rec_count++])) {
-		    printf("Rec2 failure\n");
+		get_int_attr(FFSattrs_from_last_read(iofile), iteration_atom, &iter_attr);
+		if (!second_rec_eq(read_data, &rec2_array[second_rec_count]) || 
+		    (iter_attr != rec2_attr_val[second_rec_count])) {
+		    if (iter_attr != rec2_attr_val[second_rec_count]) {
+			printf("iteration attribute = %d, exp %d\n", iter_attr, rec1_attr_val[second_rec_count]);
+		    }
+		    printf("Rec2 failure at index %d\n", second_rec_count);
 		    exit(1);
 		}
+		second_rec_count++;
 		free(read_data);
 	    } else if (FFSnext_type_handle(iofile) == third_rec_ioformat) {
 		int size = size_func(iofile, sizeof(third_rec));
 		third_rec *read_data = malloc(size);
+		int iter_attr = -1;
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
 		    printf("read third data failed\n");
-		if (!third_rec_eq(read_data, &rec3_array[third_rec_count++])) {
+		get_int_attr(FFSattrs_from_last_read(iofile), iteration_atom, &iter_attr);
+		if (!third_rec_eq(read_data, &rec3_array[third_rec_count]) ||
+		    (iter_attr != rec3_attr_val[third_rec_count])) {
 		    printf("Rec3 failure\n");
 		    exit(1);
 		}
 		free(read_data);
+		third_rec_count++;
 	    } else if (FFSnext_type_handle(iofile) == fourth_rec_ioformat) {
 		int size = size_func(iofile, sizeof(fourth_rec));
 		fourth_rec *read_data = malloc(size);
@@ -236,10 +258,12 @@ int (*read_func) ();
 	    } else if (FFSnext_type_handle(iofile) == fifth_rec_ioformat) {
 		int size = size_func(iofile, sizeof(fifth_rec));
 		fifth_rec *read_data = malloc(size);
+		int iter_attr = -1;
 		memset(read_data, 0, size);
 		if (!read_func(iofile, read_data, size))
 		    printf("read fifth data failed\n");
-		if (!fifth_rec_eq(read_data, &rec5)) {
+		get_int_attr(last_attrs, iteration_atom, &iter_attr);
+		if (!fifth_rec_eq(read_data, &rec5) || (iter_attr != rec5_attr_val)) {
 		    printf("Rec5 failure\n");
 		    exit(1);
 		}
@@ -319,11 +343,6 @@ int (*read_func) ();
 	}
 	item_count++;
     }
-
-    //FFSseek(iofile, 0);
-    //FFSseek(iofile, 3);
-    //FFSseek(iofile, -45);
-    //FFSseek(iofile, 1001);
 
     close_FFSfile(iofile);
     free_FFSfile(iofile);
