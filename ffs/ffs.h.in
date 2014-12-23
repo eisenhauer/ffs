@@ -171,6 +171,9 @@ FFSread_attr(FFSFile file, void *dest, attr_list *attr);
 extern int
 FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest);
 
+extern attr_list
+FFSattrs_from_last_read(FFSFile file);
+
 extern FFSTypeHandle
 FFSread_format(FFSFile ffsfile);
 

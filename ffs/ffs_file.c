@@ -1332,6 +1332,8 @@ FFSseek(FFSFile file, int data_item)
     FFSIndexItem prev_index_tail = NULL;
     int data_item_bak = data_item;
 
+    data_item_bak = file->data_block_no;
+
     if (data_item < 0)
         /* Or should it be set to 0  */
         return 0;
@@ -1373,9 +1375,9 @@ FFSseek(FFSFile file, int data_item)
     index_item--;
     fpos = index->elements[index_item].fpos;
     FFSset_fpos(file, fpos);
-    file->data_block_no = data_item_bak;
+    file->data_block_no = data_item;
 
-    return data_item_bak;
+    return data_item;
 }
     
 static
@@ -1762,11 +1764,17 @@ exit:
     return atl;
 }
 
+extern attr_list
+FFSattrs_from_last_read(FFSFile file)
+{
+    return FFSread_data_attr(file, file->data_block_no-1);
+}
+
 extern int
 FFSread_attr(FFSFile file, void *dest, attr_list *attr)
 {
     int ret = FFSread(file, dest);
-    attr_list atl = FFSread_data_attr(file, file->data_block_no);
+    attr_list atl = FFSread_data_attr(file, file->data_block_no-1);
     if (attr) *attr = atl;
 
     return ret;
