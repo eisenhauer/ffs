@@ -252,7 +252,7 @@ main(int argc, char **argv)
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Red_Stripe;
-    if (!write_FFSfile_attrs(ffsfile, third_rec_ioformat, &rec3), a1)
+    if (!write_FFSfile_attrs(ffsfile, third_rec_ioformat, &rec3, a1))
 	printf("write failed\n");
 
     UPDATE_ATTR(a1); /* new 8 */
@@ -285,7 +285,7 @@ main(int argc, char **argv)
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Paulaner;
-    if (!write_FFSfile_attr(ffsfile, third_rec_ioformat, &rec3, a1))
+    if (!write_FFSfile_attrs(ffsfile, third_rec_ioformat, &rec3, a1))
 	printf("write failed\n");
     UPDATE_ATTR(a1); /* new 9 */
     memset((char *) &rec7, 0, sizeof(rec7));
@@ -331,7 +331,7 @@ main(int argc, char **argv)
     rec3.string2 = "jambalaya";
     rec3.char_field = 'A';
     rec3.enum_field = Pilsner;
-    if (!write_FFSfile(ffsfile, third_rec_ioformat, &rec3, a1))
+    if (!write_FFSfile_attrs(ffsfile, third_rec_ioformat, &rec3, a1))
 	printf("write failed\n");
 
     rec2.integer_field = 14;
@@ -340,7 +340,7 @@ main(int argc, char **argv)
     rec2.string = "the end";
     rec2.double_field = 2.717;
     rec2.char_field = 'A';
-    if (!write_FFSfile(ffsfile, second_rec_ioformat, &rec2, a1))
+    if (!write_FFSfile_attrs(ffsfile, second_rec_ioformat, &rec2, a1))
 	printf("writev failed\n");
 
     str_list[0].format_name = "later format";
