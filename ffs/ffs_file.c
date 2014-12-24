@@ -469,7 +469,10 @@ open_FFSfd(void *fd, const char *flags)
     f->c = create_FFSContext_FM(f->fmc);
     if (allow_input) {
 	int magic_number;
-	int count = f->read_func(file, &magic_number, 4, NULL, NULL);
+	int count;
+	int fd = (int)(long)f->file_id;
+
+	count = f->read_func(f->file_id, &magic_number, 4, NULL, NULL);
 	if ((count <= 0) && allow_input && allow_output) {
 	    /* newly created file opened for append, just do write */
 	    allow_input = 0;

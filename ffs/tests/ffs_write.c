@@ -47,7 +47,7 @@ main(int argc, char **argv)
     int i, j;
     FMStructDescRec str_list[5];
     FMOptInfo opt_info[2], opt_info2[2];
-    int verbose = 0, indexed = 0, attributes = 0;
+    int verbose = 0, indexed = 0, attributes = 0, reopen = 0;
     char *output_file = "test_output";
 
     atom_t level_atom = -1, iteration_atom = -1;
@@ -66,6 +66,8 @@ main(int argc, char **argv)
 	    } else if (argv[i][1] == 'a') {
 		attributes++;
 		indexed++;
+	    } else if (argv[i][1] == 'r') {
+		reopen++;
 	    } else {
 		printf("Unknown argument \"%s\"\n", argv[i]);
 	    }
@@ -101,8 +103,7 @@ main(int argc, char **argv)
 
     opt_info[0].info_len = strlen(first_xml) +1;
     opt_info[0].info_block = first_xml;
-    first_rec_ioformat = register_data_format(src_context, str_list)
-;
+    first_rec_ioformat = register_data_format(src_context, str_list);
     str_list[0].format_name = "string format";
     str_list[0].field_list = field_list2;
     str_list[0].struct_size = sizeof(second_rec);
@@ -278,6 +279,14 @@ main(int argc, char **argv)
     opt_info[0].info_block = nested_xml;
     nested_ioformat = register_data_format(src_context, str_list);
 
+    if (reopen) {
+	close_FFSfile(ffsfile);
+	if (!indexed) {
+	    ffsfile = open_FFSfile(output_file, "a");
+	} else {
+	    ffsfile = open_FFSfile(output_file, "ai");
+	}
+    }
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = NULL;

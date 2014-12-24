@@ -244,6 +244,10 @@ int *output;
 	 } else if (strcmp(flag_str, "w") == 0) {
 	      flags = O_WRONLY | O_CREAT | O_TRUNC;
 	      if (output) *output = 1;
+	 } else if (strcmp(flag_str, "a") == 0) {
+	     flags = O_RDWR;
+	     if (output) *output = 1;
+	     if (input) *input = 1;
 	 } else {
 	      fprintf(stderr, "Open flags value not understood for file \"%s\"\n",
 		      path);
