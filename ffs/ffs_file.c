@@ -92,6 +92,7 @@ struct _FFSFile {
     off_t fpos;
     int data_count;
     FFSIndexType cur_index;
+    FFSIndexItem read_index;
     int visible_items_bitmap;
 
     FFSIndexItem index_head;
@@ -593,24 +594,29 @@ init_write_index_block(FFSFile f)
 {
     int data_index_start = 0;
     int fd = (int)(long)f->file_id;
-    off_t end_of_index = lseek(fd, INDEX_BLOCK_SIZE, SEEK_CUR);
-    if (f->cur_index) {
-	data_index_start = f->cur_index->write_info.data_index_end;
-    } else {
-	f->cur_index = malloc(sizeof(*(f->cur_index)));
-	memset(f->cur_index, 0, sizeof(*(f->cur_index)));
-    }
+    off_t end_of_index;
+    if (f->read_index == NULL) { /* if not append */
+	end_of_index = lseek(fd, INDEX_BLOCK_SIZE, SEEK_CUR);
+	if (f->cur_index) {
+	    data_index_start = f->cur_index->write_info.data_index_end;
+	} else {
+	    f->cur_index = malloc(sizeof(*(f->cur_index)));
+	    memset(f->cur_index, 0, sizeof(*(f->cur_index)));
+	}
     
-    f->cur_index->write_info.base_file_pos = end_of_index - INDEX_BLOCK_SIZE;
-    f->cur_index->write_info.data_index_start = data_index_start;
-    f->cur_index->write_info.data_index_end = f->cur_index->write_info.data_index_start;
-    f->cur_index->write_info.index_block_size = INDEX_BLOCK_SIZE;
-    if (!f->cur_index->write_info.index_block) {
-	f->cur_index->write_info.index_block = malloc(INDEX_BLOCK_SIZE);
-	memset(f->cur_index->write_info.index_block, 0, INDEX_BLOCK_SIZE);
+	f->cur_index->write_info.base_file_pos = end_of_index - INDEX_BLOCK_SIZE;
+	f->cur_index->write_info.data_index_start = data_index_start;
+	f->cur_index->write_info.data_index_end = f->cur_index->write_info.data_index_start;
+	f->cur_index->write_info.index_block_size = INDEX_BLOCK_SIZE;
+	if (!f->cur_index->write_info.index_block) {
+	    f->cur_index->write_info.index_block = malloc(INDEX_BLOCK_SIZE);
+	    memset(f->cur_index->write_info.index_block, 0, INDEX_BLOCK_SIZE);
+	}
+	f->cur_index->write_info.next_item_offset = 16;   /* number of bytes written below */
+	f->fpos = end_of_index;
+    } else {
+	f->read_index = NULL;
     }
-    f->cur_index->write_info.next_item_offset = 16;   /* number of bytes written below */
-    f->fpos = end_of_index;
 }
 
 static void output_index_end(FFSFile f);
@@ -621,24 +627,22 @@ dump_index_block(FFSFile f)
     int fd = (int)(long)f->file_id;
     off_t end = lseek(fd, 0, SEEK_CUR);
     int ret;
-    static int last_data_count = 0;
 
     int size =  f->cur_index->write_info.index_block_size;
     unsigned char *index_base = f->cur_index->write_info.index_block;
 
     output_index_end(f);
+    f->cur_index->write_info.data_index_end = f->data_count-1;
     lseek(fd, f->cur_index->write_info.base_file_pos, SEEK_SET);
     /*
      * next_data indicator is a 2 4-byte chunks in network byte order.
      * In the first chunk, 
      *    the top byte is 0x4, next three are length of the index block.
      */
-    
     *((int*)index_base) = htonl((0x4<<24) | size);
     *((int*)(index_base+4)) = htonl(end);  /* link to next index */
-    *((int*)(index_base+8)) = htonl(last_data_count); /* data_index_start); */
-    *((int*)(index_base+12)) = htonl(f->data_count-1); /* data_index_end); */
-    last_data_count = f->data_count;
+    *((int*)(index_base+8)) = htonl(f->cur_index->write_info.data_index_start); /* data_index_start); */
+    *((int*)(index_base+12)) = htonl(f->cur_index->write_info.data_index_end); /* data_index_end); */
     ret = f->write_func(f->file_id, index_base, size, NULL, NULL);
     if (ret != size) {
 	printf("Index write failed errno %d\n", errno);
@@ -657,6 +661,7 @@ prepare_index_item(FFSFile f, int item_len)
     next_item_end_offset = f->cur_index->write_info.next_item_offset + item_len;
     if (next_item_end_offset >= (f->cur_index->write_info.index_block_size - 8)) {
 	dump_index_block(f);
+	f->cur_index->write_info.data_index_start = f->data_count;
     }
 }
 
@@ -864,6 +869,7 @@ write_format_to_file(FFSFile f, FMFormat format)
     char *server_rep;
     int rep_len;
 
+    int fd = (int)(long)f->file_id;
     server_id = get_server_ID_FMformat(format, &id_len);
     server_rep = get_server_rep_FMformat(format, &rep_len);
 
@@ -914,7 +920,8 @@ write_comment_FFSfile(FFSFile f, const char *comment)
     vec[0].iov_base = &indicator;
     vec[1].iov_len = byte_size;
     vec[1].iov_base = comment;
-    if (f->writev_func(f->file_id, vec, 2, NULL, NULL) != 2) {
+    int fd = (int)(long)f->file_id;
+   if (f->writev_func(f->file_id, vec, 2, NULL, NULL) != 2) {
 	printf("Write failed errno %d\n", errno);
 	return 0;
     }
@@ -968,6 +975,7 @@ write_encoded_FFSfile(FFSFile f, void *data, DATA_LEN_TYPE byte_size, FFSContext
     vec[0].iov_base = indicator;
     vec[1].iov_len = byte_size;
     vec[1].iov_base = data;
+    int fd = (int)(long)f->file_id;
     if (f->writev_func(f->file_id, (struct iovec *)vec, 2, 
 		       NULL, NULL) != 2) {
 	printf("Write failed, errno %d\n", errno);
@@ -1016,7 +1024,6 @@ write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs)
     //build_reverse_index(f, attr_list, attr_len);
     // Above ... deepak u need to replace attr_list with attr_block
     vec = FFSencode_vector(f->buf, format, data);
-
     vec_count = 0;
     byte_size = 0;
     while (vec[vec_count].iov_base != NULL) {
@@ -1024,6 +1031,7 @@ write_FFSfile_attrs(FFSFile f, FMFormat format, void *data, attr_list attrs)
 	vec_count++;
     }
 
+    int fd = (int)(long)f->file_id;
     /*
      * next_data indicator is two 4-byte chunks in network byte order.
      * The top byte is 0x3.  The next byte is reserved for future use.
@@ -1154,12 +1162,21 @@ FFSconsume_next_item(FFSFile ffsfile)
     }
 }
 
+extern void
+FFSdump_index(FFSIndexItem index_item);
+
 extern FFSIndexItem
 FFSread_index(FFSFile ffsfile)
 {
     char *index_data;
     FFSIndexItem index_item;
     off_t index_fpos;
+    int index_size;
+    int fd = (int)(long)ffsfile->file_id;
+    int currentPos = lseek(fd, (size_t)0, SEEK_CUR);
+    int end = lseek(fd, (size_t)0, SEEK_END);
+    lseek(fd, currentPos, SEEK_SET);   // seek back to original spot
+
     if (ffsfile->read_ahead == FALSE) {
 	(void) next_record_type(ffsfile);
     }
@@ -1167,7 +1184,7 @@ FFSread_index(FFSFile ffsfile)
 	if (!FFSconsume_next_item(ffsfile)) return NULL;
     }
     index_data = malloc(ffsfile->next_data_len);
-
+    index_size = ffsfile->next_data_len;
     update_fpos(ffsfile);
     index_fpos = ffsfile->fpos - 4;
     if (ffsfile->read_func(ffsfile->file_id, index_data+4, 
@@ -1178,6 +1195,21 @@ FFSread_index(FFSFile ffsfile)
     }
     ffsfile->read_ahead = FALSE;
     index_item = parse_index_block(index_data);
+    ffsfile->read_index = index_item;
+    if (index_item->next_index_offset == end) {
+	int block_size = htonl(*((int*)(index_data+4))) & 0xffffff;
+	ffsfile->cur_index = malloc(sizeof(*(ffsfile->cur_index)));
+	memcpy(ffsfile->cur_index, index_item, sizeof(*(ffsfile->cur_index)));
+	ffsfile->cur_index->write_info.base_file_pos = index_fpos;
+	ffsfile->cur_index->write_info.data_index_start = 0;
+	ffsfile->cur_index->write_info.index_block_size = INDEX_BLOCK_SIZE;
+	ffsfile->cur_index->write_info.data_index_end = 0;
+	ffsfile->cur_index->write_info.next_item_offset = index_item->end_item_offset;
+	ffsfile->cur_index->write_info.index_block = malloc(INDEX_BLOCK_SIZE);
+	memset(	ffsfile->cur_index->write_info.index_block, 0, INDEX_BLOCK_SIZE);
+	memcpy(ffsfile->cur_index->write_info.index_block, index_data, index_size);
+	ffsfile->data_count = index_item->last_data_count+1;
+    }
     free(index_data);
     index_item->this_index_fpos = index_fpos;
     if (ffsfile->index_head == NULL) {
@@ -1191,6 +1223,7 @@ FFSread_index(FFSFile ffsfile)
 	index_item->next = NULL;
 	ffsfile->index_tail = index_item;
     }
+    FFSdump_index(index_item);
     return index_item;
 }
 
@@ -1198,7 +1231,7 @@ extern void
 FFSdump_index(FFSIndexItem index_item)
 {
     int i;
-    printf("Index item : %p\n", index_item);
+    printf("Index item : \n");
     printf(" Next index offset : %ld\n", index_item->next_index_offset);
     printf("  Start data count : %d\n", index_item->start_data_count);
     printf("  End data count   : %d\n", index_item->last_data_count);
@@ -1407,6 +1440,9 @@ read_all_index_and_formats(FFSFile file)
 {
     int fd = (int)(long)file->file_id;
     off_t fpos = 1;
+    int currentPos = lseek(fd, (size_t)0, SEEK_CUR);
+    int end = lseek(fd, (size_t)0, SEEK_END);
+    lseek(fd, currentPos, SEEK_SET);   // seek back to original spot
 
     if (!file->index_head)
         FFSread_index(file);
@@ -1418,7 +1454,7 @@ read_all_index_and_formats(FFSFile file)
 	return;
     }
     file->file_org = Indexed;
-    while (fpos != 0) {
+    while (fpos != end) {
 	/* Read all formats in this index block */
 	int i;
 	for (i = 0; i < file->index_tail->elem_count; i++) {
@@ -1429,13 +1465,16 @@ read_all_index_and_formats(FFSFile file)
 		(void) FFSread_format(file);
 	    }
 	}
-	fpos = file->index_tail->elements[i].fpos;
-	if (fpos != 0) {
+	/* skip to next index block */
+	fpos = file->index_tail->next_index_offset;
+	if (fpos != end) {
 	    if (lseek(fd, fpos, SEEK_SET) == -1)
 		return;
 	    FFSread_index(file);
 	}
     }
+    lseek(fd, 0, SEEK_END);
+    file->fpos = lseek(fd, 0, SEEK_CUR);
 }
 
 static void
@@ -1461,15 +1500,11 @@ convert_last_index_block(FFSFile ffsfile)
 	printf("Read failed, errno %d\n", errno);
 	return;
     }
-    write_index->write_info.base_file_pos = read_index->this_index_fpos;
-    write_index->write_info.data_index_start = read_index->start_data_count;
-    write_index->write_info.data_index_end = read_index->last_data_count;
-    write_index->write_info.next_item_offset = read_index->end_item_offset;
+    ffsfile->cur_index->write_info.data_index_start =  htonl(*((int*)(index_data+8)));;
     ffsfile->data_count = read_index->last_data_count + 1;
     int fd = (int)(long)ffsfile->file_id;
     if (lseek(fd, 0, SEEK_END) == -1)
 	return;
-    
 }
 
 FFSRecordType
