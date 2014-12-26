@@ -41,11 +41,13 @@ ADD_TEST(write_file_output ffs_write ${ffs_BINARY_DIR}/ffs/tests/file_output.bin
 ADD_TEST(file_output_unique test_file_unique ${ffs_BINARY_DIR}/ffs/tests/file_output.bin ${FOS} )
 ADD_TEST(write_index_output ffs_write -a ${ffs_BINARY_DIR}/ffs/tests/index_output.bin)
 ADD_TEST(index_output_unique test_file_unique ${ffs_BINARY_DIR}/ffs/tests/index_output.bin ${IOS} )
+ADD_TEST(write_index_reopen ffs_write -a -r -i ./index_reopen_output.bin)
 LIST(APPEND CTOS context_test_output.bin)
 LIST(REMOVE_DUPLICATES CTOS)
 LIST(APPEND FOS file_output.bin)
 LIST(REMOVE_DUPLICATES FOS)
 LIST(APPEND IOS index_output.bin)
+LIST(APPEND IOS index_reopen_output.bin)
 LIST(REMOVE_DUPLICATES IOS)
 
 foreach	(CTOUT ${CTOS})

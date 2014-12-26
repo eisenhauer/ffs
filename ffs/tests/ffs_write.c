@@ -89,7 +89,8 @@ main(int argc, char **argv)
 	ffsfile = open_FFSfile(output_file, "wi");
     }
 
-    src_context = create_local_FMcontext();
+    
+    src_context = FMContext_of_file(ffsfile);
 
     opt_info[0].info_type = 0x584D4C20;   /* XML */
     opt_info[1].info_type = 0;
@@ -256,6 +257,88 @@ main(int argc, char **argv)
     if (!write_FFSfile_attrs(ffsfile, third_rec_ioformat, &rec3, a1))
 	printf("write failed\n");
 
+    if (reopen) {
+	close_FFSfile(ffsfile);
+	if (!indexed) {
+	    ffsfile = open_FFSfile(output_file, "a");
+	} else {
+	    ffsfile = open_FFSfile(output_file, "ai");
+	}
+	src_context = FMContext_of_file(ffsfile);
+	opt_info[0].info_type = 0x584D4C20;   /* XML */
+	opt_info[1].info_type = 0;
+	opt_info[1].info_len = 0;
+	opt_info[1].info_block = NULL;
+	str_list[0].format_name = "first format";
+	str_list[0].field_list = field_list;
+	str_list[0].struct_size = sizeof(first_rec);
+	str_list[0].opt_info = &opt_info[0];
+	str_list[1].format_name = NULL;
+
+	opt_info[0].info_len = strlen(first_xml) +1;
+	opt_info[0].info_block = first_xml;
+	first_rec_ioformat = register_data_format(src_context, str_list);
+
+
+	str_list[0].format_name = "string format";
+	str_list[0].field_list = field_list2;
+	str_list[0].struct_size = sizeof(second_rec);
+	str_list[0].opt_info = &opt_info[0];
+	str_list[1].format_name = NULL;
+	opt_info[0].info_len = strlen(string_xml) +1;
+	opt_info[0].info_block = string_xml;
+	second_rec_ioformat = register_data_format(src_context, str_list);
+	
+	str_list[0].format_name = "two string format";
+	str_list[0].field_list = field_list3;
+	str_list[0].struct_size = sizeof(third_rec);
+	str_list[0].opt_info = &opt_info[0];
+	str_list[1].format_name = NULL;
+	opt_info[0].info_len = strlen(third_xml) +1;
+	opt_info[0].info_block = third_xml;
+	third_rec_ioformat = register_data_format(src_context, str_list);
+	
+	str_list[0].format_name = "internal array format";
+	str_list[0].field_list = field_list4;
+	str_list[0].struct_size = sizeof(fourth_rec);
+	str_list[0].opt_info = &opt_info[0];
+	str_list[1].format_name = NULL;
+	opt_info[0].info_len = strlen(fourth_xml) +1;
+	opt_info[0].info_block = fourth_xml;
+	fourth_rec_ioformat = register_data_format(src_context, str_list);
+
+	str_list[0].format_name = "embedded";
+	str_list[0].field_list = embedded_field_list;
+	str_list[0].struct_size = sizeof(embedded_rec);
+	str_list[0].opt_info = &opt_info[0];
+	str_list[1].format_name = NULL;
+	opt_info[0].info_len = strlen(embedded_xml) +1;
+	opt_info[0].info_block = embedded_xml;
+	embedded_rec_ioformat = register_data_format(src_context, str_list);
+	
+	
+	fifth_rec_ioformat = register_data_format(src_context, structured_format_list);
+	
+	str_list[0].format_name = "variant array format";
+	str_list[0].field_list = field_list6;
+	str_list[0].struct_size = sizeof(sixth_rec);
+	str_list[0].opt_info = &opt_info[0];
+	str_list[1].format_name = "string format";
+	str_list[1].field_list = field_list2;
+	str_list[1].struct_size = sizeof(second_rec);
+	str_list[1].opt_info = &opt_info2[0];
+	str_list[2].format_name = NULL;
+	opt_info[0].info_len = strlen(var_array_xml) +1;
+	opt_info[0].info_block = var_array_xml;
+	opt_info2[0].info_type = 0x584D4C20;   /* XML */
+	opt_info2[0].info_len = strlen(string_xml) +1;
+	opt_info2[0].info_block = string_xml;
+	opt_info2[1].info_type = 0;
+	opt_info2[1].info_len = 0;
+	opt_info2[1].info_block = NULL;
+	sixth_rec_ioformat = register_data_format(src_context, str_list);
+    }
+    
     UPDATE_ATTR(a1); /* new 8 */
     str_list[0].format_name = "later format";
     str_list[0].field_list = later_field_list;
@@ -279,14 +362,6 @@ main(int argc, char **argv)
     opt_info[0].info_block = nested_xml;
     nested_ioformat = register_data_format(src_context, str_list);
 
-    if (reopen) {
-	close_FFSfile(ffsfile);
-	if (!indexed) {
-	    ffsfile = open_FFSfile(output_file, "a");
-	} else {
-	    ffsfile = open_FFSfile(output_file, "ai");
-	}
-    }
     rec3.integer_field = 14;
     rec3.long_field = 987234;
     rec3.string = NULL;
@@ -484,7 +559,6 @@ main(int argc, char **argv)
 
     close_FFSfile(ffsfile);
     free_FFSfile(ffsfile);
-    free_FMcontext(src_context);
     free_attr_list(a1);
     free_attr_list(a2);
     return 0;

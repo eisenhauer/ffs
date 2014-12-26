@@ -62,7 +62,7 @@ add_rec add_action_record;
 
 struct pointer_to_static_array psa;
 
-char *first_xml = "\
+const char *first_xml = "\
 <FirstRecord integer_attribute=<FFS:data field_id=0> double_attribute=<FFS:data field_id=1> character_attribute=<FFS:data field_id=2>>\n";
 
 char *string_xml = "\
