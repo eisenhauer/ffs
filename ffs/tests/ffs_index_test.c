@@ -175,7 +175,7 @@ int (*read_func) ();
 		memset(&read_data[0], 0, sizeof(first_rec));
 		if (!FFSread_attr(iofile, &read_data[0], &attr))
 		    printf("read first data");
-		if (attr) dump_attr_list(attr);
+		if (verbose && attr) dump_attr_list(attr);
 		get_int_attr(attr, iteration_atom, &iter_attr);
 		if ((memcmp(&read_data[0], &rec1_array[first_rec_count++],
 			    sizeof(first_rec)) != 0) || (iter_attr != rec1_attr_val[first_rec_count-1])) {
