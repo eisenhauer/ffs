@@ -361,7 +361,7 @@ get_optinfo_FMFormat(FMFormat format, int info_type, int *len_p)
     while(format->opt_info[i].info_type != 0) {
 	if (format->opt_info[i].info_type == info_type) {
 	    *len_p = format->opt_info[i].info_len;
-	    return format->opt_info[i].info_block;
+	    return (void*)format->opt_info[i].info_block;
 	}
 	i++;
     }

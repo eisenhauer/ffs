@@ -38,7 +38,7 @@ typedef struct _FMField {
 typedef struct _FMOptInfo {
     int info_type;
     int info_len;
-    char *info_block;
+    const char *info_block;
 } FMOptInfo;
 
 /*!

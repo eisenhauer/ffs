@@ -341,7 +341,7 @@ FMget_compat_formats(FMFormat fmformat)
 	return NULL;
     while (fmformat->opt_info[i].info_type != 0) {
 	if (fmformat->opt_info[i].info_type == COMPAT_OPT_INFO) {
-	    char *buffer = fmformat->opt_info[i].info_block;
+	    char *buffer = (void*)fmformat->opt_info[i].info_block;
 	    int fid_length = ID_length[version_of_format_ID(buffer)];
 	    ret[count].prior_format = 
 		FMformat_from_ID(fmformat->context, buffer);
@@ -2824,12 +2824,12 @@ dump_FMFormat(fmformat)
 FMFormat fmformat;
 {
     int index, i;
-    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Float format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; File Version = %d; ",
+    printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Float format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; Index = %d, File Version = %d; ",
 	   fmformat->format_name, fmformat->record_length, 
 	   fmformat->field_count, fmformat->byte_reversal, 
 	   float_format_str[fmformat->float_format],
 	   fmformat->pointer_size, fmformat->column_major_arrays,
-	   fmformat->alignment, fmformat->IOversion);
+	   fmformat->alignment, fmformat->format_index, fmformat->IOversion);
     printf("Server ID = ");
     for (i = 0; i < fmformat->server_ID.length; i++) {
 	printf("%02x", ((unsigned char *) fmformat->server_ID.value)[i]);
