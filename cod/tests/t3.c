@@ -432,7 +432,6 @@ char code_string[] = {"\
 #endif
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
-	cod_dump(gen_code);
 	func = (int (*)())(long) gen_code->func;
 	result = (func)(EC_param0);
 	if (result != 0) {
