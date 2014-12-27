@@ -344,6 +344,9 @@ free_FFSIndexItem(FFSIndexItemStruct *item)
 	if (item->elements[i].format_id) {
 	    free(item->elements[i].format_id);
 	}
+	if (item->elements[i].attrs) {
+	    free_attr_list(item->elements[i].attrs);
+	}
     }
     if (item->elements) free(item->elements);
     free(item);
@@ -793,6 +796,7 @@ parse_index_block(char *index_base)
 	item_count++;
 	item->elements = realloc(item->elements,
 				 item_count * sizeof(item->elements[0]));
+	memset(&item->elements[item_count-1], 0, sizeof(item->elements[0]));
 	switch (item_type) {
 	case Format_Item: {
 	    unsigned int *ielem = (unsigned int *)((char*) index_base + cur_offset);
