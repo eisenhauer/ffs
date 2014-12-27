@@ -1227,7 +1227,6 @@ FFSread_index(FFSFile ffsfile)
 	index_item->next = NULL;
 	ffsfile->index_tail = index_item;
     }
-    FFSdump_index(index_item);
     return index_item;
 }
 
