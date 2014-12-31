@@ -2341,6 +2341,8 @@ cod_parse_context context;
     new_context->decls = cod_copy_list(context->decls);
     count = 0;
     while (context->scope->externs && context->scope->externs[count].extern_value) count++;
+    i=0;
+    while(new_context->scope->externs[i].extern_name) free(new_context->scope->externs[i++].extern_name);
     free(new_context->scope->externs);
     new_context->scope->externs = malloc(sizeof(context->scope->externs[0]) *
 					 (count+1));
