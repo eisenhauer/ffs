@@ -262,7 +262,7 @@ IOConversionPtr
 create_conversion(src_ioformat, target_field_list, target_struct_size,
 		  pointer_size, byte_reversal, target_fp_format,
 		  initial_conversion, target_column_major,
-		  string_offset_size, converted_strings)
+		  string_offset_size, converted_strings, target_list)
 FFSTypeHandle src_ioformat;
 FMFieldList target_field_list;
 int target_struct_size;
@@ -273,6 +273,7 @@ IOconversion_type initial_conversion;
 int target_column_major;
 int string_offset_size;
 int converted_strings;
+FMStructDescList target_list; 
 {
     int target_field_count = count_FMfield(target_field_list);
     FMFieldList nfl_sort = copy_field_list(target_field_list);
@@ -485,14 +486,13 @@ int converted_strings;
 	    /* falling through */
 	case buffer_and_convert:
 	    if (input_var_list[input_index].var_array ||
-		(input_var_list[input_index].type_desc.type == FMType_pointer)) {
-		if (nfl_sort[i].field_size != input_field.field_size) {
-		    /* argh.  Must buffer variant part too */
-		    conv = copy_dynamic_portion;
-		    goto restart;
-		}
+	    	(input_var_list[input_index].type_desc.type == FMType_pointer)) {
+	    	if (nfl_sort[i].field_size != input_field.field_size) {
+	    	    /* argh.  Must buffer variant part too */
+	    	    conv = copy_dynamic_portion;
+	    	    goto restart;
+	    	}
 	    }
-	    break;
 	case copy_dynamic_portion:
 	    if (input_var_list[input_index].var_array ||
 		(input_var_list[input_index].type_desc.type == FMType_pointer)) {
@@ -549,25 +549,33 @@ int converted_strings;
 	    &input_var_list[input_index];
 	if (in_data_type == unknown_type) {
 	    FFSTypeHandle format = src_ioformat->field_subformats[input_index];
-	    if ((format != NULL) && (format->conversion != NULL)) {
+	    if (format != NULL) {
+		int format_index = 0;
+		char *base_type = base_data_type(input_field.field_type);
+
+		while(target_list[format_index].format_name && 
+		      (strcmp(base_type, target_list[format_index].format_name) != 0)) {
+		    format_index++;
+		}
+		free(base_type);
 	        if (format == src_ioformat) {
 		    conv_ptr->conversions[conv_index].subconversion = conv_ptr;
-		} else {
+		} else if (target_list[format_index].format_name != NULL) {
 		    IOConversionPtr subconv;
-		    int struct_size = format->conversion->base_size_delta +
-		      format->body->record_length;
+		    int target_struct_size = target_list[format_index].struct_size;
 		    subconv =
 		      create_conversion(format,
-					format->conversion->native_field_list,
-					struct_size, pointer_size,
+					target_list[format_index].field_list,
+					target_struct_size, pointer_size,
 					byte_reversal, target_fp_format,
 					conv, target_column_major,
 					string_offset_size,
-					converted_strings);
+					converted_strings, target_list);
+		    if (conv_ptr->conversions[conv_index].subconversion) {
+			printf("Subconversion already had value!\n");
+		    }
 		    conv_ptr->conversions[conv_index].subconversion = subconv;
 		}
-	    } else if (format == src_ioformat) {
-		conv_ptr->conversions[conv_index].subconversion = conv_ptr;
 	    } else {
 		
 		fprintf(stderr, "Unknown field type for field %s ->\"%s\", format %lx\n",
@@ -627,12 +635,13 @@ int converted_strings;
 extern
 void
 set_general_IOconversion_for_format(iofile, file_ioformat, native_field_list,
-				    native_struct_size, pointer_size)
+				    native_struct_size, pointer_size, target_list)
 FFSContext iofile;
 FFSTypeHandle file_ioformat;
 FMFieldList native_field_list;
 int native_struct_size;
 int pointer_size;
+FMStructDescList target_list;
 {
     IOConversionPtr conv_ptr;
     IOconversion_type conv_type = none_required;
@@ -649,7 +658,7 @@ int pointer_size;
 				 file_ioformat->body->byte_reversal, 
 				 ffs_my_float_format, conv_type,
 /*				 iofile->native_column_major_arrays*/ 0,
-				 string_offset_size, FALSE);
+				 string_offset_size, FALSE, target_list);
 
     if (conv_ptr == NULL) {
 	fprintf(stderr, "Set_IOconversion failed for format name %s\n",
@@ -685,7 +694,7 @@ FMStructDescList struct_list;
     set_general_IOconversion_for_format(iocontext, ioformat,
 					struct_list[i].field_list, 
 					struct_list[i].struct_size,
-					(int) sizeof(char *));
+					(int) sizeof(char *), struct_list);
     return 1;
 }
 
@@ -730,19 +739,9 @@ FFSTypeHandle ioformat;
 FMStructDescList struct_list;
 {
     int i;
-    int subformat_count = 0;
+    int format_index = 0;
     int use_package = 0;
-    while (ioformat->body->subformats && ioformat->body->subformats[subformat_count])
-	subformat_count++;
-    for (i=subformat_count-1; i>= 0; i--) {
-	FFSTypeHandle f = ioformat->subformats[i];
-	if (!(set_conversion_from_list(iocontext, f, struct_list))) {
-	    return;
-	}
-	if (f->conversion->conv_pkg != NULL) {
-	    use_package++;
-	}
-    }
+
     if (!(set_conversion_from_list(iocontext, ioformat, struct_list))) {
 	return;
     }
