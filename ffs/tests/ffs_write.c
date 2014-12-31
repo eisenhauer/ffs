@@ -259,6 +259,7 @@ main(int argc, char **argv)
 
     if (reopen) {
 	close_FFSfile(ffsfile);
+	free_FFSfile(ffsfile);
 	if (!indexed) {
 	    ffsfile = open_FFSfile(output_file, "a");
 	} else {
