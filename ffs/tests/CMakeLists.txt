@@ -16,6 +16,7 @@ endforeach()
 ADD_EXECUTABLE(marshal_test marshal_test.c)
 TARGET_LINK_LIBRARIES(marshal_test ffs)
 ADD_TEST(marshal_test marshal_test)
+SET(CTEST_CUSTOM_MEMCHECK_IGNORE marshal_test)
 
 ADD_EXECUTABLE(marshal_test2 marshal_test2.c)
 TARGET_LINK_LIBRARIES(marshal_test2 ffs)
