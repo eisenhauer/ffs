@@ -5433,7 +5433,9 @@ cod_parse_context context;
 sm_ref array;
 scope_ptr scope;
 {
-    array->node.array_type_decl.dimensions = malloc(sizeof(dimen_s));
+    if (!array->node.array_type_decl.dimensions) {
+        array->node.array_type_decl.dimensions = malloc(sizeof(dimen_s));
+    }
     array->node.array_type_decl.dimensions->dimen_count = 0;
     return semanticize_array_element_node(context, array, array,  
 					  array->node.array_type_decl.type_spec,
