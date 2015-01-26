@@ -2533,13 +2533,15 @@ determine_op_type(cod_parse_context context, sm_ref expr,
     operator_t op = expr->node.operator.op;
 
     if (left_type == DILL_P) {
+	sm_ref ctype;
 	if (is_string(expr->node.operator.left) &&
 	    is_string(expr->node.operator.right) &&
 	    (op == op_eq)) {
 	    return DILL_I;
 	}
 
-	if(get_complex_type(context, left)->node_type == cod_struct_type_decl) {
+	ctype = get_complex_type(context, left);
+	if(ctype && (ctype->node_type == cod_struct_type_decl)) {
 	    cod_src_error(context, expr, 
 			  "Illegal arithmetic. Left side is a structure.");
 	    return DILL_ERR;
@@ -2948,6 +2950,12 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	type_found++;
     }
     switch(cg_type) {
+    case DILL_C: 
+	*size = sizeof(char);
+	return strdup("integer");
+    case DILL_UC: 
+	*size = sizeof(char);
+	return strdup("unsigned");
     case DILL_I: 
 	*size = sizeof(int);
 	return strdup("integer");
@@ -3572,7 +3580,8 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    sm_ref formal = tmp_formals->node;
 	    if (formal && (formal->node.declaration.sm_complex_type != NULL)) {
 		sm_ref ct = formal->node.declaration.sm_complex_type;
-		if (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") == 0) {
+		if ((ct->node_type == cod_reference_type_decl) &&
+		    (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") == 0)) {
 		    sm_list new_arg = malloc(sizeof(struct list_struct));
 		    char tmp[30];
 		    new_arg->next = tmp_args;
@@ -3590,7 +3599,8 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    new_arg->node->node.constant.const_val = strdup(tmp);
 		    *last_arg_p = new_arg;
 		    tmp_args = new_arg;
-		} else if (strcmp(ct->node.reference_type_decl.name, "cod_exec_context") == 0) {
+		} else if ((ct->node_type == cod_reference_type_decl) &&
+			   (strcmp(ct->node.reference_type_decl.name, "cod_exec_context") == 0)) {
 		    tmp_formals = tmp_formals->next;
 		    continue;
 		}
@@ -6013,3 +6023,259 @@ gen_rollback_code(FMStructDescList format1, FMStructDescList format2, char *xfor
      */
     return code;
 }
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+static double
+get_constant_float_value(cod_parse_context context, sm_ref expr)
+{
+    double result;
+    switch(expr->node.constant.token) {
+    case integer_constant:
+    case floating_constant:
+	sscanf(expr->node.constant.const_val, "%lg", &result);
+	return result;
+    case string_constant:
+	return 0.0;
+    case character_constant:
+	return (double)(unsigned char)expr->node.constant.const_val[0];
+    default:
+	assert(FALSE);
+    }
+}
+
+static long
+get_constant_long_value(cod_parse_context context, sm_ref expr)
+{
+    double dresult;
+    long result;
+    switch(expr->node.constant.token) {
+    case integer_constant:
+	sscanf(expr->node.constant.const_val, "%ld", &result);
+	return result;
+    case floating_constant:
+	sscanf(expr->node.constant.const_val, "%lg", &dresult);
+	return (long)dresult;
+    case string_constant:
+	return -1;
+    case character_constant:
+	return (long)(unsigned char)expr->node.constant.const_val[0];
+    default:
+	assert(FALSE);
+    }
+}
+
+extern sm_ref
+evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_result)
+{
+    switch(expr->node_type) {
+    case cod_constant:
+	*free_result = 0;
+	return expr;
+    case cod_identifier:
+	return evaluate_constant_return_expr(context, expr->node.identifier.sm_declaration, free_result);
+    case cod_declaration:
+	if (!expr->node.declaration.const_var) return NULL;
+	return evaluate_constant_return_expr(context, expr->node.identifier.sm_declaration, free_result);
+    case cod_operator: {
+	sm_ref left, right, ret;
+	int free_left = 0, free_right = 0;
+	int left_token, right_token;
+	if (expr->node.operator.left != NULL) {
+	    if (!(left = evaluate_constant_return_expr(context, expr->node.operator.left, &free_left))) return NULL;
+	    left_token = left->node.constant.token;
+	}
+	if (expr->node.operator.right != NULL) {
+	    if (!(right = evaluate_constant_return_expr(context, expr->node.operator.right, &free_right))) return NULL;
+	    right_token = left->node.constant.token;
+	    if (!expr->node.operator.left) {
+		left_token = right_token;
+	    }
+	}
+	if ((left_token == string_constant) || 
+	    (right_token == string_constant)) {
+	    /* blech.  No operators on strings. */
+	    return NULL;
+	}
+	if ((left_token == floating_constant) || 
+	    (right_token == floating_constant)) {
+	    double left, right, fvalue;
+	    int ivalue, is_ivalue = 0;
+	    char str_val[40];
+	    if (expr->node.operator.left)
+		left = get_constant_float_value(context, expr->node.operator.left);
+	    if (expr->node.operator.right)
+		right = get_constant_float_value(context, expr->node.operator.right);
+	    switch(expr->node.operator.op) {
+	    case  op_plus:
+		fvalue = left + right;
+		break;
+	    case  op_minus:
+		fvalue = left - right;
+	    break;
+	    case  op_leq:
+		ivalue = left <= right;
+		is_ivalue=1;
+		break;
+	    case  op_lt:
+		ivalue = left < right;
+		is_ivalue=1;
+		break;
+	    case  op_geq:
+		ivalue = left >= right;
+		is_ivalue=1;
+		break;
+	    case  op_gt:
+		ivalue = left > right;
+		is_ivalue=1;
+		break;
+	    case  op_eq:
+		ivalue = left = right;
+		is_ivalue=1;
+		break;
+	    case  op_neq:
+		ivalue = left != right;
+		is_ivalue=1;
+		break;
+	    case  op_mult:
+		fvalue = left * right;
+		break;
+	    case  op_div:
+		if (right == 0) {
+		    return NULL;
+		}
+		fvalue = left / right;
+		break;
+	    case op_log_neg:
+	    case op_not:
+	    case op_left_shift:
+	    case op_right_shift:
+	    case  op_modulus:
+	    case  op_log_or:
+	    case  op_arith_or:
+	    case  op_arith_xor:
+	    case  op_log_and:
+	    case  op_arith_and:
+	    case  op_deref:
+	    case  op_address:
+	    case op_inc:
+	    case op_dec:
+	    case op_sizeof:
+		assert(FALSE);
+	    }
+	    ret = cod_new_constant();
+	    if (is_ivalue) {
+		ret->node.constant.token = integer_constant;
+		sprintf(str_val, "%d", ivalue);
+	    } else {
+		ret->node.constant.token = floating_constant;
+		sprintf(str_val, "%g", fvalue);
+	    }
+	    ret->node.constant.const_val = strdup(str_val);
+	    *free_result = 1;
+	} else {
+	    /* we get an integer result */
+	    long left, right, value;
+	    char str_val[40];
+	    if (expr->node.operator.left)
+		left = get_constant_long_value(context, expr->node.operator.left);
+	    if (expr->node.operator.right)
+		right = get_constant_long_value(context, expr->node.operator.right);
+	    switch(expr->node.operator.op) {
+	    case  op_modulus:
+		if (right == 0) {
+		    return NULL;
+		}
+		value = left % right;
+		break;
+	    case  op_plus:
+		value = left + right;
+		break;
+	    case  op_minus:
+		value = left - right;
+		break;
+	    case  op_leq:
+		value = left <= right;
+		break;
+	    case  op_lt:
+		value = left < right;
+		break;
+	    case  op_geq:
+		value = left >= right;
+		break;
+	    case  op_gt:
+		value = left > right;
+		break;
+	    case  op_eq:
+		value = left = right;
+		break;
+	    case  op_neq:
+		value = left != right;
+		break;
+	    case  op_log_or:
+		value = left || right;
+		break;
+	    case  op_arith_or:
+		value = left | right;
+		break;
+	    case  op_arith_xor:
+		value = left ^ right;
+		break;
+	    case  op_log_and:
+		value = left && right;
+		break;
+	    case  op_arith_and:
+		value = left & right;
+		break;
+	    case  op_mult:
+		value = left * right;
+		break;
+	    case  op_div:
+		value = left / right;
+		break;
+	    case op_log_neg:
+		value = !right;
+		break;
+	    case op_not:
+		value = ~right;
+		break;
+	    case op_left_shift:
+		value = left << right;
+		break;
+	    case op_right_shift:
+		value = left >> right;
+		break;
+	    case op_deref:
+	    case op_address:
+	    case op_inc:
+	    case op_dec:
+	    case op_sizeof:
+		assert(FALSE);
+	    }
+	    ret = cod_new_constant();
+	    ret->node.constant.token = integer_constant;
+	    sprintf(str_val, "%ld", value);
+	    ret->node.constant.const_val = strdup(str_val);
+	    *free_result = 1;
+	}
+	if (free_left) {
+	    /* do stuff*/ 
+	} 
+	if (free_right) {
+	    /* do stuff*/ 
+	} 
+	return ret;
+    }
+    case cod_cast:
+	return evaluate_constant_return_expr(context, expr->node.cast.expression, free_result);
+    case cod_assignment_expression:
+    case cod_field_ref:
+    case cod_element_ref:
+    case cod_subroutine_call:
+	assert(FALSE);
+    default:
+	assert(FALSE);
+    }
+}
+	

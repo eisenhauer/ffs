@@ -61,3 +61,5 @@ extern int cod_semanticize_added_decls(cod_parse_context context);
 extern void cod_swap_decls_to_standard(cod_parse_context context);
 extern void
 cod_add_decl_to_parse_context(const char *name, sm_ref item, cod_parse_context context);
+extern sm_ref
+evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_result);

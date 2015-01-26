@@ -791,7 +791,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		/* init to zero's */
 		memset(var_base, 0, cg_get_size(s, decl));
 	    } else {
-		sm_ref const_val = decl->node.declaration.init_value;
+		sm_ref const_val;
+		int free_expr = 0;
+		const_val = evaluate_constant_return_expr(NULL, decl->node.declaration.init_value, &free_expr);
 		assert(const_val->node_type == cod_constant);
 		if (const_val->node.constant.token == string_constant) {
 		    assert(FALSE);
@@ -884,6 +886,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		    default:
 			assert(FALSE);
 		    }
+		    if (free_expr) cod_free(const_val);
 		}
 	    }
 	    return;
