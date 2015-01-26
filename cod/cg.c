@@ -2649,8 +2649,16 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 	    gen_mov(s, left, result.reg, assign_type);
 	}
-		
-	return left;
+	if (need_assignable == 1) {
+	    return left;
+	} else {
+	    dill_reg ret = dill_getreg(s, assign_type);
+	    gen_load(s, ret, left, assign_type);
+	    oprnd.reg = ret;
+	    oprnd.is_addr = 0;
+	    oprnd.offset = 0;
+	    return oprnd;
+	}
     }
     case cod_field_ref: {
 	operand base = cg_expr(s, expr->node.field_ref.struct_ref, 1, descr);
