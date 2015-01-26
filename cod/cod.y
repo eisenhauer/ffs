@@ -3917,6 +3917,8 @@ get_complex_type(cod_parse_context context, sm_ref node)
 	}
 	return fields->node->node.field.sm_complex_type;
     }
+    case cod_conditional_operator:
+	return NULL;
     case cod_constant:
 	return NULL;
     case cod_operator:
@@ -6088,7 +6090,7 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	}
 	if (expr->node.operator.right != NULL) {
 	    if (!(right = evaluate_constant_return_expr(context, expr->node.operator.right, &free_right))) return NULL;
-	    right_token = left->node.constant.token;
+	    right_token = right->node.constant.token;
 	    if (!expr->node.operator.left) {
 		left_token = right_token;
 	    }
