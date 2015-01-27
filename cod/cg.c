@@ -2649,7 +2649,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 	    gen_mov(s, left, result.reg, assign_type);
 	}
-	if (need_assignable == 1) {
+	if ((need_assignable == 1) || (!left.is_addr)) {
 	    return left;
 	} else {
 	    dill_reg ret = dill_getreg(s, assign_type);
