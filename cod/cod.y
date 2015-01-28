@@ -935,7 +935,9 @@ storage_class_specifier
 	    $$->node.type_specifier.token = STATIC;
 	}
 	| EXTERN_TOKEN {
-	    $$ = NULL;
+	    $$ = cod_new_type_specifier();
+	    $$->node.type_specifier.lx_srcpos = $1.lx_srcpos;
+	    $$->node.type_specifier.token = EXTERN_TOKEN;
 	}
 	;
 
@@ -4963,6 +4965,7 @@ semanticize_gotos(cod_parse_context context, sm_ref stmt, sm_list function_conte
      * the entire scope looking for their target 
      */
     int ret = 1;
+    if (!stmt) return 1;
     switch (stmt->node_type) {
     case cod_declaration: 
     case cod_struct_type_decl:
