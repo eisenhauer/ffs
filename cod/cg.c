@@ -1104,6 +1104,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 static void
 cg_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
+    if (!stmt) return;
     switch(stmt->node_type) {
     case cod_selection_statement:
 	cg_selection_statement(s, stmt, descr);
