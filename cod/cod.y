@@ -4580,9 +4580,6 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 				       &cg_type, scope, &type_def, &decl->node.declaration.freeable_complex_type);
 		if (type_def) {
 		    decl->node.declaration.is_typedef = 1;
-		    if (typ && (typ->node_type == cod_struct_type_decl)) {
-			typ->node.struct_type_decl.is_typedef = 1;
-		    }
 		}
 	    } else {
 		sm_ref arr = decl->node.declaration.sm_complex_type;
@@ -5095,7 +5092,6 @@ cod_build_type_node(const char *name, FMFieldList field_list)
     sm_list *end_ptr = &decl->node.struct_type_decl.fields;
 
     decl->node.struct_type_decl.id = strdup(name);
-    decl->node.struct_type_decl.is_typedef = 1;
     while ((field_list != NULL) && (field_list->field_name != NULL)) {
 	sm_list new_elem;
 	new_elem = malloc(sizeof(*new_elem));
