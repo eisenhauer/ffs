@@ -3681,6 +3681,22 @@ reverse_operator(int cod_op)
     return -1;
 }
 
+static int
+operator_to_dill_op(operator_t cod_op)
+{
+    switch(cod_op) {
+    case op_neq:   return dill_ne_code;
+    case op_eq:   return dill_eq_code;
+    case op_gt:   return dill_gt_code;
+    case op_geq:   return dill_gt_code;
+    case op_lt:   return dill_lt_code;
+    case op_leq:   return dill_le_code;
+    default:
+	assert(0);
+    }
+    return -1;
+}
+
 static void
 cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label, 
 		   cod_code descr, int reverse)
@@ -3728,7 +3744,7 @@ cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label,
     }
 
     if (reverse) {
-	branch_operator = op;
+	branch_operator = operator_to_dill_op(op);
     } else {
 	branch_operator = reverse_operator(op);
     }
