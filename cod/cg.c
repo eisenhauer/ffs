@@ -128,6 +128,13 @@ cg_required_align(dill_stream s, sm_ref node)
 {
   int required_align;
   switch (node->node_type) {
+  case cod_declaration:
+    if (node->node.declaration.sm_complex_type == NULL) {
+      required_align = dill_type_align(s, node->node.declaration.cg_type);
+    } else {
+      required_align = cg_required_align(s, node->node.declaration.sm_complex_type);
+    }
+    break;
   case cod_field:
     if (node->node.field.sm_complex_type == NULL) {
       required_align = dill_type_align(s, node->node.field.cg_type);
@@ -1540,10 +1547,18 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 
 	    /* Get the size of the referenced type */
 	    typ = get_complex_type(NULL, ptr);
-	    if(typ->node.reference_type_decl.sm_complex_referenced_type) {
-		size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+	    if (typ) {
+		if(typ->node.reference_type_decl.sm_complex_referenced_type) {
+		    size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+		} else {
+		    size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
+		}
 	    } else {
-		size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
+		if (cod_expr_is_string(ptr)) {
+		    size = 1;
+		} else {
+		    assert(FALSE);
+		}
 	    }
 	    if (size != 1) {
 		switch(cod_sm_get_type(arg)) {
@@ -2734,7 +2749,8 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	
 	base = cg_expr(s, tmp, 1, descr);
 
-	if (arr->node_type == cod_reference_type_decl) {
+	if (arr && (arr->node_type == cod_reference_type_decl)
+	    && is_array(arr)) {
 	    /* we didn't load the address */
 	    int load_type = DILL_P;
 	    dill_reg ret = dill_getreg(s, DILL_P);
@@ -2765,7 +2781,7 @@ ROW MAJOR  (C-style):
 3D = index1 * dim2 * dim3 * element_size + index2 * dim3 * element_size + index3*element_size
 4D = index1 * dim2 * dim3 * dim4 * element_size + index2 * dim3 * dim4 * element_size + index3 * dim4 * element_size + index4*element_size
 */
-	{
+	if (arr && (arr->node_type == cod_array_type_decl)) {
 	    dill_reg size_accum = dill_getreg(s, DILL_L);
 	    dimen_p d = arr->node.array_type_decl.dimensions;
 	    dill_reg new_base = dill_getreg(s, DILL_P);
@@ -2788,6 +2804,15 @@ ROW MAJOR  (C-style):
 		dill_cvi2l(s, tmp, tmp);       /* op_i_cvi2l */
 		dill_addp(s, base.reg, base.reg, tmp);
 	    }
+	} else {
+	    /* must be non-standard array */
+	    dill_reg size_accum = dill_getreg(s, DILL_L);
+	    dill_reg new_base = dill_getreg(s, DILL_P);
+	    dill_seti(s, size_accum, element_size);
+	    dill_movp(s, new_base, base.reg);
+	    base.reg = new_base;
+	    dill_muli(s, size_accum, index[i].reg, size_accum);
+	    dill_addp(s, base.reg, base.reg, size_accum);
 	}
 	if (need_assignable == 1) {
 	    return base;

@@ -1948,6 +1948,8 @@ cod_parse_context context;
 
 static int
 semanticize_gotos(cod_parse_context context, sm_ref stmt, sm_list function_context);
+static int semanticize_decl(cod_parse_context context, sm_ref decl, 
+			    scope_ptr scope);
 
 cod_code
 cod_code_gen(code, context)
@@ -2568,8 +2570,8 @@ determine_op_type(cod_parse_context context, sm_ref expr,
 	}
     }
     if (right_type == DILL_P) {
-
-	if(get_complex_type(context, right)->node_type == cod_struct_type_decl) {
+	sm_ref right_complex = get_complex_type(context, right);
+	if(right_complex && (right->node_type == cod_struct_type_decl)) {
 	    cod_src_error(context, expr, 
 			  "Illegal arithmetic. Right side is a structure.");
 	    return DILL_ERR;
@@ -2694,6 +2696,8 @@ is_string(sm_ref expr)
 	return is_string(expr->node.field_ref.sm_field_ref);
     } else if (expr->node_type == cod_identifier) {
 	return is_string(expr->node.identifier.sm_declaration);
+    } else if (expr->node_type == cod_conditional_operator) {
+	return is_string(expr->node.conditional_operator.e1);  /* e2 must be similar */
     } else if (expr->node_type == cod_declaration) {
 	if (expr->node.declaration.cg_type != DILL_P) return 0;
 	if (expr->node.declaration.sm_complex_type != NULL) return 0;
@@ -2779,6 +2783,9 @@ is_control_value(sm_ref expr, sm_ref strct)
     return 0;
 }
 
+#ifndef FALSE
+#define FALSE 0
+#endif
 
 static char*
 type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
@@ -2802,10 +2809,23 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 
     cg_type = DILL_ERR;
     while ((type_list != NULL) && (prefix_end == 0)) {
-	int typ = type_list->node->node.type_specifier.token;
-	if ((type_list->node->node_type != cod_type_specifier) ||
-	    (typ == STAR) || (typ == AT)) {
-	    prefix_end = 1;
+	sm_ref node = type_list->node;
+	int typ = -1;
+	if (node->node_type == cod_type_specifier) {
+	    typ = type_list->node->node.type_specifier.token;
+	    if ((typ == STAR) || (typ == AT)) {
+		prefix_end = 1;
+		type_list = type_list->next;
+		continue;
+	    }
+	}
+	if (node->node_type != cod_type_specifier) {
+	    if (node->node_type == cod_identifier) {
+		return NULL;
+	    } else {
+		printf("Unknown node type in type_list_to_string\n");
+		break;
+	    }
 	} else {
 	    spec_count++;
 	    switch (typ) {
@@ -2840,8 +2860,10 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 		unsigned_appeared++;
 		break;
 	    case TYPEDEF:
+		spec_count--;
 		break;
 	    case STATIC:
+		spec_count--;
 		break;
 	    default:
 		printf("Unknown type\n");
@@ -3022,25 +3044,33 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
 	    new_elem->node->node.field.name = strdup(base_decl->node.declaration.id);
 	    base_string_type  = 
 		type_list_to_string(c, typ, &new_elem->node->node.field.cg_size);
-	    if (size->node_type == cod_constant) {
-		if (size->node.constant.token != integer_constant) {
-		    printf("Array size constant is non-integer\n");
-		    return NULL;
-		} else {
-		    size_str = size->node.constant.const_val;
-		}
-	    } else if (size->node_type == cod_identifier) {
+	    if (size->node_type == cod_identifier) {
 		size_str = size->node.identifier.id;
 	    } else {
-		printf("Unexpected value for array size\n");
-		return NULL;
+		int free_val = 0;
+		sm_ref constant = evaluate_constant_return_expr(c, size, &free_val);
+		if (constant->node_type == cod_constant) {
+		    if (constant->node.constant.token != integer_constant) {
+			printf("Array size constant is non-integer\n");
+			return NULL;
+		    } else {
+			size_str = constant->node.constant.const_val;
+		    }
+		    if (free_val) free(constant);
+		} else {
+		    printf("Unexpected value for array size\n");
+		    return NULL;
+		}
 	    }
-	    final_type = malloc(strlen(base_string_type) + 
-				      strlen(size_str) + 3);
-	    sprintf(final_type, "%s[%s]", base_string_type, size_str);
-	    new_elem->node->node.field.string_type = final_type;
-	    free(base_string_type);
-		
+	    if (base_string_type) {
+		final_type = malloc(strlen(base_string_type) + 
+				    strlen(size_str) + 3);
+		sprintf(final_type, "%s[%s]", base_string_type, size_str);
+		new_elem->node->node.field.string_type = final_type;
+		free(base_string_type);
+	    } else {
+		new_elem->node->node.field.string_type = NULL;
+	    }
 	}
 	new_elem->node->node.field.cg_offset = -1;
 	new_elem->node->node.field.cg_type = DILL_ERR;
@@ -3496,28 +3526,43 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
     case cod_element_ref: {
 	if (semanticize_expr(context, expr->node.element_ref.array_ref, scope)) {
 	    int cg_type;
-	    sm_ref arr;
-	    if (!is_array(expr->node.element_ref.array_ref)) {
-		cod_src_error(context, expr, "Indexed element must be array");
+	    sm_ref arr = get_complex_type(NULL, expr->node.element_ref.array_ref);
+	    if (is_string(expr->node.element_ref.array_ref)) {
+		expr->node.element_ref.this_index_dimension = 0;
+		expr->node.element_ref.sm_complex_element_type = NULL;
+		expr->node.element_ref.cg_element_type = DILL_C;
+		expr->node.element_ref.sm_containing_structure_ref =
+		    get_containing_structure(expr->node.element_ref.array_ref);
+	    } else if (is_array(expr->node.element_ref.array_ref)) {
+		if (arr->node_type == cod_reference_type_decl) {
+		    arr = arr->node.reference_type_decl.sm_complex_referenced_type;
+		}
+		if (expr->node.element_ref.array_ref->node_type != cod_element_ref) {
+		    /* bottom level of recursion, we're the left-most array index */
+		    expr->node.element_ref.this_index_dimension = 0;
+		} else {
+		    sm_ref subindex = expr->node.element_ref.array_ref;
+		    expr->node.element_ref.this_index_dimension = subindex->node.element_ref.this_index_dimension + 1;
+		}
+		expr->node.element_ref.sm_complex_element_type = 
+		    arr->node.array_type_decl.sm_complex_element_type;
+
+		expr->node.element_ref.cg_element_type = 
+		    arr->node.array_type_decl.cg_element_type;
+		expr->node.element_ref.sm_containing_structure_ref =
+		    get_containing_structure(expr->node.element_ref.array_ref);
+	    } else if (arr && (arr->node_type == cod_reference_type_decl)) {
+		expr->node.element_ref.sm_complex_element_type =
+		    arr->node.reference_type_decl.sm_complex_referenced_type;
+		expr->node.element_ref.cg_element_type = 
+		    arr->node.reference_type_decl.cg_referenced_type;
+		expr->node.element_ref.sm_containing_structure_ref =
+		    get_containing_structure(expr->node.element_ref.array_ref);
+	    } else {
+		cod_src_error(context, expr, "Indexed element must be array, string or reference type.");
 		return 0;
 	    }
-	    arr = get_complex_type(NULL, expr->node.element_ref.array_ref);
-	    if (arr->node_type == cod_reference_type_decl) {
-		arr = arr->node.reference_type_decl.sm_complex_referenced_type;
-	    }
-	    if (expr->node.element_ref.array_ref->node_type != cod_element_ref) {
-		/* bottom level of recursion, we're the left-most array index */
-		expr->node.element_ref.this_index_dimension = 0;
-	    } else {
-		sm_ref subindex = expr->node.element_ref.array_ref;
-		expr->node.element_ref.this_index_dimension = subindex->node.element_ref.this_index_dimension + 1;
-	    }
-	    expr->node.element_ref.sm_complex_element_type = 
-		arr->node.array_type_decl.sm_complex_element_type;
-	    expr->node.element_ref.cg_element_type = 
-		arr->node.array_type_decl.cg_element_type;
-	    expr->node.element_ref.sm_containing_structure_ref =
-		get_containing_structure(expr->node.element_ref.array_ref);
+
 	    if (!semanticize_expr(context, expr->node.element_ref.expression, scope)) {
 		return 0;
 	    }
@@ -3917,7 +3962,7 @@ get_complex_type(cod_parse_context context, sm_ref node)
 		    node->node.field_ref.lx_field);
 	    return NULL;
 	}
-	return fields->node->node.field.sm_complex_type;
+	return get_complex_type(context, fields->node->node.field.sm_complex_type);
     }
     case cod_conditional_operator:
 	return NULL;
@@ -4046,8 +4091,10 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		break;
 	    case TYPEDEF:
 		if (is_typedef) (*is_typedef)++;
+		spec_count--;
 		break;
 	    case STATIC:
+		spec_count--;
 		break;
 	    default:
 		printf("Unknown type\n");
@@ -4260,6 +4307,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	    break;
 	case cod_struct_type_decl: {
 	    if (node->node.struct_type_decl.fields != NULL) {
+		semanticize_decl(context, node, scope);
 		complex_return_type = node;
 	    } else {
 		complex_return_type = resolve(node->node.struct_type_decl.id, scope);
@@ -4274,6 +4322,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 	}
 	case cod_enum_type_decl: {
 	    if (node->node.enum_type_decl.enums != NULL) {
+		semanticize_decl(context, node, scope);
 		complex_return_type = node;
 	    } else {
 		complex_return_type = resolve(node->node.enum_type_decl.id, scope);
@@ -4531,9 +4580,9 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 				       &cg_type, scope, &type_def, &decl->node.declaration.freeable_complex_type);
 		if (type_def) {
 		    decl->node.declaration.is_typedef = 1;
-		}
-		if ((type_def != 0) && typ) {
-		    semanticize_decl(context, typ, scope);
+		    if (typ && (typ->node_type == cod_struct_type_decl)) {
+			typ->node.struct_type_decl.is_typedef = 1;
+		    }
 		}
 	    } else {
 		sm_ref arr = decl->node.declaration.sm_complex_type;
@@ -5046,6 +5095,7 @@ cod_build_type_node(const char *name, FMFieldList field_list)
     sm_list *end_ptr = &decl->node.struct_type_decl.fields;
 
     decl->node.struct_type_decl.id = strdup(name);
+    decl->node.struct_type_decl.is_typedef = 1;
     while ((field_list != NULL) && (field_list->field_name != NULL)) {
 	sm_list new_elem;
 	new_elem = malloc(sizeof(*new_elem));
@@ -6029,9 +6079,6 @@ gen_rollback_code(FMStructDescList format1, FMStructDescList format2, char *xfor
     return code;
 }
 
-#ifndef FALSE
-#define FALSE 0
-#endif
 static double
 get_constant_float_value(cod_parse_context context, sm_ref expr)
 {

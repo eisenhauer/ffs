@@ -62,7 +62,7 @@ urn input * (output.j + input.k + input.m);
 ## Ecode Error:  Only simple constants allowed as static initializers.  Variable "j" at line 6, char 26
      static int j = input.i;
                          ^
-## Ecode Error:  Indexed element must be array at line 2, char 21
+## Ecode Error:  Indexed element must be array, string or reference type. at line 2, char 21
      int j = input.i[14];
                     ^
 ## Error Unterminated string constant

@@ -104,6 +104,7 @@ type_specifier:
 
 struct_type_decl:
 	srcpos lx_srcpos;
+	int is_typedef;
 	char *id;
 	sm_list fields;
 	int cg_size;
