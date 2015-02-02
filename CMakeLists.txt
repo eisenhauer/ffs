@@ -15,6 +15,7 @@ include(CheckStructHasMember)
 include(CreateLibtoolFile)
 include(AddLibtoolLibrary)
 include(FindCERCSProject)
+include(CERCS_package)
 
 CHECK_TYPE_SIZE("double" SIZEOF_DOUBLE)
 CHECK_TYPE_SIZE("float" SIZEOF_FLOAT)
