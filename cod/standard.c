@@ -41,7 +41,7 @@
 #include "cercs_env.h"
 #endif
 #endif
-
+#include "ffs.h"
 
 #ifndef LINUX_KERNEL_MODULE
 #ifdef HAVE_ATL_H
@@ -169,6 +169,22 @@ attr_svalue(attr_list l, char *name)
 }
 #endif
 
+static FFSFile 
+open_ffs_file(char * fname, char * mode)
+{
+    FFSFile temp;
+    temp = open_FFSfile(fname, mode);
+    if(!temp) {
+	fprintf(stderr, "Could not open FFSfile from CoD\n");
+    }
+    return temp;
+}
+
+static void close_ffs_file(FFSFile fname)
+{
+    close_FFSfile(fname);
+}
+
 static char extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
 	attr_list create_attr_list();\n\
@@ -193,7 +209,10 @@ static char extern_string[] = "\n\
 	double chr_time_to_microsecs (chr_time *time);\n\
 	double chr_time_to_millisecs (chr_time *time);\n\
 	double chr_time_to_secs (chr_time *time);\n\
-	double chr_approx_resolution();\n";
+	double chr_approx_resolution();\n\
+	ffs_file open_ffs(char * fname, char * mode);\n\
+	void close_ffs(ffs_file fname);\n";
+
 static char internals[] = "\n\
 	void cod_NoOp(int duration);\n";
 
@@ -233,6 +252,8 @@ static cod_extern_entry externs[] =
     {"chr_time_to_secs", (void*)(long)chr_time_to_secs},
     {"chr_approx_resolution", (void*)(long)chr_approx_resolution},
 #endif
+    {"open_ffs", (void*)(long)open_ffs_file},
+    {"close_ffs", (void*)(long)close_ffs_file},
     {(void*)0, (void*)0}
 };
 
@@ -254,6 +275,12 @@ cod_add_standard_elements(cod_parse_context context)
     cod_add_decl_to_scope("attr_list", attr_node, context);
     cod_add_defined_type("attr_list", context);
 #endif
+    sm_ref ffs_node = cod_new_reference_type_decl();
+    ffs_node->node.reference_type_decl.name = strdup("ffs_file");
+    cod_add_decl_to_parse_context("ffs_file", ffs_node, context);
+    cod_add_decl_to_scope("ffs_file", ffs_node, context);
+    cod_add_defined_type("ffs_file", context);
+
     cod_add_int_constant_to_parse_context("NULL", 0, context);
 #ifdef HAVE_CERCS_ENV_H
     cod_add_simple_struct_type("chr_time", chr_time_list, context);
