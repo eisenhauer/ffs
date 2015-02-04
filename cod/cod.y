@@ -2370,6 +2370,74 @@ cod_parse_context context;
     return new_context;
 }
 
+extern void dump_scope(scope_ptr scope);
+
+extern cod_parse_context
+cod_copy_globals(context)
+cod_parse_context context;
+{
+    int i, count;
+    int type_count = 0;
+    cod_parse_context new_context = new_cod_parse_context();
+    new_context->has_exec_context = context->has_exec_context;
+    new_context->decls = cod_copy_list(context->decls);
+    sm_list new_decls = new_context->decls;
+    sm_list old_decls = context->decls;
+    sm_list *last_new_p;
+    last_new_p = &new_context->decls;
+    while(new_decls != NULL) {
+	sm_ref new_decl = new_decls->node;
+	sm_ref old_decl = old_decls->node;
+	switch(new_decl->node_type) {
+	case cod_declaration:
+	    if ((old_decl->node.declaration.param_num != -1) || 
+		(old_decl->node.declaration.cg_address == (void*)-1)){
+		/* this is an old parameter or subroutine, we have to kill it */
+		*last_new_p = new_decls->next;
+		new_decls = new_decls->next;
+		old_decls = old_decls->next;
+		continue;
+	    }
+	    new_decl->node.declaration.cg_address = old_decl->node.declaration.cg_address;
+	    break;
+	case cod_array_type_decl:
+	    new_decl->node.array_type_decl.element_ref->node.declaration.cg_address = 
+		old_decl->node.array_type_decl.element_ref->node.declaration.cg_address;
+	    break;
+	default:
+	    break;
+	}
+	last_new_p = &new_decls->next;
+	new_decls = new_decls->next;
+	old_decls = old_decls->next;
+    }
+    count = 0;
+    while (context->scope->externs && context->scope->externs[count].extern_value) count++;
+    i=0;
+    while(new_context->scope->externs[i].extern_name) free(new_context->scope->externs[i++].extern_name);
+    free(new_context->scope->externs);
+    new_context->scope->externs = malloc(sizeof(context->scope->externs[0]) *
+					 (count+1));
+    for (i=0; i < count; i++) {
+      new_context->scope->externs[i].extern_name = strdup(context->scope->externs[i].extern_name);
+      new_context->scope->externs[i].extern_value = context->scope->externs[i].extern_value;
+    }
+    new_context->scope->externs[count].extern_name = NULL;
+    new_context->scope->externs[count].extern_value = NULL;
+
+    new_context->error_func = context->error_func;
+    new_context->client_data = context->client_data;
+    semanticize_decls_list(new_context, new_context->decls, 
+			   new_context->scope);
+    free(new_context->defined_types);
+    while(context->defined_types && context->defined_types[type_count]) type_count++;
+    new_context->defined_types = malloc(sizeof(char*) * (type_count + 2));
+    for (i=0; i<= type_count; i++) {
+	new_context->defined_types[i] = context->defined_types[i];
+    }
+    return new_context;
+}
+
 static sm_ref
 find_containing_iterator(scope_ptr scope)
 {
@@ -4523,13 +4591,15 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		resolve_extern(decl->node.declaration.id, scope);
 	    if ((extern_value == NULL) && (context->alloc_globals)) {
 		;
-	    } else if (extern_value == NULL) {
+	    } else if ((extern_value == NULL) && (decl->node.declaration.cg_address == NULL)) {
 		cod_src_error(context, decl, 
 			      "External symbol lacking address \"%s\"", 
 			decl->node.declaration.id);
 		return  0;
 	    }
-	    decl->node.declaration.cg_address = extern_value;
+	    if (extern_value) {
+		decl->node.declaration.cg_address = extern_value;
+	    }
 	    decl->node.declaration.is_extern = 1;
 	}
 	if (decl->node.declaration.type_spec != NULL) {
@@ -5912,8 +5982,14 @@ cod_assoc_externs(cod_parse_context context, cod_extern_list externs)
 	context->scope->externs = realloc(context->scope->externs, (new_count + old_count) * sizeof(externs[0]));
 	
 	for (i=0; i < new_count; i++) {
-	  context->scope->externs[old_count + i - 1].extern_name = strdup(externs[i].extern_name);
-	  context->scope->externs[old_count + i - 1].extern_value = externs[i].extern_value;
+	    int j;
+	    for (j=0; j < old_count-1; j++) {
+		if (strcmp(externs[i].extern_name, context->scope->externs[j].extern_name) == 0) {
+		    context->scope->externs[j].extern_value = externs[i].extern_value;
+		}
+	    }
+	    context->scope->externs[old_count + i - 1].extern_name = strdup(externs[i].extern_name);
+	    context->scope->externs[old_count + i - 1].extern_value = externs[i].extern_value;
 	}
 	context->scope->externs[new_count + old_count -1].extern_name = NULL;
 	context->scope->externs[new_count + old_count -1].extern_value = NULL;

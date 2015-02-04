@@ -360,6 +360,15 @@ int cod_parse_for_globals ARGS((char *code, cod_parse_context context));
 extern cod_parse_context cod_copy_context ARGS((cod_parse_context context));
 
 /*!
+ * Duplicate a handle to an cod_parse_context, specifically adapting the results to 
+ * reuse the global declarations of the prior context.  This is a specialized 
+ * function that helps run external regression tests and may not be broadly useful.
+ *
+ * \param context the cod_parse_context to be duplicated.
+ */
+extern cod_parse_context cod_copy_globals ARGS((cod_parse_context context));
+
+/*!
  *  err_out_func_t is a function pointer type.   Functions matching this
  *  profile can be used as call-out handlers for COD errors.
  *  \param client_data an uninspected value passed in from 
