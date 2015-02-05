@@ -33,6 +33,7 @@
 #include <linux/string.h>
 #include <linux/mm.h>
 #endif
+#include <sys/time.h>
 #ifndef LINUX_KERNEL_MODULE
 #ifdef HAVE_ATL_H
 #include "atl.h"
@@ -185,6 +186,13 @@ static void close_ffs_file(FFSFile fname)
     close_FFSfile(fname);
 }
 
+int
+gettimeofday_wrapper(struct timeval * tp)
+{
+    int ret = gettimeofday(tp, NULL);
+    return ret;
+}
+
 static char extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
 	attr_list create_attr_list();\n\
@@ -210,6 +218,7 @@ static char extern_string[] = "\n\
 	double chr_time_to_millisecs (chr_time *time);\n\
 	double chr_time_to_secs (chr_time *time);\n\
 	double chr_approx_resolution();\n\
+	int gettimeofday(timeval *tp);\n\
 	ffs_file open_ffs(char * fname, char * mode);\n\
 	void close_ffs(ffs_file fname);\n";
 
@@ -252,6 +261,7 @@ static cod_extern_entry externs[] =
     {"chr_time_to_secs", (void*)(long)chr_time_to_secs},
     {"chr_approx_resolution", (void*)(long)chr_approx_resolution},
 #endif
+    {"gettimeofday", (void*)(long)gettimeofday_wrapper},
     {"open_ffs", (void*)(long)open_ffs_file},
     {"close_ffs", (void*)(long)close_ffs_file},
     {(void*)0, (void*)0}
@@ -264,6 +274,10 @@ FMField chr_time_list[] = {
     {"d3", "double", sizeof(double), FMOffset(chr_time*, d3)}, 
     {NULL, NULL, 0, 0}};
 #endif
+FMField timeval_list[] = {
+    {"tv_sec", "integer", sizeof(((struct timeval*)0)->tv_sec), FMOffset(struct timeval *, tv_sec)}, 
+    {"tv_usec", "integer", sizeof(((struct timeval*)0)->tv_usec), FMOffset(struct timeval *, tv_usec)}, 
+    {NULL, NULL, 0, 0}};
 
 extern void
 cod_add_standard_elements(cod_parse_context context)
@@ -285,6 +299,7 @@ cod_add_standard_elements(cod_parse_context context)
 #ifdef HAVE_CERCS_ENV_H
     cod_add_simple_struct_type("chr_time", chr_time_list, context);
 #endif
+    cod_add_simple_struct_type("timeval", timeval_list, context);
     cod_add_defined_type("cod_type_spec", context);
     cod_add_defined_type("cod_exec_context", context);
     cod_add_defined_type("cod_closure_context", context);
@@ -498,6 +513,31 @@ double nan(const char * a);\n\
 ";
 
 
+#include <limits.h>
+
+static cod_extern_entry limits_externs[] = 
+{
+    {NULL, NULL}
+};
+
+static char limits_extern_string[] = "\n\
+const char SCHAR_MAX = 127;\n\
+const char SCHAR_MIN = -128;\n\
+\n\
+const unsigned char UCHAR_MAX = 255;\n\
+const char CHAR_MAX = 127;\n\
+const char CHAR_MIN = (-128);\n\
+\n\
+const unsigned short USHRT_MAX = 65535;\n\
+const short SHRT_MAX = 32767;\n\
+const short SHRT_MIN = (-32768);\n\
+\n\
+const unsigned int	UINT_MAX = 0xffffffff;\n\
+const int INT_MAX = 2147483647;\n\
+const int INT_MIN = (-2147483647-1);\n\
+";
+
+
 static void dlload_externs(char *libname, cod_extern_entry *externs);
 
 extern void
@@ -515,6 +555,8 @@ cod_process_include(char *name, cod_parse_context context)
 	dlload_externs("libm", math_externs);
 	cod_assoc_externs(context, math_externs);
 	cod_parse_for_context(math_extern_string, context);
+    } else if (strncmp(name, "limits", char_count) == 0) {
+	cod_parse_for_context(limits_extern_string, context);
     }
 
 }
