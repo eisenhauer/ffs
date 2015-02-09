@@ -4591,7 +4591,8 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		resolve_extern(decl->node.declaration.id, scope);
 	    if ((extern_value == NULL) && (context->alloc_globals)) {
 		;
-	    } else if ((extern_value == NULL) && (decl->node.declaration.cg_address == NULL)) {
+	    } else if ((extern_value == NULL) && (decl->node.declaration.cg_address == NULL) &&
+		       (decl->node.declaration.const_var == 0)) {
 		cod_src_error(context, decl, 
 			      "External symbol lacking address \"%s\"", 
 			decl->node.declaration.id);
