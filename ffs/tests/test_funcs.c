@@ -38,7 +38,6 @@ fifth_rec rec5;
 int rec5_attr_val = 2;
 
 sixth_rec rec6_array[4];
-int rec6_attr_val[4] = {};
 
 nested_rec rec7_array[1];
 
