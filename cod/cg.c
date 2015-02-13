@@ -2562,11 +2562,11 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    /* memory leak of constant value here.... */
 	    dill_setp(s, lvar, strdup(expr->node.constant.const_val));  /* op_i_setp */
 	} else if (expr->node.constant.token == floating_constant) {
-	    float f;
+	    double d;
 
-	    lvar = dill_getreg(s, DILL_F);
-	    sscanf(expr->node.constant.const_val, "%f", &f);
-	    dill_setf(s, lvar, f);	/* op_i_setf */
+	    lvar = dill_getreg(s, DILL_D);
+	    sscanf(expr->node.constant.const_val, "%lf", &d);
+	    dill_setd(s, lvar, d);	/* op_i_setd */
 	} else if (expr->node.constant.token == character_constant) {
 	    long l;
 	    unsigned long ul;
