@@ -2933,6 +2933,9 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	    case STATIC:
 		spec_count--;
 		break;
+	    case EXTERN_TOKEN:
+		spec_count--;
+		break;
 	    default:
 		printf("Unknown type\n");
 	    }
@@ -3933,9 +3936,9 @@ cod_sm_get_type(sm_ref node)
 	if (node->node.constant.token == string_constant) {
 	    return DILL_P;
 	} else if (node->node.constant.token == floating_constant) {
-	    return DILL_F;
+	    return DILL_D;
 	} else {
-	    return DILL_I;
+	    return DILL_L;
 	}
     case cod_field_ref:
 	return cod_sm_get_type(node->node.field_ref.sm_field_ref);
@@ -4162,6 +4165,9 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		spec_count--;
 		break;
 	    case STATIC:
+		spec_count--;
+		break;
+	    case EXTERN_TOKEN:
 		spec_count--;
 		break;
 	    default:

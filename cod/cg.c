@@ -1163,10 +1163,46 @@ cod_strdup(char *str)
 }
 
 static void
+gen_bz(dill_stream s, int conditional, int target_label, int op_type);
+static void
+gen_bnz(dill_stream s, int conditional, int target_label, int op_type);
+
+/*
+  Operator_prep generally just code generates the left and right operands to an operator, 
+  however it does more stuff for some operators.  In particular, because of the need to 
+  generate short-circuit code for logical_or and logical_and (I.E don't evaluate the 
+  right operand), we generate the complete operation here and return the result as *lp.  
+  The generated code looks like this:
+AND case
+
+eval left
+  set result 0
+  if (left eq 0) goto return_result
+eval right
+  if right eq 0 goto return_result
+  set result 1
+label return_result
+
+
+OR case
+eval left
+  set result 1
+  if left ne 0 goto return_result
+eval right
+  if right ne 0 goto return_result
+  set result 0
+label return_result
+
+*/
+static void
+generate_short_circuit(dill_stream s, dill_reg operand, dill_reg *result_p, operator_t op, 
+		       int end_label, int op_type, int right);
+
+static void
 operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code descr)
 {
     operand right_op, left_op;
-    dill_reg tmp_right = 0, right = 0, left = 0;
+    dill_reg tmp_right = 0, right = 0, left = 0, result;
     int op_type = expr->node.operator.operation_type;
     int string_op = FALSE;
     dill_mark_label_type short_circuit = 0;
@@ -1195,54 +1231,14 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	    left_op.reg = left;
 	}
 	left = left_op.reg;
-	if (!string_op && op_type != DILL_P)
+	if (!string_op && op_type != DILL_P) {
 	    left = coerce_type(s, left_op.reg, op_type, left_cg_type);
+	}
     }
     if ((expr->node.operator.op == op_log_and) || (expr->node.operator.op == op_log_or)) {
-	/* short circuit possible */
-	short_circuit = dill_alloc_label(s, "short_circuit");
-	right = dill_getreg(s, op_type);
-	if (expr->node.operator.op == op_log_and) {
-	    /* AND case */
-	    switch (op_type) {
-	    case DILL_I:
-		dill_seti(s, right, 0);
-		dill_beqii(s, left, 0, short_circuit);
-		break;
-	    case DILL_U:
-		dill_setu(s, right, 0);
-		dill_bequi(s, left, 0, short_circuit);
-		break;
-	    case DILL_L:
-		dill_setl(s, right, 0);
-		dill_beqli(s, left, 0, short_circuit);
-		break;
-	    case DILL_UL:
-		dill_setul(s, right, 0);
-		dill_bequli(s, left, 0, short_circuit);
-		break;
-	    }
-	} else {
-	    /* OR case */
-	    switch (op_type) {
-	    case DILL_I:
-		dill_seti(s, right, 1);
-		dill_bneii(s, left, 0, short_circuit);
-		break;
-	    case DILL_U:
-		dill_setu(s, right, 1);
-		dill_bneui(s, left, 0, short_circuit);
-		break;
-	    case DILL_L:
-		dill_setl(s, right, 1);
-		dill_bneli(s, left, 0, short_circuit);
-		break;
-	    case DILL_UL:
-		dill_setul(s, right, 1);
-		dill_bneuli(s, left, 0, short_circuit);
-		break;
-	    }
-	}
+	result = dill_getreg(s, op_type);
+	short_circuit = dill_alloc_label(s, "end_of_and/or");
+	generate_short_circuit(s, left, &result, expr->node.operator.op, short_circuit, op_type, 0);
     }
     if (expr->node.operator.right != NULL) {
 	int right_cg_type = cod_sm_get_type(expr->node.operator.right);
@@ -1262,20 +1258,72 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	tmp_right = right_op.reg;
 	if (!string_op && op_type != DILL_P) 
 	    tmp_right = coerce_type(s, right_op.reg, op_type, right_cg_type);
-    }
-    if ((expr->node.operator.op == op_log_and) || (expr->node.operator.op == op_log_or)) {
-	/* 
-	 * for short circuit, "right" has already been initialized and we are inside the 
-	 * conditional block here.  Overwrite "right" with "tmp_right" and terminate conditional.
-	 */
-	dill_pmov(s, op_type, right, tmp_right);
-	dill_mark_label(s, short_circuit);
-    } else {
 	right = tmp_right;
+	if ((expr->node.operator.op == op_log_and) || (expr->node.operator.op == op_log_or)) {
+	    generate_short_circuit(s, right, &result, expr->node.operator.op, short_circuit, op_type, 1);
+	    dill_mark_label(s, short_circuit);
+	    /* return result as left operand */
+	    left = result;
+	}
     }
     
     *rp = right;
     *lp = left;
+}
+
+static void
+generate_short_circuit(dill_stream s, dill_reg operand, dill_reg *result_p, operator_t op, 
+		       int target_label, int op_type, int right)
+{
+    if (!right) { /* left (first evaluated) operand, prepare result */
+	long init_result_val;
+	if (op == op_log_or) {
+	    init_result_val = 1;
+	} else {
+	    init_result_val = 0;
+	}
+	switch (op_type) {
+	case DILL_I:
+	    dill_seti(s, *result_p, init_result_val);
+	    break;
+	case DILL_U:
+	    dill_setu(s, *result_p, init_result_val);
+	    break;
+	case DILL_L:
+	    dill_setl(s, *result_p, init_result_val);
+	    break;
+	case DILL_UL:
+	    dill_setul(s, *result_p, init_result_val);
+	    break;
+	}
+    }
+    if (op == op_log_or) {
+	gen_bnz(s, operand, target_label, op_type);
+    } else {
+	gen_bz(s, operand, target_label, op_type);
+    }
+    if (right) { /* right (last evaluated) operand, finalize if we haven't skipped forward */
+	long final_result_val;
+	if (op == op_log_or) {
+	    final_result_val = 0;
+	} else {
+	    final_result_val = 1;
+	}
+	switch (op_type) {
+	case DILL_I:
+	    dill_seti(s, *result_p, final_result_val);
+	    break;
+	case DILL_U:
+	    dill_setu(s, *result_p, final_result_val);
+	    break;
+	case DILL_L:
+	    dill_setl(s, *result_p, final_result_val);
+	    break;
+	case DILL_UL:
+	    dill_setul(s, *result_p, final_result_val);
+	    break;
+	}
+    }
 }
 
 #ifndef HAVE_DILL_H
@@ -1487,6 +1535,11 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	case DILL_F: dill_setf(s, left, 0.0); break;	/* op_i_setf */
 	case DILL_D: dill_setd(s, left, 0.0); break;	/* op_i_setd */
 	}
+    }
+    if ((expr->node.operator.op == op_log_and) || (expr->node.operator.op == op_log_or)) {
+	/* everything done by operator_prep */
+	ret_op.reg = left;
+	return ret_op;
     }
     ret_op = 
 	execute_operator_cg(s, op, op_type, result, left, right, expr->node.operator.left,
@@ -2572,7 +2625,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	} else {   /* integer_constant */
 	    long i;
 	    char *val = expr->node.constant.const_val;
-	    lvar = dill_getreg(s, DILL_I);
+	    lvar = dill_getreg(s, DILL_L);
 	    if (val[0] == '0') {
 		/* hex or octal */
 		if (val[1] == 'x') {
@@ -2598,7 +2651,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		if (sscanf(val, "%ld", &i) != 1) 
 		    printf("decimal sscanf failed %s\n", val);
 	    }
-	    dill_seti(s, lvar, i);	/* op_i_seti */
+	    dill_setl(s, lvar, i);	/* op_i_setl */
 	}
 	oprnd.reg = lvar;
 	oprnd.is_addr = 0;
