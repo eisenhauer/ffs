@@ -3910,6 +3910,99 @@ is_left_hand_side(sm_ref expr)
     return 0;
 }
 
+int
+type_of_int_const_string(char *val)
+{
+/*
+For decimal, it is the first type the value can fit in: int, long, long long
+
+For hexadecimal, it is the first type the value can fit in: int, unsigned int, long, 
+unsigned long, long long, unsigned long long
+*/
+
+    int ret = DILL_I;
+    long i;
+    int len = strlen(val);
+    int unsgned = 0, lng = 0;
+    if (val[0] == '0') {
+	/* hex or octal */
+	unsgned++;
+	if (val[1] == 'x') {
+	    /* hex */
+	    if (sscanf(val+2, "%lx", &i) != 1) 
+		printf("hex sscanf failed, %s\n", val);
+	} else if (val[1] == 'b') {
+	    /* binary */
+	    int j = 2;
+	    i = 0;
+	    while (val[j]) {
+		i <<= 1;
+		if (val[j] == '1') {
+		    i += 1;
+		}
+		j++;
+	    }
+	} else {
+	    if (sscanf(val, "%lo", &i) != 1) 
+		printf("octal sscanf failed %s\n", val);
+	}
+    } else {
+	if (sscanf(val, "%ld", &i) != 1) 
+	    printf("decimal sscanf failed %s\n", val);
+    }
+    switch(val[len-1]) {
+    case 'U':
+    case 'u':
+	unsgned++;
+	break;
+    case 'l':
+    case 'L':
+	lng++;
+	break;
+    }
+    if (len > 2) 
+	switch(val[len-2]) {
+	case 'U':
+	case 'u':
+	    unsgned++;
+	    break;
+	case 'l':
+	case 'L':
+	    lng++;
+	    break;
+	}
+    if (len > 3) 
+	switch(val[len-3]) {
+	case 'U':
+	case 'u':
+	    unsgned++;
+	    break;
+	case 'l':
+	case 'L':
+	    lng++;
+	    break;
+	}
+    if (lng == 0) {
+	/* unspecified */
+	if (unsgned) {
+	    if (i == (int)i) return DILL_I;
+	    if (i == (unsigned)i) return DILL_U;
+	    if (i == (long)i) return DILL_L;
+	    if (i == (unsigned)i) return DILL_UL;
+	    return DILL_UL;  /* don't do long long now */
+	} else {
+	    if (i == (int)i) return DILL_I;
+	    if (i == (long)i) return DILL_L;
+	    return DILL_L; /* don't do long long now */
+	}
+    }
+    if (unsgned) {
+	return DILL_UL;
+    } else {
+	return DILL_L;
+    }
+}
+
 extern int
 cod_sm_get_type(sm_ref node)
 {
@@ -3938,7 +4031,7 @@ cod_sm_get_type(sm_ref node)
 	} else if (node->node.constant.token == floating_constant) {
 	    return DILL_D;
 	} else {
-	    return DILL_L;
+	    return type_of_int_const_string(node->node.constant.const_val);
 	}
     case cod_field_ref:
 	return cod_sm_get_type(node->node.field_ref.sm_field_ref);
@@ -4472,10 +4565,12 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 	case DILL_P:
 	case DILL_L:
 	case DILL_UL:
+	case DILL_I:
+	case DILL_U:
 	    return 1;
 
 	default:
-	    cod_src_error(context, right, "Right hand side must be pointer type");
+	    cod_src_error(context, right, "Right hand side must be pointer or integer type");
 	    return 0;
 	}
     }

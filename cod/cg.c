@@ -2430,6 +2430,8 @@ is_complex_type(sm_ref expr)
     }
 }
 
+extern int type_of_int_const_string(char *val);
+
 static operand
 cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 {
@@ -2625,7 +2627,8 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	} else {   /* integer_constant */
 	    long i;
 	    char *val = expr->node.constant.const_val;
-	    lvar = dill_getreg(s, DILL_L);
+	    int typ = type_of_int_const_string(val);
+	    lvar = dill_getreg(s, typ);
 	    if (val[0] == '0') {
 		/* hex or octal */
 		if (val[1] == 'x') {
