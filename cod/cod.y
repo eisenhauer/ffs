@@ -4565,12 +4565,10 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 	case DILL_P:
 	case DILL_L:
 	case DILL_UL:
-	case DILL_I:
-	case DILL_U:
 	    return 1;
 
 	default:
-	    cod_src_error(context, right, "Right hand side must be pointer or integer type");
+	    cod_src_error(context, right, "Right hand side must be pointer type");
 	    return 0;
 	}
     }
