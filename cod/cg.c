@@ -2979,16 +2979,32 @@ coerce_type(dill_stream s, dill_reg obj, int target_type, int obj_type)
     case DILL_US:
 	switch (obj_type) {
 	case DILL_I:
-	    dill_cvi2s(s, ret, obj);	/* op_i_cvi2s */
+	    if (target_type == DILL_S) {
+		dill_cvi2s(s, ret, obj);	/* op_i_cvi2s */
+	    } else {
+		dill_cvi2us(s, ret, obj);	/* op_i_cvi2us */
+	    }
 	    break;
 	case DILL_U:
-	    dill_cvu2s(s, ret, obj);	/* op_i_cvu2s */
+	    if (target_type == DILL_S) {
+		dill_cvu2s(s, ret, obj);	/* op_i_cvu2s */
+	    } else {
+		dill_cvu2us(s, ret, obj);	/* op_i_cvu2us */
+	    }
 	    break;
 	case DILL_L:
-	    dill_cvl2s(s, ret, obj);	/* op_i_cvl2s */
+	    if (target_type == DILL_S) {
+		dill_cvl2s(s, ret, obj);	/* op_i_cvl2s */
+	    } else {
+		dill_cvl2us(s, ret, obj);	/* op_i_cvl2us */
+	    }
 	    break;
 	case DILL_UL:
-	    dill_cvul2s(s, ret, obj);	/* op_i_cvul2s */
+	    if (target_type == DILL_S) {
+		dill_cvul2s(s, ret, obj);	/* op_i_cvul2s */
+	    } else {
+		dill_cvul2us(s, ret, obj);	/* op_i_cvul2us */
+	    }
 	    break;
 	case DILL_F:
 	    if (target_type == DILL_US) {
