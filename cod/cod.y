@@ -6400,7 +6400,7 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	    *free_result = 1;
 	} else {
 	    /* we get an integer result */
-	    long left, right, value;
+	    long left = 0, right = 0, value;
 	    char str_val[40];
 	    if (expr->node.operator.left)
 		left = get_constant_long_value(context, expr->node.operator.left);
