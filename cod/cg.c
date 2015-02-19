@@ -377,7 +377,8 @@ generate_arg_str(sm_ref net)
 		arg_types[param_num] = decl->node.declaration.cg_type;
 	    }
 	} else if (decl->node_type == cod_array_type_decl) {
-	    decl = decl->node.array_type_decl.element_ref;
+	    while(decl->node_type == cod_array_type_decl)
+		decl = decl->node.array_type_decl.element_ref;
 	    if (decl->node.declaration.param_num != -1) {
 		int param_num = decl->node.declaration.param_num;
 		if (param_num >= arg_count) {
@@ -757,6 +758,52 @@ set_dimen_values(dill_stream s, sm_ref top, sm_ref this, int dimension)
     set_dimen_values(s, top, this->node.array_type_decl.element_ref, dimension+1);
 }
 
+static void
+set_complex_type_sizes(dill_stream s, sm_ref typ)
+{
+    switch(typ->node_type) {
+    case cod_array_type_decl: {
+	int i, element_count = 1;
+	if (typ->node.array_type_decl.dimensions != NULL) {
+	    set_dimen_values(s, typ, typ, 0);
+	}
+	if (typ->node.array_type_decl.sm_complex_element_type) {
+	    set_complex_type_sizes(s, typ->node.array_type_decl.sm_complex_element_type);
+	}
+	typ->node.array_type_decl.cg_element_size = 
+	    dill_type_size(s, typ->node.array_type_decl.cg_element_type);
+	if (dill_type_align(s, typ->node.array_type_decl.cg_element_type) >
+	    typ->node.array_type_decl.cg_element_size) 
+	    typ->node.array_type_decl.cg_element_size = 
+		dill_type_align(s, typ->node.array_type_decl.cg_element_type);
+	if (typ->node.array_type_decl.dimensions) {
+	    for (i=0; i < typ->node.array_type_decl.dimensions->dimen_count; i++) {
+		element_count *= typ->node.array_type_decl.dimensions->dimens[i].static_size;
+	    }
+	}
+	typ->node.array_type_decl.cg_static_size = element_count;
+	break;
+    }
+    case cod_struct_type_decl:
+    case cod_enum_type_decl:
+	break;
+    case cod_declaration:
+	if (typ->node.declaration.sm_complex_type) {
+	    set_complex_type_sizes(s, typ->node.declaration.sm_complex_type);
+	}
+	break;
+    case cod_reference_type_decl:
+	if (typ->node.reference_type_decl.sm_complex_referenced_type) {
+	    set_complex_type_sizes(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+	}
+	break;
+    default:
+	printf("unhandled case in set_complex_type_sizes\n");
+	cod_print(typ);
+	assert(0);
+    }
+}
+
 static void 
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
@@ -766,8 +813,11 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
     case cod_declaration: {
 	void *var_base = NULL;
 	sm_ref ctype = decl->node.declaration.sm_complex_type;
-	if (decl->node.declaration.is_typedef && decl->node.declaration.sm_complex_type) {
+	if (ctype && (decl->node.declaration.is_typedef)) {
 	    cg_decl(s, decl->node.declaration.sm_complex_type, descr);
+	}
+	if (ctype) {
+	    set_complex_type_sizes(s, ctype);
 	}
 	if (decl->node.declaration.const_var && !ctype) {
 	    /* Nothing to do for SIMPLE const vars.  We'll CG them as consts on reference. */
@@ -912,12 +962,6 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		long i;
 		char *val;
 		sm_ref const_val = ctype->node.array_type_decl.size_expr;
-		ctype->node.array_type_decl.cg_element_size = 
-		    dill_type_size(s, ctype->node.array_type_decl.cg_element_type);
-		if (dill_type_align(s, ctype->node.array_type_decl.cg_element_type) >
-		    ctype->node.array_type_decl.cg_element_size) 
-		    ctype->node.array_type_decl.cg_element_size = 
-			dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
 		if (const_val != NULL) {
 		    assert(const_val->node_type == cod_constant);
 		    val = const_val->node.constant.const_val;
@@ -944,17 +988,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    } else {
 		if ((ctype != NULL) && (ctype->node_type == cod_array_type_decl)){
 		    /* array */
-		    long i;
 		    char *val;
-		    sm_ref const_val = ctype->node.array_type_decl.size_expr;
-		    assert(evaluate_constant_expr(const_val, &i) == 1);
-		    ctype->node.array_type_decl.cg_element_size = 
-			dill_type_size(s, ctype->node.array_type_decl.cg_element_type);
-		    if (dill_type_align(s, ctype->node.array_type_decl.cg_element_type) >
-			ctype->node.array_type_decl.cg_element_size) 
-			ctype->node.array_type_decl.cg_element_size = 
-			    dill_type_align(s, ctype->node.array_type_decl.cg_element_type);
-		    ctype->node.array_type_decl.cg_static_size = i;
 		    if (decl->node.declaration.static_var) {
 			decl->node.declaration.cg_address = 
 			    (void*)(long)descr->static_size_required;
@@ -969,7 +1003,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			dill_addpi(s, lvar, cg_get_static_block(s, descr), (long)decl->node.declaration.cg_address);  /* op_i_addpi */
 		    } else {
 			lvar = 
-			    dill_getvblock(s, i * ctype->node.array_type_decl.cg_element_size);
+			    dill_getvblock(s, ctype->node.array_type_decl.cg_static_size * ctype->node.array_type_decl.cg_element_size);
 		    }
 		} else if ((decl->node.declaration.cg_type != DILL_B) ||
 			   (ctype->node_type != cod_struct_type_decl)) {
