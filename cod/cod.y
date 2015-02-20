@@ -4030,6 +4030,8 @@ cod_sm_get_type(sm_ref node)
 	    return DILL_P;
 	} else if (node->node.constant.token == floating_constant) {
 	    return DILL_D;
+	} else if (node->node.constant.token == character_constant) {
+	    return DILL_C;
 	} else {
 	    return type_of_int_const_string(node->node.constant.const_val);
 	}
