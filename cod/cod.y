@@ -918,8 +918,16 @@ init_declarator:
 	|
 	declarator ASSIGN initializer
 	    {
-		assert($1->node_type == cod_declaration);
-		$1->node.declaration.init_value = $3;
+		if ($1->node_type == cod_declaration) {
+		    $1->node.declaration.init_value = $3;
+		} else if ($1->node_type == cod_array_type_decl) {
+		    sm_ref tmp = $1->node.array_type_decl.element_ref;
+		    while (tmp->node_type == cod_array_type_decl) {
+			tmp = tmp->node.array_type_decl.element_ref;
+		    }
+		    assert(tmp->node_type == cod_declaration);
+		    tmp->node.declaration.init_value = $3;
+		}
 	    }
 	;
 
@@ -2629,6 +2637,7 @@ determine_op_type(cod_parse_context context, sm_ref expr,
 	case DILL_U:
 	case DILL_L:
 	case DILL_UL:
+	case DILL_B:
 	    return DILL_P;
 	    
 	default:
@@ -4550,8 +4559,9 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
     }
     if ((left_smt != NULL) && 
 	((left_smt->node_type != cod_reference_type_decl) &&
+	 (left_smt->node_type != cod_array_type_decl) &&
 	 (left_smt->node_type != cod_enum_type_decl))) {
-	cod_src_error(context, left, "Only pointer or enum complex types allowed as LHS in assignment");
+	cod_src_error(context, left, "Only pointer, array or enum complex types allowed as LHS in assignment");
 	return 0;
     }
     if ((right_smt != NULL) && 
@@ -4669,6 +4679,27 @@ is_constant_expr(sm_ref expr)
     return 0;
 }
 
+static int
+possibly_set_sizes_to_match(cod_parse_context context, sm_ref decl, sm_ref init_value)
+{
+    sm_ref array_type = get_complex_type(context, decl);
+    if (array_type->node.array_type_decl.size_expr) return 1;
+    if ((init_value->node_type == cod_constant) && 
+	(init_value->node.constant.token == string_constant)) {
+	/* init value is a string, set the array size to strlen + 1 */
+	sm_ref size_expr = cod_new_constant();
+	char *str = malloc(20); /* plenty */
+	size_expr->node.constant.token = integer_constant;
+	sprintf(str, "%ld\n", strlen(init_value->node.constant.const_val) + 1);
+	size_expr->node.constant.const_val = str;
+	array_type->node.array_type_decl.size_expr = size_expr;
+	return 1;
+    }
+
+    printf("Decl is : \n"); cod_print(decl);
+    printf("init_value is : \n"); cod_print(init_value);
+    return 1;
+}
 static int semanticize_decl(cod_parse_context context, sm_ref decl, 
 			    scope_ptr scope)
 {
@@ -4771,6 +4802,9 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	    ret = semanticize_expr(context, decl->node.declaration.init_value, 
 				   scope);
 	    if (ret == 0) return ret;
+	    if (is_array(decl)) {
+		ret = possibly_set_sizes_to_match(context, decl, decl->node.declaration.init_value);
+	    }
 	    ret = assignment_types_match(context, decl, 
 					 decl->node.declaration.init_value);
 	    return ret;
@@ -4786,6 +4820,9 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	    decl->node.declaration.varidiac_subroutine_param_count = -1;
 	    while(params) {
 		sm_ref formal = params->node;
+		while(formal->node_type == cod_array_type_decl) {
+		    formal = formal->node.array_type_decl.element_ref;
+		}
 		if (strcmp(formal->node.declaration.id, "...") == 0) {
 		    decl->node.declaration.varidiac_subroutine_param_count = param_count;		    
 		}

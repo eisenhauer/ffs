@@ -804,6 +804,121 @@ set_complex_type_sizes(dill_stream s, sm_ref typ)
     }
 }
 
+static
+char *generate_block_init_value(dill_stream s, sm_ref decl)
+{
+    sm_ref init = decl->node.declaration.init_value;
+    printf("In generate_block_init_value\n");
+    if (init->node_type == cod_constant) {
+	/* should be string! */
+	return strdup(init->node.constant.const_val);
+    }
+    cod_print(decl->node.declaration.init_value);
+    return NULL;
+}
+
+static void
+evaluate_simple_init_and_assign(sm_ref decl, void *var_base)
+{
+    sm_ref const_val;
+    int free_expr = 0;
+    const_val = evaluate_constant_return_expr(NULL, decl->node.declaration.init_value, &free_expr);
+    assert(const_val->node_type == cod_constant);
+    if (const_val->node.constant.token == string_constant) {
+	assert(FALSE);
+    } else if (const_val->node.constant.token == floating_constant) {
+	double f;
+	
+	sscanf(const_val->node.constant.const_val, "%lf", &f);
+	switch (decl->node.declaration.cg_type) {
+	case DILL_C:
+	    *(char *)(var_base) = (int)f;
+	    break;
+	case DILL_UC:
+	    *(unsigned char *)(var_base) = (int)f;
+	    break;
+	case DILL_S:
+	    *(short *)(var_base) = (int)f;
+	    break;
+	case DILL_US:
+	    *(unsigned short *)(var_base) = (int)f;
+	    break;
+	case DILL_I:
+	    *(int *)(var_base) = (int)f;
+	    break;
+	case DILL_U:
+	    *(unsigned int *)(var_base) = (int)f;
+	    break;
+	case DILL_L:
+	    *(long *)(var_base) = (long)f;
+	    break;
+	case DILL_UL:
+	    *(unsigned long *)(var_base) = (long)f;
+	    break;
+	case DILL_F:
+	    *(float*)(var_base) = (float)f;
+	    break;
+	case DILL_D:
+	    *(double*)(var_base) = (double)f;
+	    break;
+	default:
+	    assert(FALSE);
+	}
+    } else {
+	long i;
+	char *val = const_val->node.constant.const_val;
+	if (val[0] == '0') {
+	    /* hex or octal */
+	    if (val[1] == 'x') {
+		/* hex */
+		if (sscanf(val+2, "%lx", &i) != 1) 
+		    printf("sscanf failed\n");
+	    } else {
+		if (sscanf(val, "%lo", &i) != 1) 
+		    printf("sscanf failed\n");
+	    }
+	} else {
+	    if (sscanf(val, "%ld", &i) != 1) 
+		printf("sscanf failed\n");
+	}
+	switch (decl->node.declaration.cg_type) {
+	case DILL_C:
+	    *(char *)(var_base) = (char)i;
+	    break;
+	case DILL_UC:
+	    *(unsigned char *)(var_base) = (unsigned char)i;
+	    break;
+	case DILL_S:
+	    *(short *)(var_base) = (short)i;
+	    break;
+	case DILL_US:
+	    *(unsigned short *)(var_base) = (unsigned short)i;
+	    break;
+	case DILL_I:
+	    *(int *)(var_base) = i;
+	    break;
+	case DILL_U:
+	    *(unsigned int *)(var_base) = i;
+	    break;
+	case DILL_L:
+	    *(long *)(var_base) = i;
+	    break;
+	case DILL_UL:
+	    *(unsigned long *)(var_base) = i;
+	    break;
+	case DILL_F:
+	    *(float*)(var_base) = (float)i;
+	    break;
+	case DILL_D:
+	    *(double*)(var_base) = (double)i;
+	    break;
+	default:
+	    assert(FALSE);
+	}
+	if (free_expr) cod_free(const_val);
+    }
+}
+
 static void 
 cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
@@ -823,13 +938,20 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    /* Nothing to do for SIMPLE const vars.  We'll CG them as consts on reference. */
 	    return;
 	}
-	if (decl->node.declaration.is_extern && !decl->node.declaration.cg_address) {
-	    /* GLOBAL.  Need to allocate */
-	    int size = cg_get_size(s, decl);
-	    void *extern_value = add_global(descr, decl->node.declaration.id, size);
-	    decl->node.declaration.cg_address = extern_value;
-	    decl->node.declaration.is_extern = 1;
-	    var_base = extern_value;
+	if (decl->node.declaration.is_extern) {
+	    if (!decl->node.declaration.cg_address) {
+		/* GLOBAL.  Need to allocate */
+		int size = cg_get_size(s, decl);
+		void *extern_value = add_global(descr, decl->node.declaration.id, size);
+		decl->node.declaration.cg_address = extern_value;
+		decl->node.declaration.is_extern = 1;
+		decl->node.declaration.static_var = 0;
+		var_base = extern_value;
+	    } else {
+		/* if extern and already has address, we've initialized it already */
+		/* so, nothing remains to be done and we're done here... */
+		return;
+	    }
 	}
 	if (decl->node.declaration.static_var && !ctype) {
 	    /* do SIMPLE statics */
@@ -848,102 +970,11 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		/* init to zero's */
 		memset(var_base, 0, cg_get_size(s, decl));
 	    } else {
-		sm_ref const_val;
-		int free_expr = 0;
-		const_val = evaluate_constant_return_expr(NULL, decl->node.declaration.init_value, &free_expr);
-		assert(const_val->node_type == cod_constant);
-		if (const_val->node.constant.token == string_constant) {
-		    assert(FALSE);
-		} else if (const_val->node.constant.token == floating_constant) {
-		    double f;
-		    
-		    sscanf(const_val->node.constant.const_val, "%lf", &f);
-		    switch (decl->node.declaration.cg_type) {
-		    case DILL_C:
-			*(char *)(var_base) = (int)f;
-			break;
-		    case DILL_UC:
-			*(unsigned char *)(var_base) = (int)f;
-			break;
-		    case DILL_S:
-			*(short *)(var_base) = (int)f;
-			break;
-		    case DILL_US:
-			*(unsigned short *)(var_base) = (int)f;
-			break;
-		    case DILL_I:
-			*(int *)(var_base) = (int)f;
-			break;
-		    case DILL_U:
-			*(unsigned int *)(var_base) = (int)f;
-			break;
-		    case DILL_L:
-			*(long *)(var_base) = (long)f;
-			break;
-		    case DILL_UL:
-			*(unsigned long *)(var_base) = (long)f;
-			break;
-		    case DILL_F:
-			*(float*)(var_base) = (float)f;
-			break;
-		    case DILL_D:
-			*(double*)(var_base) = (double)f;
-			break;
-		    default:
-			assert(FALSE);
-		    }
+		if (cod_sm_get_type(decl) == DILL_B) {
+		    /* this is really an array or structure being initialized */
+		    char * init_value = generate_block_init_value(s, decl);
 		} else {
-		    long i;
-		    char *val = const_val->node.constant.const_val;
-		    if (val[0] == '0') {
-			/* hex or octal */
-			if (val[1] == 'x') {
-			    /* hex */
-			    if (sscanf(val+2, "%lx", &i) != 1) 
-				printf("sscanf failed\n");
-			} else {
-			    if (sscanf(val, "%lo", &i) != 1) 
-				printf("sscanf failed\n");
-			}
-		    } else {
-			if (sscanf(val, "%ld", &i) != 1) 
-			    printf("sscanf failed\n");
-		    }
-		    switch (decl->node.declaration.cg_type) {
-		    case DILL_C:
-			*(char *)(var_base) = (char)i;
-			break;
-		    case DILL_UC:
-			*(unsigned char *)(var_base) = (unsigned char)i;
-			break;
-		    case DILL_S:
-			*(short *)(var_base) = (short)i;
-			break;
-		    case DILL_US:
-			*(unsigned short *)(var_base) = (unsigned short)i;
-			break;
-		    case DILL_I:
-			*(int *)(var_base) = i;
-			break;
-		    case DILL_U:
-			*(unsigned int *)(var_base) = i;
-			break;
-		    case DILL_L:
-			*(long *)(var_base) = i;
-			break;
-		    case DILL_UL:
-			*(unsigned long *)(var_base) = i;
-			break;
-		    case DILL_F:
-			*(float*)(var_base) = (float)i;
-			break;
-		    case DILL_D:
-			*(double*)(var_base) = (double)i;
-			break;
-		    default:
-			assert(FALSE);
-		    }
-		    if (free_expr) cod_free(const_val);
+		    evaluate_simple_init_and_assign(decl, var_base);
 		}
 	    }
 	    return;
@@ -1056,6 +1087,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    operand left, right;
 	    int assign_type = cod_sm_get_type(decl);
 	    init_operand(&left);
+	    if (assign_type == DILL_B) {
+		/* this is really an array or structure being initialized */
+		char * init_value = generate_block_init_value(s, decl);
+	    }
 	    right = cg_expr(s, decl->node.declaration.init_value, 0, descr);
 	    assert(right.is_addr == 0);
 	    right.reg = coerce_type(s, right.reg, assign_type, 
@@ -2506,6 +2541,9 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    oprnd.is_addr = 1;
 	    if (need_assignable == 1) {
 		return oprnd;
+	    } else if (expr->node.declaration.cg_type == DILL_B) {
+		oprnd.is_addr = 0;
+		return oprnd;
 	    } else {
 		dill_reg ret = dill_getreg(s, expr->node.declaration.cg_type);
 		gen_load(s, ret, oprnd, expr->node.declaration.cg_type);
@@ -2657,7 +2695,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		    printf("Bad character constant %s\n", val);
 		}
 	    }
-	    dill_seti(s, lvar, l);	/* op_i_seti */
+	    dill_seti(s, lvar, l);	/* op_i_setc */
 	} else {   /* integer_constant */
 	    long i;
 	    char *val = expr->node.constant.const_val;
@@ -2688,7 +2726,21 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		if (sscanf(val, "%ld", &i) != 1) 
 		    printf("decimal sscanf failed %s\n", val);
 	    }
-	    dill_setl(s, lvar, i);	/* op_i_setl */
+	    switch (typ) {
+	    case DILL_I:
+		dill_seti(s, lvar, i);	/* op_i_setl */
+		break;
+	    case DILL_U:
+		dill_setu(s, lvar, i);	/* op_i_setl */
+		break;
+	    default:
+	    case DILL_L:
+		dill_setl(s, lvar, i);	/* op_i_setl */
+		break;
+	    case DILL_UL:
+		dill_setu(s, lvar, i);	/* op_i_setl */
+		break;
+	    }
 	}
 	oprnd.reg = lvar;
 	oprnd.is_addr = 0;
@@ -3652,14 +3704,16 @@ static void cg_jump_statement(dill_stream s, sm_ref stmt, cod_code descr)
 static void cg_return_statement(dill_stream s, sm_ref stmt, cod_code descr)
 {
     operand ret_val;
-    int expr_cg_type = cod_sm_get_type(stmt->node.return_statement.expression);
+    int expr_cg_type;
     int func_cg_type = stmt->node.return_statement.cg_func_type;
-    ret_val = cg_expr(s, stmt->node.return_statement.expression, 0, descr);
-    assert(ret_val.is_addr == 0);
     if (func_cg_type == DILL_V) {
 	dill_retii(s, 0);
 	return;
     }
+    expr_cg_type = cod_sm_get_type(stmt->node.return_statement.expression);
+    ret_val = cg_expr(s, stmt->node.return_statement.expression, 0, descr);
+    assert(ret_val.is_addr == 0);
+
     ret_val.reg = coerce_type(s, ret_val.reg, func_cg_type, expr_cg_type);
 #ifdef HAVE_DILL_H
     dill_pret(s, func_cg_type, ret_val.reg);
