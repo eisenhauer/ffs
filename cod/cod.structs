@@ -174,3 +174,14 @@ cast:
 	int    cg_type;
 	sm_ref expression;
 	sm_ref sm_complex_type;
+
+initializer_list:
+	sm_list initializers;
+
+initializer:
+	sm_list designation;
+	sm_ref initializer;
+
+designator:
+	sm_ref expression;
+	char *id;

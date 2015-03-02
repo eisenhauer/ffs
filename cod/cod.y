@@ -295,6 +295,10 @@ cod_dup_list(sm_list list)
 %type <reference> type_qualifier;
 %type <reference> storage_class_specifier;
 %type <reference> initializer;
+%type <list> initializer_list;
+%type <list> designator_list;
+%type <list> designation;
+%type <reference> designator;
 %type <reference> assignment_expression;
 %type <reference> expression_statement;
 %type <reference> selection_statement;
@@ -1527,34 +1531,102 @@ abstract_declarator:
 	pointer
 	;
 
-/* missing
-	: '{' initializer_list '}'
-	| '{' initializer_list ',' '}'
+initializer:
+	LCURLY initializer_list RCURLY 
+	{ 
+	    $$ = cod_new_initializer_list();
+	    $$->node.initializer_list.initializers = $2;
+	}
+	| LCURLY initializer_list COMMA RCURLY
+	{ 
+	    $$ = cod_new_initializer_list();
+	    $$->node.initializer_list.initializers = $2;
+	}
+	| assignment_expression { $$ = $1;}
+	;
 
-initializer_list
-	: designation initializer
-	| initializer
-	| initializer_list ',' designation initializer
-	| initializer_list ',' initializer
+
+initializer_list :
+	designation initializer {
+	    sm_ref initializer = cod_new_initializer();
+	    initializer->node.initializer.designation = $1;
+	    initializer->node.initializer.initializer = $2;
+	    $$ = malloc(sizeof(struct list_struct));
+	    $$->node = initializer;
+	    $$->next = NULL;
+	}
+	| initializer {
+	    sm_ref initializer = cod_new_initializer();
+	    initializer->node.initializer.designation = NULL;
+	    initializer->node.initializer.initializer = $1;
+	    $$ = malloc(sizeof(struct list_struct));
+	    $$->node = initializer;
+	    $$->next = NULL;
+	}
+	| initializer_list COMMA designation initializer {
+	    sm_list tmp = $1;
+	    sm_ref initializer = cod_new_initializer();
+	    initializer->node.initializer.designation = $3;
+	    initializer->node.initializer.initializer = $4;
+	    while (tmp->next != NULL) {
+		tmp = tmp->next;
+	    }
+	    tmp->next = malloc(sizeof(struct list_struct));
+	    tmp->next->node = initializer;
+	    tmp->next->next = NULL;
+	    $$ = $1;
+	}
+	| initializer_list COMMA initializer {
+	    sm_list tmp = $1;
+	    sm_ref initializer = cod_new_initializer();
+	    initializer->node.initializer.designation = NULL;
+	    initializer->node.initializer.initializer = $3;
+	    while (tmp->next != NULL) {
+		tmp = tmp->next;
+	    }
+	    tmp->next = malloc(sizeof(struct list_struct));
+	    tmp->next->node = initializer;
+	    tmp->next->next = NULL;
+	    $$ = $1;
+	}
 	;
 
 designation
-	: designator_list '='
+	: designator_list ASSIGN
+	{ $$ = $1;}
 	;
 
 designator_list
-	: designator
-	| designator_list designator
+	: designator {
+		$$ = malloc(sizeof(struct list_struct));
+		$$->node = $1;
+		$$->next = NULL;
+	}
+	| designator_list designator {
+	    sm_list tmp = $1;
+	    while (tmp->next != NULL) {
+		tmp = tmp->next;
+	    }
+	    tmp->next = malloc(sizeof(struct list_struct));
+	    tmp->next->node = $2;
+	    tmp->next->next = NULL;
+	    $$ = $1;
+	}
 	;
 
-designator
-	: '[' constant_expression ']'
-	| '.' IDENTIFIER
-	;
-
-*/
-initializer:
-	assignment_expression { $$ = $1;}
+designator: 
+	LBRACKET constant_expression RBRACKET
+	{ 
+	    $$ = cod_new_designator();
+	    $$->node.designator.expression = $2;
+	    $$->node.designator.id = NULL;
+	}
+	| DOT identifier_ref
+	{ 
+	    $$ = cod_new_designator();
+	    $$->node.designator.expression = NULL;
+	    $$->node.designator.id = $2.string;
+	}
 	;
 
 decls_stmts_list:
