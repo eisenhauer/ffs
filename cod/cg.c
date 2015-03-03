@@ -2695,28 +2695,28 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		case '\'':
 		    l = 047;
 		    break;
-		case '\"':
+		case '"':
 		    l = 042;
 		    break;
-		case '\?':
+		case '?':
 		    l = 077;
 		    break;
-		case '\a':
+		case 'a':
 		    l = 07;
 		    break;
-		case '\b':
+		case 'b':
 		    l = 010;
 		    break;
-		case '\f':
+		case 'f':
 		    l = 06;
 		    break;
-		case '\n':
+		case 'n':
 		    l = 012;
 		    break;
-		case '\r':
+		case 'r':
 		    l = 015;
 		    break;
-		case '\t':
+		case 't':
 		    l = 011;
 		    break;
 		default:
