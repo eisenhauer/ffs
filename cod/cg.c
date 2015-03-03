@@ -262,6 +262,9 @@ cg_preprocess(sm_ref node, void *data) {
 	break;
     }
     case cod_label_statement: {
+	dill_stream s = code_descriptor->drisc_context;
+	dill_mark_label_type stmt_label = dill_alloc_label(s, node->node.label_statement.name);
+	node->node.label_statement.cg_label = stmt_label;
 	break;
     }
     case cod_assignment_expression: {
@@ -342,7 +345,12 @@ cg_preprocess(sm_ref node, void *data) {
 	    node->node.struct_type_decl.cg_size = last_offset;
 	}
 	break;
+    case cod_initializer_list:
+    case cod_initializer:
+    case cod_designator:
+	break;
     default:
+	cod_print(node);
 	assert(FALSE);
     }
 }
@@ -501,8 +509,8 @@ cod_code code_descriptor;
     inst_count_guess = 0;
     code_descriptor->static_size_required = 0;
     code_descriptor->static_block_address_register = 0;
-    cod_apply(net, cg_preprocess, NULL, NULL, code_descriptor);
     dill_start_proc(s, "no name", ret_type, arg_str);
+    cod_apply(net, cg_preprocess, NULL, NULL, code_descriptor);
     free(arg_str);
     code_descriptor->static_block_address_register = -1;
     cg_compound_statement(s, net, code_descriptor);
@@ -804,25 +812,45 @@ set_complex_type_sizes(dill_stream s, sm_ref typ)
     }
 }
 
+static void
+evaluate_simple_init_and_assign(sm_ref init, int cg_type, void *var_base);
+
 static
 char *generate_block_init_value(dill_stream s, sm_ref decl)
 {
     sm_ref init = decl->node.declaration.init_value;
-    printf("In generate_block_init_value\n");
+    sm_ref typ = get_complex_type(NULL, decl);
     if (init->node_type == cod_constant) {
 	/* should be string! */
 	return strdup(init->node.constant.const_val);
+    }
+    if (typ->node_type == cod_array_type_decl) {
+	int size = cg_get_size(s, decl);
+	char *ret = malloc(size), *tmp;
+	sm_list init_list;
+	memset(ret, 0, size);
+	assert(init->node_type == cod_initializer_list);
+	init_list = init->node.initializer_list.initializers;
+	tmp = ret;
+	while (init_list) {
+	    sm_ref initializer = init_list->node;
+	    evaluate_simple_init_and_assign(initializer->node.initializer.initializer, 
+					    typ->node.array_type_decl.cg_element_type, tmp);
+	    tmp += typ->node.array_type_decl.cg_element_size;
+	    init_list = init_list->next;
+	}
+	return ret;
     }
     cod_print(decl->node.declaration.init_value);
     return NULL;
 }
 
 static void
-evaluate_simple_init_and_assign(sm_ref decl, void *var_base)
+evaluate_simple_init_and_assign(sm_ref init, int cg_type, void *var_base)
 {
     sm_ref const_val;
     int free_expr = 0;
-    const_val = evaluate_constant_return_expr(NULL, decl->node.declaration.init_value, &free_expr);
+    const_val = evaluate_constant_return_expr(NULL, init, &free_expr);
     assert(const_val->node_type == cod_constant);
     if (const_val->node.constant.token == string_constant) {
 	assert(FALSE);
@@ -830,7 +858,7 @@ evaluate_simple_init_and_assign(sm_ref decl, void *var_base)
 	double f;
 	
 	sscanf(const_val->node.constant.const_val, "%lf", &f);
-	switch (decl->node.declaration.cg_type) {
+	switch (cg_type) {
 	case DILL_C:
 	    *(char *)(var_base) = (int)f;
 	    break;
@@ -881,7 +909,7 @@ evaluate_simple_init_and_assign(sm_ref decl, void *var_base)
 	    if (sscanf(val, "%ld", &i) != 1) 
 		printf("sscanf failed\n");
 	}
-	switch (decl->node.declaration.cg_type) {
+	switch (cg_type) {
 	case DILL_C:
 	    *(char *)(var_base) = (char)i;
 	    break;
@@ -973,8 +1001,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		if (cod_sm_get_type(decl) == DILL_B) {
 		    /* this is really an array or structure being initialized */
 		    char * init_value = generate_block_init_value(s, decl);
+		    memcpy(var_base, init_value, cg_get_size(s, decl));
+		    free(init_value);
 		} else {
-		    evaluate_simple_init_and_assign(decl, var_base);
+		    evaluate_simple_init_and_assign(decl->node.declaration.init_value, decl->node.declaration.cg_type, var_base);
 		}
 	    }
 	    return;
@@ -1201,9 +1231,7 @@ cg_statement(dill_stream s, sm_ref stmt, cod_code descr)
 	cg_jump_statement(s, stmt, descr);
 	break;
     case cod_label_statement: {
-	dill_mark_label_type stmt_label = dill_alloc_label(s, stmt->node.label_statement.name);
-	dill_mark_label(s, stmt_label);
-	stmt->node.label_statement.cg_label = stmt_label;
+	dill_mark_label(s, stmt->node.label_statement.cg_label);
 	cg_statement(s, stmt->node.label_statement.statement, descr);
 	break;
     }

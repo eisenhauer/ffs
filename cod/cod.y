@@ -3954,6 +3954,23 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    determine_unary_type(context, expr, expr->node.conditional_operator.e1);
 	return ret;
     }
+    case cod_initializer_list: {
+	sm_list items = expr->node.initializer_list.initializers;
+	int ret = 1;
+	while (items) {
+	    if (!semanticize_expr(context, items->node, scope)) ret = 0;
+	    items = items->next;
+	}
+	return ret;
+    }
+    case cod_initializer: {
+	if (!semanticize_expr(context, expr->node.initializer.initializer, scope))
+	    return 0;
+	if (expr->node.initializer.designation) {
+	    if (!semanticize_expr(context, expr->node.initializer.designation, scope)) return 0;
+	}
+	return 1;
+    }
     default:
 	fprintf(stderr, "Unknown case in semanticize_expression\n");
 	cod_print(expr);
@@ -4126,6 +4143,8 @@ cod_sm_get_type(sm_ref node)
 	} else {
 	    return node->node.field.cg_type;
 	}
+    case cod_initializer_list:
+	return DILL_ERR;
     case cod_subroutine_call:
 	return cod_sm_get_type(node->node.subroutine_call.sm_func_ref);
     default:
@@ -4265,6 +4284,7 @@ get_complex_type(cod_parse_context context, sm_ref node)
     case cod_cast:
 	return node->node.cast.sm_complex_type;
 	break;
+    case cod_initializer_list:
     case cod_enumerator:
 	return NULL;
     case cod_assignment_expression:
