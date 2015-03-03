@@ -311,6 +311,7 @@ cg_preprocess(sm_ref node, void *data) {
 	inst_count_guess += 1;
 	break;
     }
+    case cod_comma_expression:
     case cod_array_type_decl:
     case cod_enum_type_decl:
 	break;
@@ -2641,6 +2642,10 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 	}
 	return oprnd;
+    }
+    case cod_comma_expression:{
+	(void) cg_expr(s, expr->node.comma_expression.left, 0, descr);
+	return cg_expr(s, expr->node.comma_expression.right, need_assignable, descr);
     }
     case cod_operator: {
 	oprnd = cg_operator(s, expr, need_assignable, descr);

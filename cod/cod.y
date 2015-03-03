@@ -752,11 +752,17 @@ assignment_expression:
 	}
 	;
 
-/* missing expression, assignment_expression production */
-expression:
-	assignment_expression
+expression
+	: assignment_expression
 	    {$$ = $1;}
-	;
+	| expression COMMA assignment_expression
+	{
+	    $$ = cod_new_comma_expression();
+	    $$->node.comma_expression.lx_srcpos = $2.lx_srcpos;
+	    $$->node.comma_expression.left = $1;
+	    $$->node.comma_expression.right = $3;
+	}
+
 
 constant_expression
         : conditional_expression
@@ -3379,6 +3385,12 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    return 0;
 	}
     }
+    case cod_comma_expression:
+	if (!semanticize_expr(context, expr->node.comma_expression.left, scope)) 
+	    return 0;
+	if (!semanticize_expr(context, expr->node.comma_expression.right, scope)) 
+	    return 0;
+	return 1;
     case cod_cast: {
 	int cg_type;
 	sm_ref typ;
@@ -3967,7 +3979,7 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	if (!semanticize_expr(context, expr->node.initializer.initializer, scope))
 	    return 0;
 	if (expr->node.initializer.designation) {
-	    if (!semanticize_expr(context, expr->node.initializer.designation, scope)) return 0;
+//	    if (!semanticize_expr(context, expr->node.initializer.designation, scope)) return 0;
 	}
 	return 1;
     }

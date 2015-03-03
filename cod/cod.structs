@@ -70,6 +70,11 @@ assignment_expression:
 	operator_t op;	
 	int    cg_type;
 
+comma_expression:
+	sm_ref left;
+	sm_ref right;
+	srcpos lx_srcpos;
+
 operator:
 	operator_t op;
 	sm_ref left;
