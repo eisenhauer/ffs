@@ -4033,10 +4033,11 @@ unsigned long, long long, unsigned long long
     int ret = DILL_I;
     long i;
     int len = strlen(val);
-    int unsgned = 0, lng = 0;
+    int hex = 0;
+    int specified_unsgned = 0, specified_lng = 0;
     if (val[0] == '0') {
 	/* hex or octal */
-	unsgned++;
+	hex++;
 	if (val[1] == 'x') {
 	    /* hex */
 	    if (sscanf(val+2, "%lx", &i) != 1) 
@@ -4063,38 +4064,38 @@ unsigned long, long long, unsigned long long
     switch(val[len-1]) {
     case 'U':
     case 'u':
-	unsgned++;
+	specified_unsgned++;
 	break;
     case 'l':
     case 'L':
-	lng++;
+	specified_lng++;
 	break;
     }
     if (len > 2) 
 	switch(val[len-2]) {
 	case 'U':
 	case 'u':
-	    unsgned++;
+	    specified_unsgned++;
 	    break;
 	case 'l':
 	case 'L':
-	    lng++;
+	    specified_lng++;
 	    break;
 	}
     if (len > 3) 
 	switch(val[len-3]) {
 	case 'U':
 	case 'u':
-	    unsgned++;
+	    specified_unsgned++;
 	    break;
 	case 'l':
 	case 'L':
-	    lng++;
+	    specified_lng++;
 	    break;
 	}
-    if (lng == 0) {
+    if (specified_lng == 0) {
 	/* unspecified */
-	if (unsgned) {
+	if (hex) {
 	    if (i == (int)i) return DILL_I;
 	    if (i == (unsigned)i) return DILL_U;
 	    if (i == (long)i) return DILL_L;
@@ -4106,7 +4107,8 @@ unsigned long, long long, unsigned long long
 	    return DILL_L; /* don't do long long now */
 	}
     }
-    if (unsgned) {
+    /* must have specified long */
+    if (specified_unsgned) {
 	return DILL_UL;
     } else {
 	return DILL_L;
@@ -4685,6 +4687,8 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 	case DILL_P:
 	case DILL_L:
 	case DILL_UL:
+	case DILL_I:
+	case DILL_U:
 	    return 1;
 
 	default:
