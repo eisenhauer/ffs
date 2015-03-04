@@ -4133,7 +4133,11 @@ cod_sm_get_type(sm_ref node)
     case cod_assignment_expression:
 	return node->node.assignment_expression.cg_type;
     case cod_declaration:
-	return node->node.declaration.cg_type;
+	if (is_array(node)) {
+	    return DILL_P;
+	} else {
+	    return node->node.declaration.cg_type;
+	}
     case cod_constant:
 	/* need to handle bigger constants */
 	if (node->node.constant.token == string_constant) {
