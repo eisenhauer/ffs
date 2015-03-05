@@ -152,6 +152,9 @@ static char FS_restart_file[PATH_MAX + 1];
 static void dump_stats_to_log(format_server fs);
 
 static FILE *log = (void *) 0;
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <sys/syscall.h>
 
 extern void
 LOG(format_server fs, char *format,...)
@@ -162,7 +165,9 @@ LOG(format_server fs, char *format,...)
     time_t rawtime;
     struct tm *info;
     char buffer[80];
+    pid_t tid;
 
+    tid = syscall(SYS_gettid);
     pthread_mutex_lock(&fs->log_lock);
     if ((log == (void *) -1) || (log == (void *) 0)) {
 	int restart = 0;
@@ -178,6 +183,7 @@ LOG(format_server fs, char *format,...)
 
 	if (log == NULL) {
 	    log = (void *) -1;
+	    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->log_lock);
 	    return;
 	}
@@ -191,7 +197,8 @@ LOG(format_server fs, char *format,...)
 
     strftime(buffer,80,"%x - %I:%M%p", info);
 
-    fprintf(log, "%s - ", buffer);
+    fprintf(log, "%s - tid %d - ", buffer, tid);
+
 #ifdef STDC_HEADERS
     va_start(ap, format);
 #else
@@ -213,9 +220,9 @@ LOG(format_server fs, char *format,...)
     }
     stat(format_server_log, &stat_buf);
 
-    if (log_count++ >= 100) {
+    if (log_count++ >= 1000) {
 	log_count = 0;
-	if (stat_buf.st_size > 102400) {
+	if (stat_buf.st_size > 1024000) {
 	    dump_stats_to_log(fs);
 	    fflush(log);
 	    fclose(log);
@@ -271,10 +278,13 @@ general_format_server(int port, int do_restart, int verbose, int do_proxy)
     }
     if (format_server_listen(fs, port) != -1) {
 	if (do_restart) read_formats_from_file(fs);
+	LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
 	pthread_mutex_lock(&fs->lock);
+	LOG(fs, "  - got the mutex at Line %d ", __LINE__);
 	while (1) {
 	    format_server_poll_and_handle(fs);
 	}
+	LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	pthread_mutex_unlock(&fs->lock);
     }
     return;
@@ -307,10 +317,13 @@ format_server_poll_and_handle(format_server fs)
     timeout.tv_usec = 0;
     timeout.tv_sec = CONN_TIMEOUT_INTERVAL + 5;
 
+    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
     pthread_mutex_unlock(&fs->lock);
     res = select(FD_SETSIZE, &rd_set, (fd_set *) NULL,
 		 (fd_set *) NULL, &timeout);
+    LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
     pthread_mutex_lock(&fs->lock);
+    LOG(fs, "  - got the mutex at Line %d ", __LINE__);
     select_handle_count++;
     if (res == -1) {
 	if (errno == EBADF) {
@@ -910,14 +923,18 @@ FSClient_close(FSClient fsc)
 {
     format_server fs = fsc->fs;
     int fd = (int) (long) fsc->fd;
+    pid_t tid;
+
+    tid = syscall(SYS_gettid);
+    LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
     pthread_mutex_lock(&fs->lock);
-    LOG(fs, "Closing client fd %d- %s", fd, fsc->hostname ?
+    LOG(fs, "  - got the mutex at Line %d ", __LINE__);
+    LOG(fs, "Closing client fd %d - tid %d - %s", fd, tid, fsc->hostname ?
 	fsc->hostname : "NULL");
     if (fd != 0) {
 	fs->ports[fd] = NULL;
 	fs->timestamp[fd] = 0;
 	FD_CLR((unsigned long) fd, &fs->fdset);
-	os_close_func((void *) (long) fd);
 	fs->portCount--;
     }
     if (fsc->hostname) {
@@ -925,7 +942,10 @@ FSClient_close(FSClient fsc)
 	fsc->hostname = NULL;
     }
     free(fsc);
+    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
     pthread_mutex_unlock(&fs->lock);
+    /* moved close outside of the mutex because sometimes it blocks */
+    os_close_func((void *) (long) fd);
     if (fs->fork_threads) pthread_exit(NULL);
 }
 
@@ -940,11 +960,12 @@ FSClient_force_close(FSClient fsc)
 	fs->ports[fd] = NULL;
 	fs->timestamp[fd] = 0;
 	FD_CLR((unsigned long) fd, &fs->fdset);
-	pthread_kill(fsc->handler_thread, 13);
-	pthread_cancel(fsc->handler_thread);
+	shutdown(fd, SHUT_RDWR);
+//	pthread_kill(fsc->handler_thread, 13);
+	pthread_join(fsc->handler_thread, NULL);
 	os_close_func((void *) (long) fd);
 	fs->portCount--;
-	fsc->fd = 0;
+//	fsc->fd = 0;
     }
 //    if (fsc->hostname) free(fsc->hostname);
 //    free(fsc);
@@ -1203,7 +1224,9 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
+    LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
 	    pthread_mutex_lock(&fs->lock);
+	LOG(fs, "  - got the mutex at Line %d ", __LINE__);
 	    fsc->input_bytes += input_bytes + (length - sizeof(length));
 	    ioformat = malloc(sizeof(*ioformat));
 	    ioformat->server_format_rep = rep;
@@ -1216,6 +1239,7 @@ FSClient fsc;
 		print_server_ID( (unsigned char *) ioformat->server_ID.value);
 		printf("\n");
 	    }
+    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->lock);
 	    {
 		char ret[2];
@@ -1302,7 +1326,9 @@ FSClient fsc;
 	    }
 
 	    
+    LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
 	    pthread_mutex_lock(&fs->lock);
+	LOG(fs, "  - got the mutex at Line %d ", __LINE__);
 	    fsc->input_bytes += input_bytes + (length - sizeof(length));
 	    if (fs->stdout_verbose) {
 		printf("Got Pushed -> ");
@@ -1320,6 +1346,7 @@ FSClient fsc;
 
 	    registration_count++;
 	    fsc->formats_registered++;
+    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->lock);
 	    break;
 	}
@@ -1351,7 +1378,9 @@ FSClient fsc;
 		FSClient_close(fsc);
 		return;
 	    }
+    LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
 	    pthread_mutex_lock(&fs->lock);
+	LOG(fs, "  - got the mutex at Line %d ", __LINE__);
 	    fsc->input_bytes += input_bytes + format_id_length;
 	    ioformat = fetch_format(fs, fsc, format_id_value, 
 				    format_id_length);
@@ -1368,6 +1397,7 @@ FSClient fsc;
 		tmp.len = 0;
 	    }
 	    fsc->formats_fetched++;
+    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->lock);
 	    ret = os_server_write_func(fd, &tmp, sizeof(tmp),
 				       &errno, &errstr);
@@ -1401,7 +1431,9 @@ FSClient fsc;
 	    int byte_order;
 	    int tmp;
 	    server_ID_type *out_list = malloc(sizeof(out_list[0]));
+    LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
 	    pthread_mutex_lock(&fs->lock);
+	LOG(fs, "  - got the mutex at Line %d ", __LINE__);
 	    for (byte_order = 0; byte_order <= 1; byte_order++) {
 		format_list *list = fs->lists[0];
 		while (list != NULL) {
@@ -1413,6 +1445,7 @@ FSClient fsc;
 		}
 	    }
 	    tmp = htonl(out_count);
+    LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->lock);
 	    os_server_write_func(fd, &tmp, 4, &junk_errno,
 				 &junk_str);
