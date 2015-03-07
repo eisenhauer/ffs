@@ -20,9 +20,6 @@ urn input * (output.j + input.k + input.m);
  at line 2, char 18
     return input * (input.j + input.k + input.i);
                  ^
-## Ecode Error:  Right hand side must be pointer type at line 2, char 14
-     input = 5;
-             ^
 ## Ecode Error:  Void type may not appear with other specifiers at line 2, char 6
      void int j = 5;
      ^
