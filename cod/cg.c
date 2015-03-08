@@ -111,6 +111,7 @@ static int cg_get_size(dill_stream s, sm_ref node);
 
 extern int cod_sm_get_type(sm_ref node);
 #endif
+extern int is_array(sm_ref expr);
 
 static int inst_count_guess = 0;
 static void
@@ -761,9 +762,10 @@ set_dimen_values(dill_stream s, sm_ref top, sm_ref this, int dimension)
 {
     long size = -1;
     if (this->node_type != cod_array_type_decl) return;
-    if (this->node.array_type_decl.size_expr)
+    if (this->node.array_type_decl.size_expr) {
 	evaluate_constant_expr(this->node.array_type_decl.size_expr, &size);
-    top->node.array_type_decl.dimensions->dimens[dimension].static_size = size;
+	top->node.array_type_decl.dimensions->dimens[dimension].static_size = size;
+    }
     set_dimen_values(s, top, this->node.array_type_decl.element_ref, dimension+1);
 }
 
@@ -957,6 +959,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
     case cod_declaration: {
 	void *var_base = NULL;
 	sm_ref ctype = decl->node.declaration.sm_complex_type;
+	int is_block_type = 0;
+	if ((ctype != NULL) && ((ctype->node_type == cod_array_type_decl) || (ctype->node_type == cod_struct_type_decl))) {
+	    is_block_type = 1;
+	}
 	if (ctype && (decl->node.declaration.is_typedef)) {
 	    cg_decl(s, decl->node.declaration.sm_complex_type, descr);
 	}
@@ -999,7 +1005,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		/* init to zero's */
 		memset(var_base, 0, cg_get_size(s, decl));
 	    } else {
-		if (cod_sm_get_type(decl) == DILL_B) {
+		if (is_block_type) {
 		    /* this is really an array or structure being initialized */
 		    char * init_value = generate_block_init_value(s, decl);
 		    memcpy(var_base, init_value, cg_get_size(s, decl));
@@ -1067,8 +1073,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			lvar = 
 			    dill_getvblock(s, ctype->node.array_type_decl.cg_static_size * ctype->node.array_type_decl.cg_element_size);
 		    }
-		} else if ((decl->node.declaration.cg_type != DILL_B) ||
-			   (ctype->node_type != cod_struct_type_decl)) {
+		} else if (!is_block_type) {
 		    if (decl->node.declaration.static_var) {
 			decl->node.declaration.cg_address = 
 			    (void*)(long)descr->static_size_required;
@@ -1118,31 +1123,35 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    operand left, right;
 	    int assign_type = cod_sm_get_type(decl);
 	    init_operand(&left);
-	    if (assign_type == DILL_B) {
+	    if (is_block_type) {
 		/* this is really an array or structure being initialized */
 		char * init_value = generate_block_init_value(s, decl);
-	    }
-	    right = cg_expr(s, decl->node.declaration.init_value, 0, descr);
-	    assert(right.is_addr == 0);
-	    right.reg = coerce_type(s, right.reg, assign_type, 
-				    cod_sm_get_type(decl->node.declaration.init_value));
-	    if (decl->node.declaration.addr_taken) {
+		/* leak init_value */
 		dill_reg addr_reg = dill_getreg(s, DILL_P);
 		dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
-		init_operand(&left);
-		left.reg = addr_reg;
-		left.is_addr = 1;
-		left.in_kernel = 0; /* we have no access to kernel structures */
-		left.offset = 0;
-
+		(void) dill_scallv(s, (void*)memset, "memcpy", "%p%P%I", addr_reg, init_value, cg_get_size(s, decl));
 	    } else {
-		left.reg = lvar;
-		left.is_addr = 0;
-		left.in_kernel = 0; /* we have no access to kernel structures */
-		left.offset = 0;
+		right = cg_expr(s, decl->node.declaration.init_value, 0, descr);
+		assert(right.is_addr == 0);
+		right.reg = coerce_type(s, right.reg, assign_type, 
+					cod_sm_get_type(decl->node.declaration.init_value));
+		if (decl->node.declaration.addr_taken) {
+		    dill_reg addr_reg = dill_getreg(s, DILL_P);
+		    dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
+		    init_operand(&left);
+		    left.reg = addr_reg;
+		    left.is_addr = 1;
+		    left.in_kernel = 0; /* we have no access to kernel structures */
+		    left.offset = 0;
+		} else {
+		    left.reg = lvar;
+		    left.is_addr = 0;
+		    left.in_kernel = 0; /* we have no access to kernel structures */
+		    left.offset = 0;
+		}
+		gen_mov(s, left, right.reg, assign_type);
 	    }
-	    gen_mov(s, left, right.reg, assign_type);
-	} else if ((decl->node.declaration.cg_type == DILL_B) &&
+	} else if (is_block_type &&
 		   (decl->node.declaration.param_num == -1)) {
 	    /* init structure to zero's */
 	    if (decl->node.declaration.static_var) {
@@ -1380,20 +1389,7 @@ generate_short_circuit(dill_stream s, dill_reg operand, dill_reg *result_p, oper
 	} else {
 	    init_result_val = 0;
 	}
-	switch (op_type) {
-	case DILL_I:
-	    dill_seti(s, *result_p, init_result_val);
-	    break;
-	case DILL_U:
-	    dill_setu(s, *result_p, init_result_val);
-	    break;
-	case DILL_L:
-	    dill_setl(s, *result_p, init_result_val);
-	    break;
-	case DILL_UL:
-	    dill_setul(s, *result_p, init_result_val);
-	    break;
-	}
+	dill_piset(s, op_type, *result_p, init_result_val);
     }
     if (op == op_log_or) {
 	gen_bnz(s, operand, target_label, op_type);
@@ -1407,20 +1403,7 @@ generate_short_circuit(dill_stream s, dill_reg operand, dill_reg *result_p, oper
 	} else {
 	    final_result_val = 1;
 	}
-	switch (op_type) {
-	case DILL_I:
-	    dill_seti(s, *result_p, final_result_val);
-	    break;
-	case DILL_U:
-	    dill_setu(s, *result_p, final_result_val);
-	    break;
-	case DILL_L:
-	    dill_setl(s, *result_p, final_result_val);
-	    break;
-	case DILL_UL:
-	    dill_setul(s, *result_p, final_result_val);
-	    break;
-	}
+	dill_piset(s, op_type, *result_p, final_result_val);
     }
 }
 
@@ -1628,7 +1611,7 @@ cg_operator(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	op = op_neq;
 	left = dill_getreg(s, op_type);
 	switch (op_type) {
-	case DILL_I: case DILL_U: case DILL_L: case DILL_UL:
+	case DILL_I: case DILL_U: case DILL_L: case DILL_UL: case DILL_P:
 	    dill_piset(s, op_type, left, 0); break;
 	case DILL_F: dill_setf(s, left, 0.0); break;	/* op_i_setf */
 	case DILL_D: dill_setd(s, left, 0.0); break;	/* op_i_setd */
@@ -1670,7 +1653,6 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	switch (op_type) {
 	case DILL_P:
 	{
-	    
 	    sm_ref ptr, arg;
 	    sm_ref typ;
 	    int size;
@@ -1679,7 +1661,7 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 
 	    /* Figure out which arg is ptr and which is integral */
 	    if((typ = get_complex_type(NULL, sm_left))) {
-		if(typ->node_type == cod_reference_type_decl) {
+		if((typ->node_type == cod_reference_type_decl) || is_array(sm_left)) {
 		    ptr = sm_left;  opPtr = left;
 		    arg = sm_right; opArg = right;
 		} else {
@@ -1699,10 +1681,16 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	    /* Get the size of the referenced type */
 	    typ = get_complex_type(NULL, ptr);
 	    if (typ) {
-		if(typ->node.reference_type_decl.sm_complex_referenced_type) {
-		    size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+		if (typ->node_type == cod_reference_type_decl) {
+		    if(typ->node.reference_type_decl.sm_complex_referenced_type) {
+			size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+		    } else {
+			size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
+		    }
+		} else if (typ->node_type == cod_array_type_decl) {
+		    size = typ->node.array_type_decl.cg_element_size;
 		} else {
-		    size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
+		    assert(0);
 		}
 	    } else {
 		if (cod_expr_is_string(ptr)) {
@@ -1764,7 +1752,7 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	    
 	    /* Figure out if left arg is a pointer or integral */
 	    if((ltyp = get_complex_type(NULL, sm_left))) {
-		if(ltyp->node_type == cod_reference_type_decl) {
+		if((ltyp->node_type == cod_reference_type_decl) || is_array(sm_left)) {
 		    lIsPtr = 1;
 		} else {
 		    lIsPtr = 0;
@@ -1779,7 +1767,7 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 
 	    /* Figure out if right arg is a pointer or integral */
 	    if((rtyp = get_complex_type(NULL, sm_right))) {
-		if(rtyp->node_type == cod_reference_type_decl) {
+		if((rtyp->node_type == cod_reference_type_decl) || is_array(sm_right)) {
 		    rIsPtr = 1;
 		} else {
 		    rIsPtr = 0;
@@ -1803,6 +1791,8 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 		/* Figure out referenced type size */
 		if(ltyp->node.reference_type_decl.sm_complex_referenced_type) {
 		    size = cg_get_size(s, ltyp->node.reference_type_decl.sm_complex_referenced_type);
+		} else if (ltyp->node_type == cod_array_type_decl) {
+		    size = ltyp->node.array_type_decl.cg_element_size;
 		} else {
 		    size = dill_type_size(s, ltyp->node.reference_type_decl.cg_referenced_type);
 		}
@@ -1832,10 +1822,20 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 
 		/* Get the size of the referenced type */
 		typ = get_complex_type(NULL, ptr);
-		if(typ->node.reference_type_decl.sm_complex_referenced_type) {
-		    size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+		if (typ) {
+		    if(typ->node.reference_type_decl.sm_complex_referenced_type) {
+			size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+		    } else if (typ->node_type == cod_array_type_decl) {
+			size = typ->node.array_type_decl.cg_element_size;
+		    } else {
+			size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
+		    }
 		} else {
-		    size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
+		    if (cod_expr_is_string(ptr)) {
+			size = 1;
+		    } else {
+			assert(FALSE);
+		    }
 		}
 		if (size != 1) {
 		    switch(cod_sm_get_type(arg)) {
@@ -2055,6 +2055,9 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	case DILL_UL:
 	    dill_bneul(s, left, right, true_label);	/* op_i_bneul */
 	    break;
+	case DILL_P:
+	    dill_bnep(s, left, right, true_label);	/* op_i_bnep */
+	    break;
 	case DILL_F:
 	    dill_bnef(s, left, right, true_label);	/* op_i_bnef */
 	    break;
@@ -2217,7 +2220,6 @@ next_formal_is_cod_type_spec(sm_list formals)
     
 
 #define MAX_ARG 128
-extern int is_array(sm_ref expr);
 
 static operand
 cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
@@ -2501,31 +2503,7 @@ load_dynamic_array_dimension(dill_stream s, sm_ref containing, sm_ref field, cod
 static int  /* return true if this is a structured type or a reference type */
 is_complex_type(sm_ref expr)
 {
-    switch(expr->node_type) {
-    case cod_identifier:
-	return is_complex_type(expr->node.identifier.sm_declaration);
-    case cod_declaration:
-	if (expr->node.declaration.sm_complex_type == NULL) return 0;
-	return is_complex_type(expr->node.declaration.sm_complex_type);
-    case cod_subroutine_call:
-	return is_complex_type(expr->node.subroutine_call.sm_func_ref);
-    case cod_struct_type_decl:
-	return 1;
-    case cod_reference_type_decl:
-	return 1;
-    case cod_array_type_decl:
-	return 1;
-    case cod_field_ref:
-	return is_complex_type(expr->node.field_ref.sm_field_ref);
-    case cod_element_ref:
-	return is_complex_type(expr->node.element_ref.sm_complex_element_type);
-    case cod_field:
-	return is_complex_type(expr->node.field.sm_complex_type);
-    default:
-	printf("unhandled case (for %d) in is_complex_type() cg.c\n", expr->node_type);
-	assert(0);
-	return 1;
-    }
+    return (get_complex_type(NULL, expr) != NULL);
 }
 
 extern int type_of_int_const_string(char *val);
@@ -3657,6 +3635,9 @@ gen_bnz(dill_stream s, int conditional, int target_label, int op_type)
 	break;
     case DILL_L:
 	dill_bneli(s, conditional, 0, target_label);	/* op_i_bneli */
+	break;
+    case DILL_P:
+	dill_bnepi(s, conditional, 0, target_label);	/* op_i_bnepi */
 	break;
     case DILL_UL:
 	dill_bneuli(s, conditional, 0, target_label);	/* op_i_bneuli */
