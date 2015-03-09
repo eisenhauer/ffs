@@ -1129,7 +1129,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		/* leak init_value */
 		dill_reg addr_reg = dill_getreg(s, DILL_P);
 		dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
-		(void) dill_scallv(s, (void*)memset, "memcpy", "%p%P%I", addr_reg, init_value, cg_get_size(s, decl));
+		(void) dill_scallv(s, (void*)memcpy, "memcpy", "%p%P%I", addr_reg, init_value, cg_get_size(s, decl));
 	    } else {
 		right = cg_expr(s, decl->node.declaration.init_value, 0, descr);
 		assert(right.is_addr == 0);
