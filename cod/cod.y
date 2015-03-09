@@ -4808,6 +4808,24 @@ possibly_set_sizes_to_match(cod_parse_context context, sm_ref decl, sm_ref init_
 	return 1;
     }
 
+    if (is_array(decl)) {
+	sm_list items;
+	long size = 0;
+	assert(init_value->node_type == cod_initializer_list);
+	items = init_value->node.initializer_list.initializers;
+	/* init value is a list of initializers, count */
+	while (items) {
+	    size++;
+	    items = items->next;
+	}
+	sm_ref size_expr = cod_new_constant();
+	char *str = malloc(20);
+	size_expr->node.constant.token = integer_constant;
+	sprintf(str, "%ld\n", size);
+	size_expr->node.constant.const_val = str;
+	array_type->node.array_type_decl.size_expr = size_expr;
+	return 1;
+    }
     printf("Decl is : \n"); cod_print(decl);
     printf("init_value is : \n"); cod_print(init_value);
     return 1;
@@ -5798,6 +5816,7 @@ scope_ptr scope;
 	if ((typ == NULL) && (cg_type == DILL_ERR)) return 0;
 	array->node.array_type_decl.cg_element_type = cg_type;
 	array->node.array_type_decl.sm_complex_element_type = typ;
+	super_type->node.array_type_decl.cg_element_type = cg_type;
     } else {
 	assert(array->node.array_type_decl.element_ref->node_type == cod_array_type_decl);
 	array->node.array_type_decl.sm_complex_element_type = array->node.array_type_decl.element_ref;
@@ -5817,6 +5836,7 @@ scope_ptr scope;
 {
     if (!array->node.array_type_decl.dimensions) {
         array->node.array_type_decl.dimensions = malloc(sizeof(dimen_s));
+	memset(array->node.array_type_decl.dimensions, 0, sizeof(dimen_s));
     }
     array->node.array_type_decl.dimensions->dimen_count = 0;
     return semanticize_array_element_node(context, array, array,  
