@@ -2966,6 +2966,7 @@ ROW MAJOR  (C-style):
 	    base.reg = new_base;
 	    dill_muli(s, size_accum, index[i].reg, size_accum);
 	    dill_addp(s, base.reg, base.reg, size_accum);
+	    base.is_addr = 1;
 	}
 	if (need_assignable == 1) {
 	    return base;
