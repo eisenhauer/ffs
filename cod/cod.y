@@ -5015,8 +5015,8 @@ check_last_statement_return(cod_parse_context context, sm_ref stmt)
     case cod_compound_statement: {
 	sm_list list = stmt->node.compound_statement.statements;
 	if (!list) list = stmt->node.compound_statement.decls;
-
-	return check_last_statement_return_list(context, list);
+	if (list) return check_last_statement_return_list(context, list);
+	return 1;
     }
     case cod_return_statement:
 	return 1;
@@ -6115,8 +6115,7 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
     type_list = declaration->node.declaration.type_spec;
 
     /* handle return type */
-    complex_type = reduce_type_list(context, type_list, &cg_type, context->scope
-, NULL, &freeable_complex_type);
+    complex_type = reduce_type_list(context, type_list, &cg_type, context->scope, NULL, &freeable_complex_type);
     if (freeable_complex_type) cod_rfree(freeable_complex_type);
     context->return_type_list = type_list;
     if (complex_type != NULL) {

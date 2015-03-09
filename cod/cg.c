@@ -403,6 +403,9 @@ generate_arg_str(sm_ref net)
 	    
 	decls = decls->next;
     }
+    if ((arg_count == 1) && (arg_types[0] == DILL_V)) {
+	arg_count = 0;
+    }
     for (i = 0; i < arg_count ; i++) {
 	int len;
 	if (arg_types[i] == -1) {
@@ -1019,7 +1022,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	if (decl->node.declaration.param_num != -1) {
 	    /* PARAMETER */
 	    sm_ref typ = decl->node.declaration.sm_complex_type;
-	    lvar = dill_param_reg(s, decl->node.declaration.param_num);
+	    if (decl->node.declaration.cg_type == DILL_V) {
+		return;
+	    }
 	    if (typ && (typ->node_type == cod_struct_type_decl) &&
 	        (typ->node.struct_type_decl.encode_info != NULL)) {
 		/* for encoded parameters, skip header */
