@@ -3450,8 +3450,10 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		sm_ref decl = expr->node.operator.right->node.identifier.sm_declaration;
 		if (decl->node_type == cod_declaration) {
 		    if (decl->node.declaration.param_num != -1) {
-			cod_src_error(context, expr, "Cannot take address of a parameter");
-			return 0;
+			if (decl->node.declaration.sm_complex_type == NULL) {
+			    cod_src_error(context, expr, "Cannot take address of a pass-by-value parameter");
+			    return 0;
+			}
 		    }
 		    decl->node.declaration.addr_taken = 1;
 		}
@@ -4819,7 +4821,7 @@ possibly_set_sizes_to_match(cod_parse_context context, sm_ref decl, sm_ref init_
 	    items = items->next;
 	}
 	sm_ref size_expr = cod_new_constant();
-	char *str = malloc(20);
+	char *str = malloc(20); /* plenty */
 	size_expr->node.constant.token = integer_constant;
 	sprintf(str, "%ld\n", size);
 	size_expr->node.constant.const_val = str;

@@ -1315,7 +1315,7 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
     dill_mark_label_type short_circuit = 0;
     if (expr->node.operator.op == op_address) {
 	right_op = cg_expr(s, expr->node.operator.right, 1, descr);
-	assert(right_op.is_addr == 1);
+	assert((right_op.is_addr == 1) || (cod_sm_get_type(expr->node.operator.right) == DILL_B));
 	if (right_op.offset != 0) {
 	    dill_reg result = dill_getreg(s, DILL_P);
 	    dill_addpi(s, result, right_op.reg, right_op.offset);
@@ -2274,6 +2274,7 @@ cg_subroutine_call(dill_stream s, sm_ref expr, cod_code descr)
 		    param.reg = tmp;
 		    param.offset = 0;
 		}
+		formal_type = DILL_P;
 	    } else {
 		param = cg_expr(s, arg, 0, descr);
 		param.reg = coerce_type(s, param.reg, formal_type,
