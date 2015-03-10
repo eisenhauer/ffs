@@ -1025,6 +1025,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    if (decl->node.declaration.cg_type == DILL_V) {
 		return;
 	    }
+	    lvar = dill_param_reg(s, decl->node.declaration.param_num);
 	    if (typ && (typ->node_type == cod_struct_type_decl) &&
 	        (typ->node.struct_type_decl.encode_info != NULL)) {
 		/* for encoded parameters, skip header */
