@@ -182,7 +182,7 @@ return			{RETURN(RETURN_TOKEN);}
 "!"			{RETURN(BANG);}
 ":"			{RETURN(COLON);}
 "?"			{RETURN(QUESTION);}
-[A-Za-z][A-Za-z0-9_]*	{
+[A-Za-z_][A-Za-z0-9_]*	{
 				yylval.info.string = create_string_from_yytext();
 				if (is_defined_type(yylval.info.string)) {
 				    RETURN(type_id);
