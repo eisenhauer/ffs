@@ -4672,14 +4672,17 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
     if ((left_smt != NULL) && 
 	((left_smt->node_type != cod_reference_type_decl) &&
 	 (left_smt->node_type != cod_array_type_decl) &&
+	 (left_smt->node_type != cod_struct_type_decl) &&
 	 (left_smt->node_type != cod_enum_type_decl))) {
-	cod_src_error(context, left, "Only pointer, array or enum complex types allowed as LHS in assignment");
+	cod_src_error(context, left, "Only pointer, array, struct or enum complex types allowed as LHS in assignment");
 	return 0;
     }
     if ((right_smt != NULL) && 
 	((right_smt->node_type != cod_reference_type_decl) &&
+	 (right_smt->node_type != cod_array_type_decl) &&
+	 (right_smt->node_type != cod_struct_type_decl) &&
 	 (right_smt->node_type != cod_enum_type_decl))) {
-	cod_src_error(context, right, "Only pointer or enum complex types allowed as RHS in assignment");
+	cod_src_error(context, right, "Only pointer, array, struct or enum complex types allowed as RHS in assignment");
 	return 0;
     }
     if (left_smt && (left_smt->node_type == cod_reference_type_decl) &&

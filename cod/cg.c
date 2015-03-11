@@ -846,6 +846,23 @@ char *generate_block_init_value(dill_stream s, sm_ref decl)
 	    init_list = init_list->next;
 	}
 	return ret;
+    } else if (typ->node_type == cod_struct_type_decl) {
+	int size = cg_get_size(s, decl);
+	char *ret = malloc(size);
+	sm_list init_list, fields;
+	memset(ret, 0, size);
+	assert(init->node_type == cod_initializer_list);
+	init_list = init->node.initializer_list.initializers;
+	fields = typ->node.struct_type_decl.fields;
+	while (init_list) {
+	    sm_ref initializer = init_list->node;
+	    sm_ref field = fields->node;
+	    evaluate_simple_init_and_assign(initializer->node.initializer.initializer, 
+					    field->node.field.cg_type, ret + field->node.field.cg_offset);
+	    init_list = init_list->next;
+	    fields = fields->next;
+	}
+	return ret;
     }
     cod_print(decl->node.declaration.init_value);
     return NULL;
