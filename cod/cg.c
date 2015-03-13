@@ -876,7 +876,8 @@ evaluate_simple_init_and_assign(sm_ref init, int cg_type, void *var_base)
     const_val = evaluate_constant_return_expr(NULL, init, &free_expr);
     assert(const_val->node_type == cod_constant);
     if (const_val->node.constant.token == string_constant) {
-	assert(FALSE);
+	/* leaky */
+	*(char**)(var_base) = strdup(const_val->node.constant.const_val);
     } else if (const_val->node.constant.token == floating_constant) {
 	double f;
 	
