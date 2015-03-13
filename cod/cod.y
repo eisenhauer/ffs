@@ -3466,12 +3466,18 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    break;
 	case op_deref: {
 	    sm_ref typ = get_complex_type(context, expr->node.operator.right);
-	    if (!typ || (typ->node_type != cod_reference_type_decl)) {
+	    if (!typ || ((typ->node_type != cod_reference_type_decl) && 
+			 (typ->node_type != cod_array_type_decl))) {
 		cod_src_error(context, expr, "Cannot dereference a non-reference type");
 		return 0;
-	    } else {
+	    } else if (typ->node_type == cod_reference_type_decl) {
 		expr->node.operator.result_type =
 		    typ->node.reference_type_decl.cg_referenced_type;
+	    } else if (typ->node_type == cod_array_type_decl) {
+		expr->node.operator.result_type =
+		    typ->node.array_type_decl.cg_element_type;
+	    } else {
+		assert(0);
 	    }
 	    break;
 	}
