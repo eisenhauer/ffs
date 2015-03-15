@@ -4537,6 +4537,10 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		(complex_return_type->node_type == cod_struct_type_decl)) {
 		*cg_type = DILL_B;
 	    }
+	    if ((complex_return_type != NULL)&&
+		(complex_return_type->node_type == cod_enum_type_decl)) {
+		*cg_type = DILL_I;
+	    }
 	    if ((complex_return_type == NULL) && node->node.identifier.id &&
 		((strcmp(node->node.identifier.id, "cod_type_spec") == 0) ||
                  (strcmp(node->node.identifier.id, "cod_closure_context") == 0) ||
@@ -4850,7 +4854,10 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 			    scope_ptr scope)
 {
     switch(decl->node_type) {
-    case cod_declaration: 
+    case cod_declaration: {
+	sm_ref ctype;
+	int is_block_type = 0;
+
 	if (resolve_local(decl->node.declaration.id, scope) != NULL) {
 	    if (resolve_local(decl->node.declaration.id, scope) != decl) {
 		cod_src_error(context, decl, "Duplicate Symbol \"%s\"", 
@@ -4937,11 +4944,17 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		    typ = reduce_type_list(context, 
 					    arr->node.array_type_decl.type_spec, 
 					   &cg_type, scope, NULL, &decl->node.declaration.freeable_complex_type);
+		} else if ((arr != NULL) && (arr->node_type == cod_enum_type_decl)) {
+		    cg_type = DILL_I;
 		}
 	    }
 	    if ((typ == NULL) && (cg_type == DILL_ERR)) return 0;
 	    decl->node.declaration.cg_type = cg_type;
 	    decl->node.declaration.sm_complex_type = typ;
+	}
+	ctype = decl->node.declaration.sm_complex_type;
+	if ((ctype != NULL) && ((ctype->node_type == cod_array_type_decl) || (ctype->node_type == cod_struct_type_decl))) {
+	    is_block_type = 1;
 	}
 	if (decl->node.declaration.init_value != NULL) {
 	    int ret;
@@ -4980,6 +4993,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	}
 	return 1;
 	break;
+    }
     case cod_struct_type_decl:
 	return semanticize_struct_type_node(context, decl, scope);
 	break;

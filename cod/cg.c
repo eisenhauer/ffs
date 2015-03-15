@@ -474,6 +474,8 @@ cg_get_size(dill_stream s, sm_ref node) {
 	}
 	return dill_type_size(s, cod_sm_get_type(ref));
     }
+    case cod_enum_type_decl:
+	return dill_type_size(s, DILL_I);
     case cod_constant:
     case cod_iteration_statement:
     case cod_expression_statement:
@@ -1009,7 +1011,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		return;
 	    }
 	}
-	if (decl->node.declaration.static_var && !ctype) {
+	if (decl->node.declaration.static_var && !is_block_type) {
 	    /* do SIMPLE statics */
 	    decl->node.declaration.cg_address = 
 		(void*)(long)descr->static_size_required;
