@@ -3149,13 +3149,13 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	return strdup("integer");
     case DILL_U: 
 	*size = sizeof(int);
-	return strdup("unsigned");
+	return strdup("unsigned integer");
     case DILL_UL:
 	*size = sizeof(long);
-	return strdup("unsigned");
+	return strdup("unsigned integer");
     case DILL_US:
 	*size = sizeof(short);
-	return strdup("unsigned");
+	return strdup("unsigned integer");
     case DILL_F:
 	*size = sizeof(float);
 	return strdup("float");
