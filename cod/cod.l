@@ -290,7 +290,12 @@ return			{RETURN(RETURN_TOKEN);}
 				RETURN(integer_constant);
 			}
 
-[0-9]*\.[0-9]*		{
+{D}*"."{D}+({E})?{FS}?  {
+				yylval.info.string = create_string_from_yytext();
+				RETURN(floating_constant);
+			}
+
+{D}+"."{D}*({E})?{FS}?  {
 				yylval.info.string = create_string_from_yytext();
 				RETURN(floating_constant);
 			}
