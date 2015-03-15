@@ -4266,7 +4266,12 @@ get_complex_type(cod_parse_context context, sm_ref node)
 	    sm_ref right = get_complex_type(NULL, node->node.operator.right);
 	    if ((right != NULL) && 
 		(right->node_type == cod_reference_type_decl)) {
-		return right->node.reference_type_decl.sm_complex_referenced_type;
+		sm_ref typ = right->node.reference_type_decl.sm_complex_referenced_type;
+		if (typ && (typ->node_type == cod_declaration)) {
+		    return get_complex_type(context, typ);
+		} else {
+		    return typ;
+		}
 	    }
 	    return NULL;
 	}
