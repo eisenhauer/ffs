@@ -188,13 +188,19 @@ action_t action;
 #ifndef MODULE
 	fd_set rd_set;
 	struct timeval timeout;
-	
+	int ret;
+
 	FD_ZERO(&rd_set);
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 	FD_SET( (int)(long)iofile->server_fd, &rd_set);
-	conn_is_dead = select(FD_SETSIZE, &rd_set, (fd_set*)NULL, 
-			      (fd_set *) NULL, &timeout);
+	ret = select(FD_SETSIZE, &rd_set, (fd_set*)NULL, 
+		     (fd_set *) NULL, &timeout);
+	if (ret == -1) {
+	    if (format_server_verbose)
+		printf("Dead connetion, Select return is %d, server fd is %d, errno is %d\n", ret, iofile->server_fd, errno);
+	    conn_is_dead = 1;
+	}
 #else
 	int junk_errno;
 	char *junk_str;
