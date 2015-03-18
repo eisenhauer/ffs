@@ -198,7 +198,7 @@ action_t action;
 		     (fd_set *) NULL, &timeout);
 	if (ret == -1) {
 	    if (format_server_verbose)
-		printf("Dead connetion, Select return is %d, server fd is %d, errno is %d\n", ret, iofile->server_fd, errno);
+	      printf("Dead connection, Select return is %d, server fd is %ld, errno is %d\n", ret, (long)iofile->server_fd, errno);
 	    conn_is_dead = 1;
 	}
 #else
