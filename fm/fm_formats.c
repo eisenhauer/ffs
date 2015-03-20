@@ -2662,12 +2662,12 @@ const char *str;
     case 'u': case 'U': /* unsigned integer */
 	if (((end - str) == 16) &&
 	    ((str[1] == 'n') || (str[1] == 'N')) &&
-	    ((str[2] == 's') || (str[2] == 'U')) &&
-	    ((str[3] == 'i') || (str[3] == 'M')) &&
-	    ((str[4] == 'g') || (str[4] == 'E')) &&
-	    ((str[5] == 'n') || (str[5] == 'R')) &&
-	    ((str[6] == 'e') || (str[6] == 'A')) &&
-	    ((str[7] == 'd') || (str[7] == 'T')) &&
+	    ((str[2] == 's') || (str[2] == 'S')) &&
+	    ((str[3] == 'i') || (str[3] == 'I')) &&
+	    ((str[4] == 'g') || (str[4] == 'G')) &&
+	    ((str[5] == 'n') || (str[5] == 'N')) &&
+	    ((str[6] == 'e') || (str[6] == 'E')) &&
+	    ((str[7] == 'd') || (str[7] == 'D')) &&
 	    ((str[8] == ' ') || (str[8] == '	')) &&
 	    ((str[9] == 'i') || (str[9] == 'I')) &&
 	    ((str[10] == 'n') || (str[10] == 'N')) &&
@@ -2677,7 +2677,17 @@ const char *str;
 	    ((str[14] == 'e') || (str[14] == 'E')) &&
 	    ((str[15] == 'r') || (str[15] == 'R'))) {
 	    return unsigned_type;
+	} else 	if (((end - str) == 8) &&
+	    ((str[1] == 'n') || (str[1] == 'N')) &&
+	    ((str[2] == 's') || (str[2] == 'S')) &&
+	    ((str[3] == 'i') || (str[3] == 'I')) &&
+	    ((str[4] == 'g') || (str[4] == 'G')) &&
+	    ((str[5] == 'n') || (str[5] == 'N')) &&
+	    ((str[6] == 'e') || (str[6] == 'E')) &&
+	    ((str[7] == 'd') || (str[7] == 'D'))) {
+	    return unsigned_type;
 	}
+
 	break;
     }
     return unknown_type;
