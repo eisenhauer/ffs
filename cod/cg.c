@@ -1490,6 +1490,18 @@ poly_addi(dill_stream s, int op_type, dill_reg result, dill_reg left,
     case DILL_P:
 	dill_addpi(s, result, left, imm);	/* op_i_addpi */
 	break;
+    case DILL_D: {
+	dill_reg one = 	dill_getreg(s, op_type);
+	dill_setd(s, one, 1.0);
+	dill_Padd(s, op_type, result, left, one);
+	break;
+    }
+    case DILL_F: {
+	dill_reg one = 	dill_getreg(s, op_type);
+	dill_setf(s, one, 1.0);
+	dill_Padd(s, op_type, result, left, one);
+	break;
+    }
     default:
 	assert(0);
     }
@@ -1515,6 +1527,18 @@ poly_subi(dill_stream s, int op_type, dill_reg result, dill_reg left,
     case DILL_P:
 	dill_subpi(s, result, left, imm);	/* op_i_subpi */
 	break;
+    case DILL_D: {
+	dill_reg one = 	dill_getreg(s, op_type);
+	dill_setd(s, one, 1.0);
+	dill_Psub(s, op_type, result, left, one);
+	break;
+    }
+    case DILL_F: {
+	dill_reg one = 	dill_getreg(s, op_type);
+	dill_setf(s, one, 1.0);
+	dill_Psub(s, op_type, result, left, one);
+	break;
+    }
     default:
 	assert(0);
     }
@@ -2660,6 +2684,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	operand right;
 	int expr_type = cod_sm_get_type(expr->node.cast.expression);
 	right = cg_expr(s, expr->node.cast.expression, 0, descr);
+	if (expr->node.cast.cg_type == DILL_V) return right;  /* likely ignored */
 	assert(right.is_addr == 0);
 	right.reg = coerce_type(s, right.reg, expr->node.cast.cg_type, 
 				expr_type);
@@ -2819,11 +2844,22 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	}
 	
 	if (expr->node.assignment_expression.op == op_eq) {
-	    if (is_control_value(expr->node.assignment_expression.left, NULL)) {
+	    sm_ref left_val = expr->node.assignment_expression.left;
+	    if (is_control_value(left_val, NULL)) {
 		do_var_array_adjust(s, expr->node.assignment_expression.left, left,
 				    right, descr);
 	    }
-	    gen_mov(s, left, right.reg, assign_type);
+	    if ((assign_type == DILL_B) || is_array(left_val)) {
+		if (!right.is_addr) {
+		    dill_reg addr_reg = dill_getreg(s, DILL_P);
+		    dill_virtual_lea(s, addr_reg, right.reg);	/* op_i_leai */
+		    right.is_addr = 1;
+		    right.reg = addr_reg;
+		}
+		(void) dill_scallv(s, (void*)memcpy, "memcpy", "%p%p%I", left.reg, right.reg, cg_get_size(s, left_val));
+	    } else {
+		gen_mov(s, left, right.reg, assign_type);
+	    }
 	} else {
 	    dill_reg left_value;
 	    operand result;
