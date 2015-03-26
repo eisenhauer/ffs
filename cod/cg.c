@@ -107,7 +107,7 @@ static dill_reg coerce_type(dill_stream s, dill_reg local, int target_type, int 
 static int is_comparison_operator(sm_ref expr);
 static void cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label, cod_code descr, int reverse);
 static int is_complex_type(sm_ref expr);
-static int cg_get_size(dill_stream s, sm_ref node);
+int cg_get_size(dill_stream s, sm_ref node);
 
 extern int cod_sm_get_type(sm_ref node);
 #endif
@@ -216,8 +216,6 @@ add_decl_to_static_description(sm_ref decl, cod_code cd)
 	/* more complex */
     }
 }
-
-static int cg_get_size(dill_stream s, sm_ref node);
 
 static void
 cg_preprocess(sm_ref node, void *data) {
@@ -421,7 +419,7 @@ generate_arg_str(sm_ref net)
     return arg_str;
 }
 
-static int
+int
 cg_get_size(dill_stream s, sm_ref node) {
 
     sm_ref ref = node;
@@ -613,7 +611,7 @@ cg_generate_static_block(dill_stream s, cod_code descr)
 }
 
 static int
-evaluate_constant_expr(sm_ref expr, long*value)
+evaluate_constant_expr(dill_stream s, sm_ref expr, long*value)
 {
     switch(expr->node_type) {
     case cod_constant: {
@@ -638,17 +636,21 @@ evaluate_constant_expr(sm_ref expr, long*value)
 	break;
     }
     case cod_identifier:
-	return evaluate_constant_expr(expr->node.identifier.sm_declaration, value);
+	return evaluate_constant_expr(s, expr->node.identifier.sm_declaration, value);
     case cod_declaration:
 	if (!expr->node.declaration.const_var) return 0;
-	return evaluate_constant_expr(expr->node.declaration.init_value, value);
+	return evaluate_constant_expr(s, expr->node.declaration.init_value, value);
     case cod_operator: {
 	long left, right;
 	if (expr->node.operator.left != NULL) {
-	    if (!evaluate_constant_expr(expr->node.operator.left, &left)) return 0;
+	    if (!evaluate_constant_expr(s, expr->node.operator.left, &left)) return 0;
+	}
+	if (expr->node.operator.op == op_sizeof) {
+	    *value = cg_get_size(s, expr->node.operator.right);
+	    return 1;
 	}
 	if (expr->node.operator.right != NULL) {
-	    if (!evaluate_constant_expr(expr->node.operator.right, &right)) return 0;
+	    if (!evaluate_constant_expr(s, expr->node.operator.right, &right)) return 0;
 	}
 	switch(expr->node.operator.op) {
 	case  op_modulus:
@@ -721,7 +723,7 @@ evaluate_constant_expr(sm_ref expr, long*value)
 	return 1;
     }
     case cod_cast:
-	return evaluate_constant_expr(expr->node.cast.expression, value);
+	return evaluate_constant_expr(s, expr->node.cast.expression, value);
     case cod_assignment_expression:
     case cod_field_ref:
     case cod_element_ref:
@@ -740,15 +742,15 @@ add_global(cod_code descr, char *name, int size)
 }
 	
 static void
-assign_enum_value(sm_list enums, int *enum_value_p)
+assign_enum_value(dill_stream s, sm_list enums, int *enum_value_p)
 {
     sm_ref en;
     if (enums == NULL) return;
     en = enums->node;
-    assign_enum_value(enums->next, enum_value_p);
+    assign_enum_value(s, enums->next, enum_value_p);
     if (en->node.enumerator.const_expression) {
 	long tmp;
-	assert(evaluate_constant_expr(en->node.enumerator.const_expression, &tmp));
+	assert(evaluate_constant_expr(s, en->node.enumerator.const_expression, &tmp));
 	*enum_value_p = tmp;
     }
     en->node.enumerator.enum_value = (*enum_value_p)++;
@@ -759,7 +761,7 @@ static void
 cg_enum_type_decl(dill_stream s, sm_ref decl, cod_code descr)
 {
     int enum_value = 0;
-    assign_enum_value(decl->node.enum_type_decl.enums, &enum_value);
+    assign_enum_value(s, decl->node.enum_type_decl.enums, &enum_value);
 }
 
 static void
@@ -768,7 +770,7 @@ set_dimen_values(dill_stream s, sm_ref top, sm_ref this, int dimension)
     long size = -1;
     if (this->node_type != cod_array_type_decl) return;
     if (this->node.array_type_decl.size_expr) {
-	evaluate_constant_expr(this->node.array_type_decl.size_expr, &size);
+	evaluate_constant_expr(s, this->node.array_type_decl.size_expr, &size);
 	top->node.array_type_decl.dimensions->dimens[dimension].static_size = size;
     }
     set_dimen_values(s, top, this->node.array_type_decl.element_ref, dimension+1);
@@ -821,7 +823,7 @@ set_complex_type_sizes(dill_stream s, sm_ref typ)
 }
 
 static void
-evaluate_simple_init_and_assign(sm_ref init, int cg_type, void *var_base);
+evaluate_simple_init_and_assign(dill_stream s, sm_ref init, int cg_type, void *var_base);
 
 static
 char *generate_block_init_value(dill_stream s, sm_ref decl)
@@ -842,7 +844,7 @@ char *generate_block_init_value(dill_stream s, sm_ref decl)
 	tmp = ret;
 	while (init_list) {
 	    sm_ref initializer = init_list->node;
-	    evaluate_simple_init_and_assign(initializer->node.initializer.initializer, 
+	    evaluate_simple_init_and_assign(s, initializer->node.initializer.initializer, 
 					    typ->node.array_type_decl.cg_element_type, tmp);
 	    tmp += typ->node.array_type_decl.cg_element_size;
 	    init_list = init_list->next;
@@ -859,7 +861,7 @@ char *generate_block_init_value(dill_stream s, sm_ref decl)
 	while (init_list) {
 	    sm_ref initializer = init_list->node;
 	    sm_ref field = fields->node;
-	    evaluate_simple_init_and_assign(initializer->node.initializer.initializer, 
+	    evaluate_simple_init_and_assign(s, initializer->node.initializer.initializer, 
 					    field->node.field.cg_type, ret + field->node.field.cg_offset);
 	    init_list = init_list->next;
 	    fields = fields->next;
@@ -871,7 +873,7 @@ char *generate_block_init_value(dill_stream s, sm_ref decl)
 }
 
 static void
-evaluate_simple_init_and_assign(sm_ref init, int cg_type, void *var_base)
+evaluate_simple_init_and_assign(dill_stream s, sm_ref init, int cg_type, void *var_base)
 {
     sm_ref const_val;
     int free_expr = 0;
@@ -1034,7 +1036,7 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		    memcpy(var_base, init_value, cg_get_size(s, decl));
 		    free(init_value);
 		} else {
-		    evaluate_simple_init_and_assign(decl->node.declaration.init_value, decl->node.declaration.cg_type, var_base);
+		    evaluate_simple_init_and_assign(s, decl->node.declaration.init_value, decl->node.declaration.cg_type, var_base);
 		}
 	    }
 	    return;

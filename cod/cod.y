@@ -48,6 +48,16 @@ int cod_kplugins_integration = 0;
 #include <linux/string.h>
 #include <linux/mm.h>
 #endif
+#include "float.h"
+#ifdef DBL_DECIMAL_DIG
+  #define OP_DBL_Digs (DBL_DECIMAL_DIG)
+#else  
+  #ifdef DECIMAL_DIG
+    #define OP_DBL_Digs (DECIMAL_DIG)
+  #else  
+    #define OP_DBL_Digs (DBL_DIG + 3)
+  #endif
+#endif
 #include "structs.h"
 #ifdef HAVE_DILL_H
 #include "dill.h"
@@ -2846,7 +2856,7 @@ static int
 is_string(sm_ref expr)
 {
     if (expr->node_type == cod_field) {
-	return (strcmp(expr->node.field.string_type, "string") == 0);
+	return (expr->node.field.string_type && (strcmp(expr->node.field.string_type, "string") == 0));
     } else if (expr->node_type == cod_field_ref) {
 	return is_string(expr->node.field_ref.sm_field_ref);
     } else if (expr->node_type == cod_identifier) {
@@ -2976,6 +2986,8 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	}
 	if (node->node_type != cod_type_specifier) {
 	    if (node->node_type == cod_identifier) {
+		return NULL;
+	    } else if (node->node_type == cod_struct_type_decl) {
 		return NULL;
 	    } else {
 		printf("Unknown node type in type_list_to_string\n");
@@ -3137,7 +3149,7 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	return strdup("integer");
     case DILL_UC: 
 	*size = sizeof(char);
-	return strdup("unsigned");
+	return strdup("unsigned integer");
     case DILL_I: 
 	*size = sizeof(int);
 	return strdup("integer");
@@ -3619,23 +3631,6 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    cod_src_error(context, expr->node.assignment_expression.left, "Invalid assignment, left side is const");
 	    ret = 0;
 	}
-	if ((expr->node.assignment_expression.cg_type == DILL_P) ||
-	    (expr->node.assignment_expression.cg_type == DILL_ERR)) {
-	    sm_ref typ = 
-		get_complex_type(context, 
-				 expr->node.assignment_expression.left);
-	    if (typ == NULL) {
-		if (!is_string(expr->node.assignment_expression.left)) {
-		    cod_src_error(context, expr->node.assignment_expression.left, "Invalid assignment, left side must be simple, non-pointer type");
-		    ret = 0;
-		}
-	    } else {
-		if (typ->node_type != cod_reference_type_decl) {
-		    cod_src_error(context, expr->node.assignment_expression.left, "Invalid assignment, left side must be simple, non-pointer type");
-		    ret = 0;
-		}
-	    }
-	}
 	if (!semanticize_expr(context, expr->node.assignment_expression.right, scope)){
 	    ret = 0;
 	} else {
@@ -3650,6 +3645,28 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	    } else if ((right_type == DILL_B) || (right_type == DILL_ERR)) {
 		cod_src_error(context, expr->node.assignment_expression.right, "Invalid assignment, right side must be simple type");
 		ret = 0;
+	    }
+	}
+	if ((expr->node.assignment_expression.cg_type == DILL_P) ||
+	    (expr->node.assignment_expression.cg_type == DILL_ERR)) {
+	    sm_ref ltyp = 
+		get_complex_type(context, 
+				 expr->node.assignment_expression.left);
+	    sm_ref rtyp = 
+		get_complex_type(context, 
+				 expr->node.assignment_expression.right);
+	    if (ltyp == NULL) {
+		if (!is_string(expr->node.assignment_expression.left)) {
+		    cod_src_error(context, expr->node.assignment_expression.left, "Invalid assignment, left side must be simple, non-pointer type");
+		    ret = 0;
+		}
+	    } else {
+		if ((ltyp->node_type == cod_struct_type_decl) || (ltyp->node_type == cod_array_type_decl) || (ltyp->node_type == cod_enum_type_decl)) {
+		    /* maybe OK */
+		} else if (ltyp->node_type != cod_reference_type_decl) {
+		    cod_src_error(context, expr->node.assignment_expression.left, "Invalid assignment, left side must be simple, non-pointer type");
+		    ret = 0;
+		}
 	    }
 	}
 	if (ret == 1) {
@@ -4173,6 +4190,8 @@ cod_sm_get_type(sm_ref node)
 	return DILL_ERR;
     case cod_subroutine_call:
 	return cod_sm_get_type(node->node.subroutine_call.sm_func_ref);
+    case cod_comma_expression:
+	return cod_sm_get_type(node->node.comma_expression.right);
     default:
 	fprintf(stderr, "Unknown case in cod_sm_get_type()\n");
 	cod_print(node);
@@ -4763,6 +4782,9 @@ is_constant_expr(sm_ref expr)
 	if (expr->node.operator.left != NULL) {
 	    if (!is_constant_expr(expr->node.operator.left)) return 0;
 	}
+	if (expr->node.operator.op == op_sizeof) {
+	    return 1;
+	}
 	if (expr->node.operator.right != NULL) {
 	    if (!is_constant_expr(expr->node.operator.right)) return 0;
 	}
@@ -4789,8 +4811,8 @@ is_constant_expr(sm_ref expr)
 	case op_right_shift:
 	    return 1;
 	    break;
-	case  op_deref:
-	case  op_address:
+	case op_deref:
+	case op_address:
 	case op_inc:
 	case op_dec:
 	case op_sizeof:
@@ -5200,6 +5222,7 @@ static int
 semanticize_statement(cod_parse_context context, sm_ref stmt, 
 		      scope_ptr scope)
 {
+    if (!stmt) return 1;
     switch (stmt->node_type) {
     case cod_selection_statement:
 	return semanticize_selection_statement(context, stmt, scope);
@@ -5292,6 +5315,7 @@ static int semanticize_goto_l(cod_parse_context context, sm_ref this_goto, sm_li
 static int semanticize_goto(cod_parse_context context, sm_ref this_goto, sm_ref stmt, goto_state gs)
 {
     int ret = 1;
+    if (!stmt) return ret;
     switch (stmt->node_type) {
     case cod_declaration: 
 	if (!gs->backward_jump && stmt->node.declaration.init_value) {
@@ -5658,6 +5682,7 @@ int *must_free_p;
     if (desc->next != NULL) {
 	subtype = build_subtype_nodes(context, decl, f, desc->next, err, scope, &must_free_flag);
 	if (*err != 0) {
+	    printf("Subtype node failure\n");
 	    return NULL;
 	}
     }
@@ -5751,6 +5776,7 @@ int *must_free_p;
 	ret = resolve(tmp_str, scope);
 	free(tmp_str);
 	if (ret == NULL) {
+	    printf("Didn't find base type %s\n", tmp_str);
 	    *err = 1;
 	}
 	break;
@@ -6503,13 +6529,39 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	if (!expr->node.declaration.const_var) return NULL;
 	return evaluate_constant_return_expr(context, expr->node.identifier.sm_declaration, free_result);
     case cod_operator: {
-	sm_ref left, right, ret;
+	sm_ref left = NULL, right = NULL, ret;
 	int free_left = 0, free_right = 0;
 	int left_token, right_token;
 	if (expr->node.operator.left != NULL) {
 	    if (!(left = evaluate_constant_return_expr(context, expr->node.operator.left, &free_left))) return NULL;
 	    left_token = left->node.constant.token;
 	}
+	if (expr->node.operator.op == op_sizeof) {
+	    int cg_type;
+	    sm_ref cast = expr->node.operator.right;
+	    sm_ref typ;
+	    long size;
+	    assert(cast->node_type == cod_cast);
+	    typ = reduce_type_list(context, cast->node.cast.type_spec, &cg_type, context->scope, NULL, NULL);
+	    static dill_stream s = NULL;
+	    char str_val[40];
+	    extern int cg_get_size(dill_stream s, sm_ref node);
+    
+	    if (s == NULL) {
+		s = dill_create_stream();
+	    }
+	    if (typ == NULL) {
+		size = dill_type_size(s, cg_type);
+	    } else {
+		size = cg_get_size(s, cast);
+	    }
+	    ret = cod_new_constant();
+	    ret->node.constant.token = integer_constant;
+	    sprintf(str_val, "%ld", size);
+	    ret->node.constant.const_val = strdup(str_val);
+	    *free_result = 1;
+	    return ret;
+	}	    
 	if (expr->node.operator.right != NULL) {
 	    if (!(right = evaluate_constant_return_expr(context, expr->node.operator.right, &free_right))) return NULL;
 	    right_token = right->node.constant.token;
@@ -6524,52 +6576,52 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	}
 	if ((left_token == floating_constant) || 
 	    (right_token == floating_constant)) {
-	    double left, right, fvalue;
+	    double left_val, right_val, fvalue;
 	    int ivalue, is_ivalue = 0;
 	    char str_val[40];
-	    if (expr->node.operator.left)
-		left = get_constant_float_value(context, expr->node.operator.left);
-	    if (expr->node.operator.right)
-		right = get_constant_float_value(context, expr->node.operator.right);
+	    if (left)
+		left_val = get_constant_float_value(context, left);
+	    if (right)
+		right_val = get_constant_float_value(context, right);
 	    switch(expr->node.operator.op) {
 	    case  op_plus:
-		fvalue = left + right;
+		fvalue = left_val + right_val;
 		break;
 	    case  op_minus:
-		fvalue = left - right;
+		fvalue = left_val - right_val;
 	    break;
 	    case  op_leq:
-		ivalue = left <= right;
+		ivalue = left_val <= right_val;
 		is_ivalue=1;
 		break;
 	    case  op_lt:
-		ivalue = left < right;
+		ivalue = left_val < right_val;
 		is_ivalue=1;
 		break;
 	    case  op_geq:
-		ivalue = left >= right;
+		ivalue = left_val >= right_val;
 		is_ivalue=1;
 		break;
 	    case  op_gt:
-		ivalue = left > right;
+		ivalue = left_val > right_val;
 		is_ivalue=1;
 		break;
 	    case  op_eq:
-		ivalue = left = right;
+		ivalue = left_val = right_val;
 		is_ivalue=1;
 		break;
 	    case  op_neq:
-		ivalue = left != right;
+		ivalue = left_val != right_val;
 		is_ivalue=1;
 		break;
 	    case  op_mult:
-		fvalue = left * right;
+		fvalue = left_val * right_val;
 		break;
 	    case  op_div:
-		if (right == 0) {
+		if (right_val == 0) {
 		    return NULL;
 		}
-		fvalue = left / right;
+		fvalue = left_val / right_val;
 		break;
 	    case op_log_neg:
 	    case op_not:
@@ -6594,81 +6646,81 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 		sprintf(str_val, "%d", ivalue);
 	    } else {
 		ret->node.constant.token = floating_constant;
-		sprintf(str_val, "%g", fvalue);
+		sprintf(str_val, "%.*e\n", OP_DBL_Digs - 1, fvalue);
 	    }
 	    ret->node.constant.const_val = strdup(str_val);
 	    *free_result = 1;
 	} else {
 	    /* we get an integer result */
-	    long left = 0, right = 0, value;
+	    long left_val = 0, right_val = 0, value;
 	    char str_val[40];
 	    if (expr->node.operator.left)
-		left = get_constant_long_value(context, expr->node.operator.left);
+		left_val = get_constant_long_value(context, left);
 	    if (expr->node.operator.right)
-		right = get_constant_long_value(context, expr->node.operator.right);
+		right_val = get_constant_long_value(context, right);
 	    switch(expr->node.operator.op) {
 	    case  op_modulus:
-		if (right == 0) {
+		if (right_val == 0) {
 		    return NULL;
 		}
-		value = left % right;
+		value = left_val % right_val;
 		break;
 	    case  op_plus:
-		value = left + right;
+		value = left_val + right_val;
 		break;
 	    case  op_minus:
-		value = left - right;
+		value = left_val - right_val;
 		break;
 	    case  op_leq:
-		value = left <= right;
+		value = left_val <= right_val;
 		break;
 	    case  op_lt:
-		value = left < right;
+		value = left_val < right_val;
 		break;
 	    case  op_geq:
-		value = left >= right;
+		value = left_val >= right_val;
 		break;
 	    case  op_gt:
-		value = left > right;
+		value = left_val > right_val;
 		break;
 	    case  op_eq:
-		value = left = right;
+		value = left_val = right_val;
 		break;
 	    case  op_neq:
-		value = left != right;
+		value = left_val != right_val;
 		break;
 	    case  op_log_or:
-		value = left || right;
+		value = left_val || right_val;
 		break;
 	    case  op_arith_or:
-		value = left | right;
+		value = left_val | right_val;
 		break;
 	    case  op_arith_xor:
-		value = left ^ right;
+		value = left_val ^ right_val;
 		break;
 	    case  op_log_and:
-		value = left && right;
+		value = left_val && right_val;
 		break;
 	    case  op_arith_and:
-		value = left & right;
+		value = left_val & right_val;
 		break;
 	    case  op_mult:
-		value = left * right;
+		value = left_val * right_val;
 		break;
 	    case  op_div:
-		value = left / right;
+		value = left_val / right_val;
 		break;
 	    case op_log_neg:
-		value = !right;
+		value = !right_val;
 		break;
 	    case op_not:
-		value = ~right;
+		value = ~right_val;
 		break;
 	    case op_left_shift:
-		value = left << right;
+		value = left_val << right_val;
 		break;
 	    case op_right_shift:
-		value = left >> right;
+		value = left_val >> right_val;
 		break;
 	    case op_deref:
 	    case op_address:
