@@ -4726,10 +4726,16 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 	case DILL_P:
 	case DILL_L:
 	case DILL_UL:
+	    return 1;
 	case DILL_I:
 	case DILL_U:
-	    return 1;
-
+	    if ((right->node_type == cod_constant) &&
+		(right->node.constant.token == integer_constant)) {
+		int i = -1;
+		sscanf(right->node.constant.const_val, "%d", &i);
+		if (i== 0) return 1;
+	    }
+	    /* falling through */
 	default:
 	    cod_src_error(context, right, "Right hand side must be pointer type");
 	    return 0;
