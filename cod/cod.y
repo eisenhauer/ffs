@@ -2823,7 +2823,7 @@ static sm_ref reduce_type_list(cod_parse_context context, sm_list type_list,
 			       int *cg_type, scope_ptr scope, int *is_typedef,
 			       sm_ref *freeable_type);
 static int 
-assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right);
+assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right, int strict);
 
 static int
 is_n_dimen_array(int dimen, sm_ref expr)
@@ -3672,7 +3672,8 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 	if (ret == 1) {
 	    ret = assignment_types_match(context,
 					 expr->node.assignment_expression.left,
-					 expr->node.assignment_expression.right);
+					 expr->node.assignment_expression.right, 
+					 /* strict */ (expr->node.assignment_expression.op == op_eq));
 	}
 	return ret;
     }
@@ -4323,8 +4324,7 @@ get_complex_type(cod_parse_context context, sm_ref node)
 		    }
 		}
 	    }
-	    fprintf(stderr, "Unknown case in get_complex_type() int ops\n");
-	    cod_print(node);
+	    cod_src_error(context, node, "Incompatible pointer arguments to operator");
 	    return NULL;
 	}
 	default:
@@ -4669,7 +4669,7 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 }
 
 static int 
-assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
+assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right, int strict)
 {
     sm_ref left_smt, right_smt;
     int left_cgt, right_cgt;
@@ -4729,6 +4729,7 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right)
 	    return 1;
 	case DILL_I:
 	case DILL_U:
+	    if (!strict) return 1;
 	    if ((right->node_type == cod_constant) &&
 		(right->node.constant.token == integer_constant)) {
 		int i = -1;
@@ -4993,7 +4994,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 		ret = possibly_set_sizes_to_match(context, decl, decl->node.declaration.init_value);
 	    }
 	    ret = assignment_types_match(context, decl, 
-					 decl->node.declaration.init_value);
+					 decl->node.declaration.init_value, 1);
 	    return ret;
 	}
 	if (decl->node.declaration.is_subroutine) {
