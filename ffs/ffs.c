@@ -706,7 +706,7 @@ copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 	while (((FFSEncodeVector)((long)buf->tmp_buffer + vec_offset))[i].iov_base !=
 	       NULL) {
 	    FFSEncodeVector v = (void*)((long) buf->tmp_buffer + vec_offset);
-	    if (already_in[i] = 0) {
+	    if (already_in[i] == 0) {
 	        /* if this is an external buffer, copy it */
 	        long offset = add_to_tmp_buffer(buf, v[i].iov_len);
 		char * data = (char *) buf->tmp_buffer + offset;
