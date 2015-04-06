@@ -29,8 +29,8 @@ extern int bswap_32(int l);
 
 struct _FFSBuffer {
     void *tmp_buffer;
-    int tmp_buffer_size;
-    int tmp_buffer_in_use_size;
+    long tmp_buffer_size;
+    long tmp_buffer_in_use_size;
 };
 
 typedef struct _internal_iovec {

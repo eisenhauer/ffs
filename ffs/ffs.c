@@ -19,7 +19,7 @@ quick_get_ulong(FMFieldPtr iofield, void *data);
 void
 quick_put_ulong(FMFieldPtr iofield, unsigned long value, void *data);
 
-static int add_to_tmp_buffer(FFSBuffer buf, int size);
+static long add_to_tmp_buffer(FFSBuffer buf, int size);
 static int
 final_variant_size_for_record(int input_record_len, IOConversionPtr conv);
 
@@ -52,7 +52,7 @@ void
 setup_header(FFSBuffer buf, FMFormat f, estate s) 
 {
     int header_size = f->server_ID.length;
-    int tmp_data;	/* offset for header */
+    long tmp_data;	/* offset for header */
     int align_pad;
 
     if (f->variant) {
@@ -114,7 +114,7 @@ int
 allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *tmp_data_loc)
 {
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
-    int tmp_data, msg_offset;
+    long tmp_data, msg_offset;
     switch (req_alignment) {
     case 1: case 2: case 4: case 8: case 16: break;
     default:
@@ -265,7 +265,7 @@ static FFSEncodeVector
 fixup_output_vector(FFSBuffer b, estate s)
 {
     int size = (s->iovcnt + 5) * sizeof(struct FFSEncodeVec);
-    int tmp_vec_offset = add_to_tmp_buffer(b, size);
+    long tmp_vec_offset = add_to_tmp_buffer(b, size);
     FFSEncodeVector ret;
     /* buffer will not be realloc'd after this */
     int i;
@@ -653,7 +653,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 
 extern FFSEncodeVector
 copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec) {
-    int vec_offset = (char *) vec - (char *)buf->tmp_buffer;
+    long vec_offset = (char *) vec - (char *)buf->tmp_buffer;
 
     if (((char*)vec < (char*)buf->tmp_buffer)
         || ((char*)vec >= (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
@@ -679,34 +679,44 @@ copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
      * vec and some of the buffers may be in the memory managed by the
      * FFSBuffer.  The goal here to is put *everything* into the FFSBuffer.
      */
+    int vec_count = 0;
+    while (vec[vec_count].iov_base != NULL) {
+      vec_count++;
+    }
     assert(((unsigned long)vec >= (unsigned long)buf->tmp_buffer) && 
 	   ((unsigned long)vec < (unsigned long)buf->tmp_buffer + buf->tmp_buffer_size));
-    while (vec[i].iov_base != NULL) {
-	if (((char*)vec[i].iov_base >= (char*)buf->tmp_buffer) &&
-	    ((char*)vec[i].iov_base < (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
-	    /* 
-	     * remap pointers into temp so that they're offsets (must do
-	     * this before we realloc the temp
-	     */ 
-	    vec[i].iov_base = (void*)((char *)vec[i].iov_base - (char *)buf->tmp_buffer + 1);
+    {
+        int already_in[vec_count];
+	while (vec[i].iov_base != NULL) {
+	    if (((char*)vec[i].iov_base >= (char*)buf->tmp_buffer) &&
+		((char*)vec[i].iov_base < (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
+	        /* 
+		 * remap pointers into temp so that they're offsets (must do
+		 * this before we realloc the temp
+		 */ 
+	        vec[i].iov_base = (void*)((char *)vec[i].iov_base - (char *)buf->tmp_buffer + 1);
+		already_in[i] = 1;
+	    } else {
+		already_in[i] = 0;
+	    }
+	    i++;
 	}
-	i++;
-    }
 
-    i = 0;
-    while (((FFSEncodeVector)((long)buf->tmp_buffer + vec_offset))[i].iov_base !=
-	   NULL) {
-	FFSEncodeVector v = (void*)((long) buf->tmp_buffer + vec_offset);
-	if ((unsigned long)v[i].iov_base > buf->tmp_buffer_size) {
-	    /* if this is an external buffer, copy it */
-	    int offset = add_to_tmp_buffer(buf, v[i].iov_len);
-	    char * data = (char *) buf->tmp_buffer + offset;
-	    /* add_to_tmp_buffer() might have remapped vector */
-	    v = (void*)((char *) buf->tmp_buffer + vec_offset);
-	    memcpy(data, v[i].iov_base, v[i].iov_len);
-	    v[i].iov_base = (void*)(long)(offset + 1);
+	i = 0;
+	while (((FFSEncodeVector)((long)buf->tmp_buffer + vec_offset))[i].iov_base !=
+	       NULL) {
+	    FFSEncodeVector v = (void*)((long) buf->tmp_buffer + vec_offset);
+	    if (already_in[i] = 0) {
+	        /* if this is an external buffer, copy it */
+	        long offset = add_to_tmp_buffer(buf, v[i].iov_len);
+		char * data = (char *) buf->tmp_buffer + offset;
+		/* add_to_tmp_buffer() might have remapped vector */
+		v = (void*)((char *) buf->tmp_buffer + vec_offset);
+		memcpy(data, v[i].iov_base, v[i].iov_len);
+		v[i].iov_base = (void*)(long)(offset + 1);
+	    }
+	    i++;
 	}
-	i++;
     }
     /* reallocation done now */
     vec = (void*)((long)buf->tmp_buffer + vec_offset);
@@ -1067,13 +1077,13 @@ conversion_action_ptr params;
     int possible_converted_variant_size;
     int orig_variant_size;
 
-    int dest_offset;
+    long dest_offset;
     void *dest_address;
-    int src_offset;
+    long src_offset;
     void *src_address;
-    int src_string_offset;
+    long src_string_offset;
     void *src_string_address;
-    int final_string_offset;
+    long final_string_offset;
     void *final_string_address;
 
     final_base_size = expand_size_to_align(ioformat->body->record_length + conv->base_size_delta);
@@ -1507,12 +1517,12 @@ int size;
 }
 
 static
-int
+long
 add_to_tmp_buffer(buf, size)
 FFSBuffer buf;
 int size;
 {
-    int old_size = buf->tmp_buffer_in_use_size;
+    long old_size = buf->tmp_buffer_in_use_size;
     size += old_size;
 
     if (buf->tmp_buffer_size < 0) {
