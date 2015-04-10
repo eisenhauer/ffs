@@ -1098,8 +1098,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			lvar = dill_getreg(s, DILL_P);
 			dill_addpi(s, lvar, cg_get_static_block(s, descr), (long)decl->node.declaration.cg_address);  /* op_i_addpi */
 		    } else {
-			lvar = 
+			dill_reg block =
 			    dill_getvblock(s, ctype->node.array_type_decl.cg_static_size * ctype->node.array_type_decl.cg_element_size);
+			lvar = dill_getreg(s, DILL_P);
+			dill_virtual_lea(s, lvar, block);	/* op_i_leai */
 		    }
 		} else if (!is_block_type) {
 		    if (decl->node.declaration.static_var) {
@@ -1115,7 +1117,9 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		    } else if ((decl->node.declaration.addr_taken) || 
 			       (ctype && (ctype->node_type == cod_struct_type_decl))) {
 		        /* make sure it's in memory if its address is taken */
-		        lvar = dill_getvblock(s, 8);
+			dill_reg block = dill_getvblock(s, 8);
+			lvar = dill_getreg(s, DILL_P);
+			dill_virtual_lea(s, lvar, block);	/* op_i_leai */
 		    } else {
 		        lvar = dill_getreg(s, decl->node.declaration.cg_type);
 		    }
@@ -1138,8 +1142,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 			    struct_size += (dill_type_align(s, DILL_D) - (struct_size % dill_type_align(s, DILL_D))) % dill_type_align(s, DILL_D);
 			    struct_type->node.struct_type_decl.cg_size = struct_size;
 			}
-			lvar = 
+			dill_reg block =
 			    dill_getvblock(s, struct_type->node.struct_type_decl.cg_size);
+			lvar = dill_getreg(s, DILL_P);
+			dill_virtual_lea(s, lvar, block);	/* op_i_leai */
 		    }
 		}
 	    }
@@ -1155,19 +1161,15 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		/* this is really an array or structure being initialized */
 		char * init_value = generate_block_init_value(s, decl);
 		/* leak init_value */
-		dill_reg addr_reg = dill_getreg(s, DILL_P);
-		dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
-		(void) dill_scallv(s, (void*)memcpy, "memcpy", "%p%P%I", addr_reg, init_value, cg_get_size(s, decl));
+		(void) dill_scallv(s, (void*)memcpy, "memcpy", "%p%P%I", lvar, init_value, cg_get_size(s, decl));
 	    } else {
 		right = cg_expr(s, decl->node.declaration.init_value, 0, descr);
 		assert(right.is_addr == 0);
 		right.reg = coerce_type(s, right.reg, assign_type, 
 					cod_sm_get_type(decl->node.declaration.init_value));
 		if (decl->node.declaration.addr_taken) {
-		    dill_reg addr_reg = dill_getreg(s, DILL_P);
-		    dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
 		    init_operand(&left);
-		    left.reg = addr_reg;
+		    left.reg = lvar;
 		    left.is_addr = 1;
 		    left.in_kernel = 0; /* we have no access to kernel structures */
 		    left.offset = 0;
@@ -1185,12 +1187,10 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 	    if (decl->node.declaration.static_var) {
 		memset(var_base, 0, cg_get_size(s, decl));
 	    } else {
-		dill_reg addr_reg = dill_getreg(s, DILL_P);
-		dill_virtual_lea(s, addr_reg, lvar);	/* op_i_leai */
 #ifndef LINUX_KERNEL_MODULE
-		(void) dill_scallv(s, (void*)memset, "memset", "%p%I%I", addr_reg, 0, cg_get_size(s, decl));
+		(void) dill_scallv(s, (void*)memset, "memset", "%p%I%I", lvar, 0, cg_get_size(s, decl));
 #else 
-		(void) dill_scallv(s, (void*)kmemset, "kmemset", "%p%I%I", addr_reg, 0, cg_get_size(s, decl));
+		(void) dill_scallv(s, (void*)kmemset, "kmemset", "%p%I%I", lvar, 0, cg_get_size(s, decl));
 #endif
 	    }
 	}
@@ -1357,7 +1357,6 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	int left_cg_type = cod_sm_get_type(expr->node.operator.left);
 	left_op = cg_expr(s, expr->node.operator.left, 0, descr);
 	assert(left_op.is_addr == 0);
-
 	switch(left_cg_type) {
 	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
 	    /* do integer promotion */
@@ -1381,7 +1380,6 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 
 	right_op = cg_expr(s, expr->node.operator.right, 0, descr);
 	assert(right_op.is_addr == 0);
-
 	switch(right_cg_type) {
 	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
 	    /* do integer promotion */
@@ -2644,19 +2642,15 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		    oprnd.is_addr = 0;
 		    oprnd.offset = 0;
 		} else {
-		    dill_reg addr_reg = dill_getreg(s, DILL_P);
-		    dill_virtual_lea(s, addr_reg, expr->node.declaration.cg_oprnd);	/* op_i_leai */
-		    oprnd.reg = addr_reg;
+		    oprnd.reg = expr->node.declaration.cg_oprnd;
 		    oprnd.is_addr = 1;
 		    oprnd.offset = 0;
 		}
 	    }
 	} else {
 	    if (expr->node.declaration.addr_taken) {
-		dill_reg addr_reg = dill_getreg(s, DILL_P);
 		dill_reg ret = dill_getreg(s, expr->node.declaration.cg_type);
-		dill_virtual_lea(s, addr_reg, expr->node.declaration.cg_oprnd);	/* op_i_leai */
-		oprnd.reg = addr_reg;
+		oprnd.reg = expr->node.declaration.cg_oprnd;
 		oprnd.is_addr = 1;
 		oprnd.offset = 0;
 		oprnd.enc.string_base = oprnd.reg;
@@ -2853,10 +2847,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 	    if ((assign_type == DILL_B) || is_array(left_val)) {
 		if (!right.is_addr) {
-		    dill_reg addr_reg = dill_getreg(s, DILL_P);
-		    dill_virtual_lea(s, addr_reg, right.reg);	/* op_i_leai */
 		    right.is_addr = 1;
-		    right.reg = addr_reg;
 		}
 		(void) dill_scallv(s, (void*)memcpy, "memcpy", "%p%p%I", left.reg, right.reg, cg_get_size(s, left_val));
 	    } else {
@@ -3141,6 +3132,23 @@ coerce_type(dill_stream s, dill_reg obj, int target_type, int obj_type)
     case DILL_S:
     case DILL_US:
 	switch (obj_type) {
+	case DILL_C:
+	    if (target_type == DILL_S) {
+		dill_cvc2i(s, ret, obj);	/* op_i_cvi2s */
+		dill_cvi2s(s, ret, ret);
+	    } else {
+		dill_cvc2i(s, ret, obj);	/* op_i_cvi2us */
+		dill_cvi2us(s, ret, ret);
+	    }
+	    break;
+	case DILL_S:
+	    if (target_type == DILL_S) {
+		dill_movs(s, ret, obj);	/* op_i_cvi2s */
+	    } else {
+		dill_cvs2i(s, ret, obj);	/* op_i_cvi2us */
+		dill_cvi2us(s, ret, ret);
+	    }
+	    break;
 	case DILL_I:
 	    if (target_type == DILL_S) {
 		dill_cvi2s(s, ret, obj);	/* op_i_cvi2s */
