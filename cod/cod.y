@@ -2495,6 +2495,7 @@ cod_parse_context context;
 		continue;
 	    }
 	    new_decl->node.declaration.cg_address = old_decl->node.declaration.cg_address;
+	    new_decl->node.declaration.sm_complex_type = NULL;
 	    break;
 	case cod_array_type_decl:
 	    new_decl->node.array_type_decl.element_ref->node.declaration.cg_address = 
