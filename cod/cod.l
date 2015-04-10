@@ -290,6 +290,23 @@ return			{RETURN(RETURN_TOKEN);}
 				RETURN(integer_constant);
 			}
 
+{HP}{H}+{P}{FS}?  	{
+				yylval.info.string = create_string_from_yytext();
+				RETURN(floating_constant);
+			}
+{HP}{H}*"."{H}+{P}{FS}? {
+				yylval.info.string = create_string_from_yytext();
+				RETURN(floating_constant);
+			}
+{HP}{H}+"."{P}{FS}? 	{
+				yylval.info.string = create_string_from_yytext();
+				RETURN(floating_constant);
+			}
+{D}+{E}{FS}?  		{
+				yylval.info.string = create_string_from_yytext();
+				RETURN(floating_constant);
+			}
+
 {D}*"."{D}+({E})?{FS}?  {
 				yylval.info.string = create_string_from_yytext();
 				RETURN(floating_constant);
