@@ -3559,8 +3559,8 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 		    if(lcplx && rcplx) {
 
 			/* If both are pointers... */
-			if(lcplx->node_type == cod_reference_type_decl &&
-			   rcplx->node_type == cod_reference_type_decl) {
+			if(((lcplx->node_type == cod_reference_type_decl) || (lcplx->node_type == cod_array_type_decl)) &&
+			   ((rcplx->node_type == cod_reference_type_decl) || (rcplx->node_type == cod_array_type_decl))) {
 			    /* Check if the argument pointers are compatible */
 			    if(!are_compatible_ptrs(lcplx, rcplx)) {
 				cod_src_error(context, expr,
@@ -4203,19 +4203,33 @@ cod_sm_get_type(sm_ref node)
 
 extern int
 are_compatible_ptrs(sm_ref left, sm_ref right) {
-    sm_ref lTyp, rTyp;
+    sm_ref lTyp = NULL, rTyp = NULL;
+    int lcgTyp = -1, rcgTyp = -1;
 
     /* Sanity check */
-    if(left->node_type != cod_reference_type_decl ||
-       right->node_type != cod_reference_type_decl) return 0;
-    
-    lTyp = left->node.reference_type_decl.sm_complex_referenced_type;
-    rTyp = right->node.reference_type_decl.sm_complex_referenced_type;
+    if (left->node_type == cod_reference_type_decl) {
+	lTyp = left->node.reference_type_decl.sm_complex_referenced_type;
+	lcgTyp = left->node.reference_type_decl.cg_referenced_type;
+    } else if (left->node_type == cod_array_type_decl) {
+	lTyp = left->node.array_type_decl.sm_complex_element_type;
+	lcgTyp = left->node.array_type_decl.cg_element_type;
+    } else {
+	return 0;
+    }
+    if (right->node_type == cod_reference_type_decl) {
+	rTyp = right->node.reference_type_decl.sm_complex_referenced_type;
+	rcgTyp = right->node.reference_type_decl.cg_referenced_type;
+    } else if (right->node_type == cod_array_type_decl) {
+	rTyp = right->node.array_type_decl.sm_complex_element_type;
+	rcgTyp = right->node.array_type_decl.cg_element_type;
+    } else {
+	return 0;
+    }
 
     if(lTyp && rTyp) {
 	/* Two complex referenced types */
-	if(lTyp->node_type == cod_reference_type_decl &&
-	   rTyp->node_type == cod_reference_type_decl) {
+	if(((lTyp->node_type == cod_reference_type_decl) || (lTyp->node_type == cod_array_type_decl)) &&
+	   ((rTyp->node_type == cod_reference_type_decl) || (rTyp->node_type == cod_array_type_decl))) {
 	    /* Recurse if both are pointers */
 	    return are_compatible_ptrs(lTyp, rTyp);
 	}
@@ -4224,8 +4238,7 @@ are_compatible_ptrs(sm_ref left, sm_ref right) {
 
     if(!lTyp && !rTyp) {
 	/* Two integral referenced types */
-	return (left->node.reference_type_decl.cg_referenced_type ==
-		right->node.reference_type_decl.cg_referenced_type)?1:0;
+	return (rcgTyp == lcgTyp)?1:0;
     }
 
     /* Mix of a pointer to a complex type and a pointer to an integral type */
@@ -4709,16 +4722,20 @@ assignment_types_match(cod_parse_context context, sm_ref left, sm_ref right, int
 	 (left_smt->node_type != cod_array_type_decl) &&
 	 (left_smt->node_type != cod_struct_type_decl) &&
 	 (left_smt->node_type != cod_enum_type_decl))) {
-	cod_src_error(context, left, "Only pointer, array, struct or enum complex types allowed as LHS in assignment");
-	return 0;
+	if ((left_cgt == DILL_P) || (left_cgt == DILL_B)) {
+	    cod_src_error(context, left, "Only pointer, array, struct or enum complex types allowed as LHS in assignment");
+	    return 0;
+	}
     }
     if ((right_smt != NULL) && 
 	((right_smt->node_type != cod_reference_type_decl) &&
 	 (right_smt->node_type != cod_array_type_decl) &&
 	 (right_smt->node_type != cod_struct_type_decl) &&
 	 (right_smt->node_type != cod_enum_type_decl))) {
-	cod_src_error(context, right, "Only pointer, array, struct or enum complex types allowed as RHS in assignment");
-	return 0;
+	if ((right_cgt == DILL_P) || (right_cgt == DILL_B)) {
+	    cod_src_error(context, right, "Only pointer, array, struct or enum complex types allowed as RHS in assignment");
+	    return 0;
+	}
     }
     if (left_smt && (left_smt->node_type == cod_reference_type_decl) &&
 	(right_smt == NULL)) {
@@ -6550,7 +6567,7 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	    sm_ref typ;
 	    long size;
 	    assert(cast->node_type == cod_cast);
-	    typ = reduce_type_list(context, cast->node.cast.type_spec, &cg_type, context->scope, NULL, NULL);
+	    typ = reduce_type_list(context, cast->node.cast.type_spec, &cg_type, context? context->scope:NULL, NULL, NULL);
 	    static dill_stream s = NULL;
 	    char str_val[40];
 	    extern int cg_get_size(dill_stream s, sm_ref node);
