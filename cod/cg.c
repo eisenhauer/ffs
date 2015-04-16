@@ -1016,6 +1016,9 @@ evaluate_simple_init_and_assign(dill_stream s, sm_ref init, int cg_type, void *v
 	case DILL_UL:
 	    *(unsigned long *)(var_base) = l;
 	    break;
+	case DILL_P:
+	    *(void **)(var_base) = (void*)l;
+	    break;
 	case DILL_F:
 	    *(float*)(var_base) = (float)l;
 	    break;
@@ -1796,6 +1799,8 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 		} else {
 		    assert(0);
 		}
+	    } else if ((ptr->node_type == cod_operator) && (ptr->node.operator.op == op_address)) {
+		size = cg_get_size(s, ptr->node.operator.right);
 	    } else {
 		if (cod_expr_is_string(ptr)) {
 		    size = 1;
@@ -1934,6 +1939,8 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 		    } else {
 			size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
 		    }
+		} else if ((ptr->node_type == cod_operator) && (ptr->node.operator.op == op_address)) {
+		    size = cg_get_size(s, ptr->node.operator.right);
 		} else {
 		    if (cod_expr_is_string(ptr)) {
 			size = 1;
