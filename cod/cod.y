@@ -3036,6 +3036,9 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
 	    case EXTERN_TOKEN:
 		spec_count--;
 		break;
+	    case CONST:
+		spec_count--;
+		break;
 	    default:
 		printf("Unknown type\n");
 	    }
@@ -3915,7 +3918,17 @@ static int semanticize_expr(cod_parse_context context, sm_ref expr,
 			    (ct->node_type != cod_reference_type_decl) ||
 			    ((strcmp(ct->node.reference_type_decl.name, "cod_type_spec") != 0) &&
 			     (strcmp(ct->node.reference_type_decl.name, "cod_closure_context") != 0))) {
-			    mismatch++;
+			    if ((arg->node_type != cod_constant) || 
+				(arg->node.constant.token != integer_constant)) {
+				mismatch++;
+			    } else {
+				int tmp = -1;
+				sscanf(arg->node.constant.const_val, "%d", &tmp);
+				/* zero is an acceptable pointer */
+				if (tmp != 0) {
+				    mismatch++;
+				}
+			    }
 			}
 		    }
 		    break;
@@ -4428,6 +4441,9 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		spec_count--;
 		break;
 	    case EXTERN_TOKEN:
+		spec_count--;
+		break;
+	    case CONST:
 		spec_count--;
 		break;
 	    default:
@@ -5097,6 +5113,8 @@ check_last_statement_return(cod_parse_context context, sm_ref stmt)
 	return 1;
     case cod_expression_statement:
 	return check_last_statement_return(context, stmt->node.expression_statement.expression);
+    case cod_label_statement:
+	return check_last_statement_return(context, stmt->node.label_statement.statement);
     case cod_subroutine_call: {
 	sm_ref func_ref = stmt->node.subroutine_call.sm_func_ref;
 	char *id;
