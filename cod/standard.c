@@ -535,6 +535,9 @@ const short SHRT_MIN = (-32768);\n\
 const unsigned int	UINT_MAX = 0xffffffff;\n\
 const int INT_MAX = 2147483647;\n\
 const int INT_MIN = (-2147483647-1);\n\
+const long LONG_MAX = 0x7fffffffffffffffL;\n\
+const long LONG_MIN = (-0x7fffffffffffffffL-1);\n\
+const unsigned long ULONG_MAX = 0xffffffffffffffffUL;\n\
 ";
 
 
