@@ -921,52 +921,106 @@ evaluate_simple_init_and_assign(dill_stream s, sm_ref init, int cg_type, void *v
 	    assert(FALSE);
 	}
     } else {
-	long i;
+	long l;
 	char *val = const_val->node.constant.const_val;
-	if (val[0] == '0') {
-	    /* hex or octal */
-	    if (val[1] == 'x') {
-		/* hex */
-		if (sscanf(val+2, "%lx", &i) != 1) 
-		    printf("sscanf failed\n");
+	if (const_val->node.constant.token == character_constant) {
+	    if (*val == 'L') val++ ;
+	    if (*val == 'u') val++ ;
+	    if (*val == 'U') val++ ;
+	    val++ ; /* skip ' */
+	    if (*val != '\\') {
+		l = *val;
 	    } else {
-		if (sscanf(val, "%lo", &i) != 1) 
-		    printf("sscanf failed\n");
+		val++;
+		switch(*val) {
+		case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+		    if (sscanf(val, "%lo", &l) != 1) 
+			printf("octal char sscanf failed %s\n", val);
+		    break;
+		case 'x':
+		    if (sscanf(val+1, "%lx", &l) != 1) 
+			printf("hex char sscanf failed, %s\n", val);
+		    break;
+		case '\\':
+		    l = 0134;
+		    break;
+		case '\'':
+		    l = 047;
+		    break;
+		case '"':
+		    l = 042;
+		    break;
+		case '?':
+		    l = 077;
+		    break;
+		case 'a':
+		    l = 07;
+		    break;
+		case 'b':
+		    l = 010;
+		    break;
+		case 'f':
+		    l = 06;
+		    break;
+		case 'n':
+		    l = 012;
+		    break;
+		case 'r':
+		    l = 015;
+		    break;
+		case 't':
+		    l = 011;
+		    break;
+		default:
+		    printf("Bad character constant %s\n", val);
+		}
 	    }
 	} else {
-	    if (sscanf(val, "%ld", &i) != 1) 
-		printf("sscanf failed\n");
+	    if (val[0] == '0') {
+		/* hex or octal */
+		if (val[1] == 'x') {
+		    /* hex */
+		    if (sscanf(val+2, "%lx", &l) != 1) 
+			printf("sscanf failed\n");
+		} else {
+		    if (sscanf(val, "%lo", &l) != 1) 
+			printf("sscanf failed\n");
+		}
+	    } else {
+		if (sscanf(val, "%ld", &l) != 1) 
+		    printf("sscanf failed\n");
+	    }
 	}
 	switch (cg_type) {
 	case DILL_C:
-	    *(char *)(var_base) = (char)i;
+	    *(char *)(var_base) = (char)l;
 	    break;
 	case DILL_UC:
-	    *(unsigned char *)(var_base) = (unsigned char)i;
+	    *(unsigned char *)(var_base) = (unsigned char)l;
 	    break;
 	case DILL_S:
-	    *(short *)(var_base) = (short)i;
+	    *(short *)(var_base) = (short)l;
 	    break;
 	case DILL_US:
-	    *(unsigned short *)(var_base) = (unsigned short)i;
+	    *(unsigned short *)(var_base) = (unsigned short)l;
 	    break;
 	case DILL_I:
-	    *(int *)(var_base) = i;
+	    *(int *)(var_base) = l;
 	    break;
 	case DILL_U:
-	    *(unsigned int *)(var_base) = i;
+	    *(unsigned int *)(var_base) = l;
 	    break;
 	case DILL_L:
-	    *(long *)(var_base) = i;
+	    *(long *)(var_base) = l;
 	    break;
 	case DILL_UL:
-	    *(unsigned long *)(var_base) = i;
+	    *(unsigned long *)(var_base) = l;
 	    break;
 	case DILL_F:
-	    *(float*)(var_base) = (float)i;
+	    *(float*)(var_base) = (float)l;
 	    break;
 	case DILL_D:
-	    *(double*)(var_base) = (double)i;
+	    *(double*)(var_base) = (double)l;
 	    break;
 	default:
 	    assert(FALSE);
