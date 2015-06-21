@@ -6319,6 +6319,9 @@ cod_free_parse_context(cod_parse_context parse_context)
     if (parse_context->decls) {
 	cod_rfree_list(parse_context->decls, NULL);
     }
+    if (parse_context->return_type_list) {
+	cod_rfree_list(parse_context->return_type_list, NULL);
+    }
     if (parse_context->standard_decls) {
 	cod_rfree_list(parse_context->standard_decls, NULL);
     }
