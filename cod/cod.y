@@ -6214,7 +6214,7 @@ cod_subroutine_declaration(const char *decl, cod_parse_context context)
     /* handle return type */
     complex_type = reduce_type_list(context, type_list, &cg_type, context->scope, NULL, &freeable_complex_type);
     if (freeable_complex_type) cod_rfree(freeable_complex_type);
-    context->return_type_list = type_list;
+ /* context->return_type_list = type_list; - Free'd as part of parse, not here*/
     if (complex_type != NULL) {
 	cg_type = DILL_P;
     }
