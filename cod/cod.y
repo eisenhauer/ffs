@@ -2047,6 +2047,21 @@ semanticize_gotos(cod_parse_context context, sm_ref stmt, sm_list function_conte
 static int semanticize_decl(cod_parse_context context, sm_ref decl, 
 			    scope_ptr scope);
 
+static int include_prefix(char *code)
+{
+    char *tmp = code;
+    int not_done = 1;
+    while (not_done) {
+	while(isspace(*tmp)) tmp++;
+	if (*tmp == '#') {
+	    /* skip this line */
+	    while(*tmp != '\n') tmp++;
+	} else if (*tmp == '{') {
+	    break;
+	}
+    }
+    return tmp - code;
+}
 cod_code
 cod_code_gen(code, context)
 char *code;
@@ -2056,8 +2071,17 @@ cod_parse_context context;
     cod_code ret_code;
     unsigned int offset;
     void *func;
+    int bracket = 0;
 
     if (code != NULL) {
+	if ((bracket = include_prefix(code))) {
+	    char *prefix = malloc(bracket);
+	    strncpy(prefix, code, bracket);
+	    prefix[bracket] = 0;
+	    cod_parse_for_globals(prefix, context);
+	    free(prefix);
+	    code += bracket;
+	}
 	setup_for_string_parse(code, context->defined_types, context->enumerated_constants);
 	cod_code_string = code;
     }
@@ -4970,9 +4994,23 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	if (decl->node.declaration.static_var) {
 	    if (decl->node.declaration.init_value != NULL) {
 		sm_ref const_val = decl->node.declaration.init_value;
-		if (const_val->node_type != cod_constant) {
+		if (const_val->node_type == cod_initializer_list) {
+		    sm_list items = const_val->node.initializer_list.initializers;
+		    /* init value is a list of initializers, count */
+		    while (items) {
+			sm_ref sub_init = items->node->node.initializer.initializer;
+			if (!is_constant_expr(sub_init)) {
+			    cod_src_error(context, sub_init, 
+					  "Static initializer not constant. Variable \"%s\"",
+					  decl->node.declaration.id);
+			    return 0;
+			}
+			items = items->next;
+		    }
+		    
+		} else if (!is_constant_expr(const_val)) {
 		    cod_src_error(context, const_val, 
-				  "Only simple constants allowed as static initializers.  Variable \"%s\"",
+				  "Static initializer not constant. Variable \"%s\"",
 			decl->node.declaration.id);
 		    return 0;
 		}
