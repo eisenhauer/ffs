@@ -56,7 +56,7 @@ urn input * (output.j + input.k + input.m);
 ## Ecode Error:  Duplicate Symbol "j" at line 3, char 9
     int j;
         ^
-## Ecode Error:  Only simple constants allowed as static initializers.  Variable "j" at line 6, char 26
+## Ecode Error:  Static initializer not constant. Variable "j" at line 6, char 26
      static int j = input.i;
                          ^
 ## Ecode Error:  Indexed element must be array, string or reference type. at line 2, char 21
