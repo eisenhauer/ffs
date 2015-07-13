@@ -1,6 +1,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
-#include "io.h"
+#include "ffs.h"
 
 typedef struct _dyn_rec {
     char	*string;
@@ -18,25 +18,21 @@ IOField dyn_field_list[] = {
     { NULL, NULL, 0, 0}
 };
 
-void main()
+int main(int argc, char **argv)
 {
-    IOContext src_context = create_IOcontext();
-    IOFormat dyn_rec_ioformat;
-    dyn_rec rec;
-    int buf_size, fd, i;
-    char *encoded_buffer;
-    dyn_rec_ioformat = register_IOcontext_format("dynamic format",
-						  dyn_field_list,
-						  src_context);
-    rec.string = "Hi Mom!";
-    rec.icount = 5;
-    rec.double_array = (double*) malloc(sizeof(double) * 5);
-    for (i=0; i<5; i++) 
-	rec.double_array[i] = i*2.717;
-    encoded_buffer = encode_IOcontext_buffer(src_context, 
-			dyn_rec_ioformat, &rec, &buf_size);
+    FMContext fmc = create_FMContext();
+    FFSBuffer buf = create_FFSBuffer();
+    FMFormat rec_ioformat;
+    first_rec rec1;
+    char *output;
+    int fd, output_size;
 
-    /* "transmit" encoded record over a file */
+    rec_ioformat = register_simple_format(fmc, "first format", field_list, sizeof(first_rec));
+    output = FFSencode(buf, rec_ioformat, &rec1, &output_size);
+
+    /* write the encoded data */
     fd = open("enc_file", O_WRONLY|O_CREAT|O_TRUNC, 0777);
-    write(fd, encoded_buffer, buf_size);
+    write(fd, output, output_size);
+    close(fd);
 }
+
