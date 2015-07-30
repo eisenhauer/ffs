@@ -4909,7 +4909,7 @@ possibly_set_sizes_to_match(cod_parse_context context, sm_ref decl, sm_ref init_
 	sm_ref size_expr = cod_new_constant();
 	char *str = malloc(20); /* plenty */
 	size_expr->node.constant.token = integer_constant;
-	sprintf(str, "%ld\n", strlen(init_value->node.constant.const_val) + 1);
+	sprintf(str, "%ld\n", (long) strlen(init_value->node.constant.const_val) + 1);
 	size_expr->node.constant.const_val = str;
 	array_type->node.array_type_decl.size_expr = size_expr;
 	return 1;
