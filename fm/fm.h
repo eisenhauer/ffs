@@ -173,6 +173,9 @@ copy_field_list(FMFieldList list);
 extern FMStructDescList
 FMcopy_struct_list(FMStructDescList list);
 
+extern void
+FMfree_struct_list(FMStructDescList list);
+
 extern FMStructDescList
 FMlocalize_formats(FMStructDescList list);
 

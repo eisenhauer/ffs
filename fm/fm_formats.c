@@ -2268,6 +2268,23 @@ FMFieldList list;
 
 extern
 void
+FMfree_struct_list(list)
+FMStructDescList list;
+{
+    int format_count = 0;
+    int format;
+
+    while(list[format_count].format_name != NULL) format_count++;
+
+    for (format = 0; format < format_count; format++) {
+	free(list[format].format_name);
+	free_field_list(list[format].field_list);
+    }
+    free(list);
+}
+
+extern
+void
 free_FMfield_list(FMFieldList list)
 {
     free_field_list(list);
