@@ -2959,7 +2959,14 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	if (is_var_array(field) && (need_assignable == 0)) {
 	    /* variable array */
 	    dill_reg ret = dill_getreg(s, DILL_P);
-	    gen_load(s, ret, base, DILL_P);
+	    if (base.enc.is_encoded) {
+		gen_encoded_field_load(s, ret, base, DILL_P, expr);
+	    } else {
+		gen_load(s, ret, base, DILL_P);
+	    }
+	    if (base.enc.is_encoded) {
+		dill_addp(s, ret, ret, base.enc.string_base);
+	    }
 	    oprnd.reg = ret;
 	    oprnd.is_addr = 1;
 	    oprnd.offset = 0;
@@ -3861,7 +3868,10 @@ static void cg_return_statement(dill_stream s, sm_ref stmt, cod_code descr)
     }
     expr_cg_type = cod_sm_get_type(stmt->node.return_statement.expression);
     ret_val = cg_expr(s, stmt->node.return_statement.expression, 0, descr);
-    assert(ret_val.is_addr == 0);
+    if (ret_val.is_addr) {
+	/* returning a reference */
+	ret_val.is_addr = 0;
+    }
 
     ret_val.reg = coerce_type(s, ret_val.reg, func_cg_type, expr_cg_type);
 #ifdef HAVE_DILL_H
