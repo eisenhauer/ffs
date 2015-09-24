@@ -37,6 +37,7 @@ typedef struct encode_state {
     int iovcnt;
     internal_iovec *iovec;
     int malloc_vec_size;
+    int no_leaf_copy;
 
     int addr_list_is_stack;
     int addr_list_cnt;
@@ -158,6 +159,24 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
     return msg_offset;
 }
 
+/*
+ *  same as copy_data_to_tmp, except doesn't actually copy the data.  This is used for FFS_NO_LEAF_COPY.
+ */
+int
+reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+{
+    int tmp_data;
+    int msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
+    if (length != 0) {
+	s->iovec[s->iovcnt].iov_len = length;
+	s->iovec[s->iovcnt].iov_offset = tmp_data;
+	s->iovec[s->iovcnt].iov_base = NULL;
+	s->iovcnt++;
+    }
+    if (tmp_data_loc) *tmp_data_loc = tmp_data;
+    return msg_offset;
+}
+
 int
 add_data_iovec(estate s, FFSBuffer buf, void *data, int length, int req_alignment)
 {
@@ -194,13 +213,14 @@ init_encode_state(estate state)
     state->iovcnt = 0;
     state->malloc_vec_size = 0;
     state->addr_list_cnt = 0;
+    state->no_leaf_copy = 0;
 }
 
 static int
 handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset);
 
-char *
-FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
+static char *
+FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size, int flags)
 {
     internal_iovec stack_iov_array[STACK_ARRAY_SIZE];
     addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
@@ -217,6 +237,9 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
     state.copy_all = 1;
     state.saved_offset_difference = 0;
     state.orig_data = data;
+    if ((flags & FFS_NO_LEAF_COPY) == FFS_NO_LEAF_COPY) {
+	state.no_leaf_copy = 1;
+    }
 
     make_tmp_buffer(b, 0);
 
@@ -259,6 +282,18 @@ FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
     free_addr_list(&state);
     *buf_size = state.output_len;
     return b->tmp_buffer;
+}
+
+char *
+FFSencode(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
+{
+    return FFSencode_internal(b, fmformat, data, buf_size, /*flags*/ 0);
+}
+
+char *
+FFSencode_no_leaf_copy(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size)
+{
+    return FFSencode_internal(b, fmformat, data, buf_size, /*flags*/ FFS_NO_LEAF_COPY);
 }
 
 static FFSEncodeVector
@@ -543,7 +578,12 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		/* leave data where it sits */
 		new_offset = add_data_iovec(s, buf, ptr_value, size, 8);
 	    } else {
-		new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8, &tmp_data_loc);
+		if (s->no_leaf_copy) {
+		    /* this path only used for FFSencode_no_leaf_copy() */
+		    new_offset = reserve_space_for_data_in_tmp(s, buf, ptr_value, size, 8, &tmp_data_loc);
+		} else {
+		    new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8, &tmp_data_loc);
+		}
 		if (new_offset == -1) return 0;
 	    }
 	} else {

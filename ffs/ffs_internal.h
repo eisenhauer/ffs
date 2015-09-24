@@ -217,6 +217,6 @@ FFSheader_size(FFSTypeHandle ioformat);
 #endif
 
 #define MAX_UNSIGNED_TYPE unsigned MAX_INTEGER_TYPE
-
+#define FFS_NO_LEAF_COPY 0x1
 
 #endif
