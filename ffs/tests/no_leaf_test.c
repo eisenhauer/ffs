@@ -170,6 +170,10 @@ char **argv;
     free_FFSBuffer(buf);
     free(encode_buffer);
     free_FMcontext(fmcontext);
+    free_FFSContext(FFScontext);
+    cod_code_free(gen_code1);
+    cod_code_free(gen_code2);
+    cod_free_parse_context(cod_context);
     
     return ret;
 }
