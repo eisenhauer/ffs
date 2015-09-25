@@ -4634,6 +4634,10 @@ reduce_type_list(cod_parse_context context, sm_list type_list, int *cg_type,
 		    complex_return_type;
 		typ->node.reference_type_decl.kernel_ref = 0;
 		complex_return_type = typ;
+		if (*freeable_type) {
+		    cod_rfree(*freeable_type);
+		    *freeable_type = NULL;
+		}
 		*freeable_type = typ;
 	    }
 	    assert((complex_return_type != NULL) || (*cg_type != DILL_ERR));
@@ -5781,6 +5785,9 @@ int *must_free_p;
 	ret->node.array_type_decl.cg_element_type = DILL_B;
 	ret->node.array_type_decl.sm_complex_element_type = subtype;
 	if (must_free_flag) {
+	    if (ret->node.array_type_decl.freeable_complex_element_type) {
+	        cod_rfree(ret->node.array_type_decl.freeable_complex_element_type);
+	    }
 	    ret->node.array_type_decl.freeable_complex_element_type = subtype;
 	}
 	if (subtype == NULL) {
@@ -5848,6 +5855,9 @@ int *must_free_p;
 	ret->node.reference_type_decl.cg_referenced_type = DILL_ERR;
 	ret->node.reference_type_decl.sm_complex_referenced_type = subtype;
 	if (must_free_flag) {
+	    if (ret->node.array_type_decl.freeable_complex_element_type) {
+	        cod_rfree(ret->node.array_type_decl.freeable_complex_element_type);
+	    }
 	    ret->node.reference_type_decl.freeable_complex_referenced_type = subtype;
 	}
 	ret->node.reference_type_decl.cg_referenced_size = -1;
@@ -5887,6 +5897,9 @@ scope_ptr scope;
     sm_ref complex_type = build_subtype_nodes(context, decl, f, desc, err, scope, &must_free_flag);
     f->sm_complex_type = complex_type;
     if (must_free_flag) {
+        if (f->freeable_complex_type) {
+	    cod_rfree(f->freeable_complex_type);
+	}
 	f->freeable_complex_type = complex_type;
     }
 }
