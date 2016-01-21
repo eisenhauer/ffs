@@ -1700,7 +1700,16 @@ int format_count;
 		if (super_format->subformats[i] == sorted[j]) found++;
 	    }
 	    if (!found) {
-		free_FMformat(super_format->subformats[i]);
+		/* printf("Didn't find this format %p:\n", super_format->subformats[i]); */
+		/*     print_format_ID(super_format->subformats[i]); */
+		/* dump_FMFormat(super_format->subformats[i]); */
+		/* printf("======= Choices were :\n"); */
+		/* for(j=0; j < sorted_count; j++) { */
+		/*     printf("Choice %d (%p):\n", j, sorted[j]); */
+		/*     print_format_ID(sorted[j]); */
+		/*     dump_FMFormat(sorted[j]); */
+		/* } */
+//		free_FMformat(super_format->subformats[i]);
 	    }
 	}
     }
