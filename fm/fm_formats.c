@@ -1742,7 +1742,7 @@ FMFormat
 register_data_format(FMContext context, FMStructDescList struct_list)
 {
     int i, field;
-    int struct_count = 0;
+    int struct_count = 0, new_struct_count;
     FMFormat *formats, ret;
     FMStructDescList master_struct_list;
 
@@ -1806,7 +1806,11 @@ register_data_format(FMContext context, FMStructDescList struct_list)
     formats[0]->subformats = malloc(sizeof(FMFormat) * struct_count);
     memcpy(formats[0]->subformats, &formats[1], sizeof(FMFormat) * struct_count);
     formats[0]->subformats[struct_count-1] = NULL;
-    struct_count = topo_order_subformats(formats[0], struct_count-1);
+    new_struct_count = topo_order_subformats(formats[0], struct_count-1);
+    for (i=new_struct_count; i< struct_count; i++) {
+        free_FMformat(formats[i]);
+    }
+    struct_count = new_struct_count;
     formats[0]->subformats[struct_count-1] = NULL;
     for (i=struct_count-2; i>=0; i--) {
 	set_alignment(formats[0]->subformats[i]);
