@@ -165,6 +165,7 @@ main(int argc, char **argv)
 
 	    result = func(ec);
 	    assert(result == 20);
+	    free(state);
 	    cod_code_free(gen_code);
 	    cod_code_free(gen_code2);
 	    cod_exec_context_free(ec);
