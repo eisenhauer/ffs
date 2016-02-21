@@ -2075,10 +2075,14 @@ cod_parse_context context;
 
     if (code != NULL) {
 	if ((bracket = include_prefix(code))) {
-	    char *prefix = malloc(bracket);
+	    char *prefix = malloc(bracket+1), *tmp;
 	    strncpy(prefix, code, bracket);
 	    prefix[bracket] = 0;
-	    cod_parse_for_globals(prefix, context);
+	    tmp = prefix;
+	    while(isspace(*tmp)) tmp++;
+	    if (strlen(tmp) > 0) {
+	        cod_parse_for_globals(tmp, context);
+	    }
 	    free(prefix);
 	    code += bracket;
 	}
