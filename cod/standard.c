@@ -193,7 +193,7 @@ gettimeofday_wrapper(struct timeval * tp)
     return ret;
 }
 
-static char extern_string[] = "\n\
+static char atl_extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
 	attr_list create_attr_list();\n\
 	void free_attr_list(attr_list l);\n					\
@@ -206,7 +206,8 @@ static char extern_string[] = "\n\
 	long attr_lvalue(attr_list l, string name);\n\
 	double attr_dvalue(attr_list l, string name);\n\
 	double attr_fvalue(attr_list l, string name);\n\
-	char* attr_svalue(attr_list l, string name);\n\
+	char* attr_svalue(attr_list l, string name);\n";
+static char cercs_env_extern_string[] = "\n\
         void chr_get_time( chr_time *time);\n\
         void chr_timer_diff( chr_time *diff_time, chr_time *src1, chr_time *src2);\n\
 	int chr_timer_eq_zero( chr_time *time);\n\
@@ -216,7 +217,9 @@ static char extern_string[] = "\n\
 	double chr_time_to_nanosecs (chr_time *time);\n\
 	double chr_time_to_microsecs (chr_time *time);\n\
 	double chr_time_to_millisecs (chr_time *time);\n\
-	double chr_time_to_secs (chr_time *time);\n\
+	double chr_time_to_secs (chr_time *time);\n";
+
+static char basic_extern_string[] = "\n\
 	double chr_approx_resolution();\n\
 	int gettimeofday(timeval *tp);\n\
 	ffs_file open_ffs(char * fname, char * mode);\n\
@@ -282,12 +285,14 @@ FMField timeval_list[] = {
 extern void
 cod_add_standard_elements(cod_parse_context context)
 {
+    cod_assoc_externs(context, externs);
 #ifdef HAVE_ATL_H
     sm_ref attr_node = cod_new_reference_type_decl();
     attr_node->node.reference_type_decl.name = strdup("attr_list");
     cod_add_decl_to_parse_context("attr_list", attr_node, context);
     cod_add_decl_to_scope("attr_list", attr_node, context);
     cod_add_defined_type("attr_list", context);
+    cod_parse_for_context(atl_extern_string, context);
 #endif
     sm_ref ffs_node = cod_new_reference_type_decl();
     ffs_node->node.reference_type_decl.name = strdup("ffs_file");
@@ -298,6 +303,7 @@ cod_add_standard_elements(cod_parse_context context)
     cod_add_int_constant_to_parse_context("NULL", 0, context);
 #ifdef HAVE_CERCS_ENV_H
     cod_add_simple_struct_type("chr_time", chr_time_list, context);
+    cod_parse_for_context(cercs_env_extern_string, context);
 #endif
     cod_add_simple_struct_type("timeval", timeval_list, context);
     cod_add_defined_type("cod_type_spec", context);
@@ -305,10 +311,8 @@ cod_add_standard_elements(cod_parse_context context)
     cod_add_defined_type("cod_closure_context", context);
     cod_semanticize_added_decls(context);
     
-#if defined(HAVE_ATL_H) && defined(HAVE_CERCS_ENV_H)
-    cod_assoc_externs(context, externs);
-    cod_parse_for_context(extern_string, context);
-#endif
+    cod_parse_for_context(basic_extern_string, context);
+
     cod_assoc_externs(context, internal_externs);
     cod_parse_for_context(internals, context);
     cod_swap_decls_to_standard(context);
