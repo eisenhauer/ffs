@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-static char *FFS_version = "FFS Version 1.1.233 rev. 24511  -- 2016-02-21 06:59:59 -0500 (Sun, 21 Feb 2016)\n";
+static char *FFS_version = "FFS Version 1.1.234 rev. 24669  -- 2016-03-17 13:22:10 -0400 (Thu, 17 Mar 2016)\n";
 
 void
 FFSprint_version()
