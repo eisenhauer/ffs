@@ -109,6 +109,12 @@ add_custom_command(
   COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/cod/struct.pl ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.structs
   DEPENDS lex.yy.c ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.structs ${CMAKE_CURRENT_SOURCE_DIR}/cod/struct.pl
 )
+
+add_custom_target(
+    docs ALL
+    DEPENDS "cod_node.c"
+    )
+
 LIST (APPEND COD_MASTER_SRC_LIST ${BISON_CODParser_OUTPUT_SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cod_node.c)
 
 IF( NOT CMAKE_BUILD_TYPE )
