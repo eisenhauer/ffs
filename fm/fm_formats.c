@@ -2756,8 +2756,10 @@ int *control_field;
 	field_name[count] = 0;
 	while (fields[i].field_name != NULL) {
 	    if (strcmp(field_name, fields[i].field_name) == 0) {
-		if (FMstr_to_data_type(fields[i].field_type) ==
-		    integer_type) {
+		if ((FMstr_to_data_type(fields[i].field_type) ==
+		    integer_type) || 
+		    (FMstr_to_data_type(fields[i].field_type) ==
+		     unsigned_type)) {
 		    *control_field = i;
 		    return -1;
 		} else {
