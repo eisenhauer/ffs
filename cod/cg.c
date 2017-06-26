@@ -1221,7 +1221,12 @@ cg_decl(dill_stream s, sm_ref decl, cod_code descr)
 		(void) dill_scallv(s, (void*)memcpy, "memcpy", "%p%P%I", lvar, init_value, cg_get_size(s, decl));
 	    } else {
 		right = cg_expr(s, decl->node.declaration.init_value, 0, descr);
-		assert(right.is_addr == 0);
+		if (right.is_addr != 0) {
+		    fprintf(stderr, "Failure in processing declaration init value, expr is :\n");
+		    cod_print(decl->node.declaration.init_value);
+		    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
+		    exit(1);
+		}
 		right.reg = coerce_type(s, right.reg, assign_type, 
 					cod_sm_get_type(decl->node.declaration.init_value));
 		if (decl->node.declaration.addr_taken) {
@@ -1413,7 +1418,12 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
     if (expr->node.operator.left != NULL) {
 	int left_cg_type = cod_sm_get_type(expr->node.operator.left);
 	left_op = cg_expr(s, expr->node.operator.left, 0, descr);
-	assert(left_op.is_addr == 0);
+	if (left_op.is_addr != 0) {
+	    fprintf(stderr, "Failure in processing operator, problem expr is :\n");
+	    cod_print(expr->node.operator.left);
+	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
+	    exit(1);
+	}
 	switch(left_cg_type) {
 	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
 	    /* do integer promotion */
@@ -1436,7 +1446,12 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	string_op = cod_expr_is_string(expr->node.operator.right);
 
 	right_op = cg_expr(s, expr->node.operator.right, 0, descr);
-	assert(right_op.is_addr == 0);
+	if (right_op.is_addr != 0) {
+	    fprintf(stderr, "Failure in processing RHS of operator, expr is :\n");
+	    cod_print(expr->node.operator.right);
+	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
+	    exit(1);
+	}
 	switch(right_cg_type) {
 	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
 	    /* do integer promotion */
@@ -2742,7 +2757,12 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	int expr_type = cod_sm_get_type(expr->node.cast.expression);
 	right = cg_expr(s, expr->node.cast.expression, 0, descr);
 	if (expr->node.cast.cg_type == DILL_V) return right;  /* likely ignored */
-	assert(right.is_addr == 0);
+	if (right.is_addr != 0) {
+	    fprintf(stderr, "Failure in processing of cast, expr is :\n");
+	    cod_print(expr->node.cast.expression);
+	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
+	    exit(1);
+	}
 	right.reg = coerce_type(s, right.reg, expr->node.cast.cg_type, 
 				expr_type);
 	return right;
@@ -2882,7 +2902,12 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	int assign_type = cod_sm_get_type(expr);
 	right = cg_expr(s, expr->node.assignment_expression.right, 0, descr);
 	left = cg_expr(s, expr->node.assignment_expression.left, 1, descr);
-	assert(right.is_addr == 0);
+	if (right.is_addr != 0) {
+	    fprintf(stderr, "Failure in processing RHS of assignment, expr is :\n");
+	    cod_print(expr->node.assignment_expression.right);
+	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
+	    exit(1);
+	}
 	right.reg = coerce_type(s, right.reg, assign_type, 
 				cod_sm_get_type(expr->node.assignment_expression.right));
 	if (cod_expr_is_string(expr->node.assignment_expression.right)) {
