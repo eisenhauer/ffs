@@ -1418,11 +1418,20 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
     if (expr->node.operator.left != NULL) {
 	int left_cg_type = cod_sm_get_type(expr->node.operator.left);
 	left_op = cg_expr(s, expr->node.operator.left, 0, descr);
+	if (left_op.is_addr && is_array(expr->node.operator.left)) {
+	    if (left_op.offset != 0) {
+		dill_reg result = dill_getreg(s, DILL_P);
+		dill_addpi(s, result, left_op.reg, left_op.offset);
+		left_op.reg = result;
+	    }
+	    left_op.is_addr = 0;
+	}
+
 	if (left_op.is_addr != 0) {
-	    fprintf(stderr, "Failure in processing operator, problem expr is :\n");
+	    fprintf(stderr, "Failure in processing LHS of operator, problem expr is :\n");
 	    cod_print(expr->node.operator.left);
 	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
-	    exit(1);
+	    assert(left_op.is_addr == 0);
 	}
 	switch(left_cg_type) {
 	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
@@ -1450,7 +1459,7 @@ operator_prep(dill_stream s, sm_ref expr, dill_reg *rp, dill_reg *lp, cod_code d
 	    fprintf(stderr, "Failure in processing RHS of operator, expr is :\n");
 	    cod_print(expr->node.operator.right);
 	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
-	    exit(1);
+	    assert(right_op.is_addr == 0);
 	}
 	switch(right_cg_type) {
 	case DILL_C: case DILL_UC: case DILL_S: case DILL_US:
@@ -1805,7 +1814,12 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	    if (typ) {
 		if (typ->node_type == cod_reference_type_decl) {
 		    if(typ->node.reference_type_decl.sm_complex_referenced_type) {
-			size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+			if (is_array(typ->node.reference_type_decl.sm_complex_referenced_type)) {
+			    sm_ref arr = typ->node.reference_type_decl.sm_complex_referenced_type;
+			    size = arr->node.array_type_decl.cg_element_size;
+			} else {
+			    size = cg_get_size(s, typ->node.reference_type_decl.sm_complex_referenced_type);
+			}
 		    } else {
 			size = dill_type_size(s, typ->node.reference_type_decl.cg_referenced_type);
 		    }
@@ -2761,7 +2775,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    fprintf(stderr, "Failure in processing of cast, expr is :\n");
 	    cod_print(expr->node.cast.expression);
 	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
-	    exit(1);
+	    assert(right.is_addr == 0);
 	}
 	right.reg = coerce_type(s, right.reg, expr->node.cast.cg_type, 
 				expr_type);
@@ -2906,7 +2920,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    fprintf(stderr, "Failure in processing RHS of assignment, expr is :\n");
 	    cod_print(expr->node.assignment_expression.right);
 	    fprintf(stderr, "Please report this bug and include as much information as possible for reproduction\n");
-	    exit(1);
+	    assert(right.is_addr == 0);
 	}
 	right.reg = coerce_type(s, right.reg, assign_type, 
 				cod_sm_get_type(expr->node.assignment_expression.right));
