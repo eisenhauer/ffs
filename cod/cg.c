@@ -107,6 +107,7 @@ static dill_reg coerce_type(dill_stream s, dill_reg local, int target_type, int 
 static int is_comparison_operator(sm_ref expr);
 static void cg_branch_if_false(dill_stream s, sm_ref pred, dill_mark_label_type label, cod_code descr, int reverse);
 static int is_complex_type(sm_ref expr);
+static int is_static_var(sm_ref expr);
 int cg_get_size(dill_stream s, sm_ref node);
 
 extern int cod_sm_get_type(sm_ref node);
@@ -2626,6 +2627,20 @@ is_var_array(sm_ref expr)
     return 0;
 }
 
+static int 
+is_static_var(sm_ref expr)
+{
+    sm_ref typ;
+    if (expr->node_type == cod_identifier) {
+	return is_static_var(expr->node.identifier.sm_declaration);
+    } else if (expr->node_type == cod_declaration) {
+	return expr->node.declaration.static_var;
+    } else {
+	assert(0);
+    }
+    return 0;
+}
+
 static dill_reg
 load_dynamic_array_dimension(dill_stream s, sm_ref containing, sm_ref field, cod_code descr)
 {
@@ -3066,7 +3081,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	base = cg_expr(s, tmp, 1, descr);
 
 	if (arr && (arr->node_type == cod_reference_type_decl)
-	    && is_array(arr)) {
+	    && (is_array(arr) || is_static_var(tmp))) {
 	    /* we didn't load the address */
 	    int load_type = DILL_P;
 	    dill_reg ret = dill_getreg(s, DILL_P);

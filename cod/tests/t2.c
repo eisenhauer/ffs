@@ -366,5 +366,84 @@ main(int argc, char **argv)
 	cod_free_parse_context(context);
     }
     test_num++;
+    if ((run_only == -1) || (run_only == test_num)) {
+	/* 5 */
+	/* 
+	 *  This test tries to see if we're correctly dereferencing static pointers.  Earlier this would overwrite the 'testing' variable, indexing through
+	 *  static memory instead of the malloc'd block.
+	 */
+
+	typedef struct test {
+	    int count;
+	    double *vals;
+	} test_struct, *test_struct_p;
+
+	static char extern_string[] = "int printf(string format, ...); void*malloc(int size);";
+
+	static cod_extern_entry externs[] = 
+	{
+	    {"printf", (void*)(long)printf},
+	    {"malloc", (void*)(long)malloc},
+	    {(void*)0, (void*)0}
+	};
+	static char code[] = "{\
+		    static float *ptr;\n\
+		    static float testing = 46;\n\
+ptr = malloc(3*sizeof(float));\n\
+ptr[0] = 5;\n\
+ptr[1] = 6;\n\
+ptr[2] = 7;\n\
+return testing;\n\
+		}";
+
+	static FMField input_field_list[] =
+	{
+	    {"count", "integer", sizeof(int), 
+	     FMOffset(test_struct_p, count)},
+	    {"vals", "float[count]", sizeof(double), 
+	     FMOffset(test_struct_p, vals)},
+	    {(void*)0, (void*)0, 0, 0}
+	};
+
+	cod_parse_context context = new_cod_parse_context();
+	int i;
+	test_struct tmp;
+	test_struct *param = &tmp;
+	cod_code gen_code;
+	double (*func)(test_struct_p);
+
+	cod_assoc_externs(context, externs);
+	cod_parse_for_context(extern_string, context);
+	if (read_file) {
+	    FMFieldList fields = NULL;
+	    FMContext c = create_local_FMcontext();
+	    char *buf = read_buffer(c, read_file, test_num);
+	    param = (test_struct*)buf;
+	    cod_add_encoded_param("input", buf, 0, c, context);
+	    cod_set_return_type("double", context);
+	} else {
+	    cod_add_simple_struct_type("input_type", input_field_list, context);
+	    cod_subroutine_declaration("double proc(input_type *input)", context);
+	}
+	tmp.count = 10;
+	tmp.vals = (double*) malloc(tmp.count * sizeof(double));
+	for(i=0; i< tmp.count; i++) {
+	    tmp.vals[i] = i + 0.1;
+	}
+
+	if (write_file) {
+	    FMStructDescRec formats[] = {
+		{"struct", input_field_list, sizeof(tmp), NULL},
+		{NULL, NULL, 0, NULL}};
+	    write_buffer(write_file, &formats[0], &tmp, test_num);
+	}
+	gen_code = cod_code_gen(code, context);
+	func = (double (*)(test_struct_p))(long) gen_code->func;
+	assert((func)(param) == 46.00);
+	free(tmp.vals);
+	cod_code_free(gen_code);
+	cod_free_parse_context(context);
+    }
+    test_num++;
     return 0;
 }
