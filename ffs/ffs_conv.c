@@ -2908,8 +2908,17 @@ int data_already_copied;
 	    }
 #endif
 	    dill_subii(c, loop_var, loop_var, 1);
-	    dill_addpi(c, src_addr, src_addr, tmp_spec.size);
-	    dill_addpi(c, dest_addr, dest_addr, conv->dest_size);
+	    int array_of_pointers = 0;
+	    if (conv->iovar->type_desc.type == FMType_pointer) {
+		array_of_pointers = (conv->iovar->type_desc.next->next->type == FMType_pointer);
+	    }
+	    if (array_of_pointers) {
+		dill_addpi(c, src_addr, src_addr, conv_status->src_pointer_size);
+		dill_addpi(c, dest_addr, dest_addr, conv_status->target_pointer_size);
+	    } else {
+		dill_addpi(c, src_addr, src_addr, tmp_spec.size);
+		dill_addpi(c, dest_addr, dest_addr, conv->dest_size);
+	    }		
 	    if (debug_code_generation) {
 		dill_scallv(c, (void*)printf, "printf", "%P%p%p%p",
 			    "loopvar = %x, src %x, dest %x\n", loop_var,
