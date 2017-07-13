@@ -1531,8 +1531,13 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 	    for (i=0; i< elements ; i++) {
 		new_convert_field(new_src, new_dest, conv_status, conv,
 				  next, data_already_copied);
-		new_src += conv->src_field.size;
-		new_dest += conv->dest_size;
+		if (conv->iovar->type_desc.type == FMType_pointer) {
+		    new_src += sizeof(void*);
+		    new_dest += sizeof(void*);
+		} else {
+		    new_src += conv->src_field.size;
+		    new_dest += conv->dest_size;
+		}
 	    }
 	} else {
 	    /* row/column swap time */
