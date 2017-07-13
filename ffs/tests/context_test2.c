@@ -48,7 +48,7 @@ char **argv;
     int i;
     struct node nodes[10];
     struct visit_table v;
-    FMFormat node_ioformat, psa_ioformat;
+    FMFormat node_ioformat, psa_ioformat, reader_register_ioformat;
 
     init_written_data();
 
@@ -89,6 +89,7 @@ char **argv;
 
     node_ioformat = register_data_format(src_context, node_format_list);
     psa_ioformat = register_data_format(src_context, pointer_to_static_format_list);
+    reader_register_ioformat = register_data_format(src_context, reader_register_format_list);
 
     for (i = 0; i < sizeof(nodes)/sizeof(nodes[0]); i++) {
 	nodes[i].node_num = i;
@@ -139,6 +140,11 @@ char **argv;
     
     xfer_buffer = FFSencode(encode_buffer, psa_ioformat,
 					  &psa, &buf_size);
+    test_all_receive(xfer_buffer, buf_size, 0);
+    write_buffer(xfer_buffer, buf_size);
+
+    xfer_buffer = FFSencode(encode_buffer, reader_register_ioformat,
+					  &reader_register, &buf_size);
     test_all_receive(xfer_buffer, buf_size, 0);
     write_buffer(xfer_buffer, buf_size);
     
@@ -244,6 +250,7 @@ read_test_only()
 
 static FFSTypeHandle node_ioformat;
 static FFSTypeHandle psa_ioformat;
+static FFSTypeHandle reader_register_ioformat;
 
 static void
 set_targets(context)
@@ -251,6 +258,7 @@ FFSContext context;
 {
     node_ioformat = FFSset_fixed_target(context, node_format_list);
     psa_ioformat = FFSset_fixed_target(context, pointer_to_static_format_list);
+    reader_register_ioformat = FFSset_fixed_target(context, reader_register_format_list);
 }
 
 int base_size_func(FFSContext context, char *src, int rec_len,
@@ -404,6 +412,20 @@ int test_level;
 		printf("decode failed, pointer_to_static_array data failed\n");
 	    if (!pointer_to_static_rec_eq(read_data, &psa)) {
 		printf("Pointer to static array failure\n");
+		fail++;
+	    }
+	    check_mem(size, (char*)read_data);
+	    free(read_data);
+	} else 	if (((test_only == NULL) || (strcmp(test_only, "reader_register") == 0)) &&
+		   (buffer_format == reader_register_ioformat)) {
+	    int size = size_func(rcv_context, buffer, buf_size, 
+				 sizeof(add_rec));
+	    struct _reader_register_msg *read_data = get_mem(size);
+	    memset(read_data, 0, size);
+	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
+		printf("decode failed, pointer_to_static_array data failed\n");
+	    if (!reader_register_rec_eq(read_data, &reader_register)) {
+		printf("Pointer to reader_register failure\n");
 		fail++;
 	    }
 	    check_mem(size, (char*)read_data);

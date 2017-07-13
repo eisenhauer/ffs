@@ -228,6 +228,23 @@ typedef struct pointer_to_static_array {
 
 extern int calc_signature(node_ptr n, visit_table v);
 
+typedef struct _cp_init_info {
+    char *contact_info;
+    int target_stone;
+    void *reader_ID;
+} *cp_init_info;
+
+struct _reader_register_msg {
+    void *writer_file;
+    int writer_response_condition;
+    int reader_cohort_size;
+    cp_init_info *CP_reader_info;
+};
+
+extern FMField cp_reader_init_list[];
+extern FMField cp_reader_register_list[];
+extern FMStructDescRec reader_register_format_list[];
+
 extern FMField field_list[];
 extern FMField newer_field_list[];
 extern FMField field_list2[];
@@ -315,6 +332,8 @@ extern add_rec add_action_record;
 
 extern struct pointer_to_static_array psa;
 
+extern struct _reader_register_msg reader_register;
+
 extern int first_rec_eq(first_rec *r1, first_rec *r2);
 extern int second_rec_eq(second_rec *r1, second_rec *r2);
 extern int third_rec_eq(third_rec *r1, third_rec *r2);
@@ -332,6 +351,8 @@ extern int triangle_param_eq(triangle_param *r1, triangle_param *r2);
 extern int add_rec_eq(add_rec_ptr r1, add_rec_ptr r2);
 extern int
 pointer_to_static_rec_eq(pointer_to_static_array_ptr r1, pointer_to_static_array_ptr r2);
+extern int
+reader_register_rec_eq(struct _reader_register_msg *r1, struct _reader_register_msg *r2);
 
 extern const char *first_xml;
 extern char *string_xml;

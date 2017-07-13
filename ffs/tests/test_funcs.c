@@ -61,6 +61,8 @@ add_rec add_action_record;
 
 struct pointer_to_static_array psa;
 
+struct _reader_register_msg reader_register;
+
 const char *first_xml = "\
 <FirstRecord integer_attribute=<FFS:data field_id=0> double_attribute=<FFS:data field_id=1> character_attribute=<FFS:data field_id=2>>\n";
 
@@ -942,6 +944,56 @@ pointer_to_static_rec_eq(pointer_to_static_array_ptr r1, pointer_to_static_array
     return 1;
 }
 
+int
+reader_register_rec_eq(struct _reader_register_msg *r1, struct _reader_register_msg *r2)
+{
+    if (r1->writer_file != r2->writer_file) {
+        printf("reader_register_rec, writer_file differs\n");
+        return 0;
+    }
+    if (r1->writer_response_condition != r2->writer_response_condition) {
+        printf("reader_register_rec, writer_response_condition differs\n");
+        return 0;
+    }
+    if (r1->reader_cohort_size != r2->reader_cohort_size) {
+        printf("reader_register_rec, reader_cohort_size differs\n");
+        return 0;
+    }
+    if (((r1->CP_reader_info == NULL) && (r2->CP_reader_info != NULL)) ||
+        ((r1->CP_reader_info != NULL) && (r2->CP_reader_info == NULL))) {
+        printf("reader_register_rec, One CP_reader_info NULL one not\n");
+        return 0;
+
+    } else {
+        if (r1->CP_reader_info && r2->CP_reader_info) {
+            int i;
+            for (i = 0; i < r1->reader_cohort_size; i++) {
+                if (((r1->CP_reader_info[i] == NULL) && (r2->CP_reader_info[i] != NULL)) ||
+                    ((r1->CP_reader_info[i] != NULL) && (r2->CP_reader_info[i] == NULL))) {
+                    printf("reader_register_rec, One CP_reader_info[%d] NULL one not\n", i);
+                    return 0;
+                } else {
+                    if (r1->CP_reader_info[i] && r2->CP_reader_info[i]) {
+                        if (strcmp(r1->CP_reader_info[i]->contact_info, r2->CP_reader_info[i]->contact_info) != 0) {
+                            printf("reader_register_rec, One CP_reader_info[%d]->contact_info doesn't match\n", i);
+                            return 0;
+                        }
+                        if (r1->CP_reader_info[i]->target_stone != r2->CP_reader_info[i]->target_stone) {
+                            printf("reader_register_rec, One CP_reader_info[%d]->target_stone doesn't match\n", i);
+                            return 0;
+                        }
+                        if (r1->CP_reader_info[i]->reader_ID != r2->CP_reader_info[i]->reader_ID) {
+                            printf("reader_register_rec, One CP_reader_info[%d]->reader_ID doesn't match\n", i);
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return 1;
+}
+                            
 void
 init_written_data()
 {
@@ -1431,6 +1483,21 @@ init_written_data()
 	    (*psa.int_array)[i][j] = (i+1) * (j + 10);
 	}
     }
+    
+    cp_init_info *reader_pointer_array = malloc(2 * sizeof(reader_pointer_array[0]));
+    reader_pointer_array[0] = malloc(sizeof(struct _cp_init_info));
+    reader_pointer_array[0]->contact_info = "contact info 1";
+    reader_pointer_array[0]->target_stone = 101;
+    reader_pointer_array[0]->reader_ID = (void*)0xdead0001;
+    reader_pointer_array[1] = malloc(sizeof(struct _cp_init_info));
+    reader_pointer_array[1]->contact_info = "contact info 2";
+    reader_pointer_array[1]->target_stone = 102;
+    reader_pointer_array[1]->reader_ID = (void*)0xdead0002;
+    
+    reader_register.writer_file = (void*)0xdeadbeef;
+    reader_register.writer_response_condition = 13;
+    reader_register.reader_cohort_size = 2;
+    reader_register.CP_reader_info = &reader_pointer_array[0];
 }
 
 void
@@ -1920,3 +1987,22 @@ extern int calc_signature(node_ptr n, visit_table v)
     n2 = calc_signature(n->link1, v);
     return  3*n1 + 7 * n2 + n->node_num;
 }
+
+FMField cp_reader_init_list[] = {
+    {"contact_info", "string", sizeof(char*), FMOffset(cp_init_info, contact_info)},
+    {"target_stone", "integer", sizeof(int),  FMOffset(cp_init_info, target_stone)},
+    {"reader_ID", "integer", sizeof(void*),  FMOffset(cp_init_info, reader_ID)},
+    {NULL, NULL, 0, 0}};
+
+FMField cp_reader_register_list[] = {
+    {"writer_ID", "integer", sizeof(void*), FMOffset(struct _reader_register_msg *, writer_file)},
+    {"writer_response_condition", "integer", sizeof(int), FMOffset(struct _reader_register_msg *, writer_response_condition)},
+    {"reader_cohort_size", "integer", sizeof(int), FMOffset(struct _reader_register_msg *, reader_cohort_size)},
+    {"cp_reader_info", "(*cp_reader)[reader_cohort_size]", sizeof(struct _cp_init_info), FMOffset(struct _reader_register_msg *, CP_reader_info)},
+    {NULL, NULL, 0, 0}};
+
+FMStructDescRec reader_register_format_list[] = {
+    {"reader_register", cp_reader_register_list, sizeof(struct _reader_register_msg), NULL},
+    {"cp_reader", cp_reader_init_list, sizeof(struct _cp_init_info), NULL},
+    {NULL, NULL, 0, NULL}};
+
