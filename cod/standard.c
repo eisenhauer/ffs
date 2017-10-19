@@ -196,6 +196,7 @@ gettimeofday_wrapper(struct timeval * tp)
 static char atl_extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
 	attr_list create_attr_list();\n\
+	attr_list copy_attr_list(attr_list l);\n\
 	void free_attr_list(attr_list l);\n					\
 	void set_long_attr(attr_list l, string name, long value);\n\
 	void set_float_attr(attr_list l, string name, double value);\n\
@@ -239,6 +240,7 @@ static cod_extern_entry externs[] =
 #ifdef HAVE_ATL_H
     {"attr_set", (void*)(long)attr_set},
     {"create_attr_list", (void*)(long)attr_create_list},
+    {"copy_attr_list", (void*)(long)attr_copy_list},
     {"free_attr_list", (void*)(long)attr_free_list},
     {"set_int_attr", (void*)(long)std_set_int_attr},
     {"set_long_attr", (void*)(long)std_set_long_attr},
