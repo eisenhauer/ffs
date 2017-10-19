@@ -254,13 +254,14 @@ FMFormat format;
 void *data;
 int character_limit;
 {
+    int ret;
     struct dump_state state;
     init_dump_state(&state);
     state.encoded = 0;
     state.output_limit = character_limit;
     state.out = (FILE*)out;
-    internal_dump_data(format, data, &state);
-    return 0;
+    ret = internal_dump_data(format, data, &state);
+    return ret;
 }
 
 #define STACK_ARRAY_SIZE 100
@@ -268,6 +269,7 @@ int character_limit;
 static int
 internal_dump_data(FMFormat format, void *data, dstate state)
 {
+    int ret;
     addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
     state->addr_list_is_stack = 1;
     state->addr_list_cnt = 0;
@@ -279,10 +281,10 @@ internal_dump_data(FMFormat format, void *data, dstate state)
 	state->addr_list_cnt++;
     }
 
-    dump_subfields(data, format, state, 0);
+    ret = dump_subfields(data, format, state, 0);
 
     free_addr_list(state);
-    return 0;
+    return ret;
 }
 
 static int
@@ -725,7 +727,7 @@ void *data;
     state.realloc_string++;
     if (FMdumpVerbose)
 	dump_output(&state, strlen(format->format_name) + 15, "Record type %s :", format->format_name);
-    internal_dump_data(format, data, &state);
+    (void)internal_dump_data(format, data, &state);
     dump_output(&state, 1, "\n");
     return state.output_string;
 }
@@ -737,6 +739,7 @@ FMFormat format;
 void *data;
 int character_limit;
 {
+    int ret;
     int header_size = format->server_ID.length;
     if (format->variant) {
 	header_size += sizeof(INT4);
@@ -752,9 +755,9 @@ int character_limit;
     state.out = (FILE*)out;
     if (FMdumpVerbose)
 	dump_output(&state, strlen(format->format_name) + 15, "Record type %s :", format->format_name);
-    internal_dump_data(format, data, &state);
+    ret = internal_dump_data(format, data, &state);
     dump_output(&state, 1, "\n");
-    return 0;
+    return ret;
 }
 
 extern int
