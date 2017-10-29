@@ -11,6 +11,8 @@ sub upperc {
 %drisc_arg_formats = ('c', '%i', 'uc', '%u', 's', '%i', 'us', '%u', 'i', '%i', 'u', '%u', 'l', '%l', 'ul', '%ul', 'p', '%p', 'f', '%f', 'd', '%d');
 
 %type_masks = ('c', "f", 'uc', "f", 's', "f ff fff", 'us', "f ff fff", 'i', "f ff fff ffff fffff ffffff fffffff", 'u', "f ff fff ffff fffff ffffff fffffff", 'l', "f ff fff ffff fffff ffffff fffffff", 'ul', "f ff fff ffff fffff ffffff fffffff");
+%type_max = ('c', "ff", 'uc', "ff", 's', "ffff", 'us', "ffff", 'i', "ffffffff", 'u', "ffffffff", 'l', "ffffffffffffffff", 'ul', "ffffffffffffffff");
+%type_max2 = ('c', "80", 'uc', "80", 's', "8000", 'us', "8000", 'i', "800000000", 'u', "80000000", 'l', "8000000000000000", 'ul', "8000000000000000");
 
 %subr_name_list = ("%", "mod", "&", "and", "|", "or", "^", "not", "<<", "lsh", ">>", "rsh", "+", "add", "-", "sub", "*", "mult", "/", "div");
 
@@ -128,10 +130,7 @@ sub arith_insn {
 		}
 	    }
 	    if (($t1 eq "uc") || ($t1 eq "us") || ($t1 eq "u") || ($t1 eq "ul")) {
-		@masks = split(' ', $type_masks{$t1});
-		$type_mask = pop(@masks);
-		$type_mask = $type_mask . $type_mask;
-		$result_if = "if ((expected_result == 0) || (expected_result == ($c_type1) 0x$type_mask)) continue;\n	$result_if";
+		$result_if = "if ((expected_result == 0) || (expected_result == ($c_type1) 0x$type_max{$t1}) || (expected_result == ($c_type1) 0x$type_max2{$t1})) continue;\n	$result_if";
 	    }
 	    if (($t1 eq "uc") && ($c_op eq "/")) {
 		$range_decl .= "\n	    unsigned int expect_int;";
