@@ -17,7 +17,6 @@ endforeach()
 foreach (PROG ${PROGS} )
     ADD_EXECUTABLE(${PROG} ${PROG}.c)
     TARGET_LINK_LIBRARIES(${PROG} ffs )
-    TARGET_LINK_LIBRARIES(${PROG} cercs_env )
 endforeach()
 
 SET(PROGS_INSTALL)

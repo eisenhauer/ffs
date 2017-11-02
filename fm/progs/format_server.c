@@ -50,7 +50,6 @@
 
 #include "fm.h"
 #include "fm_internal.h"
-#include "cercs_env.h"
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -145,8 +144,8 @@ char **argv;
 	chdir("/tmp");
 #endif
     }
-    if (cercs_getenv("FORMAT_SERVER_PORT") != NULL) {
-	char *port_string = cercs_getenv("FORMAT_SERVER_PORT");
+    if (getenv("FORMAT_SERVER_PORT") != NULL) {
+	char *port_string = getenv("FORMAT_SERVER_PORT");
 	int tmp_port;
 	if (sscanf(port_string, "%d", &tmp_port) != 1) {
 	    printf("FORMAT_SERVER_PORT spec \"%s\" not understood.\n", 

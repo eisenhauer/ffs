@@ -7,8 +7,8 @@ SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 ENDIF()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "cercs_env, dill, atl")
-set(CPACK_RPM_PACKAGE_REQUIRES "cercs_env, dill, atl")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "dill, atl")
+set(CPACK_RPM_PACKAGE_REQUIRES "dill, atl")
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -124,7 +124,6 @@ ENDIF()
 set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MASTER_SRC_LIST})
 
 
-FIND_CERCS_PROJECT (cercs_env LIBRARY cercs_env INCLUDES cercs_env.h REQUIRED ${CERCS_USE_INSTALLED})
 FIND_CERCS_PROJECT (atl LIBRARY atl INCLUDES atl.h REQUIRED ${CERCS_USE_INSTALLED})
 FIND_CERCS_PROJECT(dill LIBRARY dill INCLUDES dill.h ${CERCS_USE_INSTALLED})
 
@@ -142,7 +141,6 @@ if (${DILL_FOUND})
    list (APPEND DEPLIBS "-L${DILL_LIB_DIR}" "${DILL_LIB_DIR}/libdill.la")
 endif()
 list (APPEND DEPLIBS "-L${ATL_LIB_DIR}" "${ATL_LIB_DIR}/libatl.la")
-list (APPEND DEPLIBS "-L${CERCS_ENV_LIB_DIR}" "${CERCS_ENV_LIB_DIR}/libcercs_env.la")
 
 foreach(arg ${DEPLIBS})
    set(DEP_STRING "${DEP_STRING} ${arg}")

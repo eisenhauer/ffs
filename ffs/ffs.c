@@ -6,7 +6,6 @@
 #include "cod.h"
 #include "fm_internal.h"
 #include "ffs_internal.h"
-#include "cercs_env.h"
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"

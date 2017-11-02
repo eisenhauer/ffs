@@ -50,7 +50,6 @@
 
 #include "fm.h"
 #include "fm_internal.h"
-#include "cercs_env.h"
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -154,7 +153,6 @@ static void dump_stats_to_log(format_server fs);
 static FILE *log = (void *) 0;
 #define _GNU_SOURCE
 #include <unistd.h>
-#include <sys/syscall.h>
 
 extern void
 LOG(format_server fs, char *format,...)
@@ -165,9 +163,7 @@ LOG(format_server fs, char *format,...)
     time_t rawtime;
     struct tm *info;
     char buffer[80];
-    pid_t tid;
 
-    tid = syscall(SYS_gettid);
     pthread_mutex_lock(&fs->log_lock);
     if ((log == (void *) -1) || (log == (void *) 0)) {
 	int restart = 0;
@@ -197,7 +193,7 @@ LOG(format_server fs, char *format,...)
 
     strftime(buffer,80,"%x - %I:%M%p", info);
 
-    fprintf(log, "%s - tid %d - ", buffer, tid);
+    fprintf(log, "%s - ", buffer);
 
 #ifdef STDC_HEADERS
     va_start(ap, format);
@@ -923,13 +919,11 @@ FSClient_close(FSClient fsc)
 {
     format_server fs = fsc->fs;
     int fd = (int) (long) fsc->fd;
-    pid_t tid;
 
-    tid = syscall(SYS_gettid);
     LOG(fs, "Doing Mutex Lock at Line %d ", __LINE__);
     pthread_mutex_lock(&fs->lock);
     LOG(fs, "  - got the mutex at Line %d ", __LINE__);
-    LOG(fs, "Closing client fd %d - tid %d - %s", fd, tid, fsc->hostname ?
+    LOG(fs, "Closing client fd %d - %s", fd, fsc->hostname ?
 	fsc->hostname : "NULL");
     if (fd != 0) {
 	fs->ports[fd] = NULL;
@@ -1605,8 +1599,8 @@ get_qual_hostname(char *buf, int len)
 {
     struct hostent *host = NULL;
 
-    char *network_string = cercs_getenv("CM_NETWORK");
-    char *hostname_string = cercs_getenv("CERCS_HOSTNAME");
+    char *network_string = getenv("CM_NETWORK");
+    char *hostname_string = getenv("CERCS_HOSTNAME");
     if (hostname_string != NULL) {
 	strncpy(buf, hostname_string, len);
 	return;
@@ -1755,7 +1749,7 @@ format_server_create()
 	/* neither 0 nor -1 are acceptable identifiers, exclude them. */
 	fs->format_server_identifier = lrand48();
     }
-    if (cercs_getenv("FORMAT_SERVER_PWD") != 0) {
+    if (getenv("FORMAT_SERVER_PWD") != 0) {
 	format_server_file_dir = malloc(PATH_MAX + 1);
 	format_server_file_dir = getcwd(format_server_file_dir, PATH_MAX);
     } else {
@@ -1879,8 +1873,8 @@ format_server_listen(format_server fs, int port_num)
     }
     FD_SET(conn_sock, &fs->fdset);
 
-    if (cercs_getenv("FORMAT_SERVER_PORT2") != NULL) {
-	char *port_string = cercs_getenv("FORMAT_SERVER_PORT2");
+    if (getenv("FORMAT_SERVER_PORT2") != NULL) {
+	char *port_string = getenv("FORMAT_SERVER_PORT2");
 	int tmp_port, conn_sock2;
 	if (sscanf(port_string, "%d", &tmp_port) != 1) {
 	    printf("FORMAT_SERVER_PORT2 spec \"%s\" not understood.\n", 
@@ -2051,7 +2045,7 @@ FSClient fsc;
 
     if (postfix_list == NULL) {
 	char *tmp = NULL;
-	if ((tmp = cercs_getenv("FORMAT_SERVICE_DOMAIN")) == NULL) {
+	if ((tmp = getenv("FORMAT_SERVICE_DOMAIN")) == NULL) {
 	  tmp = postfix_string = FORMAT_SERVICE_DOMAIN;
 	}
 	if (tmp[0] == '"') tmp++;

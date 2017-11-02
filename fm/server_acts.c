@@ -56,7 +56,6 @@
 #include "assert.h"
 #include "fm.h"
 #include "fm_internal.h"
-#include "cercs_env.h"
 
 #else
 #include "config.h"
@@ -216,8 +215,8 @@ action_t action;
 
 	if (format_server_host == NULL) {
 	    char *format_server_port = NULL;
-	    format_server_host = cercs_getenv("FORMAT_SERVER_HOST");
-	    format_server_port = cercs_getenv("FORMAT_SERVER_PORT");
+	    format_server_host = getenv("FORMAT_SERVER_HOST");
+	    format_server_port = getenv("FORMAT_SERVER_PORT");
 	    if (format_server_port != NULL) {
 		int tmp_port;
 		if (sscanf(format_server_port, "%d", &tmp_port) != 1) {
@@ -393,7 +392,7 @@ FFS_gen_authentication (unsigned char *outbuf)
 	return enc_len;
     }
     first_time = 0;
-    auth_file_name = cercs_getenv("FFS_AUTHENTICATION_FILE");
+    auth_file_name = getenv("FFS_AUTHENTICATION_FILE");
     if (auth_file_name == NULL) return 0;
 
     if (stat(auth_file_name, &statbuf) == -1) {

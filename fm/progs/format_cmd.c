@@ -23,7 +23,6 @@
 #endif
 
 #include "fm_internal.h"
-#include "cercs_env.h"
 
 extern int (*establish_server_connection_ptr)(FMContext fmc, action_t action);
 
@@ -96,7 +95,7 @@ char **argv;
      *  this mirrors code in server_acts.c, reproduced here to avoid
      *  exporting information
      */
-    format_server_host = cercs_getenv("FORMAT_SERVER_HOST");
+    format_server_host = getenv("FORMAT_SERVER_HOST");
     if (format_server_host == NULL) {
 	format_server_host = FORMAT_SERVER_HOST;	/* from configure */
     }

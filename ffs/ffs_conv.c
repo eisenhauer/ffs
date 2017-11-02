@@ -35,7 +35,6 @@
 #include "ffs_gen.h"
 #endif
 #include "assert.h"
-#include "cercs_env.h"
 
 static MAX_INTEGER_TYPE get_big_int(FMFieldPtr iofield, void *data);
 static MAX_FLOAT_TYPE get_big_float(FMFieldPtr iofield, void *data);
@@ -2042,7 +2041,7 @@ int dest_alignment;
     int count = 0, register_args = 1;
     struct conv_status cs;
     if (ffs_conversion_generation == -1) {
-	char *gen_string = cercs_getenv("FFS_CONVERSION_GENERATION");
+	char *gen_string = getenv("FFS_CONVERSION_GENERATION");
 	ffs_conversion_generation = FFS_CONVERSION_GENERATION_DEFAULT;
 	if (gen_string != NULL) {
 #ifdef MODULE

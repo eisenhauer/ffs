@@ -47,7 +47,7 @@ get_self_ip_addr()
     int ss;
 #endif
     int rv = 0;
-    char *IP_string = cercs_getenv("CERCS_IP");
+    char *IP_string = getenv("CERCS_IP");
     if (IP_string != NULL) {
 	in_addr_t ip = inet_addr(IP_string);
 	if (ip != -1) return ntohl(ip);
@@ -116,7 +116,7 @@ get_self_ip_addr()
      *  for the CM_LAST_RESORT_IP_ADDR environment variable.
      */
     if (rv == 0) {
-	char *c = cercs_getenv("CM_LAST_RESORT_IP_ADDR");
+	char *c = getenv("CM_LAST_RESORT_IP_ADDR");
 	if (c != NULL) {
 	    rv = inet_addr(c);
 	}
