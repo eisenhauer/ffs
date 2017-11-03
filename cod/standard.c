@@ -38,9 +38,6 @@
 #ifdef HAVE_ATL_H
 #include "atl.h"
 #endif
-#ifdef HAVE_CERCS_ENV_H
-#include "cercs_env.h"
-#endif
 #endif
 #include "ffs.h"
 
@@ -193,6 +190,118 @@ gettimeofday_wrapper(struct timeval * tp)
     return ret;
 }
 
+
+#include <sys/time.h>
+typedef struct chr_time {
+    double d1;
+    double d2;
+    double d3;
+} chr_time;
+
+
+static void
+chr_get_time( chr_time *time)
+{
+    gettimeofday((struct timeval *) time, NULL);
+}
+
+static void
+chr_timer_start( chr_time *time)
+{
+    chr_get_time(time);
+}
+
+static void chr_timer_diff( chr_time *diff_time, chr_time *src1, chr_time *src2);
+static void
+chr_timer_stop( chr_time *time)
+{
+    struct timeval now;
+    struct timeval duration;
+
+    gettimeofday(&now, NULL);
+    chr_timer_diff((chr_time*)&duration, (chr_time*)&now, time);
+    *((struct timeval *) time) = duration;
+}
+
+static int
+chr_timer_eq_zero (chr_time *time)
+{
+    struct timeval *t = (struct timeval *) time; 
+    return ((t->tv_sec == 0) && (t->tv_usec == 0));
+}
+
+static void
+chr_timer_diff( chr_time *diff, chr_time *src1, chr_time *src2)
+{
+    struct timeval d;
+    struct timeval *s1 = (struct timeval *)src1;
+    struct timeval *s2 = (struct timeval *)src2;
+    d.tv_sec = s1->tv_sec - s2->tv_sec;
+    d.tv_usec = s1->tv_usec - s2->tv_usec;
+    if (d.tv_usec < 0) {
+	d.tv_usec += 1000000;
+	d.tv_sec--;
+    }
+    *((struct timeval*)diff) = d;
+}
+
+static void
+chr_timer_sum( chr_time *sum, chr_time *src1, chr_time *src2)
+{
+    struct timeval s;
+    struct timeval *s1 = (struct timeval *)src1;
+    struct timeval *s2 = (struct timeval *)src2;
+    s.tv_sec = s1->tv_sec + s2->tv_sec;
+    s.tv_usec = s1->tv_usec + s2->tv_usec;
+    if (s.tv_usec > 1000000) {
+	s.tv_usec -= 1000000;
+	s.tv_sec++;
+    }
+    *((struct timeval*)sum) = s;
+}
+
+
+static double
+chr_time_to_secs(chr_time *time)
+{
+    return (double)((struct timeval*)time)->tv_sec + 
+	((double)((struct timeval*)time)->tv_usec)/1000000.0;
+}
+
+static double
+chr_time_to_millisecs(chr_time *time)
+{
+    return ((double)((struct timeval*)time)->tv_sec)*1000.0 + 
+	((double)((struct timeval*)time)->tv_usec)/1000.0;
+}
+
+static double
+chr_time_to_microsecs(chr_time *time)
+{
+    return ((double)((struct timeval*)time)->tv_sec)*1000000.0 + 
+	((double)((struct timeval*)time)->tv_usec);
+}
+
+static double
+chr_time_to_nanosecs(chr_time *time)
+{
+    return ((double)((struct timeval*)time)->tv_sec)*1000000000.0 + 
+	((double)((struct timeval*)time)->tv_usec*1000.0);
+}
+
+static double
+chr_approx_resolution()
+{
+    struct timeval start, stop, diff;
+    gettimeofday(&start, NULL);
+    gettimeofday(&stop, NULL);
+    while(start.tv_usec == stop.tv_usec) {
+	gettimeofday(&stop, NULL);
+    }
+    chr_timer_diff((chr_time*)&diff, (chr_time*)&stop, (chr_time*)&start);
+    return chr_time_to_secs((chr_time*)&diff);
+}
+
 static char atl_extern_string[] = "\n\
 	int attr_set(attr_list l, string name);\n\
 	attr_list create_attr_list();\n\
@@ -253,7 +362,6 @@ static cod_extern_entry externs[] =
     {"attr_fvalue", (void*)(long)attr_fvalue},
     {"attr_svalue", (void*)(long)attr_svalue},
 #endif
-#ifdef HAVE_CERCS_ENV_H
     {"chr_get_time", (void*)(long)chr_get_time},
     {"chr_timer_diff", (void*)(long)chr_timer_diff},
     {"chr_timer_eq_zero", (void*)(long)chr_timer_eq_zero},
@@ -265,20 +373,18 @@ static cod_extern_entry externs[] =
     {"chr_time_to_millisecs", (void*)(long)chr_time_to_millisecs},
     {"chr_time_to_secs", (void*)(long)chr_time_to_secs},
     {"chr_approx_resolution", (void*)(long)chr_approx_resolution},
-#endif
     {"gettimeofday", (void*)(long)gettimeofday_wrapper},
     {"open_ffs", (void*)(long)open_ffs_file},
     {"close_ffs", (void*)(long)close_ffs_file},
     {(void*)0, (void*)0}
 };
 
-#ifdef HAVE_CERCS_ENV_H
 FMField chr_time_list[] = {
     {"d1", "double", sizeof(double), FMOffset(chr_time*, d1)}, 
     {"d2", "double", sizeof(double), FMOffset(chr_time*, d2)}, 
     {"d3", "double", sizeof(double), FMOffset(chr_time*, d3)}, 
     {NULL, NULL, 0, 0}};
-#endif
+
 FMField timeval_list[] = {
     {"tv_sec", "integer", sizeof(((struct timeval*)0)->tv_sec), FMOffset(struct timeval *, tv_sec)}, 
     {"tv_usec", "integer", sizeof(((struct timeval*)0)->tv_usec), FMOffset(struct timeval *, tv_usec)}, 
@@ -303,10 +409,8 @@ cod_add_standard_elements(cod_parse_context context)
     cod_add_defined_type("ffs_file", context);
 
     cod_add_int_constant_to_parse_context("NULL", 0, context);
-#ifdef HAVE_CERCS_ENV_H
     cod_add_simple_struct_type("chr_time", chr_time_list, context);
     cod_parse_for_context(cercs_env_extern_string, context);
-#endif
     cod_add_simple_struct_type("timeval", timeval_list, context);
     cod_add_defined_type("cod_type_spec", context);
     cod_add_defined_type("cod_exec_context", context);
