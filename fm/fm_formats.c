@@ -2050,9 +2050,17 @@ FMFieldList list;
     return struct_size;
 }
 
+extern int
+struct_size_field_list(list, pointer_size)
+FMFieldList list;
+int pointer_size;
+{
+    return FMstruct_size_field_list(list, pointer_size);
+}
+
 extern
 int
-struct_size_field_list(list, pointer_size)
+FMstruct_size_field_list(list, pointer_size)
 FMFieldList list;
 int pointer_size;
 {
@@ -2060,7 +2068,7 @@ int pointer_size;
     int struct_size = 0;
     while (list[i].field_name != NULL) {
 	int field_size = 0;
-	if (is_var_array_field(list, i) == 1) {
+	if ((is_var_array_field(list, i) == 1) || (index(list[i].field_type, '*'))) {
 	    /* variant array, real_field_size is fmformat->pointer_size */
 	    field_size = pointer_size;
 	} else {

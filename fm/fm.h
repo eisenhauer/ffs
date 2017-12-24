@@ -176,6 +176,9 @@ FMcopy_struct_list(FMStructDescList list);
 extern void
 FMfree_struct_list(FMStructDescList list);
 
+extern int
+FMstruct_size_field_list(FMFieldList list, int pointer_size);
+
 extern FMStructDescList
 FMlocalize_formats(FMStructDescList list);
 
