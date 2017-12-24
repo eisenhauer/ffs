@@ -227,6 +227,8 @@ struct	iovec {
     const void *iov_base;
     long iov_len;
 };
+#else
+#include <sys/socket.h>
 #endif
 
 typedef int (*IOinterface_funcv)(void *conn, struct iovec *iov, 
