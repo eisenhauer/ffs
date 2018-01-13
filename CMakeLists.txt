@@ -28,7 +28,7 @@ set(INSTALL_INCLUDE_DIR include CACHE PATH
 if(WIN32 AND NOT CYGWIN)
   set(DEF_INSTALL_CMAKE_DIR CMake)
 else()
-  set(DEF_INSTALL_CMAKE_DIR lib/CMake/atl)
+  set(DEF_INSTALL_CMAKE_DIR lib/CMake/ffs)
 endif()
 set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH
   "Installation directory for CMake files")
@@ -137,6 +137,7 @@ ENDIF()
 
 set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MASTER_SRC_LIST})
 
+set (CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}/lib/CMake")
 find_dependency(atl COMPONENTS C REQUIRED)
 find_dependency(dill COMPONENTS C REQUIRED)
 
