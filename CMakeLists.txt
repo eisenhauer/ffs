@@ -140,7 +140,7 @@ set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MAST
 find_dependency(atl COMPONENTS C REQUIRED)
 find_dependency(dill COMPONENTS C REQUIRED)
 
-list (APPEND INC_DIRS ${ATL_INCLUDE_DIR} ${DILL_INCLUDE_DIR} ${DL_INCLUDE_DIR})
+list (APPEND INC_DIRS ${ATL_INCLUDE_DIRS} ${DILL_INCLUDE_DIRS} ${DL_INCLUDE_DIRS})
 list (APPEND BASE_LIBS ${ATL_LIBRARIES} ${DILL_LIBRARIES} ${DL_LIBRARIES})
 
 find_library(M_LIB m)
@@ -156,7 +156,8 @@ set_target_properties(ffs PROPERTIES VERSION ${FFS_VERSION_STRING}
 INCLUDE_DIRECTORIES(${INC_DIRS})
 
 IF (dill_FOUND)
-    SET(CMAKE_REQUIRED_LIBRARIES "${DILL_LIBRARIES}")
+    set (HAVE_DILL_H ON)
+    SET(CMAKE_REQUIRED_LIBRARIES "${dill_LIBRARIES}")
     check_function_exists(dill_native_dcg DILL_HAS_NATIVE_DCG)
     if (NOT DILL_HAS_NATIVE_DCG)
        SET(FFS_CONVERSION_GENERATION_DEFAULT FALSE)
@@ -166,9 +167,10 @@ IF (dill_FOUND)
     UNSET(CMAKE_REQUIRED_LIBRARIES)
     set (DO_DCG TRUE)
 ENDIF()
+if (atl_FOUND)
+  set (HAVE_ATL_H ON)
+endif(atl_FOUND)
 
-CHECK_INCLUDE_FILE(dill.h HAVE_DILL_H)
-CHECK_INCLUDE_FILE(atl.h HAVE_ATL_H)
 CHECK_INCLUDE_FILE(malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILE(memory.h HAVE_MEMORY_H)
 CHECK_INCLUDE_FILE(netdb.h HAVE_NETDB_H)
@@ -281,10 +283,9 @@ install(EXPORT ffsTargets DESTINATION
 MESSAGE( STATUS )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
-MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}"  (options are: Debug,Release,RelWithDebInfo,MinSizeRel))
+MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}  (options are: Debug,Release,RelWithDebInfo,MinSizeRel)")
 MESSAGE( STATUS "LIBRARIES_ONLY = ${LIBRARIES_ONLY}" )
 MESSAGE( STATUS "Change a value with: cmake -D<Variable>=<Value>" )
-MESSAGE( STATUS "    to use installed CERCS libraries specify -DCERCS_USE_INSTALLED=1" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 
 INCLUDE(CTest)
