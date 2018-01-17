@@ -922,7 +922,7 @@ write_comment_FFSfile(FFSFile f, const char *comment)
     vec[0].iov_len = 4;
     vec[0].iov_base = &indicator;
     vec[1].iov_len = byte_size;
-    vec[1].iov_base = comment;
+    vec[1].iov_base = (void*)comment;
     int fd = (int)(long)f->file_id;
    if (f->writev_func(f->file_id, vec, 2, NULL, NULL) != 2) {
 	printf("Write failed errno %d\n", errno);
