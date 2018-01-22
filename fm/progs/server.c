@@ -154,6 +154,13 @@ static FILE *log = (void *) 0;
 #define _GNU_SOURCE
 #include <unistd.h>
 
+static int no_log = 0;
+void
+ffs_set_no_log(int in_no_log)
+{
+    no_log = in_no_log;
+}
+
 extern void
 LOG(format_server fs, char *format,...)
 {
@@ -164,6 +171,7 @@ LOG(format_server fs, char *format,...)
     struct tm *info;
     char buffer[80];
 
+    if (no_log) return;
     pthread_mutex_lock(&fs->log_lock);
     if ((log == (void *) -1) || (log == (void *) 0)) {
 	int restart = 0;
