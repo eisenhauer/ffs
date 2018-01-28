@@ -5,26 +5,6 @@
    fun:alloc_dill_jump_table
 }
 {
-   cercs_env, not really
-   Memcheck:Value8
-   fun:init_env_table
-   fun:cercs_getenv
-}
-{
-   cercs_env, not really
-   Memcheck:Cond
-...
-   fun:init_env_table
-   fun:cercs_getenv
-}
-{
-   cercs_env, leak
-   Memcheck:Leak
-...
-   fun:*
-   fun:cercs_getenv
-}
-{
    <insert_a_suppression_name_here>
    Memcheck:Leak
    fun:malloc
