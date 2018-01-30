@@ -109,25 +109,34 @@ LIST(APPEND FFS_MASTER_SRC_LIST version.c)
 FIND_PACKAGE (BISON)
 FIND_PACKAGE (FLEX)
 
-IF (TARGET_CNL)   # This should be set to true if compiling for compute note linux
-  set (NO_DYNAMIC_LINKING 1)   # dummy dyn linking in cm.c and cm_transport.c
-ELSE ()
-  FIND_PACKAGE(DL)
-ENDIF ()
-BISON_TARGET(CODParser cod/cod.y ${CMAKE_CURRENT_BINARY_DIR}/cod.tab.c COMPILE_FLAGS -d)
-set (HAVE_COD_PARSER_H)
-FLEX_TARGET(CODScanner cod/cod.l  ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.c)
-ADD_FLEX_BISON_DEPENDENCY(CODScanner CODParser)
+if (NOT BISON_FOUND OR NOT FLEX_FOUND) 
+   include ( BisonFlexSub )
+   SETUP_BISON_FLEX_SUB ()
+else()
+   BISON_TARGET(CODParser cod/cod.y ${CMAKE_CURRENT_BINARY_DIR}/cod.tab.c COMPILE_FLAGS -d)
+   set (HAVE_COD_PARSER_H)
+   FLEX_TARGET(CODScanner cod/cod.l  ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.c)
+   ADD_FLEX_BISON_DEPENDENCY(CODScanner CODParser)
+endif ()
 add_custom_command(
   OUTPUT "cod_node.c" "structs.h"
   COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/cod/struct.pl ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.structs
   DEPENDS lex.yy.c ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.structs ${CMAKE_CURRENT_SOURCE_DIR}/cod/struct.pl
 )
 
+IF (TARGET_CNL)   # This should be set to true if compiling for compute note linux
+  set (NO_DYNAMIC_LINKING 1)   # dummy dyn linking in cm.c and cm_transport.c
+ELSE ()
+  FIND_PACKAGE(DL)
+ENDIF ()
+
 add_custom_target(
     docs ALL
     DEPENDS "cod_node.c"
     )
+
+add_custom_target (generated
+		  DEPENDS cod_node.c ${BISON_CODParser_OUTPUT_SOURCE} )
 
 LIST (APPEND COD_MASTER_SRC_LIST ${BISON_CODParser_OUTPUT_SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cod_node.c)
 
