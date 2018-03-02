@@ -12,9 +12,6 @@
 /* Define to 1 if you have the <atl.h> header file. */
 #cmakedefine HAVE_ATL_H
 
-/* Define to 1 if you have the <CERCS_ENV.h> header file. */
-#cmakedefine HAVE_CERCS_ENV_H
-
 /* Define to 1 if you have the <dill.h> header file. */
 #cmakedefine HAVE_DILL_H
 
