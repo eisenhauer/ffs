@@ -172,8 +172,8 @@ endif()
 
 add_library(ffs ${FFS_MASTER_SRC_LIST})
 target_link_libraries(ffs ${BASE_LIBS})
-set_target_properties(ffs PROPERTIES VERSION ${FFS_VERSION_STRING}
-                                          SOVERSION ${FFS_VERSION_MAJOR})
+set_target_properties(ffs PROPERTIES VERSION ${FFS_VERSION}
+                                          SOVERSION ${FFS_MAJOR_VERSION})
 
 INCLUDE_DIRECTORIES(${INC_DIRS})
 
