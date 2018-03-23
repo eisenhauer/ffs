@@ -24,7 +24,7 @@ if(WIN32 AND NOT CYGWIN)
   set(CMAKE_INSTALL_CMAKEDIR CMake
     CACHE STRING "Installation CMake subdirectory")
 else()
-  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/ffs
+  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake
     CACHE STRING "Installation CMake subdirectory")
 endif()
 mark_as_advanced(CMAKE_INSTALL_BINDIR)
@@ -221,7 +221,7 @@ set_target_properties(ffs PROPERTIES
 
 option(FFS_USE_DILL "Enable Dill code generation" ON)
 if(FFS_USE_DILL)
-  find_package(DILL REQUIRED)
+  find_package(dill REQUIRED)
   set(HAVE_DILL_H ON)
   set(FFS_CONVERSION_GENERATION_DEFAULT ${DILL_HAS_NATIVE_DCG})
   set(DO_DCG TRUE)
@@ -230,7 +230,7 @@ endif()
 
 option(FFS_USE_ATL "Enable the use of ATL" ON)
 if(FFS_USE_ATL)
-  find_package(ATL REQUIRED)
+  find_package(atl REQUIRED)
   set(HAVE_ATL_H ON)
   target_link_libraries(ffs atl::atl)
 endif()
@@ -327,13 +327,13 @@ install(
   FILES
     "${PROJECT_BINARY_DIR}/ffs-config.cmake"
     "${PROJECT_BINARY_DIR}/ffs-config-version.cmake"
-  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}"
+  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}/ffs"
   COMPONENT dev
 )
  
 # Install the export set for use with the install-tree
-install(EXPORT ffs-targets
-  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" COMPONENT dev
+install(EXPORT ffs-targets NAMESPACE ffs::
+  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}/ffs" COMPONENT dev
 )
 
 # display status message for important variables

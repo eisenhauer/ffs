@@ -4,7 +4,7 @@ set (PROGS format_test self_format_test)
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c test_funcs.c)
     TARGET_LINK_LIBRARIES(${TEST} ffs )
-    ADD_TEST(${TEST} "${TEST}")
+    ADD_TEST(NAME ${TEST} COMMAND ${TEST})
 endforeach()
 
 foreach (PROG ${PROGS} )
