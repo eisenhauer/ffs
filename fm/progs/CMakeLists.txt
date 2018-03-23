@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-
 FIND_PACKAGE (Threads)
 
 set (TESTS)
@@ -10,7 +8,6 @@ if (NOT NO_SOCKETS)
 else ()
     set (PROGS)
 endif()
-INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR}${ffs_SOURCE_DIR}/fm )
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c)
@@ -23,11 +20,6 @@ foreach (PROG ${PROGS} )
     TARGET_LINK_LIBRARIES(${PROG} ffs )
 endforeach()
 
-SET(PROGS_INSTALL)
-# prefix and suffix elements
-foreach(l ${PROGS} format_server)
-   list(APPEND PROGS_INSTALL ${CMAKE_CURRENT_BINARY_DIR}/${l} )
-endforeach()
-
-INSTALL(PROGRAMS ${PROGS_INSTALL} DESTINATION bin)
-
+install(TARGETS ${PROGS} format_server
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

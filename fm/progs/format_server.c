@@ -72,7 +72,9 @@ static void check_for_running_server_and_fork();
 static int quiet = 0;
 static int do_proxy = 0;
 static int no_fork = 0;
+static int no_log = 0;
 
+extern void ffs_set_no_log(int in_no_log);
 int
 main(argc, argv)
 int argc;
@@ -92,6 +94,8 @@ char **argv;
     for (i = 1; i < argc; i++) {
 	if (strcmp(argv[i], "-no_fork") == 0) {
 	    no_fork++;
+	} else if (strcmp(argv[i], "-no_log") == 0) {
+	    no_log++;
 	} else if (strcmp(argv[i], "-quiet") == 0) {
 	    quiet++;
 	} else if (strcmp(argv[i], "-slave") == 0) {
@@ -154,6 +158,7 @@ char **argv;
 	    fs_port = tmp_port;
 	}
     }
+    ffs_set_no_log(no_log);
     general_format_server(fs_port, do_restart, no_fork, do_proxy);
     return 0;
 }

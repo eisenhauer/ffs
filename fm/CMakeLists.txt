@@ -1,11 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
-ENABLE_TESTING()
-if (NOT LIBRARIES_ONLY)
-  ADD_SUBDIRECTORY( progs )
-ENDIF(NOT LIBRARIES_ONLY)
+if(NOT FFS_LIBRARIES_ONLY)
+  add_subdirectory(progs)
+endif()
 
-IF(BUILD_TESTING)
-  ADD_SUBDIRECTORY( tests )
-ENDIF(BUILD_TESTING)
-
-
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

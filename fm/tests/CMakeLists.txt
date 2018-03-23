@@ -1,11 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
-
 set (TESTS align_test compat_test)
 set (PROGS format_test self_format_test)
-
-ENABLE_TESTING()
-
-INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR}${ffs_SOURCE_DIR}/fm ${ffs_BINARY_DIR}/fm)
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c test_funcs.c)
@@ -18,4 +12,6 @@ foreach (PROG ${PROGS} )
     TARGET_LINK_LIBRARIES(${PROG} ffs )
 endforeach()
 
-INSTALL(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/format_test DESTINATION bin)
+install(TARGETS ${PROGS}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

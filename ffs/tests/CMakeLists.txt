@@ -1,11 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
-
 set (TESTS context_test context_test2 fortran_test get_set_test no_leaf_test)
 set (PROGS ffs_write ffs_index_test ffs_file_test test_file_unique)
-
-ENABLE_TESTING()
-
-INCLUDE_DIRECTORIES(BEFORE ${ffs_BINARY_DIR} ${ffs_SOURCE_DIR}${ffs_SOURCE_DIR}/fm ${ffs_BINARY_DIR}/fm)
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c test_funcs.c)

@@ -317,7 +317,7 @@ static char atl_extern_string[] = "\n\
 	double attr_dvalue(attr_list l, string name);\n\
 	double attr_fvalue(attr_list l, string name);\n\
 	char* attr_svalue(attr_list l, string name);\n";
-static char cercs_env_extern_string[] = "\n\
+static char chr_extern_string[] = "\n\
         void chr_get_time( chr_time *time);\n\
         void chr_timer_diff( chr_time *diff_time, chr_time *src1, chr_time *src2);\n\
 	int chr_timer_eq_zero( chr_time *time);\n\
@@ -410,7 +410,7 @@ cod_add_standard_elements(cod_parse_context context)
 
     cod_add_int_constant_to_parse_context("NULL", 0, context);
     cod_add_simple_struct_type("chr_time", chr_time_list, context);
-    cod_parse_for_context(cercs_env_extern_string, context);
+    cod_parse_for_context(chr_extern_string, context);
     cod_add_simple_struct_type("timeval", timeval_list, context);
     cod_add_defined_type("cod_type_spec", context);
     cod_add_defined_type("cod_exec_context", context);

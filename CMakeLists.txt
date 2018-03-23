@@ -1,12 +1,87 @@
 cmake_minimum_required(VERSION 2.8.3)
-cmake_policy(VERSION 2.8.3)
-project(ffs)
 
-IF( NOT CMAKE_BUILD_TYPE )
-SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
-ENDIF()
+# Note that this whole if block is for backwards compatibility and can be
+# replaced with a single project(ATL VERSION A.B.C) if the minum required is
+# raised to > 3.0
+if(POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+  project(FFS VERSION 1.5.0)
+else()
+  project(FFS)
+  set(FFS_VERSION_MAJOR 1)
+  set(FFS_VERSION_MINOR 5)
+  set(FFS_VERSION_PATCH 0)
+  set(FFS_VERSION
+    ${FFS_VERSION_MAJOR}.${FFS_VERSION_MINOR}.${FFS_VERSION_PATCH})
+endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# Some boilerplate to setup nice output directories
+set(CMAKE_INSTALL_BINDIR bin CACHE STRING "Installation runtime subdirectory")
+set(CMAKE_INSTALL_LIBDIR lib CACHE STRING "Installation library subdirectory")
+set(CMAKE_INSTALL_INCLUDEDIR include
+  CACHE STRING "Installation include subdirectory")
+if(WIN32 AND NOT CYGWIN)
+  set(CMAKE_INSTALL_CMAKEDIR CMake
+    CACHE STRING "Installation CMake subdirectory")
+else()
+  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/ffs
+    CACHE STRING "Installation CMake subdirectory")
+endif()
+mark_as_advanced(CMAKE_INSTALL_BINDIR)
+mark_as_advanced(CMAKE_INSTALL_LIBDIR)
+mark_as_advanced(CMAKE_INSTALL_INCLUDEDIR)
+mark_as_advanced(CMAKE_INSTALL_CMAKEDIR)
+
+list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake)
+if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+    ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+endif()
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+    ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+endif()
+if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+endif()
+
+list(INSERT CMAKE_PREFIX_PATH 0 ${CMAKE_INSTALL_PREFIX})
+
+# Default to a RelWithDebInfo build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY VALUE RelWithDebugInfo)
+endif()
+
+include(CMakeDependentOption)
+
+# Setup shared library defaults.  If explicitly specified somehow, then default 
+# to that.  Otherwise base the default on whether or not shared libs are even
+# supported.
+get_property(SHARED_LIBS_SUPPORTED GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS)
+cmake_dependent_option(BUILD_SHARED_LIBS
+  "Build shared libraries (so/dylib/dll)." ${SHARED_LIBS_SUPPORTED}
+  "SHARED_LIBS_SUPPORTED" OFF
+)
+mark_as_advanced(BUILD_SHARED_LIBS)
+
+# Setup PIC defaults.  If explicitly specified somehow, then default 
+# to that.  Otherwise base the default on whether or not shared libs are even
+# supported.
+if(DEFINED FFS_ENABLE_PIC)
+  set(FFS_ENABLE_PIC_DEFAULT ${FFS_ENABLE_PIC})
+elseif(DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
+  set(FFS_ENABLE_PIC_DEFAULT ${CMAKE_POSITION_INDEPENDENT_CODE})
+else()
+  set(FFS_ENABLE_PIC_DEFAULT ${SHARED_LIBS_SUPPORTED})
+endif()
+cmake_dependent_option(FFS_ENABLE_PIC
+  "Build with Position Independent Code" ${FFS_ENABLE_PIC_DEFAULT}
+  "SHARED_LIBS_SUPPORTED" OFF
+)
+mark_as_advanced(FFS_ENABLE_PIC)
+set(CMAKE_POSITION_INDEPENDENT_CODE ${FFS_ENABLE_PIC})
+mark_as_advanced(CMAKE_POSITION_INDEPENDENT_CODE)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -14,33 +89,6 @@ include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CMakeFindDependencyMacro)
 
-set(FFS_MAJOR_VERSION 1)
-set(FFS_MINOR_VERSION 5)
-set(FFS_PATCH_VERSION 0)
-set(FFS_VERSION
-  ${FFS_MAJOR_VERSION}.${FFS_MINOR_VERSION}.${FFS_PATCH_VERSION})
-
-# Offer the user the choice of overriding the installation directories
-set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
-set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
-set(INSTALL_INCLUDE_DIR include CACHE PATH
-  "Installation directory for header files")
-if(WIN32 AND NOT CYGWIN)
-  set(DEF_INSTALL_CMAKE_DIR CMake)
-else()
-  set(DEF_INSTALL_CMAKE_DIR lib/CMake/ffs)
-endif()
-set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH
-  "Installation directory for CMake files")
- 
-# Make relative paths absolute (needed later on)
-foreach(p LIB BIN INCLUDE CMAKE)
-  set(var INSTALL_${p}_DIR)
-  if(NOT IS_ABSOLUTE "${${var}}")
-    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
-  endif()
-endforeach()
- 
 CHECK_TYPE_SIZE("double" SIZEOF_DOUBLE)
 CHECK_TYPE_SIZE("float" SIZEOF_FLOAT)
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
@@ -72,10 +120,6 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
 
 set (CMAKE_MACOSX_RPATH 1)
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
-${CMAKE_CURRENT_SOURCE_DIR}/fm ${CMAKE_CURRENT_SOURCE_DIR}/cod
-${CMAKE_CURRENT_SOURCE_DIR}/ffs ${CMAKE_CURRENT_BINARY_DIR}/ffs)
-
 if (NOT (DEFINED NO_SOCKETS))
     check_function_exists(socket SOCKETS_FOUND)
     if (NOT SOCKETS_FOUND)
@@ -106,18 +150,18 @@ FOREACH (FFS_SRC ${FFS_SRC_LIST})
 ENDFOREACH()
 LIST(APPEND FFS_MASTER_SRC_LIST version.c)
 
-FIND_PACKAGE (BISON)
-FIND_PACKAGE (FLEX)
+find_package(BISON)
+find_package(FLEX)
 
-IF (TARGET_CNL)   # This should be set to true if compiling for compute note linux
-  set (NO_DYNAMIC_LINKING 1)   # dummy dyn linking in cm.c and cm_transport.c
-ELSE ()
-  FIND_PACKAGE(DL)
-ENDIF ()
-BISON_TARGET(CODParser cod/cod.y ${CMAKE_CURRENT_BINARY_DIR}/cod.tab.c COMPILE_FLAGS -d)
-set (HAVE_COD_PARSER_H)
-FLEX_TARGET(CODScanner cod/cod.l  ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.c)
-ADD_FLEX_BISON_DEPENDENCY(CODScanner CODParser)
+if (NOT BISON_FOUND OR NOT FLEX_FOUND) 
+   include (BisonFlexSub )
+   SETUP_BISON_FLEX_SUB ()
+else()
+   BISON_TARGET(CODParser cod/cod.y ${CMAKE_CURRENT_BINARY_DIR}/cod.tab.c COMPILE_FLAGS -d)
+   set (HAVE_COD_PARSER_H)
+   FLEX_TARGET(CODScanner cod/cod.l  ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.c)
+   ADD_FLEX_BISON_DEPENDENCY(CODScanner CODParser)
+endif ()
 add_custom_command(
   OUTPUT "cod_node.c" "structs.h"
   COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/cod/struct.pl ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.structs
@@ -125,52 +169,71 @@ add_custom_command(
 )
 
 add_custom_target(
-    docs ALL
-    DEPENDS "cod_node.c"
-    )
+  docs ALL
+  DEPENDS "cod_node.c"
+)
 
-LIST (APPEND COD_MASTER_SRC_LIST ${BISON_CODParser_OUTPUT_SOURCE} ${CMAKE_CURRENT_BINARY_DIR}/cod_node.c)
+add_custom_target(generated
+  DEPENDS cod_node.c ${BISON_CODParser_OUTPUT_SOURCE}
+)
 
-IF( NOT CMAKE_BUILD_TYPE )
-    SET( CMAKE_BUILD_TYPE "RelWithDebInfo" )
-ENDIF()
+list(APPEND COD_MASTER_SRC_LIST
+  ${BISON_CODParser_OUTPUT_SOURCE}
+  ${CMAKE_CURRENT_BINARY_DIR}/cod_node.c
+)
 
-set (FFS_MASTER_SRC_LIST ${FFS_MASTER_SRC_LIST} ${FM_MASTER_SRC_LIST} ${COD_MASTER_SRC_LIST})
+set(FFS_MASTER_SRC_LIST
+  ${FFS_MASTER_SRC_LIST}
+  ${FM_MASTER_SRC_LIST}
+  ${COD_MASTER_SRC_LIST}
+)
 
-set (CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}/lib/CMake")
-find_dependency(atl REQUIRED)
-find_dependency(dill REQUIRED)
-
-list (APPEND INC_DIRS ${ATL_INCLUDE_DIRS} ${DILL_INCLUDE_DIRS} ${DL_INCLUDE_DIRS})
-list (APPEND BASE_LIBS ${ATL_LIBRARIES} ${DILL_LIBRARIES} ${DL_LIBRARIES})
-
-find_library(M_LIB m)
-if (NOT ${M_LIB} STREQUAL "M_LIB-NOTFOUND")
-  list (APPEND BASE_LIBS "-lm")
-endif()
+set(FFS_LIBRARY_PREFIX "" CACHE STRING
+  "Prefix to prepend to the output library name")
+mark_as_advanced(FFS_LIBRARY_PREFIX)
 
 add_library(ffs ${FFS_MASTER_SRC_LIST})
-target_link_libraries(ffs ${BASE_LIBS})
-set_target_properties(ffs PROPERTIES VERSION ${FFS_VERSION_STRING}
-                                          SOVERSION ${FFS_VERSION_MAJOR})
+if(FFS_LIBRARY_PREFIX)
+  set_target_properties(ffs PROPERTIES
+    LIBRARY_OUTPUT_NAME ${FFS_LIBRARY_PREFIX}ffs)
+endif()
+add_library(ffs::ffs ALIAS ffs)
 
-INCLUDE_DIRECTORIES(${INC_DIRS})
+if(UNIX)
+  target_link_libraries(ffs m)
+endif()
+if(SHARED_LIBS_SUPPORTED)
+  target_link_libraries(ffs ${CMAKE_DL_LIBS})
+endif()
 
-IF (dill_FOUND)
-    set (HAVE_DILL_H ON)
-    SET(CMAKE_REQUIRED_LIBRARIES "${dill_LIBRARIES}")
-    check_function_exists(dill_native_dcg DILL_HAS_NATIVE_DCG)
-    if (NOT DILL_HAS_NATIVE_DCG)
-       SET(FFS_CONVERSION_GENERATION_DEFAULT FALSE)
-    else ()
-       SET(FFS_CONVERSION_GENERATION_DEFAULT TRUE)
-    endif()
-    UNSET(CMAKE_REQUIRED_LIBRARIES)
-    set (DO_DCG TRUE)
-ENDIF()
-if (atl_FOUND)
-  set (HAVE_ATL_H ON)
-endif(atl_FOUND)
+target_include_directories(ffs PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fm>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cod>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ffs>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/ffs>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+set_target_properties(ffs PROPERTIES
+  VERSION ${FFS_VERSION} SOVERSION ${FFS_VERSION_MAJOR})
+
+option(FFS_USE_DILL "Enable Dill code generation" ON)
+if(FFS_USE_DILL)
+  find_package(DILL REQUIRED)
+  set(HAVE_DILL_H ON)
+  set(FFS_CONVERSION_GENERATION_DEFAULT ${DILL_HAS_NATIVE_DCG})
+  set(DO_DCG TRUE)
+  target_link_libraries(ffs dill::dill)
+endif()
+
+option(FFS_USE_ATL "Enable the use of ATL" ON)
+if(FFS_USE_ATL)
+  find_package(ATL REQUIRED)
+  set(HAVE_ATL_H ON)
+  target_link_libraries(ffs atl::atl)
+endif()
 
 CHECK_INCLUDE_FILE(malloc.h HAVE_MALLOC_H)
 CHECK_INCLUDE_FILE(memory.h HAVE_MEMORY_H)
@@ -229,73 +292,71 @@ IF (NOT DEFINED (FORMAT_SERVICE_DOMAIN) )
    set (FORMAT_SERVICE_DOMAIN "")
 ENDIF()
 
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/fm/fm.h DESTINATION include)
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cod/cod.h DESTINATION include)
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ffs/ffs.h DESTINATION include)
+install(FILES fm/fm.h cod/cod.h ${CMAKE_CURRENT_BINARY_DIR}/ffs/ffs.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-install(TARGETS ffs
-  EXPORT ffsTargets
-  RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib
-  PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/ffs"
+install(TARGETS ffs EXPORT ffs-targets
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT bin
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT shlib
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib
+  PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ffs"
     COMPONENT dev)
 
-if (${CMAKE_C_COMPILER_ID} MATCHES "Intel") 
+if (CMAKE_C_COMPILER_ID MATCHES Intel) 
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -shared-intel")
 endif()
 
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/config.h
+)
 
 # Add all targets to the build-tree export set
-export(TARGETS ffs
-  FILE "${PROJECT_BINARY_DIR}/ffsTargets.cmake")
+export(TARGETS ffs NAMESPACE ffs::
+  FILE "${PROJECT_BINARY_DIR}/ffs-targets.cmake")
  
-# Export the package for use from the build-tree
-# (this registers the build-tree with a global CMake-registry)
-export(PACKAGE ffs)
+# Create the ffs-config.cmake and ffs-config-version files
+configure_file(ffs-config.cmake.in
+  "${PROJECT_BINARY_DIR}/ffs-config.cmake" @ONLY)
+configure_file(ffs-config-version.cmake.in
+  "${PROJECT_BINARY_DIR}/ffs-config-version.cmake" @ONLY)
  
-# Create the ffsConfig.cmake and ffsConfigVersion files
-file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
-   "${INSTALL_INCLUDE_DIR}")
-# ... for the build tree
-set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
-configure_file(ffsConfig.cmake.in
-  "${PROJECT_BINARY_DIR}/ffsConfig.cmake" @ONLY)
-# ... for the install tree
-set(CONF_INCLUDE_DIRS "\${FFS_CMAKE_DIR}/${REL_INCLUDE_DIR}")
-configure_file(ffsConfig.cmake.in
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/ffsConfig.cmake" @ONLY)
-# ... for both
-configure_file(ffsConfigVersion.cmake.in
-  "${PROJECT_BINARY_DIR}/ffsConfigVersion.cmake" @ONLY)
- 
-# Install the ffsConfig.cmake and ffsConfigVersion.cmake
-install(FILES
-  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/ffsConfig.cmake"
-  "${PROJECT_BINARY_DIR}/ffsConfigVersion.cmake"
-  DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+# Install the ffs-config.cmake and ffs-config-version.cmake
+install(
+  FILES
+    "${PROJECT_BINARY_DIR}/ffs-config.cmake"
+    "${PROJECT_BINARY_DIR}/ffs-config-version.cmake"
+  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}"
+  COMPONENT dev
+)
  
 # Install the export set for use with the install-tree
-install(EXPORT ffsTargets DESTINATION
-  "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+install(EXPORT ffs-targets
+  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" COMPONENT dev
+)
 
 # display status message for important variables
-MESSAGE( STATUS )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
-MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}  (options are: Debug,Release,RelWithDebInfo,MinSizeRel)")
-MESSAGE( STATUS "LIBRARIES_ONLY = ${LIBRARIES_ONLY}" )
-MESSAGE( STATUS "Change a value with: cmake -D<Variable>=<Value>" )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
+option(FFS_LIBRARIES_ONLY "Whether or not to build the associated executables"
+  OFF)
+option(FFS_QUIET "Suppress summary output" OFF)
+if(NOT FFS_QUIET)
+message(STATUS)
+message(STATUS "-----------------------------------------------------------------------------")
+message(STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+message(STATUS "FFS_USE_DILL = ${FFS_USE_DILL}")
+message(STATUS "FFS_USE_ATL = ${FFS_USE_ATL}")
+message(STATUS "FFS_LIBRARIES_ONLY = ${FFS_LIBRARIES_ONLY}")
+message(STATUS "Change a value with: cmake -D<Variable>=<Value>")
+message(STATUS "-----------------------------------------------------------------------------")
+endif()
 
-INCLUDE(CTest)
-ENABLE_TESTING()
-IF(BUILD_TESTING)
-  SET(BUILDNAME "${BUILDNAME}" CACHE STRING "Name of build on the dashboard")
-  MARK_AS_ADVANCED(BUILDNAME)
-ENDIF(BUILD_TESTING)
+include(CTest)
+if(BUILD_TESTING)
+  enable_testing()
+endif()
 
-ADD_SUBDIRECTORY( fm )
-ADD_SUBDIRECTORY( cod )
-ADD_SUBDIRECTORY( ffs )
+add_subdirectory(fm)
+add_subdirectory(cod)
+add_subdirectory(ffs)

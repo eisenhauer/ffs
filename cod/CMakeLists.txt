@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-IF(BUILD_TESTING)
-  ADD_SUBDIRECTORY( tests )
-ENDIF(BUILD_TESTING)
-
-
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
