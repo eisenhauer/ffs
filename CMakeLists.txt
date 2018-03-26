@@ -193,10 +193,10 @@ set(FFS_LIBRARY_PREFIX "" CACHE STRING
 mark_as_advanced(FFS_LIBRARY_PREFIX)
 
 add_library(ffs ${FFS_MASTER_SRC_LIST})
-if(FFS_LIBRARY_PREFIX)
-  set_target_properties(ffs PROPERTIES
-    LIBRARY_OUTPUT_NAME ${FFS_LIBRARY_PREFIX}ffs)
-endif()
+set_target_properties(ffs PROPERTIES
+  OUTPUT_NAME ${FFS_LIBRARY_PREFIX}ffs
+  VERSION ${FFS_VERSION}
+  SOVERSION ${FFS_VERSION_MAJOR})
 add_library(ffs::ffs ALIAS ffs)
 
 if(UNIX)
@@ -215,9 +215,6 @@ target_include_directories(ffs PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/ffs>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-
-set_target_properties(ffs PROPERTIES
-  VERSION ${FFS_VERSION} SOVERSION ${FFS_VERSION_MAJOR})
 
 option(FFS_USE_DILL "Enable Dill code generation" ON)
 if(FFS_USE_DILL)
