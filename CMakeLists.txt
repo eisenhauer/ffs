@@ -24,7 +24,7 @@ if(WIN32 AND NOT CYGWIN)
   set(CMAKE_INSTALL_CMAKEDIR CMake
     CACHE STRING "Installation CMake subdirectory")
 else()
-  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake
+	set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/ffs
     CACHE STRING "Installation CMake subdirectory")
 endif()
 mark_as_advanced(CMAKE_INSTALL_BINDIR)
@@ -200,10 +200,10 @@ set_target_properties(ffs PROPERTIES
 add_library(ffs::ffs ALIAS ffs)
 
 if(UNIX)
-  target_link_libraries(ffs m)
+	target_link_libraries(ffs PRIVATE m)
 endif()
 if(SHARED_LIBS_SUPPORTED)
-  target_link_libraries(ffs ${CMAKE_DL_LIBS})
+	target_link_libraries(ffs PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
 target_include_directories(ffs PUBLIC
@@ -222,14 +222,14 @@ if(FFS_USE_DILL)
   set(HAVE_DILL_H ON)
   set(FFS_CONVERSION_GENERATION_DEFAULT ${DILL_HAS_NATIVE_DCG})
   set(DO_DCG TRUE)
-  target_link_libraries(ffs dill::dill)
+  target_link_libraries(ffs PRIVATE dill::dill)
 endif()
 
 option(FFS_USE_ATL "Enable the use of ATL" ON)
 if(FFS_USE_ATL)
   find_package(atl 2.2.1 REQUIRED)
   set(HAVE_ATL_H ON)
-  target_link_libraries(ffs atl::atl)
+  target_link_libraries(ffs PUBLIC atl::atl)
 endif()
 
 CHECK_INCLUDE_FILE(malloc.h HAVE_MALLOC_H)
@@ -324,13 +324,13 @@ install(
   FILES
     "${PROJECT_BINARY_DIR}/ffs-config.cmake"
     "${PROJECT_BINARY_DIR}/ffs-config-version.cmake"
-  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}/ffs"
+  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}"
   COMPONENT dev
 )
  
 # Install the export set for use with the install-tree
 install(EXPORT ffs-targets NAMESPACE ffs::
-  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}/ffs" COMPONENT dev
+  DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" COMPONENT dev
 )
 
 # display status message for important variables
