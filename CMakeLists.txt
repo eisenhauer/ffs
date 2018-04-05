@@ -205,8 +205,11 @@ if(UNIX)
     list(APPEND _pkg_config_private_libs m)
 endif()
 if(SHARED_LIBS_SUPPORTED)
+    unset(NO_DYNAMIC_LINKING)
     target_link_libraries(ffs PRIVATE ${CMAKE_DL_LIBS})	
-    list(APPEND _pkg_config_private_libs ${CMAKE_DL_LIBS})	
+    list(APPEND _pkg_config_private_libs ${CMAKE_DL_LIBS})
+else()
+    set(NO_DYNAMIC_LINKING TRUE)
 endif()
 
 target_include_directories(ffs PUBLIC
