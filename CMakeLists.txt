@@ -313,11 +313,13 @@ export(TARGETS ffs NAMESPACE ffs::
   FILE "${PROJECT_BINARY_DIR}/ffs-targets.cmake")
 
 # Create the ffs-config.cmake and ffs-config-version files
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${PROJECT_BINARY_DIR}/ffs-config-version.cmake"
+  COMPATIBILITY SameMajorVersion)
 configure_file(ffs-config.cmake.in
   "${PROJECT_BINARY_DIR}/ffs-config.cmake" @ONLY)
-configure_file(ffs-config-version.cmake.in
-  "${PROJECT_BINARY_DIR}/ffs-config-version.cmake" @ONLY)
- 
+
 # Install the ffs-config.cmake and ffs-config-version.cmake
 install(
   FILES
