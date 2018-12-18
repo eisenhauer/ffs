@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 project(FFS VERSION 1.6.0)
 
 # Some boilerplate to setup nice output directories
