@@ -51,23 +51,6 @@ cmake_dependent_option(BUILD_SHARED_LIBS
   "SHARED_LIBS_SUPPORTED" OFF)
 mark_as_advanced(BUILD_SHARED_LIBS)
 
-# Setup PIC defaults.  If explicitly specified somehow, then default
-# to that.  Otherwise base the default on whether or not shared libs are even
-# supported.
-if(DEFINED FFS_ENABLE_PIC)
-  set(FFS_ENABLE_PIC_DEFAULT ${FFS_ENABLE_PIC})
-elseif(DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
-  set(FFS_ENABLE_PIC_DEFAULT ${CMAKE_POSITION_INDEPENDENT_CODE})
-else()
-  set(FFS_ENABLE_PIC_DEFAULT ${SHARED_LIBS_SUPPORTED})
-endif()
-cmake_dependent_option(FFS_ENABLE_PIC
-  "Build with Position Independent Code" ${FFS_ENABLE_PIC_DEFAULT}
-  "SHARED_LIBS_SUPPORTED" OFF)
-mark_as_advanced(FFS_ENABLE_PIC)
-set(CMAKE_POSITION_INDEPENDENT_CODE ${FFS_ENABLE_PIC})
-mark_as_advanced(CMAKE_POSITION_INDEPENDENT_CODE)
-
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckTypeSize)
