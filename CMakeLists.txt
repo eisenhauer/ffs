@@ -314,6 +314,11 @@ install(
 install(EXPORT ffs-targets NAMESPACE ffs::
   DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" COMPONENT dev)
 
+include(CTest)
+if(BUILD_TESTING)
+  enable_testing()
+endif()
+
 # display status message for important variables
 option(FFS_LIBRARIES_ONLY "Whether or not to build the associated executables"
   OFF)
@@ -326,13 +331,10 @@ if(NOT FFS_QUIET)
   message(STATUS "FFS_USE_DILL = ${FFS_USE_DILL}")
   message(STATUS "FFS_USE_ATL = ${FFS_USE_ATL}")
   message(STATUS "FFS_LIBRARIES_ONLY = ${FFS_LIBRARIES_ONLY}")
+  message(STATUS "BUILD_SHARED_LIBS = ${BUILD_SHARED_LIBS}")
+  message(STATUS "BUILD_TESTING = ${BUILD_TESTING}")
   message(STATUS "Change a value with: cmake -D<Variable>=<Value>")
   message(STATUS "-----------------------------------------------------------------------------")
-endif()
-
-include(CTest)
-if(BUILD_TESTING)
-  enable_testing()
 endif()
 
 add_subdirectory(fm)
