@@ -195,11 +195,11 @@ struct _subformat_wire_format_1 {  /* 28 bytes for base */
 /*byte 0*/    UINT2 subformat_rep_length;  /* transmitted in net byte order */
 /*byte 2*/    unsigned char server_rep_version;
 /*byte 3*/    unsigned char record_byte_order;
-/*byte 4*/    unsigned char pointer_size;
-/*byte 5*/    unsigned char header_size;
-/*byte 6*/    UINT4 name_offset;	/* native host byte order */
-/*byte 10*/   UINT4 field_count;
-/*byte 14*/   INT4 record_length;
+/*byte 4*/    UINT4 name_offset;	/* native host byte order */
+/*byte 8*/    UINT4 field_count;
+/*byte 12*/   INT4 record_length;
+/*byte 16*/    unsigned char pointer_size;
+/*byte 17*/    unsigned char header_size;
 /*byte 18*/   UINT2 floating_point_rep;
 /*byte 20*/   UINT2 opt_info_offset;
 /*byte 22*/   unsigned char column_major_arrays;  /* false for C, true for Fortran */
