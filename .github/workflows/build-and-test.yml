@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build
 
 on:
   push:
@@ -8,3 +8,83 @@ on:
     branches:
     - master
 
+jobs:
+  with_dill:
+    runs-on: ${{ matrix.vm }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+       #jobname: [ linux, macos, windows ]
+       jobname: [ linux, macos ]
+       #dill: [ dill_on, dill_off ]
+       dill: [ dill_on ]
+       #build_type: [ Release, Debug ]
+       build_type: [ Release ]
+       include:
+       - jobname: linux
+         vm: ubuntu-latest
+       - jobname: macos
+         vm: macos-latest
+       #- jobname: windows
+       #  vm: windows-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Install atl
+      run: |
+        mkdir -p ${{ github.workspace }}/../dependencies
+        pushd ${{ github.workspace }}/../dependencies
+        mkdir atl
+        cd atl
+        git clone https://github.com/GTKorvo/atl.git source
+        mkdir build
+        cd build
+        cmake \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../dependencies/install \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_TESTING=OFF \
+          ../source
+        cmake --build . -j4
+        cmake --install .
+    - name: Install dill
+      if: ${{ matrix.dill == 'dill_on' }}
+      run: |
+        mkdir -p ${{ github.workspace }}/../dependencies
+        pushd ${{ github.workspace }}/../dependencies
+        mkdir dill
+        cd dill
+        git clone https://github.com/GTKorvo/dill.git source
+        mkdir build
+        cd build
+        cmake \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../dependencies/install \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_TESTING=OFF \
+          ../source
+        cmake --build . -j4
+        cmake --install .
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Configure
+      env:
+        CMAKE_PREFIX_PATH: ${{ github.workspace }}/../dependencies/install:${CMAKE_PREFIX_PATH}
+      run: |
+        mkdir build
+        cd build
+        cmake  \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DFFS_USE_DILL=${{ matrix.dill == 'dill_on' }} \
+          ..
+    - name: Build
+      run: |
+        cd build
+        cmake --build . -j4
+    - name: Test
+      run: |
+        cd build
+        ctest -VV -j 1
