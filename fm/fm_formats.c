@@ -748,6 +748,7 @@ char *FMTypeEnumString[] = {"pointer", "array", "string", "subformat", "simple"}
 char *FMDatatypeString[] = {"unknown", "integer", "unsigned", "float", "char", "string", "enumeration",
 			    "boolean"};
 	
+#ifdef NOTDEF
 static void
 dump_FMTypeDesc(FMTypeDesc *l, int indent)
 {
@@ -757,7 +758,7 @@ dump_FMTypeDesc(FMTypeDesc *l, int indent)
     printf("Field index %d, static size %d, control_field_index %d\n", l->field_index, l->static_size, l->control_field_index);
     if (l->next) dump_FMTypeDesc(l->next, indent+1);
 }
-
+#endif
 
 extern FMTypeDesc*
 gen_FMTypeDesc(FMFieldList fl, int field, const char *typ)
@@ -1568,6 +1569,7 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat fmformat)
 					     (field_count + 1));
     for (field = 0; field < field_count; field++) {
 	int field_size = 0;
+	int simple_string = 0;
 	if (strchr(field_list[field].field_type, '[') == NULL) {
 	    /* not an array */
 	    if (index(field_list[field].field_type, '*') == NULL) {
@@ -3044,7 +3046,6 @@ int verbose;
     FMFieldList iofield = &fmformat->field_list[field];
     FMVarInfoList iovar = &fmformat->var_list[field];
     int field_offset = iofield->field_offset;
-    int field_size = iofield->field_size;
     const char *field_type = iofield->field_type;
     int data_offset = field_offset;
     int byte_reversal = fmformat->byte_reversal;
@@ -3439,7 +3440,6 @@ struct _subformat_wire_format *rep;
     UINT2 tmp;
     INT4 tmp2;
     int OUR_BYTE_ORDER = WORDS_BIGENDIAN;
-    int OTHER_BYTE_ORDER = (WORDS_BIGENDIAN ? 0 : 1);
     int byte_reversal = ((rep->f.f0.record_byte_order & 0x1) != OUR_BYTE_ORDER);
 
     tmp = rep->f.f0.name_offset;
@@ -3551,7 +3551,6 @@ struct _subformat_wire_format *rep;
     UINT2 tmp;
     INT4 tmp2;
     int OUR_BYTE_ORDER = WORDS_BIGENDIAN;
-    int OTHER_BYTE_ORDER = (WORDS_BIGENDIAN ? 0 : 1);
     int byte_reversal = ((rep->f.f1.record_byte_order & 0x1) != OUR_BYTE_ORDER);
 
     tmp2 = rep->f.f1.name_offset;
