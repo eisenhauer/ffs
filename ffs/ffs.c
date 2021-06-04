@@ -271,6 +271,9 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size, in
     }
     if (!handle_subfields(b, fmformat, &state, base_offset)) return NULL;
 
+    if (copy_data_to_tmp(&state, b, NULL, 0, 8, NULL) == -1) {   /* force 64-bit align for end */
+	return NULL;
+    }
     {
 	/* fill in actual length of data marshalled after header */
 	char *tmp_data = b->tmp_buffer;
