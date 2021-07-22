@@ -357,7 +357,7 @@ FMStructDescList target_list;
 	
 	if (strchr(nfl_sort[i].field_name, '(') == NULL) {
 	    /* no default value */
-	    search_name = nfl_sort[i].field_name;
+	    search_name = (char *) nfl_sort[i].field_name;
 	} else {
 	    tmp_field_name = malloc(strlen(nfl_sort[i].field_name)); /* certainly big enough */
 	    field_name_strip_get_default(&nfl_sort[i], tmp_field_name, &default_val);
