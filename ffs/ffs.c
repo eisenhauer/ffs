@@ -634,6 +634,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	}
 	if (field_is_flat(f, t->next)) return 1;
 	return handle_subfield(buf, f, s, tmp_data_loc, parent_offset, t->next);
+	/* notreached */
 	break;
     }
     case FMType_string:

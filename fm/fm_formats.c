@@ -929,6 +929,7 @@ int field;
 		if ((size < sizeof(int))  || (size < sizeof(long)))
 		    return FMOffset(si, i);
 		return FMOffset(sl, l);
+		/* notreached */
 		break;
 	    case unknown_type: case string_type:
 		assert(0);
@@ -1564,7 +1565,6 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat fmformat)
     int field;
     FMFieldList new_field_list;
     int field_count = count_FMfield(field_list);
-    int simple_string = 0;
     new_field_list = (FMFieldList) malloc((size_t) sizeof(FMField) *
 					     (field_count + 1));
     for (field = 0; field < field_count; field++) {
@@ -3741,6 +3741,7 @@ fill_derived_format_values(FMContext fmc, FMFormat format)
 	    }
 	    field_size = field_list[field].field_size * elements;
 	}
+	(void) field_size;
     }
     generate_var_list(format, format->subformats);
     for (field = 0; field < format->field_count; field++) {
@@ -4092,6 +4093,7 @@ void *format_ID;
 	    memcpy(&tmp, &id2->rep_len, 2);
 		tmp = ntohs(tmp);
 	    return tmp << 2;
+	    /* notreached */
 	    break;
 	}
     case 0:
