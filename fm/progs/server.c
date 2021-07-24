@@ -288,8 +288,10 @@ general_format_server(int port, int do_restart, int verbose, int do_proxy)
 	while (1) {
 	    format_server_poll_and_handle(fs);
 	}
+#pragma diag_suppress
 	LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	pthread_mutex_unlock(&fs->lock);
+#pragma diag_default
     }
     return;
 }
@@ -340,7 +342,9 @@ format_server_poll_and_handle(format_server fs)
 		    fd_set test_set;
 		    timeout.tv_usec = 0;
 		    timeout.tv_sec = 0;
+#pragma diag_suppress
 		    FD_ZERO(&test_set);
+#pragma diag_default
 		    FD_SET(i, &test_set);
 		    errno = 0;
 		    select(FD_SETSIZE, &test_set, (fd_set *) NULL,
@@ -776,8 +780,9 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 	ioformat->server_format_rep = rep;
 	return ioformat;
     }
-	
+#pragma diag_suppress
     return NULL;
+#pragma diag_default
 }
 
 
@@ -1773,7 +1778,9 @@ format_server_create()
     fs->timestamp = (time_t *) malloc(sizeof(time_t) * max_fd);
     memset((char *) fs->timestamp, 0, sizeof(FSClient) * max_fd);
 
+#pragma diag_suppress
     FD_ZERO(&fs->fdset);
+#pragma diag_default
     fs->data_buffer = (char *) malloc(1);
     fs->buffer_size = 1;
     fs->proxy_context_to_master = NULL;
@@ -1914,7 +1921,9 @@ format_server_accept_conn_sock(format_server fs, void *conn_sock)
     if ((long) conn_sock == -1) {
 	fd_set fds;
 	struct timeval timeout;
+#pragma diag_suppress
 	FD_ZERO(&fds);
+#pragma diag_default
 	LOG(fs, "minus 1 variation");
 	if ((long) fs->conn_sock_inet >= 0) {
 	    FD_SET((unsigned long) fs->conn_sock_inet, &fds);
