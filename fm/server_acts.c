@@ -189,7 +189,9 @@ action_t action;
 	struct timeval timeout;
 	int ret;
 
+#pragma diag_suppress
 	FD_ZERO(&rd_set);
+#pragma diag_default 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 	FD_SET( (int)(long)iofile->server_fd, &rd_set);
