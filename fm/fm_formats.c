@@ -929,8 +929,6 @@ int field;
 		if ((size < sizeof(int))  || (size < sizeof(long)))
 		    return FMOffset(si, i);
 		return FMOffset(sl, l);
-		/* notreached */
-		break;
 	    case unknown_type: case string_type:
 		assert(0);
 	    case float_type:
@@ -4093,8 +4091,6 @@ void *format_ID;
 	    memcpy(&tmp, &id2->rep_len, 2);
 		tmp = ntohs(tmp);
 	    return tmp << 2;
-	    /* notreached */
-	    break;
 	}
     case 0:
     case 1:

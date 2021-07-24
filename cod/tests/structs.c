@@ -40,13 +40,6 @@ main(int argc, char**argv)
     char *read_file = NULL;
     char *write_file = NULL;
 
-    struct fool {
-	int x;
-    } foo;
-    foo.x = 1;
-    struct fool y;
-    y.x = 2;
-
     while (argc > 1) {
 	if (strcmp(argv[1], "-v") == 0) {
 	    verbose++;

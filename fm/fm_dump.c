@@ -570,8 +570,6 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	    add_to_addr_list(s, ptr_value, new_offset);
 	}
 	return dump_subfield(ptr_value, f, s, 0, parent_base, t->next);
-	/* notreached */
-	break;
     }
     case FMType_string:
     {
@@ -627,8 +625,6 @@ dump_subfield(void*base, FMFormat f, dstate s, int data_offset, void* parent_bas
 	ret = dump_subfields(base, subformat, s, data_offset);
 	stop_field(s, fmfield, &f->var_list[field_index].type_desc);
 	return ret;
-	/* notreached */
-	break;
     }
     case FMType_simple: {
 	FMFieldList fmfield = &f->field_list[t->field_index];

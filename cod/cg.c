@@ -558,8 +558,6 @@ evaluate_constant_expr(dill_stream s, sm_ref expr, long*value)
 	}
 	*value = l;
 	return 1;
-	/* notreached */
-	break;
     }
     case cod_identifier:
 	return evaluate_constant_expr(s, expr->node.identifier.sm_declaration, value);
@@ -2215,8 +2213,6 @@ execute_operator_cg(dill_stream s, operator_t op, int op_type, dill_reg result, 
 	    right_op.in_kernel = 0;
 	}
 	return right_op;
-	/* notreached */
-	break;
     }
     case  op_address:
 	ret_op.reg = right;
