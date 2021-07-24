@@ -3510,6 +3510,8 @@ struct _subformat_wire_format *rep;
 	if (tmp != 0) {
 	    offset = tmp;
 	    format->opt_info = malloc(sizeof(FMOptInfo));
+	    INT2 len = rep->f.f0.subformat_rep_length;
+	    if (byte_reversal) byte_swap((char*)&len, 2);
 	    do {
 		memcpy(&tmp_info, offset + (char*) rep, sizeof(tmp_info));
 		if (tmp_info.info_type != 0) {
@@ -3531,7 +3533,7 @@ struct _subformat_wire_format *rep;
 		    info_count++;
 		    offset += sizeof(tmp_info);
 		}
-	    } while (tmp_info.info_type != 0);
+	    } while ((tmp_info.info_type != 0) && (offset < len));
 	    format->opt_info[info_count].info_type = 0;
 	    format->opt_info[info_count].info_len = 0;
 	    format->opt_info[info_count].info_block = 0;
