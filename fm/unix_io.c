@@ -261,9 +261,9 @@ void *conn;
     int ret_val;
 
     time.tv_sec = time.tv_usec = 0;
-#pragma diag_suppress
+#pragma diag_suppress 550
     FD_ZERO(&read_fds);
-#pragma diag_default
+#pragma diag_default 550
     FD_SET(fd, &read_fds);
     ret_val = select(FD_SETSIZE, &read_fds, NULL, NULL, &time);
     return (ret_val > 0);
