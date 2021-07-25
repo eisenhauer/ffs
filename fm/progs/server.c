@@ -288,10 +288,14 @@ general_format_server(int port, int do_restart, int verbose, int do_proxy)
 	while (1) {
 	    format_server_poll_and_handle(fs);
 	}
+#ifdef __NVCOMPILER
 #pragma diag_suppress 111
+#endif
 	LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	pthread_mutex_unlock(&fs->lock);
+#ifdef __NVCOMPILER
 #pragma diag_default 111
+#endif
     }
     return;
 }
@@ -342,9 +346,13 @@ format_server_poll_and_handle(format_server fs)
 		    fd_set test_set;
 		    timeout.tv_usec = 0;
 		    timeout.tv_sec = 0;
+#ifdef __NVCOMPILER
 #pragma diag_suppress 550
+#endif
 		    FD_ZERO(&test_set);
+#ifdef __NVCOMPILER
 #pragma diag_default 550
+#endif
 		    FD_SET(i, &test_set);
 		    errno = 0;
 		    select(FD_SETSIZE, &test_set, (fd_set *) NULL,
@@ -780,9 +788,13 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 	ioformat->server_format_rep = rep;
 	return ioformat;
     }
+#ifdef __NVCOMPILER
 #pragma diag_suppress 111
+#endif
     return NULL;
+#ifdef __NVCOMPILER
 #pragma diag_default 111
+#endif
 }
 
 
@@ -1778,9 +1790,13 @@ format_server_create()
     fs->timestamp = (time_t *) malloc(sizeof(time_t) * max_fd);
     memset((char *) fs->timestamp, 0, sizeof(FSClient) * max_fd);
 
+#ifdef __NVCOMPILER
 #pragma diag_suppress 550
+#endif
     FD_ZERO(&fs->fdset);
+#ifdef __NVCOMPILER
 #pragma diag_default 550
+#endif
     fs->data_buffer = (char *) malloc(1);
     fs->buffer_size = 1;
     fs->proxy_context_to_master = NULL;
@@ -1921,9 +1937,13 @@ format_server_accept_conn_sock(format_server fs, void *conn_sock)
     if ((long) conn_sock == -1) {
 	fd_set fds;
 	struct timeval timeout;
+#ifdef __NVCOMPILER
 #pragma diag_suppress 550
+#endif
 	FD_ZERO(&fds);
+#ifdef __NVCOMPILER
 #pragma diag_default 550
+#endif
 	LOG(fs, "minus 1 variation");
 	if ((long) fs->conn_sock_inet >= 0) {
 	    FD_SET((unsigned long) fs->conn_sock_inet, &fds);

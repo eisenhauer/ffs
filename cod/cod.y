@@ -1,5 +1,8 @@
 %{
 #include "config.h"
+#ifdef __NVCOMPILER
+#pragma diag_suppress 550, 111, 941
+#endif
 #if defined (__INTEL_COMPILER)
 #  pragma warning (disable: 2215)
 #endif
