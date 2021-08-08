@@ -29,10 +29,6 @@ int argc;
 char **argv;
 {
 
-    int continuous_test = 0;
-    int restart_test = 0;
-    int get_test = 0;
-    int XML_test = 0;
     FMStructDescRec str_list[5];
     struct timespec start, stop;
 
