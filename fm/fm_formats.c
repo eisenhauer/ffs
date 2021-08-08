@@ -2761,20 +2761,21 @@ const char *str;
 long
 find_field(char *field_name, FMFieldList fields, int cur_field, void *search_help)
 {
+    int i;
     if (cur_field > 10) {
       /* search close first */
-      for (int i = cur_field -1; i > cur_field - 10; i--) {
+      for (i = cur_field -1; i > cur_field - 10; i--) {
 	if (strcmp(field_name, fields[i].field_name) == 0) {
 	    return i;
 	}
       }
-      for (int i = cur_field + 1; i < cur_field + 10; i++) {
+      for (i = cur_field + 1; i < cur_field + 10; i++) {
 	if (strcmp(field_name, fields[i].field_name) == 0) {
 	    return i;
 	}
       }
     }
-    int i = 0;
+    i = 0;
     while (fields[i].field_name != NULL) {
 	if (strcmp(field_name, fields[i].field_name) == 0) {
 	    return i;
