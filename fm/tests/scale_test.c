@@ -40,16 +40,6 @@ char **argv;
 
     FMStructDescRec str_list[5];
     struct timespec start, stop;
-    FFSFile ffsfile;
-    int write_mode = 0;
-    int read_mode = 1;
-
-    if (argc > 1) {
-      if (strcmp(argv[1], "-w") == 0) 
-	write_mode++;
-      if (strcmp(argv[1], "-r") == 0) 
-	read_mode++;
-    }
     
     FMContext context;
     int field_count = 20000;
