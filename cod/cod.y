@@ -6650,6 +6650,7 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	    long size;
 	    assert(cast->node_type == cod_cast);
 	    typ = reduce_type_list(context, cast->node.cast.type_spec, &cg_type, context? context->scope:NULL, NULL, NULL);
+#ifdef HAVE_DILL_H
 	    static dill_stream s = NULL;
 	    char str_val[40];
 	    extern int cg_get_size(dill_stream s, sm_ref node);
@@ -6668,6 +6669,9 @@ evaluate_constant_return_expr(cod_parse_context context, sm_ref expr, int *free_
 	    ret->node.constant.const_val = strdup(str_val);
 	    *free_result = 1;
 	    return ret;
+#else
+	    return NULL;
+#endif
 	}	    
 	if (expr->node.operator.right != NULL) {
 	    if (!(right = evaluate_constant_return_expr(context, expr->node.operator.right, &free_right))) return NULL;
