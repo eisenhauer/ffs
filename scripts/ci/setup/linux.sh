@@ -44,6 +44,10 @@ case ${GH_YML_JOBNAME} in
   centos*|alma*)   PKGS="gcc gcc-c++" ;;
   ubuntu*)   PKGS="gcc g++" ;;
 esac
+if [ "${GH_YML_JOBNAME##*-}" = "clang" ]
+then
+  PKGS="clang ${PKGS}"
+fi
 ${PKG_CMD} install -y ${PKGS}
 
 
