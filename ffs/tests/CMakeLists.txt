@@ -46,10 +46,10 @@ FILE(GLOB IOS ${FFS_SOURCE_DIR}/ffs/output_dir/index_output*.bin)
 if (NOT NO_CONTEXT_TESTS) 
    ADD_TEST(NAME write_context_output
      COMMAND context_test -w ${FFS_BINARY_DIR}/ffs/tests/context_test_output.bin)
+   ADD_TEST(NAME context_output_unique
+     COMMAND test_file_unique
+      ${FFS_BINARY_DIR}/ffs/tests/context_test_output.bin ${CTOS})
 endif()
-ADD_TEST(NAME context_output_unique
-  COMMAND test_file_unique
-    ${FFS_BINARY_DIR}/ffs/tests/context_test_output.bin ${CTOS})
 ADD_TEST(NAME write_file_output
   COMMAND ffs_write ${FFS_BINARY_DIR}/ffs/tests/file_output.bin)
 ADD_TEST(NAME file_output_unique
