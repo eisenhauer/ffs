@@ -31,7 +31,7 @@ typedef struct addr_list {
 
 typedef struct encode_state {
     int copy_all;
-    int output_len;
+    int64_t output_len;
     int iovec_is_stack;
     int iovcnt;
     internal_iovec *iovec;
@@ -56,7 +56,7 @@ setup_header(FFSBuffer buf, FMFormat f, estate s)
     int align_pad;
 
     if (f->variant) {
-	header_size += sizeof(FILE_INT);	/* length info */
+	header_size += 8;	/* length info */
     }
     align_pad = (8 - header_size) & 0x7;	/* align to 8 */
     header_size += align_pad;
@@ -115,7 +115,7 @@ int
 allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *tmp_data_loc)
 {
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
-    long tmp_data, msg_offset;
+    int64_t tmp_data, msg_offset;
     switch (req_alignment) {
     case 1: case 2: case 4: case 8: case 16: break;
     default:
@@ -274,10 +274,10 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size, in
     {
 	/* fill in actual length of data marshalled after header */
 	char *tmp_data = b->tmp_buffer;
-	int record_len = state.output_len - header_size;
-	int len_align_pad = (4 - fmformat->server_ID.length) & 3;
+	uint64_t record_len = state.output_len - header_size;
+	int len_align_pad = (8 - fmformat->server_ID.length) & 7;
 	tmp_data += fmformat->server_ID.length + len_align_pad;
-	memcpy(tmp_data, &record_len, 4);
+	memcpy(tmp_data, &record_len, 8);
     }
     free_addr_list(&state);
     *buf_size = state.output_len;
@@ -1288,7 +1288,11 @@ FFSheader_size(FFSTypeHandle ioformat)
     int header_size = ioformat->body->server_ID.length;
     int align_pad;
     if (ioformat->body->variant) {
-	header_size += sizeof(FILE_INT);
+	if (ioformat->body->IOversion <= 3) {
+	    header_size += 4;
+	} else {
+	    header_size += 8;  // length info
+	}
     }
     align_pad = (8 - header_size) & 0x7;
     return header_size + align_pad;
@@ -1311,7 +1315,7 @@ int to_buffer;
 {
     FFSContext iofile = ioformat->context;
     IOConversionPtr conv;
-    int input_record_len;
+    int64_t input_record_len;
     IOConversionStruct null_conv;
     int align_pad;
     int header_size = FFSheader_size(ioformat);
@@ -1338,14 +1342,25 @@ int to_buffer;
 	return 0;
 
     if (ioformat->body->variant) {
-	FILE_INT record_len;
-	int len_align_pad = (4 - ioformat->body->server_ID.length) & 3;
-	FILE_INT *len_ptr = (FILE_INT *) (src + ioformat->body->server_ID.length +
-					  len_align_pad);
-	memcpy(&record_len, len_ptr, sizeof(FILE_INT));
-	if (ioformat->body->byte_reversal)
-	    byte_swap((char *) &record_len, 4);
-	input_record_len = record_len;
+	if (ioformat->body->IOversion <= 3) {
+	    FILE_INT record_len;
+	    int len_align_pad = (4 - ioformat->body->server_ID.length) & 3;
+	    FILE_INT *len_ptr = (FILE_INT *) (src + ioformat->body->server_ID.length +
+					      len_align_pad);
+	    memcpy(&record_len, len_ptr, 4);
+	    if (ioformat->body->byte_reversal)
+		byte_swap((char *) &record_len, 4);
+	    input_record_len = record_len;
+	} else {
+	    uint64_t record_len;
+	    int len_align_pad = (4 - ioformat->body->server_ID.length) & 3;
+	    uint64_t *len_ptr = (uint64_t *) (src + ioformat->body->server_ID.length +
+					      len_align_pad);
+	    memcpy(&record_len, len_ptr, 8);
+	    if (ioformat->body->byte_reversal)
+		byte_swap((char *) &record_len, 8);
+	    input_record_len = record_len;
+	}
     } else {
 	input_record_len = ioformat->body->record_length;
     }

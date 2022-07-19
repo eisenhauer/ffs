@@ -6,8 +6,6 @@
 						 * magic */
 #define MAGIC_FLOAT 0.0078125
 	/* random float */
-#define CURRENT_IO_VERSION set_ffs_version()
-extern int set_ffs_version();
 #ifndef FALSE
 #define FALSE 0
 #define TRUE 1

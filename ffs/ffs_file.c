@@ -1782,7 +1782,7 @@ FFSread_to_buffer(FFSFile file, FFSBuffer b,  void **dest)
     }
 
     f = file->next_data_handle;
-    header_size = FFSheader_size(f);
+    header_size = FFSheader_size(file->next_actual_handle);
     read_size = file->next_data_len - header_size;
     tmp_buf = file->tmp_buffer->tmp_buffer;
     /* should have buffer optimization logic here.  
