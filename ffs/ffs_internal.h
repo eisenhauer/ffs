@@ -189,7 +189,7 @@ set_IOconversion_for_format(FFSContext iofile, FMFormat file_ioformat,
 
 extern
 char *
-make_tmp_buffer(FFSBuffer buf, int size);
+make_tmp_buffer(FFSBuffer buf, int64_t size);
 
 extern int
 FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat, 
