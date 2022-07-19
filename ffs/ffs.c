@@ -275,7 +275,6 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size, in
 	/* fill in actual length of data marshalled after header */
 	char *tmp_data = b->tmp_buffer;
 	uint64_t record_len = state.output_len - header_size;
-	int len_align_pad = (8 - fmformat->server_ID.length) & 7;
 	tmp_data += fmformat->server_ID.length;
 	memcpy(tmp_data, &record_len, 8);
     }
@@ -437,7 +436,6 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
 	/* fill in actual length of data marshalled after header */
 	char *tmp_data = b->tmp_buffer;
 	int64_t record_len = state.output_len - header_size;
-	int len_align_pad = (8 - fmformat->server_ID.length) & 7;
 	tmp_data += fmformat->server_ID.length;
 	memcpy(tmp_data, &record_len, 8);
     }
@@ -1353,9 +1351,7 @@ int to_buffer;
 	    input_record_len = record_len;
 	} else {
 	    uint64_t record_len;
-	    int len_align_pad = (4 - ioformat->body->server_ID.length) & 3;
-	    uint64_t *len_ptr = (uint64_t *) (src + ioformat->body->server_ID.length +
-					      len_align_pad);
+	    uint64_t *len_ptr = (uint64_t *) (src + ioformat->body->server_ID.length);
 	    memcpy(&record_len, len_ptr, 8);
 	    if (ioformat->body->byte_reversal)
 		byte_swap((char *) &record_len, 8);
