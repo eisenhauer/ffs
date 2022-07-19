@@ -276,7 +276,7 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size, in
 	char *tmp_data = b->tmp_buffer;
 	uint64_t record_len = state.output_len - header_size;
 	int len_align_pad = (8 - fmformat->server_ID.length) & 7;
-	tmp_data += fmformat->server_ID.length + len_align_pad;
+	tmp_data += fmformat->server_ID.length;
 	memcpy(tmp_data, &record_len, 8);
     }
     free_addr_list(&state);
@@ -436,10 +436,10 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
     {
 	/* fill in actual length of data marshalled after header */
 	char *tmp_data = b->tmp_buffer;
-	int record_len = state.output_len - header_size;
-	int len_align_pad = (4 - fmformat->server_ID.length) & 3;
+	int64_t record_len = state.output_len - header_size;
+	int len_align_pad = (8 - fmformat->server_ID.length) & 7;
 	tmp_data += fmformat->server_ID.length + len_align_pad;
-	memcpy(tmp_data, &record_len, 4);
+	memcpy(tmp_data, &record_len, 8);
     }
     free_addr_list(&state);
     return fixup_output_vector(b, &state);
