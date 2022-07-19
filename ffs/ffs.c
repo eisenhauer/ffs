@@ -438,7 +438,7 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
 	char *tmp_data = b->tmp_buffer;
 	int64_t record_len = state.output_len - header_size;
 	int len_align_pad = (8 - fmformat->server_ID.length) & 7;
-	tmp_data += fmformat->server_ID.length + len_align_pad;
+	tmp_data += fmformat->server_ID.length;
 	memcpy(tmp_data, &record_len, 8);
     }
     free_addr_list(&state);
