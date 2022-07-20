@@ -266,9 +266,8 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size, i
 	state.addr_list_cnt++;
     }
 
-    if (copy_data_to_tmp(&state, b, NULL, 0, 8, NULL) == -1) {   /* force 64-bit align for var */
-	return NULL;
-    }
+    copy_data_to_tmp(&state, b, NULL, 0, 8, NULL);   /* force 64-bit align for var */
+
     if (!handle_subfields(b, fmformat, &state, base_offset)) return NULL;
 
     {
@@ -428,9 +427,8 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
 	state.addr_list_cnt++;
     }
 
-    if (copy_data_to_tmp(&state, b, NULL, 0, 8, NULL) == -1) {   /* force 64-bit align for var */
-	return NULL;
-    }
+    copy_data_to_tmp(&state, b, NULL, 0, 8, NULL);   /* force 64-bit align for var */
+
     if (!handle_subfields(b, fmformat, &state, base_offset)) return NULL;
     {
 	/* fill in actual length of data marshalled after header */
@@ -534,6 +532,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 	return f->field_list[t->field_index].field_size;
     }
     assert(FALSE);
+    return (size_t)-1;
 }
 
 static int
