@@ -123,7 +123,7 @@ allocate_tmp_space(estate s, FFSBuffer buf, size_t length, int req_alignment, si
     }
     ensure_writev_room(s, 2);
     tmp_data = add_to_tmp_buffer(buf, length + pad);
-    if (tmp_data == -1) return -1;
+//    if (tmp_data == -1) return -1;
     if (pad != 0) {
 	if (s->iovec[s->iovcnt-1].iov_base == NULL) {
 	    /* last was tmp too */
@@ -143,7 +143,7 @@ allocate_tmp_space(estate s, FFSBuffer buf, size_t length, int req_alignment, si
     return msg_offset;
 }
 
-int
+size_t
 copy_data_to_tmp(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
     size_t tmp_data;
@@ -226,7 +226,7 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size, i
     addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
     struct encode_state state;
     init_encode_state(&state);
-    int base_offset = 0;
+    ssize_t base_offset = 0;
     int header_size;
 
     state.iovec_is_stack = 1;
@@ -533,7 +533,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
     case FMType_simple:
 	return f->field_list[t->field_index].field_size;
     }
-    return -1;
+    assert(FALSE);
 }
 
 static int
@@ -590,7 +590,6 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		} else {
 		    new_offset = copy_data_to_tmp(s, buf, ptr_value, size, 8, &tmp_data_loc);
 		}
-		if (new_offset == -1) return 0;
 	    }
 	} else {
 	    /* can't leave data where it sits */
