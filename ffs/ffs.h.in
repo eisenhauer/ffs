@@ -67,7 +67,7 @@ extern FFSEncodeVector
 FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data);
 
 extern char *
-FFSencode_no_leaf_copy(FFSBuffer b, FMFormat fmformat, void *data, int *buf_size);
+FFSencode_no_leaf_copy(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size);
 
 extern int FFSdecode_in_place_possible(FFSTypeHandle);
 
