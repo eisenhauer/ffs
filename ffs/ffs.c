@@ -26,7 +26,7 @@ static void byte_swap(char *data, int size);
 
 typedef struct addr_list {
     void *addr;
-    int offset;
+    ssize_t offset;
 } addr_list_entry;
 
 typedef struct encode_state {
@@ -111,11 +111,11 @@ ensure_writev_room(estate s, int add_count)
 }
 
 
-int
-allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *tmp_data_loc)
+size_t
+allocate_tmp_space(estate s, FFSBuffer buf, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
-    int64_t tmp_data, msg_offset;
+    size_t tmp_data, msg_offset;
     switch (req_alignment) {
     case 1: case 2: case 4: case 8: case 16: break;
     default:
@@ -144,10 +144,10 @@ allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *
 }
 
 int
-copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+copy_data_to_tmp(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
-    int tmp_data;
-    int msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
+    size_t tmp_data;
+    size_t msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
     if (length != 0) {
 	memcpy((char*)buf->tmp_buffer + tmp_data, data, length);
 	s->iovec[s->iovcnt].iov_len = length;
@@ -162,11 +162,11 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
 /*
  *  same as copy_data_to_tmp, except doesn't actually copy the data.  This is used for FFS_NO_LEAF_COPY.
  */
-int
-reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+size_t
+reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
-    int tmp_data;
-    int msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
+    size_t tmp_data;
+    size_t msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
     if (length != 0) {
 	s->iovec[s->iovcnt].iov_len = length;
 	s->iovec[s->iovcnt].iov_offset = tmp_data;
@@ -177,10 +177,10 @@ reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, int length, i
     return msg_offset;
 }
 
-int
-add_data_iovec(estate s, FFSBuffer buf, void *data, int length, int req_alignment)
+size_t
+add_data_iovec(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment)
 {
-    int msg_offset;
+    size_t msg_offset;
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
     switch (req_alignment) {
     case 1: case 2: case 4: case 8: case 16: break;
@@ -502,7 +502,7 @@ set_dynamic_array_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc 
 }
 
 
-static int
+static size_t
 determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 {
     switch (t->type) {
@@ -510,7 +510,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
     case FMType_string:
 	return f->pointer_size;
     case FMType_array: {
-	int size = 1;
+	size_t size = 1;
 	while (t->type == FMType_array) {
 	    if (t->static_size == 0) {
 		struct _FMgetFieldStruct src_spec;
@@ -518,7 +518,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 		memset(&src_spec, 0, sizeof(src_spec));
 		src_spec.size = f->field_list[field].field_size;
 		src_spec.offset = f->field_list[field].field_offset;
-		int tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
+		size_t tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
 		size = size * tmp;
 	    } else {
 		size *= t->static_size;
@@ -544,7 +544,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     case FMType_pointer:
     {
 	struct _FMgetFieldStruct src_spec;
-	int size, new_offset, tmp_data_loc;
+	size_t size, new_offset, tmp_data_loc;
 	char *ptr_value;
 	field_marshal_info marshal_info;
 
@@ -599,8 +599,8 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	       3. return value is number of elements copied
 	       4. adjust size of temporary to reflect actual data copied
 	    */
-	    int element_size = determine_size(f, buf, parent_offset, t->next->next);
-	    int element_count = size / element_size;
+	    size_t element_size = determine_size(f, buf, parent_offset, t->next->next);
+	    size_t element_count = size / element_size;
 	    cod_exec_context ec = marshal_info->ec;
 	    struct subsample_marshal_data smd;
 	    new_offset = allocate_tmp_space(s, buf, size, 8, &tmp_data_loc);
@@ -656,8 +656,8 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     }
     case FMType_array:
     {
-	int elements = 1, i;
-	int element_size;
+	size_t elements = 1, i;
+	size_t element_size;
 	FMTypeDesc *next = t;
 	while (next->type == FMType_array) {
 	    if (next->static_size == 0) {
@@ -666,7 +666,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		memset(&src_spec, 0, sizeof(src_spec));
 		src_spec.size = f->field_list[field].field_size;
 		src_spec.offset = f->field_list[field].field_offset;
-		int tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
+		size_t tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
 		elements = elements * tmp;
 	    } else {
 		elements = elements * next->static_size;
@@ -676,7 +676,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	element_size = determine_size(f, buf, parent_offset, next);
 	if (field_is_flat(f, next)) return 1;
 	for (i = 0; i < elements ; i++) {
-	    int element_offset = data_offset + i * element_size;
+	    size_t element_offset = data_offset + i * element_size;
 	    if (!handle_subfield(buf, f, s, element_offset, parent_offset, next)) return 0;
 	}
 	break;
@@ -699,7 +699,7 @@ copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec) {
 
     if (((char*)vec < (char*)buf->tmp_buffer)
         || ((char*)vec >= (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
-        int i, remainder;
+        size_t i, remainder;
         for (i = 0; vec[i].iov_base; ++i);
         vec_offset = add_to_tmp_buffer(buf, (i + 2) * sizeof(*vec));
 	remainder = vec_offset % sizeof(*vec);
@@ -1108,8 +1108,8 @@ IOConversionPtr conv;
 conversion_action_ptr params;
 {
     FFSContext c = ioformat->context;
-    int final_base_size;
-    int src_base_size;
+    size_t final_base_size;
+    size_t src_base_size;
     int64_t possible_converted_variant_size;
     int64_t orig_variant_size;
 
