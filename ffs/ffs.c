@@ -220,7 +220,7 @@ static int
 handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset);
 
 static char *
-FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size, int flags)
+FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size, int flags)
 {
     internal_iovec stack_iov_array[STACK_ARRAY_SIZE];
     addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
@@ -287,13 +287,13 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size, i
 }
 
 char *
-FFSencode(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size)
+FFSencode(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size)
 {
     return FFSencode_internal(b, fmformat, data, buf_size, /*flags*/ 0);
 }
 
 char *
-FFSencode_no_leaf_copy(FFSBuffer b, FMFormat fmformat, void *data, long *buf_size)
+FFSencode_no_leaf_copy(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size)
 {
     return FFSencode_internal(b, fmformat, data, buf_size, /*flags*/ FFS_NO_LEAF_COPY);
 }

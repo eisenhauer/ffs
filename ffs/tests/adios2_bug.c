@@ -515,7 +515,7 @@ static int verbose = 0;
 void *CP_distributeDataFromRankZero(FFSContext ffs_c, void *root_info,
                                     FFSTypeHandle Type, void **RetDataBlock)
 {
-    long DataSize;
+    size_t DataSize;
     char *Buffer;
     void *RetVal;
 
