@@ -36,6 +36,7 @@ extern "C" {
 #include "atl.h"
 #endif
 
+#include <stddef.h>
 #include <stdint.h>
 
 
