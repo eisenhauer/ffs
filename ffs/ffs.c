@@ -252,7 +252,7 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size,
     if (fmformat->variant || state.copy_all) {
 	base_offset = copy_data_to_tmp(&state, b, data, 
 				       fmformat->record_length, 1, NULL);
-	if (base_offset == -1) return NULL;
+	if (base_offset == (size_t)-1) return NULL;
     }
 
     if (!fmformat->variant) {
@@ -646,7 +646,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, size_t data_offset, size_t 
 	    str_offset = add_data_iovec(s, buf, ptr_value, size, 1);
 	} else {
 	    str_offset = copy_data_to_tmp(s, buf, ptr_value, size, 1, NULL);
-	    if (str_offset == -1) return 0;
+	    if (str_offset == (size_t)-1) return 0;
 	}
 	quick_put_ulong(&src_spec, str_offset - s->saved_offset_difference,
 			(char*)buf->tmp_buffer + data_offset);
