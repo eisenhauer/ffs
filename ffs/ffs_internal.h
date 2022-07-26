@@ -34,7 +34,7 @@ struct _FFSBuffer {
 typedef struct _internal_iovec {
     void *iov_base;
     int iov_offset;
-    int iov_len;
+    size_t iov_len;
 } internal_iovec;
 
 struct _IOContextStruct {

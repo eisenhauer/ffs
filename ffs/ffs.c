@@ -111,11 +111,11 @@ ensure_writev_room(estate s, int add_count)
 }
 
 
-int
-allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *tmp_data_loc)
+size_t
+allocate_tmp_space(estate s, FFSBuffer buf, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
-    int64_t tmp_data, msg_offset;
+    size_t tmp_data, msg_offset;
     switch (req_alignment) {
     case 1: case 2: case 4: case 8: case 16: break;
     default:
@@ -144,10 +144,10 @@ allocate_tmp_space(estate s, FFSBuffer buf, int length, int req_alignment, int *
 }
 
 int
-copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+copy_data_to_tmp(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
-    int tmp_data;
-    int msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
+    size_t tmp_data;
+    size_t msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
     if (length != 0) {
 	memcpy((char*)buf->tmp_buffer + tmp_data, data, length);
 	s->iovec[s->iovcnt].iov_len = length;
@@ -163,10 +163,10 @@ copy_data_to_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignm
  *  same as copy_data_to_tmp, except doesn't actually copy the data.  This is used for FFS_NO_LEAF_COPY.
  */
 int
-reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, int length, int req_alignment, int *tmp_data_loc)
+reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment, size_t *tmp_data_loc)
 {
-    int tmp_data;
-    int msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
+    size_t tmp_data;
+    size_t msg_offset = allocate_tmp_space(s, buf, length, req_alignment, &tmp_data);
     if (length != 0) {
 	s->iovec[s->iovcnt].iov_len = length;
 	s->iovec[s->iovcnt].iov_offset = tmp_data;
@@ -177,10 +177,10 @@ reserve_space_for_data_in_tmp(estate s, FFSBuffer buf, void *data, int length, i
     return msg_offset;
 }
 
-int
-add_data_iovec(estate s, FFSBuffer buf, void *data, int length, int req_alignment)
+size_t
+add_data_iovec(estate s, FFSBuffer buf, void *data, size_t length, int req_alignment)
 {
-    int msg_offset;
+    size_t msg_offset;
     int pad = (req_alignment - s->output_len) & (req_alignment -1);  /*  only works if req_align is power of two */
     switch (req_alignment) {
     case 1: case 2: case 4: case 8: case 16: break;
@@ -217,7 +217,7 @@ init_encode_state(estate state)
 }
 
 static int
-handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset);
+handle_subfields(FFSBuffer buf, FMFormat f, estate s, size_t data_offset);
 
 static char *
 FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size, int flags)
@@ -226,7 +226,7 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size,
     addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
     struct encode_state state;
     init_encode_state(&state);
-    int base_offset = 0;
+    size_t base_offset = 0;
     int header_size;
 
     state.iovec_is_stack = 1;
@@ -337,7 +337,7 @@ fixup_output_vector(FFSBuffer b, estate s)
 }
 
 static void
-add_to_addr_list(estate s, void *addr, int offset)
+add_to_addr_list(estate s, void *addr, size_t offset)
 {
     if (s->addr_list_is_stack) {
 	if (s->addr_list_cnt == STACK_ARRAY_SIZE) {
@@ -362,11 +362,11 @@ add_to_addr_list(estate s, void *addr, int offset)
     s->addr_list_cnt++;
 }
 
-static int
+static size_t
 search_addr_list(estate s, void *addr)
 {
     int i;
-    int previous_offset = -1;
+    size_t previous_offset = (size_t)-1;
     for (i=0; i < s->addr_list_cnt; i++) {
 	if (s->addr_list[i].addr == addr) {
 	    previous_offset = s->addr_list[i].offset;
@@ -444,7 +444,7 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
 }
 
 static int
-handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent_offset, FMTypeDesc *t);
+handle_subfield(FFSBuffer buf, FMFormat f, estate s, size_t data_offset, size_t parent_offset, FMTypeDesc *t);
 
 extern int
 field_is_flat(FMFormat f, FMTypeDesc *t)
@@ -468,7 +468,7 @@ field_is_flat(FMFormat f, FMTypeDesc *t)
 }
 
 static int
-handle_subfields(FFSBuffer buf, FMFormat f, estate s, int data_offset)
+handle_subfields(FFSBuffer buf, FMFormat f, estate s, size_t data_offset)
 {
     int i;
     /* if base is not variant (I.E. doesn't contain addresses), return;*/
@@ -502,7 +502,7 @@ set_dynamic_array_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc 
 }
 
 
-static int
+static size_t
 determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 {
     switch (t->type) {
@@ -510,7 +510,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
     case FMType_string:
 	return f->pointer_size;
     case FMType_array: {
-	int size = 1;
+	size_t size = 1;
 	while (t->type == FMType_array) {
 	    if (t->static_size == 0) {
 		struct _FMgetFieldStruct src_spec;
@@ -518,7 +518,7 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 		memset(&src_spec, 0, sizeof(src_spec));
 		src_spec.size = f->field_list[field].field_size;
 		src_spec.offset = f->field_list[field].field_offset;
-		int tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
+		size_t tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
 		size = size * tmp;
 	    } else {
 		size *= t->static_size;
@@ -537,14 +537,14 @@ determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
 }
 
 static int
-handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent_offset, FMTypeDesc *t)
+handle_subfield(FFSBuffer buf, FMFormat f, estate s, size_t data_offset, size_t parent_offset, FMTypeDesc *t)
 {
 
     switch (t->type) {
     case FMType_pointer:
     {
 	struct _FMgetFieldStruct src_spec;
-	int size, new_offset, tmp_data_loc;
+	size_t size, new_offset, tmp_data_loc;
 	char *ptr_value;
 	field_marshal_info marshal_info;
 
@@ -566,8 +566,8 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	}
 
 	if (f->recursive) {
-	    int previous_offset = search_addr_list(s, ptr_value);
-	    if (previous_offset != -1) {
+	    size_t previous_offset = search_addr_list(s, ptr_value);
+	    if (previous_offset != (size_t)-1) {
 		quick_put_ulong(&src_spec, previous_offset,
 				(char*)buf->tmp_buffer + data_offset);
 		return 1;
@@ -599,8 +599,8 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	       3. return value is number of elements copied
 	       4. adjust size of temporary to reflect actual data copied
 	    */
-	    int element_size = determine_size(f, buf, parent_offset, t->next->next);
-	    int element_count = size / element_size;
+	    size_t element_size = determine_size(f, buf, parent_offset, t->next->next);
+	    size_t element_count = size / element_size;
 	    cod_exec_context ec = marshal_info->ec;
 	    struct subsample_marshal_data smd;
 	    new_offset = allocate_tmp_space(s, buf, size, 8, &tmp_data_loc);
@@ -637,7 +637,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     {
 	struct _FMgetFieldStruct src_spec;
 	char *ptr_value;
-	int size, str_offset;
+	size_t size, str_offset;
 	memset(&src_spec, 0, sizeof(src_spec));
 	src_spec.size = f->pointer_size;
 	ptr_value = quick_get_pointer(&src_spec, (char*)buf->tmp_buffer + data_offset);
@@ -656,8 +656,8 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
     }
     case FMType_array:
     {
-	int elements = 1, i;
-	int element_size;
+	size_t elements = 1, i;
+	size_t element_size;
 	FMTypeDesc *next = t;
 	while (next->type == FMType_array) {
 	    if (next->static_size == 0) {
@@ -666,7 +666,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 		memset(&src_spec, 0, sizeof(src_spec));
 		src_spec.size = f->field_list[field].field_size;
 		src_spec.offset = f->field_list[field].field_offset;
-		int tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
+		size_t tmp = quick_get_ulong(&src_spec, (char*)buf->tmp_buffer + parent_offset);
 		elements = elements * tmp;
 	    } else {
 		elements = elements * next->static_size;
@@ -676,7 +676,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, int data_offset, int parent
 	element_size = determine_size(f, buf, parent_offset, next);
 	if (field_is_flat(f, next)) return 1;
 	for (i = 0; i < elements ; i++) {
-	    int element_offset = data_offset + i * element_size;
+	    size_t element_offset = data_offset + i * element_size;
 	    if (!handle_subfield(buf, f, s, element_offset, parent_offset, next)) return 0;
 	}
 	break;
@@ -699,7 +699,7 @@ copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec) {
 
     if (((char*)vec < (char*)buf->tmp_buffer)
         || ((char*)vec >= (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
-        int i, remainder;
+        size_t i, remainder;
         for (i = 0; vec[i].iov_base; ++i);
         vec_offset = add_to_tmp_buffer(buf, (i + 2) * sizeof(*vec));
 	remainder = vec_offset % sizeof(*vec);
@@ -715,20 +715,20 @@ copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec) {
 extern FFSEncodeVector
 copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 {
-    int i = 0;
-    int vec_offset = (long) vec - (long)buf->tmp_buffer;
+    size_t i = 0;
+    size_t vec_offset = (long) vec - (long)buf->tmp_buffer;
     /* 
      * vec and some of the buffers may be in the memory managed by the
      * FFSBuffer.  The goal here to is put *everything* into the FFSBuffer.
      */
-    int vec_count = 0;
+    size_t vec_count = 0;
     while (vec[vec_count].iov_base != NULL) {
       vec_count++;
     }
     assert(((unsigned long)vec >= (unsigned long)buf->tmp_buffer) && 
 	   ((unsigned long)vec < (unsigned long)buf->tmp_buffer + buf->tmp_buffer_size));
     {
-        int already_in[vec_count];
+        size_t already_in[vec_count];
 	while (vec[i].iov_base != NULL) {
 	    if (((char*)vec[i].iov_base >= (char*)buf->tmp_buffer) &&
 		((char*)vec[i].iov_base < (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
@@ -970,7 +970,7 @@ FFSset_fixed_target(FFSContext c, FMStructDescList struct_list)
 }
 
 extern FFSTypeHandle
-FFSset_simple_target(FFSContext c, char *format_name, FMFieldList field_list, int struct_size)
+FFSset_simple_target(FFSContext c, char *format_name, FMFieldList field_list, size_t struct_size)
 {
     FMStructDescRec struct_list[2];
     struct_list[0].format_name = format_name;
@@ -1015,7 +1015,7 @@ typedef struct _conversion_action {
     void *dest_address;
     void *src_string_address;
     void *final_string_address;
-    int base_string_offset;
+    size_t base_string_offset;
 } conversion_action, *conversion_action_ptr;
 
 static int
@@ -1108,10 +1108,10 @@ IOConversionPtr conv;
 conversion_action_ptr params;
 {
     FFSContext c = ioformat->context;
-    int final_base_size;
-    int src_base_size;
-    int64_t possible_converted_variant_size;
-    int64_t orig_variant_size;
+    size_t final_base_size;
+    size_t src_base_size;
+    size_t possible_converted_variant_size;
+    size_t orig_variant_size;
 
     long dest_offset;
     void *dest_address;
