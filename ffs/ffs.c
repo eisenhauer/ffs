@@ -123,7 +123,7 @@ allocate_tmp_space(estate s, FFSBuffer buf, size_t length, int req_alignment, si
     }
     ensure_writev_room(s, 2);
     tmp_data = add_to_tmp_buffer(buf, length + pad);
-    if (tmp_data == (size_t)-1) return -1;
+    if (tmp_data == (size_t)-1) return (size_t) -1;
     if (pad != 0) {
 	if (s->iovec[s->iovcnt-1].iov_base == NULL) {
 	    /* last was tmp too */
@@ -365,7 +365,7 @@ static int
 search_addr_list(estate s, void *addr)
 {
     int i;
-    size_t previous_offset = -1;
+    size_t previous_offset = (size_t) -1;
     for (i=0; i < s->addr_list_cnt; i++) {
 	if (s->addr_list[i].addr == addr) {
 	    previous_offset = s->addr_list[i].offset;
