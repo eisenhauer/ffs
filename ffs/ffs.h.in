@@ -54,7 +54,7 @@ typedef struct _FFSIndexItem *FFSIndexItem;
 extern FFSContext create_FFSContext_FM(FMContext fmc);
 
 extern FFSBuffer create_FFSBuffer();
-extern FFSBuffer create_fixed_FFSBuffer(char *buffer, int64_t size);
+extern FFSBuffer create_fixed_FFSBuffer(char *buffer, size_t size);
 extern void free_FFSBuffer(FFSBuffer buf);
 
 extern char *
