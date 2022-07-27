@@ -123,7 +123,7 @@ allocate_tmp_space(estate s, FFSBuffer buf, size_t length, int req_alignment, si
     }
     ensure_writev_room(s, 2);
     tmp_data = add_to_tmp_buffer(buf, length + pad);
-//    if (tmp_data == -1) return -1;
+    if (tmp_data == (size_t)-1) return -1;
     if (pad != 0) {
 	if (s->iovec[s->iovcnt-1].iov_base == NULL) {
 	    /* last was tmp too */
@@ -252,7 +252,7 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size,
     if (fmformat->variant || state.copy_all) {
 	base_offset = copy_data_to_tmp(&state, b, data, 
 				       fmformat->record_length, 1, NULL);
-	if (base_offset == (size_t)-1) return NULL;
+	if (base_offset == (size_t) -1) return NULL;
     }
 
     if (!fmformat->variant) {
@@ -336,7 +336,7 @@ fixup_output_vector(FFSBuffer b, estate s)
 }
 
 static void
-add_to_addr_list(estate s, void *addr, size_t offset)
+add_to_addr_list(estate s, void *addr, int offset)
 {
     if (s->addr_list_is_stack) {
 	if (s->addr_list_cnt == STACK_ARRAY_SIZE) {
@@ -361,11 +361,11 @@ add_to_addr_list(estate s, void *addr, size_t offset)
     s->addr_list_cnt++;
 }
 
-static size_t
+static int
 search_addr_list(estate s, void *addr)
 {
     int i;
-    size_t previous_offset = (size_t)-1;
+    size_t previous_offset = -1;
     for (i=0; i < s->addr_list_cnt; i++) {
 	if (s->addr_list[i].addr == addr) {
 	    previous_offset = s->addr_list[i].offset;
@@ -646,7 +646,7 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, size_t data_offset, size_t 
 	    str_offset = add_data_iovec(s, buf, ptr_value, size, 1);
 	} else {
 	    str_offset = copy_data_to_tmp(s, buf, ptr_value, size, 1, NULL);
-	    if (str_offset == (size_t)-1) return 0;
+	    if (str_offset == (size_t) -1) return 0;
 	}
 	quick_put_ulong(&src_spec, str_offset - s->saved_offset_difference,
 			(char*)buf->tmp_buffer + data_offset);
@@ -714,13 +714,13 @@ copy_vector_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 extern FFSEncodeVector
 copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 {
-    size_t i = 0;
-    size_t vec_offset = (long) vec - (long)buf->tmp_buffer;
+    int i = 0;
+    int vec_offset = (long) vec - (long)buf->tmp_buffer;
     /* 
      * vec and some of the buffers may be in the memory managed by the
      * FFSBuffer.  The goal here to is put *everything* into the FFSBuffer.
      */
-    size_t vec_count = 0;
+    int vec_count = 0;
     while (vec[vec_count].iov_base != NULL) {
       vec_count++;
     }
@@ -1109,8 +1109,8 @@ conversion_action_ptr params;
     FFSContext c = ioformat->context;
     size_t final_base_size;
     size_t src_base_size;
-    size_t possible_converted_variant_size;
-    size_t orig_variant_size;
+    int64_t possible_converted_variant_size;
+    int64_t orig_variant_size;
 
     ssize_t dest_offset;
     void *dest_address;
@@ -1518,7 +1518,7 @@ create_FFSBuffer()
 }
 
 FFSBuffer
-create_fixed_FFSBuffer(char *buffer, int64_t size)
+create_fixed_FFSBuffer(char *buffer, size_t size)
 {
     FFSBuffer buf = malloc(sizeof(struct _FFSBuffer));
     buf->tmp_buffer = buffer;
