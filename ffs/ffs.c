@@ -1018,8 +1018,7 @@ typedef struct _conversion_action {
 } conversion_action, *conversion_action_ptr;
 
 static int
-in_place_base_conversion_possible(conv)
-IOConversionPtr conv;
+in_place_base_conversion_possible(IOConversionPtr conv)
 {
     switch (conv->conversion_type) {
     case buffer_and_convert:
@@ -1047,8 +1046,7 @@ IOConversionPtr conv;
 }
 
 static int
-in_place_variant_conversion_possible(conv)
-IOConversionPtr conv;
+in_place_variant_conversion_possible(IOConversionPtr conv)
 {
     switch (conv->conversion_type) {
     case copy_dynamic_portion:
@@ -1100,11 +1098,7 @@ FFSdecode_in_place_possible(FFSTypeHandle format)
 #define expand_size_to_align(size) ((((size) & 0x7) == 0) ? (size) : (((size) + 8) & (int) -8))
 
 static int
-set_conversion_params(ioformat, input_record_len, conv, params)
-FFSTypeHandle ioformat;
-int64_t input_record_len;
-IOConversionPtr conv;
-conversion_action_ptr params;
+set_conversion_params(FFSTypeHandle ioformat, int64_t input_record_len, IOConversionPtr conv, conversion_action_ptr params)
 {
     FFSContext c = ioformat->context;
     size_t final_base_size;
@@ -1241,9 +1235,7 @@ conversion_action_ptr params;
 }
 
 static int64_t
-final_variant_size_for_record(input_record_len, conv)
-int64_t input_record_len;
-IOConversionPtr conv;
+final_variant_size_for_record(int64_t input_record_len, IOConversionPtr conv)
 {
     return (int) ((input_record_len - conv->ioformat->body->record_length)
 		  * conv->max_var_expansion);
@@ -1270,10 +1262,7 @@ FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat,
 }
 
 extern long
-FFS_est_decode_length(context, src, record_length)
-FFSContext context;
-char *src;
-long record_length;
+FFS_est_decode_length(FFSContext context, char *src, ssize_t record_length)
 {
     FFSTypeHandle ioformat = FFSTypeHandle_from_encode(context, src);
     return FFS_decode_length_format(context, ioformat, record_length);
@@ -1297,18 +1286,13 @@ FFSheader_size(FFSTypeHandle ioformat)
 
 extern
 int
-FFShas_conversion(ioformat)
-FFSTypeHandle ioformat;
+FFShas_conversion(FFSTypeHandle ioformat)
 {
     return (ioformat->conversion != NULL);
 }
 
 static int
-FFSinternal_decode(ioformat, src, dest, to_buffer)
-FFSTypeHandle ioformat;
-char *src;			/* incoming data to be decoded */
-void *dest;			/* area to hold decoded data */
-int to_buffer;
+FFSinternal_decode(FFSTypeHandle ioformat, char *src, void *dest, int to_buffer)
 {
     FFSContext iofile = ioformat->context;
     IOConversionPtr conv;
@@ -1393,8 +1377,7 @@ int to_buffer;
 }
 
 static int
-check_conversion(ioformat)
-FFSTypeHandle ioformat;
+check_conversion(FFSTypeHandle ioformat)
 {
     if (ioformat->conversion == NULL) {
 	if (ioformat->status == not_checked) {
@@ -1411,10 +1394,7 @@ FFSTypeHandle ioformat;
 }
 
 extern int
-FFSdecode(iocontext, src, dest)
-FFSContext iocontext;
-char *src;			/* incoming data to be decoded */
-char *dest;			/* area to hold decoded data */
+FFSdecode(FFSContext iocontext, char *src, char *dest)
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
@@ -1428,10 +1408,7 @@ char *dest;			/* area to hold decoded data */
 }
 
 extern int
-FFSdecode_in_place(iocontext, src, dest_ptr)
-FFSContext iocontext;
-char *src;			/* incoming data to be decoded */
-void **dest_ptr;		/* area to hold pointer to decoded data */
+FFSdecode_in_place(FFSContext iocontext, char *src, void **dest_ptr)
 {
     FFSTypeHandle ioformat = FFSTypeHandle_from_encode(iocontext, src);
     int header_size;
@@ -1451,10 +1428,7 @@ void **dest_ptr;		/* area to hold pointer to decoded data */
 }
 
 extern int
-FFSdecode_to_buffer(iocontext, src, dest)
-FFSContext iocontext;
-char *src;			/* incoming data to be decoded */
-void *dest;			/* area to hold decoded data */
+FFSdecode_to_buffer(FFSContext iocontext, char *src, void *dest)
 {
     FFSTypeHandle ioformat;
     ioformat = FFSTypeHandle_from_encode(iocontext, src);
@@ -1468,9 +1442,7 @@ void *dest;			/* area to hold decoded data */
 }
 
 extern FFSTypeHandle
-FFS_target_from_encode(c, data)
-FFSContext c;
-char *data;			/* incoming data to be decoded */
+FFS_target_from_encode(FFSContext c, char *data)
 {
     FFSTypeHandle f;
     /* first element in encoded buffer is format ID */
@@ -1486,9 +1458,7 @@ char *data;			/* incoming data to be decoded */
 }
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);
@@ -1528,8 +1498,7 @@ create_fixed_FFSBuffer(char *buffer, size_t size)
 }
 
 void
-free_FFSBuffer(buf)
-FFSBuffer buf;
+free_FFSBuffer(FFSBuffer buf)
 {
     if ((buf->tmp_buffer_size > 0) && buf->tmp_buffer)
 	free(buf->tmp_buffer);
@@ -1538,9 +1507,7 @@ FFSBuffer buf;
 
 extern
 char *
-make_tmp_buffer(buf, size)
-FFSBuffer buf;
-int64_t size;
+make_tmp_buffer(FFSBuffer buf, int64_t size)
 {
     if (buf->tmp_buffer_size < 0) {
 	/* fixed size buffer */
@@ -1566,9 +1533,7 @@ int64_t size;
 
 static
 ssize_t
-add_to_tmp_buffer(buf, size)
-FFSBuffer buf;
-size_t size;
+add_to_tmp_buffer(FFSBuffer buf, size_t size)
 {
     long old_size = buf->tmp_buffer_in_use_size;
     size += old_size;
@@ -1616,9 +1581,7 @@ set_bigendian () {
 #endif
 
 static unsigned long
-quick_get_ulong(iofield, data)
-FMFieldPtr iofield;
-void *data;
+quick_get_ulong(FMFieldPtr iofield, void *data)
 {
     data = (void *) ((char *) data + iofield->offset);
     /* only used when field type is an integer and aligned by its size */
@@ -1656,9 +1619,7 @@ void *data;
 }
 
 static void *
-quick_get_pointer(iofield, data)
-FMFieldPtr iofield;
-void *data;
+quick_get_pointer(FMFieldPtr iofield, void *data)
 {
     union {
 	void *p;
@@ -1701,10 +1662,7 @@ void *data;
 }
 
 void
-quick_put_ulong(iofield, value, data)
-FMFieldPtr iofield;
-unsigned long value;
-void *data;
+quick_put_ulong(FMFieldPtr iofield, unsigned long value, void *data)
 {
     data = (void *) ((char *) data + iofield->offset);
     /* only used when field type is an integer and aligned by its size */

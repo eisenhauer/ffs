@@ -137,7 +137,7 @@ extern int select(int width, fd_set * readfds, fd_set * writefds,
 #else
 #include <varargs.h>
 #endif
-extern time_t time();
+#include <time.h>
 extern pid_t getpid();
 #ifndef HAVE_GETDOMAINNAME
 extern int getdomainname(char *name, size_t len);
@@ -244,11 +244,7 @@ LOG(format_server fs, char *format,...)
 }
 
 static int
-LogAtomicRead(fs, fd, buffer, length)
-format_server fs;
-void *fd;
-void *buffer;
-long length;
+LogAtomicRead(format_server fs, void *fd, void *buffer, long length)
 {
     char *junk_result_str = NULL;
     int junk_errno;
@@ -409,9 +405,7 @@ format_server_poll_and_handle(format_server fs)
 }
 
 static int
-format_eq(form1, form2)
-IOFormatRep form1;
-IOFormatRep form2;
+format_eq(IOFormatRep form1, IOFormatRep form2)
 {
     int i;
     int all_zero = 1;
@@ -446,9 +440,7 @@ IOFormatRep form2;
 static int server_format_count = 0;
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);
@@ -799,12 +791,7 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 
 
 static IOFormatRep
-find_format(fs, fsc, ioformat, new_format_mode, requested_id_version)
-format_server fs;
-FSClient fsc;
-IOFormatRep ioformat;
-int new_format_mode;
-int requested_id_version;
+find_format(format_server fs, FSClient fsc, IOFormatRep ioformat, int new_format_mode, int requested_id_version)
 {
     format_list *list = fs->lists[0];
     format_list *last = NULL, *new = NULL;
@@ -1011,10 +998,7 @@ get_internal_format_server_identifier(format_server fs)
 #define FILE_INT INT4
 
 static int
-put_serverAtomicInt(fd, file_int_ptr, fmc)
-void *fd;
-FILE_INT *file_int_ptr;
-FMContext fmc;
+put_serverAtomicInt(void *fd, FILE_INT *file_int_ptr, FMContext fmc)
 {
 #if SIZEOF_INT == 4
     int tmp_value = *file_int_ptr;
@@ -1031,10 +1015,7 @@ FMContext fmc;
 }
 
 static int
-get_serverAtomicInt(fd, file_int_ptr, byte_reversal)
-void *fd;
-FILE_INT *file_int_ptr;
-int byte_reversal;
+get_serverAtomicInt(void *fd, FILE_INT *file_int_ptr, int byte_reversal)
 {
 #if SIZEOF_INT == 4
     int tmp_value;
@@ -1059,10 +1040,7 @@ unix_timeout_read_func(void *conn, void *buffer, int length,
 		       int *errno_p, char **result_p);
 
 static int
-get_serverTimeoutInt(fd, file_int_ptr, byte_reversal)
-void *fd;
-FILE_INT *file_int_ptr;
-int byte_reversal;
+get_serverTimeoutInt(void *fd, FILE_INT *file_int_ptr, int byte_reversal)
 {
 #if SIZEOF_INT == 4
     int tmp_value;
@@ -1080,8 +1058,7 @@ int byte_reversal;
 }
 
 static void
-server_read_header(fsc)
-FSClient fsc;
+server_read_header(FSClient fsc)
 {
     FILE_INT magic;
     FILE_INT float_format;
@@ -1164,9 +1141,7 @@ FSClient fsc;
 }
 
 static void
-format_server_handle_data(fs, fsc)
-format_server fs;
-FSClient fsc;
+format_server_handle_data(format_server fs, FSClient fsc)
 {
     char next_action;
     int input_bytes = 0;
@@ -2023,9 +1998,7 @@ format_server_accept_conn_sock(format_server fs, void *conn_sock)
 }
 
 static time_t
-get_time_for_host(ip_addr, hostname)
-struct in_addr ip_addr;
-char *hostname;
+get_time_for_host(struct in_addr ip_addr, char *hostname)
 {
     int i;
     if (hostlist == NULL) {
@@ -2053,9 +2026,7 @@ static char **postfix_list = NULL;
 #define GRACE_PERIOD_SEC 60 * 60 * 24 * 3
 
 static void
-out_domain_rejection(fd, fsc)
-int fd;
-FSClient fsc;
+out_domain_rejection(int fd, FSClient fsc)
 {
     struct sockaddr sock_addr;
     int sock_len = sizeof(sock_addr);
@@ -2293,10 +2264,7 @@ dump_stats_to_log(format_server server_fs)
 }
 
 static FMFormat
-register_server_format(fs, iocontext, str_list)
-format_server fs;
-FMContext iocontext;
-FMStructDescList str_list;
+register_server_format(format_server fs, FMContext iocontext, FMStructDescList str_list)
 {
     FMFormat ioformat = register_data_format(iocontext, str_list);
     IOFormatRep iofr = malloc(sizeof(*iofr));

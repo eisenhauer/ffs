@@ -84,9 +84,7 @@ FMStructDescRec data_struct_list[] = {
 };
     
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
     data_struct data;
     void *encode_buffer, *base_of_encoded_array1, *base_of_encoded_array2;

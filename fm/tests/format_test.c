@@ -3,22 +3,21 @@
 #include <stdlib.h>
 
 #include "config.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <string.h>
 #include "fm.h"
 #include "fm_internal.h"
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #define sleep(x) Sleep(1000*x)
-#else
-extern int sleep();
 #endif
 
 #include "test_funcs.h"
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
 
     int continuous_test = 0;
@@ -75,7 +74,7 @@ char **argv;
 	dump_FMFormat(first_rec_ioformat);
     } else if (!continuous_test && !restart_test) {
 	FMContext context = create_FMcontext();
-	FMContext local_context = create_local_FMcontext(NULL);
+	FMContext local_context = create_local_FMcontext();
 	FMFormat first_rec_ioformat;
 	FMcontext_allow_self_formats(context);
 	str_list[0].format_name = "first format";
@@ -104,7 +103,7 @@ char **argv;
 	    print_server_ID((unsigned char *)id);
 	}
     } else if (restart_test) {
-	FMContext static_context = create_FMcontext(NULL);
+	FMContext static_context = create_FMcontext();
 	while (1) {
 	    if (format_server_restarted(static_context)) {
 		printf("Format server was restarted\n");
@@ -112,9 +111,9 @@ char **argv;
 	    sleep(120);
 	}
     } else {
-	FMContext static_context = create_FMcontext(NULL);
+	FMContext static_context = create_FMcontext();
 	while (1) {
-	    FMContext context = create_FMcontext(NULL);
+	    FMContext context = create_FMcontext();
 	    FMFormat first_rec_ioformat;
 
 	    if (format_server_restarted(static_context)) {

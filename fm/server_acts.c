@@ -160,9 +160,7 @@ extern int
 server_write_header(FMContext fmc, int enc_len, unsigned char *enc_buffer);
 
 extern int
-establish_server_connection(iofile, action)
-FMContext iofile;
-action_t action;
+establish_server_connection(FMContext iofile, action_t action)
 {
     int sock;
     int ret;

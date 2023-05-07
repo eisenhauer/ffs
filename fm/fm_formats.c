@@ -200,8 +200,7 @@ create_local_FMcontext()
 }
 
 static void
-free_FMformat(body)
-FMFormat body;
+free_FMformat(FMFormat body)
 {
     int i;
     body->ref_count--;
@@ -295,11 +294,7 @@ FMformatID_len(char *buffer)
 }
 
 extern void
-add_opt_info_FMformat(format, typ, len, block)
-FMFormat format;
-int typ;
-int len;
-void *block;
+add_opt_info_FMformat(FMFormat format, int typ, int len, void *block)
 {
     int count = 0;
     if (format->opt_info == NULL) {
@@ -385,9 +380,7 @@ FMget_compat_formats(FMFormat fmformat)
 }
     
 FMFormat
-get_local_format_IOcontext(iocontext, buffer)
-FMContext iocontext;
-void *buffer;
+get_local_format_IOcontext(FMContext iocontext, void *buffer)
 {
     FMContext fmc = (FMContext) iocontext;
     int i;
@@ -459,9 +452,7 @@ void *buffer;
 }
 
 FMFormat
-FMformat_from_ID(iocontext, buffer)
-FMContext iocontext;
-char *buffer;
+FMformat_from_ID(FMContext iocontext, char *buffer)
 {
     FMContext fmc = (FMContext) iocontext;
     FMFormat new_format;
@@ -546,8 +537,7 @@ char *buffer;
 }
 
 char **
-get_subformat_names(field_list)
-FMFieldList field_list;
+get_subformat_names(FMFieldList field_list)
 {
     int name_count = 0;
     int field = 0;
@@ -573,11 +563,8 @@ FMFieldList field_list;
 
 static
 void
-get_subformats_context(fmformat, format_list_p, format_count_p, stack_p)
-FMFormat fmformat;
-FMFormat **format_list_p;
-int *format_count_p;
-FMFormat **stack_p;
+get_subformats_context(FMFormat fmformat, FMFormat **format_list_p, int *format_count_p,
+		       FMFormat **stack_p)
 {
     int field;
     int stack_depth = 0;
@@ -614,8 +601,7 @@ FMFormat **stack_p;
 }
 
 FMFormat *
-get_subformats_IOformat(fmformat)
-FMFormat fmformat;
+get_subformats_IOformat(FMFormat fmformat)
 {
     int format_count = 0;
     FMFormat *format_list = malloc(sizeof(FMFormat));
@@ -636,9 +622,7 @@ FMformat_index(FMFormat f)
 }
 
 FMFormat
-FMformat_by_index(fmc, index)
-FMContext fmc;
-int index;
+FMformat_by_index(FMContext fmc, int index)
 {
     if (index < fmc->reg_format_count) {
 	return fmc->format_list[index];
@@ -680,8 +664,7 @@ new_FMFormat()
 
 extern
 void
-expand_FMContext(fmc)
-FMContext fmc;
+expand_FMContext(FMContext fmc)
 {
     int new_count = fmc->format_list_size + 10;
     int new_size = sizeof(FMFormat) * (new_count);
@@ -899,9 +882,7 @@ typedef struct {
 } *sld;
 
 static int
-type_alignment(fmformat, field)
-FMFormat fmformat;
-int field;
+type_alignment(FMFormat fmformat, int field)
 {
     FMVarInfoList var = &fmformat->var_list[field];
     FMTypeDesc *t = &var->type_desc;
@@ -1192,8 +1173,7 @@ gen_var_dimens(FMFormat fmformat, int field)
 }
 
 extern void
-set_alignment(fmformat)
-FMFormat fmformat;
+set_alignment(FMFormat fmformat)
 {
     int field_align;
     int field;
@@ -1208,9 +1188,7 @@ FMFormat fmformat;
 
 	
 extern int
-generate_var_list(fmformat, formats)
-FMFormat fmformat;
-FMFormat *formats;
+generate_var_list(FMFormat fmformat, FMFormat *formats)
 {
     FMVarInfoList new_var_list;
     FMFieldList field_list = fmformat->field_list;
@@ -1278,10 +1256,7 @@ FMFormat *formats;
 }
 
 static format_rep
-add_server_subformat_rep(fmformat, super_rep, super_rep_size)
-FMFormat fmformat;
-char *super_rep;
-int *super_rep_size;
+add_server_subformat_rep(FMFormat fmformat, char *super_rep, int *super_rep_size)
 {
     int byte_reversal = fmformat->byte_reversal;
     int rep_size = (sizeof(struct _field_wire_format_1) *
@@ -1411,8 +1386,7 @@ int *super_rep_size;
 }
 
 static format_rep
-build_server_format_rep(fmformat)
-FMFormat fmformat;
+build_server_format_rep(FMFormat fmformat)
 {
     int subformat_count = 0;
     FMFormat *subformats = fmformat->subformats;
@@ -1449,9 +1423,7 @@ FMFormat fmformat;
  * server_format_rep fields.
  */
 static FMFormat
-search_compatible_formats(iocontext, fmformat)
-FMContext iocontext;
-FMFormat fmformat;
+search_compatible_formats(FMContext iocontext, FMFormat fmformat)
 {
     int i, search_rep_length;
     FMContext fmc = (FMContext) iocontext;
@@ -1721,9 +1693,7 @@ void add_format(FMFormat f, FMFormat* sorted, FMFormat *visited, FMFormat* stack
 
 static
 int
-topo_order_subformats(super_format, format_count)
-FMFormat super_format;
-int format_count;
+topo_order_subformats(FMFormat super_format, int format_count)
 {
     FMFormat sorted[100], visit[100], stack[100];
     int sorted_count = 1;
@@ -2015,9 +1985,7 @@ generate_format3_server_ID(server_ID_type *server_ID,
 }
 
 static int
-self_server_register_format(fmc, fmformat)
-FMContext fmc;
-FMFormat fmformat;
+self_server_register_format(FMContext fmc, FMFormat fmformat)
 {
     format_rep server_format_rep;
     /* we're a format server ourselves, assign an ID */
@@ -2045,8 +2013,7 @@ FMFormat fmformat;
 }
 
 int
-count_FMfield(list)
-FMFieldList list;
+count_FMfield(FMFieldList list)
 {
     int i = 0;
     while (list[i].field_name != NULL) {
@@ -2057,9 +2024,7 @@ FMFieldList list;
 
 extern
 int
-struct_size_IOfield(fmc, list)
-FMContext fmc;
-FMFieldList list;
+struct_size_IOfield(FMContext fmc, FMFieldList list)
 {
     int i = 0;
     int struct_size = 0;
@@ -2090,18 +2055,14 @@ FMFieldList list;
 }
 
 extern int
-struct_size_field_list(list, pointer_size)
-FMFieldList list;
-int pointer_size;
+struct_size_field_list(FMFieldList list, int pointer_size)
 {
     return FMstruct_size_field_list(list, pointer_size);
 }
 
 extern
 int
-FMstruct_size_field_list(list, pointer_size)
-FMFieldList list;
-int pointer_size;
+FMstruct_size_field_list(FMFieldList list, int pointer_size)
 {
     int i = 0;
     int struct_size = 0;
@@ -2126,16 +2087,14 @@ int pointer_size;
 
 extern
 FMFieldList
-field_list_of_IOformat(format)
-FMFormat format;
+field_list_of_IOformat(FMFormat format)
 {
     return format->field_list;
 }
 
 extern
 int
-compare_field_lists(list1, list2)
-FMFieldList list1, list2;
+compare_field_lists(FMFieldList list1, FMFieldList list2)
 {
     int i = 0;
     do {
@@ -2169,8 +2128,7 @@ FMFieldList list1, list2;
  */
 extern
 FMFieldList
-max_field_lists(list1, list2)
-FMFieldList list1, list2;
+max_field_lists(FMFieldList list1, FMFieldList list2)
 {
     FMFieldList max_field_list = NULL;
     FMFieldList tlist2;
@@ -2264,8 +2222,7 @@ FMFieldList list1, list2;
 
 extern
 FMFieldList
-copy_field_list(list)
-FMFieldList list;
+copy_field_list(FMFieldList list)
 {
     int field_count = count_FMfield(list);
     FMFieldList new_field_list;
@@ -2288,8 +2245,7 @@ FMFieldList list;
 
 extern
 FMStructDescList
-FMcopy_struct_list(list)
-FMStructDescList list;
+FMcopy_struct_list(FMStructDescList list)
 {
     int format_count = 0;
     FMStructDescList new_list;
@@ -2314,8 +2270,7 @@ FMStructDescList list;
 
 extern
 void
-free_field_list(list)
-FMFieldList list;
+free_field_list(FMFieldList list)
 {
     int i = 0;
     while (list[i].field_name != NULL) {
@@ -2328,8 +2283,7 @@ FMFieldList list;
 
 extern
 void
-FMfree_struct_list(list)
-FMStructDescList list;
+FMfree_struct_list(FMStructDescList list)
 {
     int format_count = 0;
     int format;
@@ -2371,9 +2325,7 @@ field_name_compar(const void *a, const void *b)
 }
 
 FMformat_order
-FMformat_cmp(format1, format2)
-FMFormat format1;
-FMFormat format2;
+FMformat_cmp(FMFormat format1, FMFormat format2)
 {
     FMformat_order tmp_result = Format_Equal;
     FMFieldList field_list1 =
@@ -2518,8 +2470,7 @@ FMFormat format2;
 
 extern
 char *
-name_of_FMformat(format)
-FMFormat format;
+name_of_FMformat(FMFormat format)
 {
     return format->format_name;
 }
@@ -2531,9 +2482,7 @@ format_list_of_FMFormat(FMFormat format)
 }
 
 extern FMdata_type
-FMarray_str_to_data_type(str, element_count_ptr)
-const char *str;
-long *element_count_ptr;
+FMarray_str_to_data_type(const char *str, long *element_count_ptr)
 {
     FMdata_type ret_type;
     char field_type[1024];
@@ -2578,9 +2527,7 @@ long *element_count_ptr;
 }
 
 extern int
-field_type_eq(str1, str2)
-const char *str1;
-const char *str2;
+field_type_eq(const char *str1, const char *str2)
 {
     FMdata_type t1, t2;
     long t1_count, t2_count;
@@ -2624,8 +2571,7 @@ const char *str2;
 }
 
 extern char *
-base_data_type(str)
-const char *str;
+base_data_type(const char *str)
 {
     char *typ;
     while (isspace((int)*str) || (*str == '*') || (*str == '(')) {	/* skip preceeding space */
@@ -2642,15 +2588,13 @@ const char *str;
 }
 
 extern char *
-FMbase_type(field_type)
-const char *field_type;
+FMbase_type(const char *field_type)
 {
     return base_data_type(field_type);
 }
 
 extern FMdata_type
-FMstr_to_data_type(str)
-const char *str;
+FMstr_to_data_type(const char *str)
 {
     const char *end;
     while (isspace((int)*str) || (*str == '*') || (*str == '(')) {	/* skip preceeding space */
@@ -2862,8 +2806,7 @@ IOget_array_size_dimen(const char *str, FMFieldList fields, int dimen, int *cont
 }
 
 extern const char *
-data_type_to_str(dat)
-FMdata_type dat;
+data_type_to_str(FMdata_type dat)
 {
     switch (dat) {
     case integer_type:
@@ -2887,12 +2830,8 @@ FMdata_type dat;
 
 extern
 void
-get_FMformat_characteristics(format, ff, intf, column_major, pointer_size)
-FMFormat format;
-FMfloat_format *ff;
-FMinteger_format *intf;
-int *column_major;
-int *pointer_size;
+get_FMformat_characteristics(FMFormat format, FMfloat_format *ff, FMinteger_format *intf,
+			     int *column_major, int *pointer_size)
 {
     if (WORDS_BIGENDIAN) {
 	if (format->byte_reversal) {
@@ -2915,24 +2854,21 @@ int *pointer_size;
 
 extern
 int
-pointer_size_of_IOformat(format)
-FMFormat format;
+pointer_size_of_IOformat(FMFormat format)
 {
     return format->pointer_size;
 }
 
 extern
 FMContext
-fmc_of_IOformat(format)
-FMFormat format;
+fmc_of_IOformat(FMFormat format)
 {
     return format->context;
 }
 
 
 extern void
-dump_FMFormat(fmformat)
-FMFormat fmformat;
+dump_FMFormat(FMFormat fmformat)
 {
     int index, i;
     printf("\tFormat \"%s\"; size = %d; Field_Count = %d; Endian = %d; Float format = %s;\n\t\t  Pointer size = %d; Column_major_arrays = %d; Alignment = %d; Index = %d, File Version = %d; ",
@@ -3005,8 +2941,7 @@ FMFormat fmformat;
 }
 
 extern void
-dump_FMFormat_as_XML(fmformat)
-FMFormat fmformat;
+dump_FMFormat_as_XML(FMFormat fmformat)
 {
     int index, i;
     printf("<FMFormat>\n");
@@ -3036,15 +2971,13 @@ FMFormat fmformat;
 }
 
 extern void
-add_ref_FMcontext(c)
-FMContext c;
+add_ref_FMcontext(FMContext c)
 {
     c->ref_count++;
 }
 
 extern void
-free_FMcontext(c)
-FMContext c;
+free_FMcontext(FMContext c)
 {
     int i;
     c->ref_count--;
@@ -3061,13 +2994,8 @@ FMContext c;
 #define DUMP
 #ifdef DUMP
 static void
-free_FMfield(fmformat, field, data, string_base, encode, verbose)
-FMFormat fmformat;
-int field;
-void *data;
-void *string_base;
-int encode;
-int verbose;
+free_FMfield(FMFormat fmformat, int field, void *data, void *string_base,
+	     int encode, int verbose)
 {
     FMFieldList iofield = &fmformat->field_list[field];
     FMVarInfoList iovar = &fmformat->var_list[field];
@@ -3131,9 +3059,7 @@ int verbose;
 }
 
 extern void
-FMfree_var_rec_elements(fmformat, data)
-FMFormat fmformat;
-void *data;
+FMfree_var_rec_elements(FMFormat fmformat, void *data)
 {
     int index;
     if (fmformat->variant == 0) return;  /* nothing to do */
@@ -3172,9 +3098,7 @@ FMget_array_element_count(FMFormat f, FMVarInfoList var, char *data, int encode)
 #endif
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);
@@ -3192,10 +3116,7 @@ int size;
 #define FILE_INT INT4
 
 static int
-put_serverAtomicInt(fd, file_int_ptr, fmc)
-void *fd;
-FILE_INT *file_int_ptr;
-FMContext fmc;
+put_serverAtomicInt(void *fd, FILE_INT *file_int_ptr, FMContext fmc)
 {
 #if SIZEOF_INT == 4
     int tmp_value = *file_int_ptr;
@@ -3212,10 +3133,7 @@ FMContext fmc;
 }
 
 static int
-get_serverAtomicInt(fd, file_int_ptr, byte_reversal)
-void *fd;
-FILE_INT *file_int_ptr;
-int byte_reversal;
+get_serverAtomicInt(void *fd, FILE_INT *file_int_ptr, int byte_reversal)
 {
 #if SIZEOF_INT == 4
     int tmp_value;
@@ -3240,10 +3158,7 @@ unix_timeout_read_func(void *conn, void *buffer, int length,
 		       int *errno_p, char **result_p);
 
 extern int
-serverAtomicRead(fd, buffer, length)
-void *fd;
-void *buffer;
-int length;
+serverAtomicRead(void *fd, void *buffer, int length)
 {
     char *junk_result_str = NULL;
     int junk_errno;
@@ -3264,10 +3179,7 @@ int length;
 }
 
 extern int
-serverAtomicWrite(fd, buffer, length)
-void *fd;
-void *buffer;
-int length;
+serverAtomicWrite(void *fd, void *buffer, int length)
 {
     char *junk_result_str;
     int junk_errno;
@@ -3278,8 +3190,7 @@ int length;
 
 
 static void
-provisional_use_warning(fd)
-int fd;
+provisional_use_warning(int fd)
 {
     static int warned = 0;
 
@@ -3298,9 +3209,7 @@ dump_server_error(char *string, FMContext context)
 }
 
 static int
-server_register_format(fmc, format)
-FMContext fmc;
-FMFormat format;
+server_register_format(FMContext fmc, FMFormat format)
 {
     int tries = 0;
 
@@ -3378,11 +3287,7 @@ static const char xchars[] = "0123456789abcdef";
 #define nibble2hex(val) (xchars[val & 0x0f])
 
 static char *
-stringify_field_type(type, base_format, buffer, size)
-const char *type;
-FMFormat base_format;
-char *buffer;
-int size;
+stringify_field_type(const char *type, FMFormat base_format, char *buffer, int size)
 {
     char *index_start;
     unsigned char *server_ID;
@@ -3435,9 +3340,7 @@ int size;
 }
 
 extern int
-global_name_eq(format1, format2)
-FMFormat format1;
-FMFormat format2;
+global_name_eq(FMFormat format1, FMFormat format2)
 {
     if (format1->server_ID.length != format2->server_ID.length)
 	return 0;
@@ -3447,8 +3350,7 @@ FMFormat format2;
 
 extern
 char *
-global_name_of_FMFormat(format)
-FMFormat format;
+global_name_of_FMFormat(FMFormat format)
 {
     int size = strlen(format->format_name) + 3 +
     2 * format->server_ID.length;
@@ -3457,8 +3359,7 @@ FMFormat format;
 }
 
 static FMFormat
-expand_subformat_from_rep_0(rep)
-struct _subformat_wire_format *rep;
+expand_subformat_from_rep_0(struct _subformat_wire_format *rep)
 {
     FMFormat format = new_FMFormat();
     struct _field_wire_format_0 *fields;
@@ -3571,8 +3472,7 @@ struct _subformat_wire_format *rep;
 
 
 static FMFormat
-expand_subformat_from_rep_1(rep)
-struct _subformat_wire_format *rep;
+expand_subformat_from_rep_1(struct _subformat_wire_format *rep)
 {
     FMFormat format = new_FMFormat();
     struct _field_wire_format_1 *fields;
@@ -3687,8 +3587,7 @@ struct _subformat_wire_format *rep;
 
 
 static FMFormat
-expand_subformat_from_rep(rep)
-struct _subformat_wire_format *rep;
+expand_subformat_from_rep(struct _subformat_wire_format *rep)
 {
     if (rep->f.f0.server_rep_version == 0) {
 	return expand_subformat_from_rep_0(rep);
@@ -3704,8 +3603,7 @@ struct _subformat_wire_format *rep;
 }
 
 extern FMFormat
-expand_format_from_rep(rep)
-format_rep rep;
+expand_format_from_rep(format_rep rep)
 {
     int format_count;
     FMFormat top_format;
@@ -3817,12 +3715,8 @@ fill_derived_format_values(FMContext fmc, FMFormat format)
 }
 
 extern void
-add_format_to_iofile(fmc, format, id_size, id_buffer, index)
-FMContext fmc;
-FMFormat format;
-int id_size;
-void *id_buffer;
-int index;
+add_format_to_iofile(FMContext fmc, FMFormat format, int id_size,
+		     void *id_buffer, int index)
 {
     int subformat_count = 0;
     int i, field;
@@ -3908,9 +3802,7 @@ FMcontext_get_format_server_identifier(FMContext fmc)
 }
 
 static FMFormat
-server_get_format(iocontext, buffer)
-FMContext iocontext;
-void *buffer;
+server_get_format(FMContext iocontext, void *buffer)
 {
     FMContext fmc = (FMContext) iocontext;
     FMFormat format = NULL;
@@ -4017,9 +3909,7 @@ void *buffer;
 }
 
 extern void
-server_get_server_ID(fd, server_ID)
-void *fd;
-void *server_ID;
+server_get_server_ID(void *fd, void *server_ID)
 {
     int id_size = 8;
 
@@ -4065,8 +3955,7 @@ stringify_server_ID(unsigned char *ID, char *buffer, int len)
 }
 
 extern void
-print_server_ID(ID)
-unsigned char *ID;
+print_server_ID(unsigned char *ID)
 {
     char buffer[256];
     stringify_server_ID(ID, buffer, sizeof(buffer));
@@ -4082,8 +3971,7 @@ fprint_server_ID(void *file, unsigned char *ID)
 }
 
 extern void
-print_format_ID(format)
-FMFormat format;
+print_format_ID(FMFormat format)
 {
     print_server_ID( (unsigned char *) format->server_ID.value);
 }
@@ -4115,8 +4003,7 @@ void *format_ID;
 #endif
 
 extern int
-get_rep_len_format_ID(format_ID)
-void *format_ID;
+get_rep_len_format_ID(void *format_ID)
 {
     switch (version_of_format_ID(format_ID)) {
     case 2:{
@@ -4170,10 +4057,7 @@ void *format_ID;
 
 /* write header information to the format server */
 extern int
-server_write_header(fmc, enc_len, enc_buffer)
-FMContext fmc;
-int enc_len;
-unsigned char *enc_buffer;
+server_write_header(FMContext fmc, int enc_len, unsigned char *enc_buffer)
 {
     FILE_INT magic = MAGIC_NUMBER + CURRENT_PROTOCOL_VERSION;
     FILE_INT server_pid;
@@ -4223,9 +4107,7 @@ version_of_format_ID(void *server_ID)
 }
 
 extern char *
-get_server_rep_FMformat(format, rep_length)
-FMFormat format;
-int *rep_length;
+get_server_rep_FMformat(FMFormat format, int *rep_length)
 {
     if (format->server_format_rep == NULL) {
 	format->server_format_rep = 
@@ -4239,28 +4121,22 @@ int *rep_length;
 }
 
 extern char *
-get_server_ID_FMformat(format, id_length)
-FMFormat format;
-int *id_length;
+get_server_ID_FMformat(FMFormat format, int *id_length)
 {
     *id_length = format->server_ID.length;
     return format->server_ID.value;
 }
 
 extern FMContext
-FMContext_from_FMformat(format)
-FMFormat format;
+FMContext_from_FMformat(FMFormat format)
 {
     return format->context;
 }
 
 
 extern FMFormat
-load_external_format_FMcontext(iocontext, server_id, id_size, server_rep)
-FMContext iocontext;
-char *server_id;
-int id_size;
-char *server_rep;
+load_external_format_FMcontext(FMContext iocontext, char *server_id, int id_size,
+			       char *server_rep)
 {
     FMFormat format = get_local_format_IOcontext(iocontext, server_id);
 

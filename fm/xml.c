@@ -120,11 +120,7 @@ record_to_XML_string(FMFormat format, void *data, int encoded)
 }
 
 static ffs_dstring
-raw_to_XML_string(c, format, data, encoded)
-FMContext c;
-FMFormat format;
-void *data;
-int encoded;
+raw_to_XML_string(FMContext c, FMFormat format, void *data, int encoded)
 {
     int index;
     ffs_dstring ds;
@@ -146,10 +142,7 @@ int encoded;
 }
 
 extern void
-dump_raw_IOrecord_as_XML(c, format, data)
-FMContext c;
-FMFormat format;
-void *data;
+dump_raw_IOrecord_as_XML(FMContext c, FMFormat format, void *data)
 {
     ffs_dstring dstr = raw_to_XML_string(c, format, data, 1);
     printf("%s", dstr->string);
@@ -608,14 +601,8 @@ FMhas_XML_info(FMFormat format)
 }
 
 extern void
-dump_FMfield_as_XML(c, format, field, data, string_base, encode, verbose)
-FMContext c;
-FMFormat format;
-int field;
-void *data;
-void *string_base;
-int encode;
-int verbose;
+dump_FMfield_as_XML(FMContext c, FMFormat format, int field, void *data,
+		    void *string_base, int encode, int verbose)
 {
     ffs_dstring ds = new_dstring();
     generic_field_to_XML(format, field, data, string_base, encode,
@@ -626,18 +613,9 @@ int verbose;
 }
 
 extern int
-add_single_value_as_XML(field_type, field_size, field_offset, 
-			data, string_base, byte_reversal, float_format,
-			encode, ds)
-const char *field_type;
-int field_size;
-int field_offset;
-void *data;
-void *string_base;
-int byte_reversal;
-int float_format;
-int encode;
-ffs_dstring ds;
+add_single_value_as_XML(const char *field_type, int field_size, int field_offset, void *data,
+			void *string_base, int byte_reversal, int float_format, int encode,
+			ffs_dstring ds)
 {
     FMgetFieldStruct descr;  /* OK */
     char str[64];
@@ -731,21 +709,9 @@ ffs_dstring ds;
 }
 
 static void
-add_value_as_XML(field_type, field_size, field_offset, format, field, data, 
-		  string_base, byte_reversal, float_format, encode, 
-		 in_array, ds)
-const char *field_type;
-int field_size;
-int field_offset;
-FMFormat format;
-int field;
-void *data;
-void *string_base;
-int byte_reversal;
-int float_format;
-int encode;
-int in_array;
-ffs_dstring ds;
+add_value_as_XML(const char *field_type, int field_size, int field_offset, FMFormat format, int field,
+		 void *data, void *string_base, int byte_reversal, int float_format, int encode,
+		 int in_array, ffs_dstring ds)
 {
     if (add_single_value_as_XML(field_type, field_size, field_offset, 
 				data, string_base, byte_reversal, 
@@ -780,13 +746,8 @@ ffs_dstring ds;
 }
 
 static void
-generic_field_to_XML(format, field, data, string_base, encode, ds)
-FMFormat format;
-int field;
-void *data;
-void *string_base;
-int encode;
-ffs_dstring ds;
+generic_field_to_XML(FMFormat format, int field, void *data, void *string_base,
+		     int encode, ffs_dstring ds)
 {
     FMFieldList fmfield = &format->field_list[field];
     FMVarInfoList iovar = &format->var_list[field];

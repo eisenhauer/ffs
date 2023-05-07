@@ -432,11 +432,7 @@ int cg_get_size(dill_stream s, sm_ref node)
 static void cg_generate_static_block(dill_stream s, cod_code descr);
 
 extern void *
-cod_cg_net(net, ret_type, offset_p, code_descriptor)
-sm_ref net;
-int ret_type;
-unsigned int *offset_p;
-cod_code code_descriptor;
+cod_cg_net(sm_ref net, int ret_type, unsigned int *offset_p, cod_code code_descriptor)
 {
     void *init_func;
     static int debug_cg = -1;

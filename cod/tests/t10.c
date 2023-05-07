@@ -344,7 +344,7 @@ static  FMField dyn_arrays_field_list[] =
 	};
 	cod_parse_context context = new_cod_parse_context();
 	cod_code gen_code;
-	long (*func)();
+	long (*func)(dyn_arrays *);
 	long result;
 
 	cod_assoc_externs(context, externs);
@@ -356,7 +356,7 @@ static  FMField dyn_arrays_field_list[] =
 	    printf("Code generation failed for test 3\n");
 	} else {
 	    dyn_arrays  input;
-	    func = (long(*)()) (long) gen_code->func;
+	    func = (long(*)(dyn_arrays*)) (long) gen_code->func;
 	    input.dim1 = 7;
 	    input.dim2 = 5;
 	    input.dim3 = 3;

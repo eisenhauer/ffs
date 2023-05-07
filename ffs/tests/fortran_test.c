@@ -35,9 +35,7 @@ static char *test_only = NULL;
 static FFSContext rcv_context = NULL;
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
     FMContext src_context;
     FFSBuffer buffer;
@@ -75,7 +73,7 @@ char **argv;
 	if (fail) exit(1);
 	exit(0);
     }
-    src_context = create_FMcontext(NULL);
+    src_context = create_FMcontext();
     
     set_array_order_FMContext(src_context, 1);
     fortran_array_ioformat = register_data_format(src_context,
@@ -104,8 +102,7 @@ char **argv;
 #endif
 
 static char *
-get_buffer(size_p)
-int *size_p;
+get_buffer(int *size_p)
 {
     static int file_fd = 0;
     static char *buffer = NULL;
@@ -175,8 +172,7 @@ read_test_only()
 static FFSTypeHandle multi_array_ioformat;
 
 static void
-set_targets(context)
-FFSContext context;
+set_targets(FFSContext context)
 {
     multi_array_ioformat = FFSset_fixed_target(context, multi_array_format_list);
 }
@@ -237,10 +233,7 @@ decode_func_t decode_funcs[] = {decode_IOcontext_wrapper,
 #define NUM_TESTS 3
 
 static void
-test_all_receive(buffer, buf_size, finished)
-char *buffer;
-int buf_size;
-int finished;
+test_all_receive(char *buffer, int buf_size, int finished)
 {
     int test_type = 0;
     char *tmp_buffer = malloc(buf_size);
@@ -252,8 +245,7 @@ int finished;
 }
 	
 static void*
-get_mem(size)
-int size;
+get_mem(int size)
 {
     char *buffer;
     unsigned int beef = 0xdeadbeef;
@@ -264,9 +256,7 @@ int size;
 }
 
 static void
-check_mem(size, buffer)
-int size;
-char *buffer;
+check_mem(int size, char *buffer)
 {
     unsigned int beef = 0xdeadbeef;
     if (memcmp(buffer+size, &beef, 4) != 0) {
@@ -276,11 +266,7 @@ char *buffer;
 
     
 static void
-test_receive(buffer, buf_size, finished, test_level)
-char *buffer;
-int buf_size;
-int finished;
-int test_level;
+test_receive(char *buffer, int buf_size, int finished, int test_level)
 {
     static FFSContext c = NULL;
 
@@ -331,9 +317,7 @@ int test_level;
 }
 
 static void
-write_buffer(buf, size)
-char *buf;
-int size;
+write_buffer(char *buf, int size)
 {
     static int file_fd = 0;
     unsigned short ssize;

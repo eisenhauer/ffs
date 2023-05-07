@@ -53,7 +53,7 @@ main(int argc, char **argv)
 	};
 	cod_parse_context context = new_cod_parse_context();
 	cod_code gen_code;
-	long (*func)();
+	long (*func)(cod_exec_context);
 	long result;
 
 	cod_assoc_externs(context, externs);
@@ -68,7 +68,7 @@ main(int argc, char **argv)
 	    void *state;
 	    int state_size = 0;
 	    ec = cod_create_exec_context(gen_code);
-	    func = (long(*)()) (long) gen_code->func;
+	    func = (long(*)(cod_exec_context)) (long) gen_code->func;
 	    result = func(ec);
 	    if (verbose) printf("Run number after first run is %ld, expected 1\nGrabbing state...", result);
 	    assert(result == 1);
@@ -137,7 +137,7 @@ main(int argc, char **argv)
 	};
 	cod_parse_context context = new_cod_parse_context();
 	cod_code gen_code;
-	long (*func)();
+	long (*func)(cod_exec_context);
 	long result;
 
 	cod_assoc_externs(context, externs);
@@ -152,7 +152,7 @@ main(int argc, char **argv)
 	    void *state;
 	    int state_size = 0;
 	    ec = cod_create_exec_context(gen_code);
-	    func = (long(*)()) (long) gen_code->func;
+	    func = (long(*)(cod_exec_context)) (long) gen_code->func;
 	    result = func(ec);
 	    assert(result == 0);
 	    

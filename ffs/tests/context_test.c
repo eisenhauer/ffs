@@ -41,9 +41,7 @@ static int verbose = 0;
 static FMContext loaded_FMcontext = NULL;
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
     FMContext src_context;
     FFSBuffer encode_buffer;
@@ -644,8 +642,7 @@ char **argv;
 #endif
 
 static char *
-get_buffer(size_p)
-int *size_p;
+get_buffer(int *size_p)
 {
     static int file_fd = 0;
     static char *buffer = NULL;
@@ -738,8 +735,7 @@ static FFSTypeHandle multi_array_ioformat, triangle_ioformat, add_action_ioforma
 static FFSTypeHandle node_ioformat;
 
 static void
-set_targets(context)
-FFSContext context;
+set_targets(FFSContext context)
 {
     if ((test_only == NULL) || (strcmp(test_only, "first_rec") == 0))
 	first_rec_ioformat = FFSset_fixed_target(context, first_format_list);
@@ -828,10 +824,7 @@ decode_func_t decode_funcs[] = {decode_IOcontext_wrapper,
 #define NUM_TESTS 3
 
 static void
-test_all_receive(buffer, buf_size, finished)
-char *buffer;
-int buf_size;
-int finished;
+test_all_receive(char *buffer, int buf_size, int finished)
 {
     int test_type = 0;
     char *tmp_buffer = malloc(buf_size);
@@ -843,8 +836,7 @@ int finished;
 }
 	
 static void*
-get_mem(size)
-int size;
+get_mem(int size)
 {
     char *buffer;
     unsigned int beef = 0xdeadbeef;
@@ -855,9 +847,7 @@ int size;
 }
 
 static void
-check_mem(size, buffer)
-int size;
-char *buffer;
+check_mem(int size, char *buffer)
 {
     unsigned int beef = 0xdeadbeef;
     if (memcmp(buffer+size, &beef, 4) != 0) {
@@ -867,11 +857,7 @@ char *buffer;
 
     
 static void
-test_receive(buffer, buf_size, finished, test_level)
-char *buffer;
-int buf_size;
-int finished;
-int test_level;
+test_receive(char *buffer, int buf_size, int finished, int test_level)
 {
     static FFSContext c = NULL;
 /*    static int comment_count[NUM_TESTS] = {0,0,0};*/
@@ -1189,10 +1175,7 @@ static FMFormat seen_formats[100];
 static int seen_count = 0;
 
 static void
-write_buffer(format, buf, size)
-FMFormat format;
-char *buf;
-int size;
+write_buffer(FMFormat format, char *buf, int size)
 {
     static int file_fd = 0;
     int i;

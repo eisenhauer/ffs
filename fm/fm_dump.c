@@ -59,9 +59,7 @@ static void add_to_addr_list(dstate s, void *addr, int offset);
 static int dump_subfields(void *base, FMFormat f, dstate s, int data_offset);
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);
@@ -130,9 +128,7 @@ set_bigendian () {
 #endif
 
 static unsigned long
-quick_get_ulong(iofield, data)
-FMFieldPtr iofield;
-void *data;
+quick_get_ulong(FMFieldPtr iofield, void *data)
 {
     data = (void *) ((char *) data + iofield->offset);
     /* only used when field type is an integer and aligned by its size */
@@ -169,9 +165,7 @@ void *data;
 }
 
 static void *
-quick_get_pointer(field, data)
-FMFieldPtr field;
-void *data;
+quick_get_pointer(FMFieldPtr field, void *data)
 {
     union {
 	void *p;
@@ -239,20 +233,13 @@ static int
 internal_dump_data(FMFormat format, void *data, dstate state);
 
 extern int
-FMdump_data(format, data, character_limit)
-FMFormat format;
-void *data;
-int character_limit;
+FMdump_data(FMFormat format, void *data, int character_limit)
 {
     return FMfdump_data(stdout, format, data, character_limit);
 }
 
 extern int
-FMfdump_data(out, format, data, character_limit)
-void *out;
-FMFormat format;
-void *data;
-int character_limit;
+FMfdump_data(void *out, FMFormat format, void *data, int character_limit)
 {
     int ret;
     struct dump_state state;
@@ -414,18 +401,8 @@ determine_dump_size(FMFormat f, void *data, void* parent_base, FMTypeDesc *t)
 
 
 static int
-sdump_value(s, field_type, field_size, field_offset, top_format, data,
-	    string_base, byte_reversal, float_format, encode)
-dstate s;
-const char *field_type;
-int field_size;
-int field_offset;
-FMFormat top_format;
-void *data;
-void *string_base;
-int byte_reversal;
-int float_format;
-int encode;
+sdump_value(dstate s, const char *field_type, int field_size, int field_offset, FMFormat top_format,
+	    void *data, void *string_base, int byte_reversal, int float_format, int encode)
 {
     FMgetFieldStruct descr;  /*OK */
     long junk;
@@ -692,10 +669,7 @@ free_addr_list(dstate s)
 }
 
 extern int
-dump_raw_FMrecord(fmc,format, data)
-FMContext fmc;
-FMFormat format;
-void *data;
+dump_raw_FMrecord(FMContext fmc, FMFormat format, void *data)
 {
     struct dump_state state;
     init_dump_state(&state);
@@ -710,10 +684,7 @@ void *data;
 }
 
 extern char *
-dump_raw_FMrecord_to_string(fmc,format, data)
-FMContext fmc;
-FMFormat format;
-void *data;
+dump_raw_FMrecord_to_string(FMContext fmc, FMFormat format, void *data)
 {
     struct dump_state state;
     init_dump_state(&state);
@@ -731,11 +702,7 @@ void *data;
 }
 
 extern int
-FMfdump_encoded_data(out, format, data, character_limit)
-void *out;
-FMFormat format;
-void *data;
-int character_limit;
+FMfdump_encoded_data(void *out, FMFormat format, void *data, int character_limit)
 {
     int ret;
     int header_size = format->server_ID.length;
@@ -762,10 +729,7 @@ int character_limit;
 }
 
 extern int
-FMdump_encoded_data(format, data, character_limit)
-FMFormat format;
-void *data;
-int character_limit;
+FMdump_encoded_data(FMFormat format, void *data, int character_limit)
 {
     return FMfdump_encoded_data((void*)stdout, format, data, character_limit);
 }
@@ -826,10 +790,7 @@ FMdump_encoded_XML(FMContext c, void *data, int limit)
 }
 
 extern void
-dump_unencoded_FMrecord_as_XML(fmc, format, data)
-FMContext fmc;
-FMFormat format;
-void *data;
+dump_unencoded_FMrecord_as_XML(FMContext fmc, FMFormat format, void *data)
 {
     struct dump_state state;
     if (FMhas_XML_info(format)) {
