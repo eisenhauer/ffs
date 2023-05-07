@@ -260,7 +260,7 @@ if(NOT HAS_IOV_BASE_IOVEC)
 endif()
 
 if(NOT DEFINED FORMAT_SERVER_HOST)
-  set(FORMAT_SERVER_HOST "eisenhauer.dyndns.org")
+  set(FORMAT_SERVER_HOST "formathost.cercs.gatech.edu")
 endif()
 
 if(NOT DEFINED FORMAT_SERVICE_DOMAIN)

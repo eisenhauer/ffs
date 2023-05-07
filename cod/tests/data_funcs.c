@@ -48,9 +48,7 @@ write_buffer(char *filename, FMStructDescList desc, void *data,
 }
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);

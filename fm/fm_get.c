@@ -41,9 +41,7 @@ static MAX_FLOAT_TYPE get_big_float(FMFieldPtr field, void *data);
 static int get_long_warn = 0;
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);
@@ -55,9 +53,7 @@ int size;
 }
 
 static MAX_INTEGER_TYPE
-get_big_int(field, data)
-FMFieldPtr field;
-void *data;
+get_big_int(FMFieldPtr field, void *data)
 {
     if (field->data_type == integer_type) {
 	if (field->size == sizeof(char)) {
@@ -124,9 +120,7 @@ void *data;
 }
 
 static MAX_UNSIGNED_TYPE
-get_big_unsigned(field, data)
-FMFieldPtr field;
-void *data;
+get_big_unsigned(FMFieldPtr field, void *data)
 {
     if ((field->data_type == unsigned_type) || 
 	(field->data_type == enumeration_type) || 
@@ -224,9 +218,7 @@ float_conversion(unsigned char*value, int size, FMfloat_format src_format,
 }
 
 static MAX_FLOAT_TYPE
-get_big_float(field, data)
-FMFieldPtr field;
-void *data;
+get_big_float(FMFieldPtr field, void *data)
 {
     if (field->data_type == float_type) {
 	if (field->size == sizeof(float)) {
@@ -301,9 +293,7 @@ void *data;
 }
 
 extern float
-get_FMfloat(field, data)
-FMFieldPtr field;
-void *data;
+get_FMfloat(FMFieldPtr field, void *data)
 {
     float tmp;
     tmp = get_big_float(field, data);
@@ -311,9 +301,7 @@ void *data;
 }
 
 extern double
-get_FMdouble(field, data)
-FMFieldPtr field;
-void *data;
+get_FMdouble(FMFieldPtr field, void *data)
 {
     double tmp;
     tmp = get_big_float(field, data);
@@ -323,9 +311,7 @@ void *data;
 
 #if SIZEOF_LONG_DOUBLE != 0
 extern long double
-get_FMlong_double(field, data)
-FMFieldPtr field;
-void *data;
+get_FMlong_double(FMFieldPtr field, void *data)
 {
     long double tmp;
     tmp = get_big_float(field, data);
@@ -334,36 +320,28 @@ void *data;
 #endif
 
 extern short
-get_FMshort(field, data)
-FMFieldPtr field;
-void *data;
+get_FMshort(FMFieldPtr field, void *data)
 {
     short tmp = get_big_int(field, data);
     return tmp;
 }
 
 extern unsigned short
-get_FMushort(field, data)
-FMFieldPtr field;
-void *data;
+get_FMushort(FMFieldPtr field, void *data)
 {
     unsigned short tmp = get_big_unsigned(field, data);
     return tmp;
 }
 
 extern int
-get_FMint(field, data)
-FMFieldPtr field;
-void *data;
+get_FMint(FMFieldPtr field, void *data)
 {
     int tmp= get_big_int(field, data);
     return tmp;
 }
 
 extern unsigned int
-get_FMuint(field, data)
-FMFieldPtr field;
-void *data;
+get_FMuint(FMFieldPtr field, void *data)
 {
     unsigned int tmp = get_big_unsigned(field, data);
     return tmp;
@@ -371,18 +349,14 @@ void *data;
 
 
 extern long
-get_FMlong(field, data)
-FMFieldPtr field;
-void *data;
+get_FMlong(FMFieldPtr field, void *data)
 {
     long tmp = get_big_int(field, data);
     return tmp;
 }
 
 extern unsigned long
-get_FMulong(field, data)
-FMFieldPtr field;
-void *data;
+get_FMulong(FMFieldPtr field, void *data)
 {
     unsigned long tmp = get_big_unsigned(field, data);
     return tmp;
@@ -390,18 +364,14 @@ void *data;
 
 #if SIZEOF_LONG_LONG != 0
 extern long long
-get_FMlong_long(field, data)
-FMFieldPtr field;
-void *data;
+get_FMlong_long(FMFieldPtr field, void *data)
 {
     long long tmp= get_big_int(field, data);
     return tmp;
 }
 
 extern unsigned long long
-get_FMulong_long(field, data)
-FMFieldPtr field;
-void *data;
+get_FMulong_long(FMFieldPtr field, void *data)
 {
     unsigned long long tmp = get_big_unsigned(field, data);
     return tmp;
@@ -410,11 +380,7 @@ void *data;
 #endif
 
 extern void
-get_FMlong8(field, data, low_long, high_long)
-FMFieldPtr field;
-void *data;
-unsigned long *low_long;
-long *high_long;
+get_FMlong8(FMFieldPtr field, void *data, unsigned long *low_long, long *high_long)
 {
     *low_long = 0;
     if (high_long)
@@ -461,11 +427,7 @@ long *high_long;
 }
 
 extern int
-get_FMulong8(field, data, low_long, high_long)
-FMFieldPtr field;
-void *data;
-unsigned long *low_long;
-unsigned long *high_long;
+get_FMulong8(FMFieldPtr field, void *data, unsigned long *low_long, unsigned long *high_long)
 {
     *low_long = 0;
     if (high_long)
@@ -521,9 +483,7 @@ unsigned long *high_long;
 }
 
 extern char
-get_FMchar(field, data)
-FMFieldPtr field;
-void *data;
+get_FMchar(FMFieldPtr field, void *data)
 {
     if (field->data_type == char_type) {
 	return (char) *((char *) data + field->offset);
@@ -536,9 +496,7 @@ void *data;
 }
 
 extern int
-get_FMenum(field, data)
-FMFieldPtr field;
-void *data;
+get_FMenum(FMFieldPtr field, void *data)
 {
     FMgetFieldStruct tmp_field;  /*OK */
     tmp_field = *field;
@@ -547,18 +505,13 @@ void *data;
 }
 
 extern char *
-get_FMstring(field, data)
-FMFieldPtr field;
-void *data;
+get_FMstring(FMFieldPtr field, void *data)
 {
     return get_FMstring_base(field, data, data);
 }
 
 extern char *
-get_FMstring_base(field, data, string_base)
-FMFieldPtr field;
-void *data;
-void *string_base;
+get_FMstring_base(FMFieldPtr field, void *data, void *string_base)
 {
     unsigned long offset = get_offset((void *) ((char *) data + field->offset),
 			     field->size, field->byte_swap);
@@ -574,11 +527,7 @@ void *string_base;
 }
 
 extern void *
-get_FMaddr(field, data, string_base, encode)
-FMFieldPtr field;
-void *data;
-void *string_base;
-int encode;
+get_FMaddr(FMFieldPtr field, void *data, void *string_base, int encode)
 {
     unsigned long offset = get_offset((void *) ((char *) data + field->offset),
 			     field->size, field->byte_swap);
@@ -592,10 +541,7 @@ int encode;
 }
 
 static long
-get_offset(data, size, swap)
-void *data;
-int size;
-int swap;
+get_offset(void *data, int size, int swap)
 {
     FMgetFieldStruct field;  /*OK */
     field.offset = 0;
@@ -612,9 +558,7 @@ int swap;
 }
 
 extern int
-FM_field_type_eq(str1, str2)
-const char *str1;
-const char *str2;
+FM_field_type_eq(const char *str1, const char *str2)
 {
     FMdata_type t1, t2;
     long t1_count, t2_count;
@@ -658,11 +602,7 @@ const char *str2;
 }
 
 extern int
-IOget_array_size_dimen(str, fields, dimen, control_field)
-const char *str;
-FMFieldList fields;
-int dimen;
-int *control_field;
+IOget_array_size_dimen(const char *str, FMFieldList fields, int dimen, int *control_field)
 {
     char *left_paren, *end;
     long static_size;
@@ -725,9 +665,7 @@ int *control_field;
 }
 
 extern FMFieldPtr
-get_FMfieldPtrFromList(field_list, fieldname)
-FMFieldList field_list;
-const char *fieldname;
+get_FMfieldPtrFromList(FMFieldList field_list, const char *fieldname)
 {
     int index;
     FMFieldPtr ret_val;
@@ -869,9 +807,7 @@ set_FMPtrField_by_name(FMFieldList field_list, const char *fieldname, void *data
 }
 
 extern FMFieldPtr
-get_FMfieldPtr(format, fieldname)
-FMFormat format;
-const char *fieldname;
+get_FMfieldPtr(FMFormat format, const char *fieldname)
 {
     int index;
     FMFieldPtr ret_val;
@@ -908,9 +844,7 @@ const char *fieldname;
 }
 
 extern FMFieldPtr
-get_local_FieldPtr(format, fieldname)
-FMFormat format;
-const char *fieldname;
+get_local_FieldPtr(FMFormat format, const char *fieldname)
 {
     FMFieldPtr ret_val = get_FMfieldPtr(format, fieldname);
 

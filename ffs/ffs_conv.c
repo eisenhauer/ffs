@@ -95,8 +95,7 @@ static char *float_format_str[] = {
 static int IO_shut_up = 0;
 
 static int
-min_align_size(size)
-int size;
+min_align_size(int size)
 {
     int align_size = 8;		/* conservative on current machines */
     switch (size) {
@@ -172,8 +171,7 @@ init_float_formats()
 	
 
 void
-FFSfree_conversion(conv)
-IOConversionPtr conv;
+FFSfree_conversion(IOConversionPtr conv)
 {
     int i;
     for (i = 0; i < conv->conv_count; i++) {
@@ -206,10 +204,7 @@ IOConversionPtr conv;
  * */
 
 static void
-field_name_strip_get_default(io_field, out_field_name, default_val)
-const FMField *io_field;
-char *out_field_name;
-void **default_val;
+field_name_strip_get_default(const FMField *io_field, char *out_field_name, void **default_val)
 {
     char *s, *s1;
     char *base_type = base_data_type(io_field->field_type);
@@ -282,21 +277,9 @@ find_field_for_conv(char *field_name, FMFieldList fields, int cur_field, void *s
 
 static
 IOConversionPtr
-create_conversion(src_ioformat, target_field_list, target_struct_size,
-		  pointer_size, byte_reversal, target_fp_format,
-		  initial_conversion, target_column_major,
-		  string_offset_size, converted_strings, target_list)
-FFSTypeHandle src_ioformat;
-FMFieldList target_field_list;
-int target_struct_size;
-int pointer_size;
-int byte_reversal;
-FMfloat_format target_fp_format;
-IOconversion_type initial_conversion;
-int target_column_major;
-int string_offset_size;
-int converted_strings;
-FMStructDescList target_list; 
+create_conversion(FFSTypeHandle src_ioformat, FMFieldList target_field_list, int target_struct_size, int pointer_size,
+		  int byte_reversal, FMfloat_format target_fp_format, IOconversion_type initial_conversion,
+		  int target_column_major, int string_offset_size, int converted_strings, FMStructDescList target_list)
 {
     int target_field_count = count_FMfield(target_field_list);
     FMFieldList nfl_sort = copy_field_list(target_field_list);
@@ -665,14 +648,8 @@ FMStructDescList target_list;
 
 extern
 void
-set_general_IOconversion_for_format(iofile, file_ioformat, native_field_list,
-				    native_struct_size, pointer_size, target_list)
-FFSContext iofile;
-FFSTypeHandle file_ioformat;
-FMFieldList native_field_list;
-int native_struct_size;
-int pointer_size;
-FMStructDescList target_list;
+set_general_IOconversion_for_format(FFSContext iofile, FFSTypeHandle file_ioformat, FMFieldList native_field_list,
+				    int native_struct_size, int pointer_size, FMStructDescList target_list)
 {
     IOConversionPtr conv_ptr;
     IOconversion_type conv_type = none_required;
@@ -704,10 +681,7 @@ FMStructDescList target_list;
 }
 
 static int
-set_conversion_from_list(iocontext, ioformat, struct_list)
-FFSContext iocontext;
-FFSTypeHandle ioformat;
-FMStructDescList struct_list;
+set_conversion_from_list(FFSContext iocontext, FFSTypeHandle ioformat, FMStructDescList struct_list)
 {
     int i = 0;
     while(struct_list[i].format_name != NULL) {
@@ -764,10 +738,7 @@ static void link_conversion_sets(FFSTypeHandle ioformat){}
 
 extern
 void
-establish_conversion(iocontext, ioformat, struct_list)
-FFSContext iocontext;
-FFSTypeHandle ioformat;
-FMStructDescList struct_list;
+establish_conversion(FFSContext iocontext, FFSTypeHandle ioformat, FMStructDescList struct_list)
 {
     int use_package = 0;
 
@@ -780,12 +751,7 @@ FMStructDescList struct_list;
 }
 
 extern void
-ffs_internal_convert_field(src_spec, src, dest_type, dest_size, dest)
-FMFieldPtr src_spec;
-void *src;
-FMdata_type dest_type;
-int dest_size;
-void *dest;
+ffs_internal_convert_field(FMFieldPtr src_spec, void *src, FMdata_type dest_type, int dest_size, void *dest)
 {
     int float_OK = 1;
     if (dest_type == float_type) {
@@ -954,9 +920,7 @@ internal_convert_record(IOConversionPtr conv, ConvStatus conv_status,
 			void *src, void *dest, int data_already_copied);
 
 static void
-print_IOConversion(conv_ptr, indent)
-IOConversionPtr conv_ptr;
-int indent;
+print_IOConversion(IOConversionPtr conv_ptr, int indent)
 {
     int i;
     int ind;
@@ -1072,9 +1036,7 @@ int indent;
 }
 
 static void
-print_IOConversion_as_XML(conv_ptr, indent)
-IOConversionPtr conv_ptr;
-int indent;
+print_IOConversion_as_XML(IOConversionPtr conv_ptr, int indent)
 {
     int i;
     int ind;
@@ -1175,26 +1137,19 @@ int indent;
 
 
 extern void
-dump_IOConversion(conv_ptr)
-IOConversionPtr conv_ptr;
+dump_IOConversion(IOConversionPtr conv_ptr)
 {
     print_IOConversion(conv_ptr, 0);
 }
 
 extern void
-dump_IOConversion_as_XML(conv_ptr)
-IOConversionPtr conv_ptr;
+dump_IOConversion_as_XML(IOConversionPtr conv_ptr)
 {
     print_IOConversion_as_XML(conv_ptr, 0);
 }
 
 void
-FFSconvert_record(conv, src, dest, final_string_base, src_string_base)
-IOConversionPtr conv;
-void *src;
-void *dest;
-void *final_string_base;
-void *src_string_base;
+FFSconvert_record(IOConversionPtr conv, void *src, void *dest, void *final_string_base, void *src_string_base)
 {
     struct conv_status cs;
     if (src_string_base == NULL) {
@@ -1625,12 +1580,8 @@ new_convert_field(char *src_field_addr, char *dest_field_addr,
 }
 
 static void
-internal_convert_record(conv, conv_status, src, dest, data_already_copied)
-IOConversionPtr conv;
-ConvStatus conv_status;
-void *src;
-void *dest;
-int data_already_copied;
+internal_convert_record(IOConversionPtr conv, ConvStatus conv_status, void *src,
+			void *dest, int data_already_copied)
 {
     int i;
     int *control_value = NULL;
@@ -1702,9 +1653,7 @@ int data_already_copied;
 
 
 static MAX_INTEGER_TYPE
-get_big_int(iofield, data)
-FMFieldPtr iofield;
-void *data;
+get_big_int(FMFieldPtr iofield, void *data)
 {
     if (iofield->data_type == integer_type) {
 	if (iofield->size == sizeof(char)) {
@@ -1771,9 +1720,7 @@ void *data;
 }
 
 static MAX_UNSIGNED_TYPE
-get_big_unsigned(iofield, data)
-FMFieldPtr iofield;
-void *data;
+get_big_unsigned(FMFieldPtr iofield, void *data)
 {
     if ((iofield->data_type == unsigned_type) || 
 	(iofield->data_type == enumeration_type) || 
@@ -1870,9 +1817,7 @@ float_conversion(unsigned char*value, int size, FMfloat_format src_format,
 }
 
 static MAX_FLOAT_TYPE
-get_big_float(iofield, data)
-FMFieldPtr iofield;
-void *data;
+get_big_float(FMFieldPtr iofield, void *data)
 {
     if (iofield->data_type == float_type) {
 	if (iofield->size == sizeof(float)) {
@@ -1946,9 +1891,7 @@ void *data;
 }
 
 static void
-byte_swap(data, size)
-char *data;
-int size;
+byte_swap(char *data, int size)
 {
     int i;
     assert((size % 2) == 0);
@@ -1979,8 +1922,7 @@ int dest_alignment;
 #define max(x,y) (x<y?y:x)
 
 static int
-drisc_type(field)
-struct _FMgetFieldStruct *field;
+drisc_type(struct _FMgetFieldStruct *field)
 {
     switch(field->data_type) {
     case integer_type:
@@ -2017,9 +1959,7 @@ struct _FMgetFieldStruct *field;
 }
 
 static int
-conv_required_alignment(c, conv)
-dill_stream c;
-IOConversionPtr conv;
+conv_required_alignment(dill_stream c, IOConversionPtr conv)
 {
     if (conv->conv_count == 0) return 0;
     return conv->ioformat->body->alignment;
@@ -2116,11 +2056,8 @@ static void NO_SANITIZE_THREAD read_generation_environment_variables(void)
 
 
 extern
- conv_routine
-generate_conversion(conv, src_alignment, dest_alignment)
-IOConversionPtr conv;
-int src_alignment;
-int dest_alignment;
+conv_routine
+generate_conversion(IOConversionPtr conv, int src_alignment, int dest_alignment)
 {
     dill_stream c = NULL;
     dill_exec_handle conversion_handle;
@@ -2459,17 +2396,9 @@ gen_mem_float_conv(dill_stream c, struct _FMgetFieldStruct src, int src_addr,
 }
 	    
 static void
-gen_simple_field_conv(c, tmp_spec, assume_align, src_addr, src_offset, 
-		      dest_size, dest_type, dest_addr, dest_offset)
-dill_stream c;
-struct _FMgetFieldStruct tmp_spec;
-int assume_align;
-dill_reg src_addr;
-int src_offset;
-int dest_size;
-FMdata_type dest_type;
-dill_reg dest_addr;
-int dest_offset;
+gen_simple_field_conv(dill_stream c, struct _FMgetFieldStruct tmp_spec, int assume_align,
+		      dill_reg src_addr, int src_offset, int dest_size,
+		      FMdata_type dest_type, dill_reg dest_addr, int dest_offset)
 {
     /* simple conversion */
     iogen_oprnd src_oprnd;
@@ -2556,25 +2485,11 @@ int dest_offset;
 }
 
 static void
-gen_convert_address_field(c, tmp_spec, assume_align, src_addr, src_offset,
-			  dest_size, dest_addr, dest_offset, string_offset_size,
-			  rt_conv_status, base_size_delta, 
-			  string_src_reg, string_dest_reg, register_args, null_target)
-dill_stream c;
-struct _FMgetFieldStruct tmp_spec;
-int assume_align;
-dill_reg src_addr;
-int src_offset;
-int dest_size;
-dill_reg dest_addr;
-int dest_offset;
-int string_offset_size;
-dill_reg rt_conv_status;
-int base_size_delta;
-dill_reg *string_src_reg;
-dill_reg *string_dest_reg;
-int register_args;
-int null_target;
+gen_convert_address_field(dill_stream c, struct _FMgetFieldStruct tmp_spec, int assume_align,
+			  dill_reg src_addr, int src_offset, int dest_size, dill_reg dest_addr,
+			  int dest_offset, int string_offset_size, dill_reg rt_conv_status,
+			  int base_size_delta, dill_reg *string_src_reg, dill_reg *string_dest_reg,
+			  int register_args, int null_target)
 {
     iogen_oprnd src_oprnd;
     int src_drisc_type;
@@ -2667,19 +2582,10 @@ int null_target;
 }
 
 static void
-generate_convert_field(c, conv_status, src_addr, src_offset, 
-		       dest_addr, dest_offset,
-		       rt_conv_status, conv, type_desc, data_already_copied)
-dill_stream c;
-ConvStatus conv_status;
-dill_reg src_addr;
-int src_offset;
-dill_reg dest_addr;
-int dest_offset;
-dill_reg rt_conv_status;
-IOconvFieldStruct *conv;
-FMTypeDesc *type_desc;
-int data_already_copied;
+generate_convert_field(dill_stream c, ConvStatus conv_status, dill_reg src_addr,
+		       int src_offset, dill_reg dest_addr, int dest_offset,
+		       dill_reg rt_conv_status, IOconvFieldStruct *conv, FMTypeDesc *type_desc,
+		       int data_already_copied)
 {
     switch(type_desc->type) {
     case FMType_pointer: {
@@ -3055,13 +2961,8 @@ int data_already_copied;
 }
 
 extern void
-new_generate_conversion_code(c, conv_status, conv, args, assume_align, register_args)
-dill_stream c;
-ConvStatus conv_status;
-IOConversionPtr conv;
-dill_reg *args;
-int assume_align;
-int register_args;
+new_generate_conversion_code(dill_stream c, ConvStatus conv_status, IOConversionPtr conv, dill_reg *args,
+			     int assume_align, int register_args)
 {
     int i;
     dill_reg src_addr = args[0];

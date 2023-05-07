@@ -20,17 +20,13 @@ static int verbose = 0;
 static char *test_only = NULL;
 
 int
-size_func_sizeof(iofile, size)
-FFSFile iofile;
-int size;
+size_func_sizeof(FFSFile iofile, int size)
 {
     return size;
 }
 
 int
-size_func_next_size(iofile, size)
-FFSFile iofile;
-int size;
+size_func_next_size(FFSFile iofile, int size)
 {
     return FFSfile_next_decode_length(iofile);
 }
@@ -38,19 +34,13 @@ int size;
 attr_list last_attrs = NULL;
 
 int
-read_func_no_buffer(iofile, data, size)
-FFSFile iofile;
-void *data;
-int size;
+read_func_no_buffer(FFSFile iofile, void *data, int size)
 {
     return FFSread_attr(iofile, data, &last_attrs);
 }
 
 int
-read_func_buffer(iofile, data, size)
-FFSFile iofile;
-void *data;
-int size;
+read_func_buffer(FFSFile iofile, void *data, int size)
 {
     FFSBuffer b = create_fixed_FFSBuffer(data, size);
     int ret = FFSread_to_buffer(iofile, b, NULL);
@@ -68,8 +58,7 @@ static FFSTypeHandle multi_array_ioformat, triangle_ioformat, add_action_ioforma
 static FFSTypeHandle node_ioformat, embedded_rec_ioformat;
 
 static void
-set_targets(context)
-FFSContext context;
+set_targets(FFSContext context)
 {
     if ((test_only == NULL) || (strcmp(test_only, "first_rec") == 0))
 	first_rec_ioformat = FFSset_fixed_target(context, first_format_list);
@@ -116,10 +105,7 @@ FFSContext context;
 }
 
 void
-do_test(input_file, size_func, read_func)
-char *input_file;
-int (*size_func) (FFSFile, int);
-int (*read_func) ();
+do_test(char *input_file, int (*size_func) (FFSFile, int), int (*read_func) (FFSFile iofile, void *data, int size))
 {
     FFSFile iofile;
     int item_count = 0;
@@ -405,9 +391,7 @@ int (*read_func) ();
 
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
     int i;
     char *input_file = "test_output";

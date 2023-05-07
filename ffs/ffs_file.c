@@ -434,15 +434,8 @@ FMContext_of_file(FFSFile f)
 }
 
 extern void
-set_interface_FFSFile(f, write_func, read_func, writev_func, readv_func,
-		     max_iov, close_func)
-FFSFile f;
-IOinterface_func write_func;
-IOinterface_func read_func;
-IOinterface_funcv writev_func;
-IOinterface_funcv readv_func;
-int max_iov;
-IOinterface_close close_func;
+set_interface_FFSFile(FFSFile f, IOinterface_func write_func, IOinterface_func read_func, IOinterface_funcv writev_func,
+                      IOinterface_funcv readv_func, int max_iov, IOinterface_close close_func)
 {
     f->write_func = write_func;
     f->read_func = read_func;
@@ -1150,8 +1143,7 @@ FFSdump_index(FFSIndexItem index_item)
 
 extern
 FFSTypeHandle
-FFSnext_type_handle(ffsfile)
-FFSFile ffsfile;
+FFSnext_type_handle(FFSFile ffsfile)
 {
     if (ffsfile->status != OpenForRead)
 	return NULL;
@@ -1181,8 +1173,7 @@ FFSfile_next_decode_length(FFSFile iofile)
 
 extern
 char *
-FFSread_comment(ffsfile)
-FFSFile ffsfile;
+FFSread_comment(FFSFile ffsfile)
 {
     if (ffsfile->status != OpenForRead)
 	return NULL;
@@ -1299,9 +1290,7 @@ FFSseek(FFSFile file, int data_item)
     
 static
 int
-get_AtomicInt(file, file_int_ptr)
-FFSFile file;
-FILE_INT *file_int_ptr;
+get_AtomicInt(FFSFile file, FILE_INT *file_int_ptr)
 {
 #if SIZEOF_INT == 4
     int tmp_value;
@@ -1388,8 +1377,7 @@ convert_last_index_block(FFSFile ffsfile)
 }
 
 FFSRecordType
-FFSnext_record_type(ffsfile)
-FFSFile ffsfile;
+FFSnext_record_type(FFSFile ffsfile)
 {
     FFSRecordType next = next_record_type(ffsfile);
     while ((next & ffsfile->visible_items_bitmap) != next) {
@@ -1408,8 +1396,7 @@ FFSset_visible(FFSFile ffsfile, int bitmap)
 
 static
 FFSRecordType
-next_record_type(ffsfile)
-FFSFile ffsfile;
+next_record_type(FFSFile ffsfile)
 {
     FILE_INT indicator_chunk = 0;
  restart:

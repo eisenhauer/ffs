@@ -1992,9 +1992,7 @@ cod_preprocessor(char *input, cod_parse_context context, int*white)
 }
 	
 int
-cod_parse_for_globals(code, context)
-char *code;
-cod_parse_context context;
+cod_parse_for_globals(char *code, cod_parse_context context)
 {
     int ret;
     context->alloc_globals = 1;
@@ -2003,9 +2001,7 @@ cod_parse_context context;
     return ret;
 }
 int
-cod_parse_for_context(code, context)
-char *code;
-cod_parse_context context;
+cod_parse_for_context(char *code, cod_parse_context context)
 {
     sm_list decls;
     int ret;
@@ -2073,9 +2069,7 @@ static int include_prefix(char *code)
     return tmp - code;
 }
 cod_code
-cod_code_gen(code, context)
-char *code;
-cod_parse_context context;
+cod_code_gen(char *code, cod_parse_context context)
 {
     sm_ref tmp, tmp2;
     cod_code ret_code;
@@ -2156,9 +2150,7 @@ cod_dump(cod_code code)
     
 
 int
-cod_code_verify(code, context)
-char *code;
-cod_parse_context context;
+cod_code_verify(char *code, cod_parse_context context)
 {
     sm_ref tmp;
 
@@ -2196,8 +2188,7 @@ cod_parse_context context;
 }
 
 extern void 
-cod_code_free(code)
-cod_code code;
+cod_code_free(cod_code code)
 {
     if (code->code_memory_block) free(code->code_memory_block);
     if (code->data) free(code->data);
@@ -2274,8 +2265,7 @@ print_context(cod_parse_context context, int line, int character)
     context->error_func(context->client_data, "^\n");
 }
 
-void yyerror(str)
-char *str;
+void yyerror(char *str)
 {
     char tmp_str[100];
     sprintf(tmp_str, "## Error %s\n", str);
@@ -2469,8 +2459,7 @@ struct scope {
 
 
 extern cod_parse_context
-cod_copy_context(context)
-cod_parse_context context;
+cod_copy_context(cod_parse_context context)
 {
     int i, count;
     int type_count = 0;
@@ -2507,8 +2496,7 @@ cod_parse_context context;
 extern void dump_scope(scope_ptr scope);
 
 extern cod_parse_context
-cod_copy_globals(context)
-cod_parse_context context;
+cod_copy_globals(cod_parse_context context)
 {
     int i, count;
     int type_count = 0;
@@ -5610,9 +5598,7 @@ cod_remove_defined_types(cod_parse_context context, int count)
 }
 
 void
-cod_add_defined_type(id, context)
-char *id;
-cod_parse_context context;
+cod_add_defined_type(char *id, cod_parse_context context)
 {
     int count = 0;
     while(context->defined_types && context->defined_types[count]) count++;
@@ -5629,9 +5615,7 @@ cod_parse_context context;
 }
 
 void
-cod_add_enum_const(id, context)
-char *id;
-cod_parse_context context;
+cod_add_enum_const(char *id, cod_parse_context context)
 {
     int count = 0;
     while(context->enumerated_constants && context->enumerated_constants[count]) count++;
@@ -5672,9 +5656,7 @@ cod_add_struct_type(FMStructDescList format_list,
 }
 
 static int
-str_to_data_type(str, size)
-char *str;
-int size;
+str_to_data_type(char *str, int size)
 {
     char *tmp = malloc(strlen(str) + 1);
     char *free_str = tmp;
@@ -5744,9 +5726,7 @@ int size;
 }
 
 static int
-array_str_to_data_type(str, size)
-char *str;
-int size;
+array_str_to_data_type(char *str, int size)
 {
     int ret_type;
     char field_type[1024];
@@ -5766,14 +5746,8 @@ int size;
 }
 
 static sm_ref
-build_subtype_nodes(context, decl, f, desc, err, scope, must_free_p)
-cod_parse_context context;
-sm_ref decl;
-field* f;
-FMTypeDesc *desc;
-int *err;
-scope_ptr scope;
-int *must_free_p;
+build_subtype_nodes(cod_parse_context context, sm_ref decl, field* f, FMTypeDesc *desc,
+		    int *err, scope_ptr scope, int *must_free_p)
 {
     sm_ref ret = NULL;
     sm_ref subtype = NULL;
@@ -5896,16 +5870,8 @@ int *must_free_p;
 }
 
 static void
-build_type_nodes(context, decl, f, fields, cg_size, cg_type, desc, err, scope)
-cod_parse_context context;
-sm_ref decl;
-field* f;
-sm_list fields;
-int cg_size;
-int cg_type;
-FMTypeDesc* desc;
-int *err;
-scope_ptr scope;
+build_type_nodes(cod_parse_context context, sm_ref decl, field* f, sm_list fields,
+		 int cg_size, int cg_type, FMTypeDesc* desc, int *err, scope_ptr scope)
 {
     int must_free_flag = 0;
     sm_ref complex_type = build_subtype_nodes(context, decl, f, desc, err, scope, &must_free_flag);
@@ -5919,13 +5885,7 @@ scope_ptr scope;
 }
 
 static int
-semanticize_array_element_node(context, array, super_type, base_type_spec, 
-			       scope)
-cod_parse_context context;
-sm_ref array;
-sm_ref super_type;
-sm_list base_type_spec;
-scope_ptr scope;
+semanticize_array_element_node(cod_parse_context context, sm_ref array, sm_ref super_type, sm_list base_type_spec, scope_ptr scope)
 {
     if (array->node.array_type_decl.size_expr != NULL) {
 	if (!is_constant_expr(array->node.array_type_decl.size_expr)) {
@@ -5993,10 +5953,7 @@ scope_ptr scope;
 }	
 
 static int
-semanticize_array_type_node(context, array, scope)
-cod_parse_context context;
-sm_ref array;
-scope_ptr scope;
+semanticize_array_type_node(cod_parse_context context, sm_ref array, scope_ptr scope)
 {
     if (!array->node.array_type_decl.dimensions) {
         array->node.array_type_decl.dimensions = malloc(sizeof(dimen_s));

@@ -20,13 +20,7 @@
 #define gen_fatal(str) do {fprintf(stderr, "%s\n", str); exit(0);} while (0)
 
 iogen_oprnd
-gen_operand(src_reg, offset, size, data_type, aligned, byte_swap)
-dill_reg src_reg;
-int offset;
-int size;
-FMdata_type data_type;
-int aligned;
-int byte_swap;
+gen_operand(dill_reg src_reg, int offset, int size, FMdata_type data_type, int aligned, int byte_swap)
 {
     iogen_oprnd ret_val;
     ret_val.address = 1;
@@ -41,9 +35,7 @@ int byte_swap;
 }
 
 void
-gen_load(c, src_oprnd)
-dill_stream c;
-iogen_oprnd_ptr src_oprnd;
+gen_load(dill_stream c, iogen_oprnd_ptr src_oprnd)
 {
     iogen_oprnd tmp_val;
     tmp_val = gen_fetch(c, 
@@ -54,13 +46,8 @@ iogen_oprnd_ptr src_oprnd;
 }
 
 iogen_oprnd
-gen_bswap_fetch(c, src_reg, offset, size, data_type, aligned)
-dill_stream c;
-dill_reg src_reg;
-int offset;
-int size;
-FMdata_type data_type;
-int aligned;
+gen_bswap_fetch(dill_stream c, dill_reg src_reg, int offset,
+		int size, FMdata_type data_type, int aligned)
 {
     iogen_oprnd ret_val;
     ret_val.address = 0;
@@ -261,14 +248,8 @@ gen_set(dill_stream c, int size, char* value)
 }
    
 iogen_oprnd
-gen_fetch(c, src_reg, offset, size, data_type, aligned, byte_swap)
-dill_stream c;
-dill_reg src_reg;
-int offset;
-int size;
-FMdata_type data_type;
-int aligned;
-int byte_swap;
+gen_fetch(dill_stream c, dill_reg src_reg, int offset, int size,
+	  FMdata_type data_type, int aligned, int byte_swap)
 {
     iogen_oprnd ret_val;
 
@@ -423,9 +404,7 @@ int byte_swap;
 }
 
 void
-gen_byte_swap(c, src_oprnd)
-dill_stream c;
-iogen_oprnd_ptr src_oprnd;
+gen_byte_swap(dill_stream c, iogen_oprnd_ptr src_oprnd)
 {
     iogen_oprnd swap_oprnd;
     if (src_oprnd->address) {
@@ -491,14 +470,8 @@ iogen_oprnd_ptr src_oprnd;
 }
 
 void
-gen_store(c, src, dest_reg, offset, size, data_type, aligned)
-dill_stream c;
-iogen_oprnd src;
-dill_reg dest_reg;
-int offset;
-int size;
-FMdata_type data_type;
-int aligned;
+gen_store(dill_stream c, iogen_oprnd src, dill_reg dest_reg, int offset,
+	  int size, FMdata_type data_type, int aligned)
 {
     assert(src.size == size);
 
@@ -586,14 +559,8 @@ int aligned;
 }
 
 void
-gen_memcpy(c, src, src_offset, dest, dest_offset, size, const_size)
-dill_stream c;
-dill_reg src;
-int src_offset;
-dill_reg dest;
-int dest_offset;
-dill_reg size;
-int const_size;
+gen_memcpy(dill_stream c, dill_reg src, int src_offset, dill_reg dest,
+	   int dest_offset, dill_reg size, int const_size)
 {
     dill_reg final_src, final_dest;
     if (src_offset != 0) {
@@ -625,9 +592,7 @@ int const_size;
 }
 
 void
-free_oprnd(c, oprnd)
-dill_stream c;
-iogen_oprnd oprnd;
+free_oprnd(dill_stream c, iogen_oprnd oprnd)
 {
     REG_DEBUG(("put %d in free\n", _vrr(oprnd.vc_reg)));
     switch (oprnd.data_type) {
@@ -704,10 +669,7 @@ iogen_oprnd oprnd;
 }
 
 iogen_oprnd
-gen_type_conversion(c, src_oprnd, data_type)
-dill_stream c;
-iogen_oprnd src_oprnd;
-FMdata_type data_type;
+gen_type_conversion(dill_stream c, iogen_oprnd src_oprnd, FMdata_type data_type)
 {
     iogen_oprnd result_oprnd = src_oprnd;
     dill_reg at;  /* temporary */
@@ -936,10 +898,7 @@ FMdata_type data_type;
 }
 
 iogen_oprnd
-gen_size_conversion(c, src_oprnd, size)
-dill_stream c;
-iogen_oprnd src_oprnd;
-int size;
+gen_size_conversion(dill_stream c, iogen_oprnd src_oprnd, int size)
 {
     iogen_oprnd result_oprnd = src_oprnd;
     dill_reg at;  /* temporary */

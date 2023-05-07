@@ -20,6 +20,8 @@ x = new_cod_parse_context();\
 if (output_file) cod_set_error_func(x, error_func);
 #define EC_param0
 #define EC_param1
+#define EC_param0_decl
+#define EC_param1_decl
 #else
 #define GEN_PARSE_CONTEXT(x) \
 x = new_cod_parse_context();\
@@ -27,6 +29,8 @@ cod_add_param("ec", "cod_exec_context", 0, x);\
 if (output_file) cod_set_error_func(x, error_func);
 #define EC_param0 ec
 #define EC_param1 ec,
+#define EC_param0_decl cod_exec_context ec
+#define EC_param1_decl cod_exec_context ec,
 #endif
 
 static int verbose = 0;
@@ -93,7 +97,7 @@ main(int argc, char **argv)
 	};
 	cod_code gen_code;
 	long ret;
-	long (*func)();
+	long (*func)(EC_param0_decl);
 
 	if (verbose) printf("Running test 1 (-o 1)\n");
 	GEN_PARSE_CONTEXT(context);
@@ -128,7 +132,7 @@ main(int argc, char **argv)
 	cod_parse_context context = new_cod_parse_context();
 	cod_exec_context ec;
 	cod_code gen_code;
-    	long (*func)();
+    	long (*func)(EC_param1_decl int);
 
 	if (verbose) printf("Running test 2 (-o 2)\n");
 #ifdef NO_EMULATION
@@ -138,7 +142,7 @@ main(int argc, char **argv)
 #endif
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(int)) (long) gen_code->func;
+	func = (long(*)(EC_param1_decl int)) (long) gen_code->func;
         assert(func(EC_param1 15) == 87);
 	cod_exec_context_free(ec);
 	cod_code_free(gen_code);
@@ -170,7 +174,7 @@ main(int argc, char **argv)
 	cod_exec_context ec;
 	test_struct str;
 	cod_code gen_code;
-	long (*func)();
+	long (*func)(EC_param1_decl test_struct_p);
 
 	if (verbose) printf("Running test 3 (-o 3)\n");
 	cod_add_simple_struct_type("struct_type", struct_fields, context);
@@ -182,7 +186,7 @@ main(int argc, char **argv)
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(test_struct_p)) (long) gen_code->func;
+	func = (long(*)(EC_param1_decl test_struct_p)) (long) gen_code->func;
 
 	str.i = 15;
 	str.j = 4;
@@ -227,7 +231,7 @@ char code_string[] = {"\
 	cod_exec_context ec;
 	test_struct str;
 	cod_code gen_code;
-	long (*func)();
+	long (*func)(EC_param1_decl test_struct_p);
 
 	if (verbose) printf("Running test 4 (-o 4)\n");
 	cod_assoc_externs(context, externs);
@@ -242,7 +246,7 @@ char code_string[] = {"\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(test_struct_p)) (long) gen_code->func;
+	func = (long(*)(EC_param1_decl test_struct_p)) (long) gen_code->func;
 
 	str.i = 15;
 	str.j = 4;
@@ -280,7 +284,7 @@ char code_string[] = {"\
 	int i, j;
 	double levels[253][37], result;
 	cod_code gen_code;
-	double (*func)();
+	double (*func)(EC_param1_decl double*);
 
 
 	if (verbose) printf("Running test 5 (-o 5)\n");
@@ -299,7 +303,7 @@ char code_string[] = {"\
 
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (double (*)(double*))(long) gen_code->func;
+	func = (double (*)(EC_param1_decl double*))(long) gen_code->func;
 	result = (func)(EC_param1 &levels[0][0]);
 	if (result != 18126.00) {
 	    printf("Expected %g, got %g\n", 18126.0, result);
@@ -326,7 +330,7 @@ char code_string[] = {"\
 	cod_exec_context ec;
 	double result;
 	cod_code gen_code;
-	double (*func)();
+	double (*func)(EC_param0_decl);
 
 	if (verbose) printf("Running test 6 (-o 6)\n");
 	cod_assoc_externs(context, externs);
@@ -339,7 +343,7 @@ char code_string[] = {"\
 #endif
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (double (*)())(long) gen_code->func;
+	func = (double (*)(EC_param0_decl))(long) gen_code->func;
 	result = (func)(EC_param0);
 	if (result != 1.0) {
 	    printf("Expected %g, got %g\n", 1.0, result);
@@ -376,7 +380,7 @@ char code_string[] = {"\
 	    {(void*)0, (void*)0}
 	};
 	cod_code gen_code;
-	long (*func)();
+	long (*func)(EC_param0_decl);
 
 	if (verbose) printf("Running test 7 (-o 7)\n");
 	GEN_PARSE_CONTEXT(context);
@@ -384,7 +388,7 @@ char code_string[] = {"\
 	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
 	assert(func(EC_param0) == 23);
 	assert(func(EC_param0) == 29);
 	assert(func(EC_param0) == 35);
@@ -411,7 +415,7 @@ char code_string[] = {"\
 	cod_exec_context ec;
 	int result;
 	cod_code gen_code;
-	int (*func)();
+	int (*func)(EC_param0_decl);
 
 	if (verbose) printf("Running test 8 (-o 8)\n");
 	cod_assoc_externs(context, externs);
@@ -424,7 +428,7 @@ char code_string[] = {"\
 #endif
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (int (*)())(long) gen_code->func;
+	func = (int (*)(EC_param0_decl))(long) gen_code->func;
 	result = (func)(EC_param0);
 	if (result != 0) {
 	    printf("Expected %d, got %d\n", 0, result);

@@ -34,12 +34,7 @@ extern int select(int width, fd_set *readfds, fd_set *writefds,
 #endif
 
 static int
-unix_read_func(conn, buffer, length, errno_p, result_p)
-void *conn;
-void *buffer;
-int length;
-int *errno_p;
-char **result_p;
+unix_read_func(void *conn, void *buffer, int length, int *errno_p, char **result_p)
 {
     int left = length;
     int iget;
@@ -89,12 +84,7 @@ char **result_p;
 }
 
 int
-unix_timeout_read_func(conn, buffer, length, errno_p, result_p)
-void *conn;
-void *buffer;
-int length;
-int *errno_p;
-char **result_p;
+unix_timeout_read_func(void *conn, void *buffer, int length, int *errno_p, char **result_p)
 {
     int left = length;
     int count = 2;
@@ -172,12 +162,7 @@ char **result_p;
 }
 
 static int
-unix_write_func(conn, buffer, length, errno_p, result_p)
-void *conn;
-void *buffer;
-int length;
-int *errno_p;
-char **result_p;
+unix_write_func(void *conn, void *buffer, int length, int *errno_p, char **result_p)
 {
     int left = length;
     int iget = 0;
@@ -204,18 +189,13 @@ char **result_p;
 }
 
 static int
-unix_close_func(conn)
-void *conn;
+unix_close_func(void *conn)
 {
      return close((int) (long) conn);
 }
 
 static void *
-unix_file_open_func(path, flag_str, input, output)
-const char *path;
-const char *flag_str;
-int *input;
-int *output;
+unix_file_open_func(const char *path, const char *flag_str, int *input, int *output)
 {
     int flags;
     int file_id;
@@ -252,8 +232,7 @@ int *output;
 }
     
 static int
-unix_poll_func(conn)
-void *conn;
+unix_poll_func(void *conn)
 {
     int fd = (int) (long) conn;
     struct timeval time;

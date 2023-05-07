@@ -33,9 +33,7 @@ struct base_elem {
 };
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
 
     FMStructDescRec str_list[5];

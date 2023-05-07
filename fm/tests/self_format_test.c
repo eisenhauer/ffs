@@ -9,16 +9,14 @@
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #define sleep(x) Sleep(1000*x)
-#else
-extern int sleep();
 #endif
-
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include "test_funcs.h"
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
 
     FMContext context = create_local_FMcontext();
