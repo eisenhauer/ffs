@@ -73,7 +73,7 @@ main(int argc, char **argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	cod_code gen_code;
@@ -85,7 +85,7 @@ main(int argc, char **argv)
 	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	ret = func(EC_param0);
 	assert(ret == 19);
 	ret = func(EC_param0);
@@ -116,7 +116,7 @@ main(int argc, char **argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	cod_code gen_code;
@@ -128,7 +128,7 @@ main(int argc, char **argv)
 	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	ret = func(EC_param0);
 	assert(ret == 524);
 	ret = func(EC_param0);
@@ -157,7 +157,7 @@ main(int argc, char **argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	cod_code gen_code;
@@ -169,7 +169,7 @@ main(int argc, char **argv)
 	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	ret = func(EC_param0);
 	assert(ret == 0x1159e24 + 0x1159e2);
 	ret = func(EC_param0);
@@ -204,7 +204,7 @@ printf(\"after q = %x, r = %x, s = %x\\n\", q, r, s);\n\
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	cod_code gen_code;
@@ -216,7 +216,7 @@ printf(\"after q = %x, r = %x, s = %x\\n\", q, r, s);\n\
 	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	ret = func(EC_param0);
 	assert(ret == 0x8c + 0x6776 + 0x6802);
 	ret = func(EC_param0);

@@ -168,14 +168,14 @@ main(int argc, char **argv)
 	    if (argc <= 1) {
 		printf("Need argument to \"-w\"\n");
 	    } else {
-		write_file = strdup(argv[2]);
+		write_file = _strdup(argv[2]);
 	    }
 	    argc--; argv++;
 	} else if (strcmp(argv[1], "-r") == 0) {
 	    if (argc <= 1) {
 		printf("Need argument to \"-r\"\n");
 	    } else {
-		read_file = strdup(argv[2]);
+		read_file = _strdup(argv[2]);
 	    }
 	    argc--; argv++;
 	} else if (strcmp(argv[1], "-o") == 0) {
@@ -190,7 +190,7 @@ main(int argc, char **argv)
 
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	/* test external call */
@@ -306,7 +306,7 @@ main(int argc, char **argv)
 
 	}
 	gen_code = cod_code_gen(code, context);
-	func = (void (*)(void*,void*))(long)gen_code->func;
+	func = (void (*)(void*,void*))(intptr_t)gen_code->func;
 	memset(&out_order, 0, sizeof(out_order));
 	(func)((void*)param, (void*)&out_order);
 	if (out_order.station_id != order.station_id) {

@@ -4,7 +4,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <io.h>
+#include <stdio.h>
 
 #define MAGIC 0x4356ffaa	/* random magic */
 #define assert(EX) ((EX) ? (void)0 : (fprintf(stderr, "\"%s\" failed, file %s, line %d\n", #EX, __FILE__, __LINE__), exit(1)))
@@ -101,9 +107,9 @@ char *read_buffer(FMContext c, char *read_file, int test_num)
     static int data_test_num = -1;
     char *buf;
     if (f == 0) {
-	int in_magic;
-	f = open(read_file, O_RDONLY, 0777);
-	if(read(f, &in_magic, 4) != 4) exit(1);
+	int in_magic = 0;
+	f = _open(read_file, O_RDONLY, 0777);
+	if(_read(f, &in_magic, 4) != 4) exit(1);
 	if (in_magic != MAGIC) {
 	    byte_swap((char*)&in_magic, 4);
 	    swap++;

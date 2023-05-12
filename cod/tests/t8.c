@@ -46,7 +46,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == 7);
 	cod_code_free(gen_code);
@@ -54,7 +54,7 @@ main(int argc, char** argv)
     }
     test_num++;
     if ((run_only == -1) || (run_only == test_num)) {  /* 1 */
-	/* test cast of complex type (&j) to basic type (long) */
+	/* test cast of complex type (&j) to basic type (intptr_t) */
 	char code_string[] = "\
 {\n\
     int j = 2;\n\
@@ -75,7 +75,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	if (result != 7) {
 	    printf("Expected 7, got %ld in t8, subtest 2\n", result);
@@ -127,7 +127,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result==8);
 	cod_code_free(gen_code);
@@ -157,7 +157,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == sizeof(int));
 	cod_code_free(gen_code);
@@ -187,9 +187,9 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
-	assert(result == -sizeof(int));
+	assert(result == -(long) sizeof(int));
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
@@ -216,7 +216,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == sizeof(double *));
 	cod_code_free(gen_code);
@@ -247,7 +247,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == 2*sizeof(double));
 	cod_code_free(gen_code);
@@ -277,7 +277,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == 2*sizeof(double *));
 	cod_code_free(gen_code);
@@ -308,7 +308,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
         assert(result == 2);
 	cod_code_free(gen_code);
@@ -340,7 +340,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
         assert(result == -2);
 	cod_code_free(gen_code);
@@ -372,7 +372,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	if (result != 16/sizeof(void*)) { 
 	    printf(" op minus result is %ld\n", result);
@@ -407,9 +407,9 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
-        if (result != -(16/sizeof(void*))) {
+        if (result != -(16/(long)sizeof(void*))) {
 	    printf(" 2nd op minus result is %ld\n", result);
 	    exit(1);
 	}
@@ -442,7 +442,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == -2*(long)sizeof(double));
 	cod_code_free(gen_code);
@@ -473,7 +473,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)()) (long) gen_code->func;
+	func = (long(*)()) (intptr_t) gen_code->func;
 	result = func();
 	assert(result == -2*(long)sizeof(double *));
 	cod_code_free(gen_code);
@@ -495,8 +495,8 @@ main(int argc, char** argv)
 	cod_parse_context context = new_cod_parse_context();
 	cod_code gen_code;
 	unsigned char *p = (unsigned char *) "hiya";
-	long (*func)(unsigned char *);
-	long result;
+	intptr_t (*func)(unsigned char *);
+	intptr_t result;
 
 	cod_subroutine_declaration("long test(unsigned char * param)", context);
 	gen_code = cod_code_gen(code_string, context);
@@ -504,9 +504,9 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (long(*)(unsigned char *)) (long) gen_code->func;
+	func = (intptr_t(*)(unsigned char *)) (intptr_t) gen_code->func;
 	result = func(p);
-	assert(result == (long) p);
+	assert(result == (intptr_t) p);
 	cod_code_free(gen_code);
 	cod_free_parse_context(context);
     }
@@ -532,7 +532,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (int(*)(int *)) (long) gen_code->func;
+	func = (int(*)(int *)) (intptr_t) gen_code->func;
 	result = func(&i);
 	if (result != 8) printf("result was %d, not 8\n", result);
 	if (i != 9) printf("i was %d, not 9\n", i);
@@ -562,7 +562,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (int(*)(int *)) (long) gen_code->func;
+	func = (int(*)(int *)) (intptr_t) gen_code->func;
 	result = func(&i);
 	if (result != 9) printf("result was %d, not 8\n", result);
 	if (i != 9) printf("i was %d, not 9\n", i);
@@ -590,7 +590,7 @@ main(int argc, char** argv)
 	  printf("Code generation failed!\n");
 	  return -1;
 	} 
-	func = (int*(*)(int *)) (long) gen_code->func;
+	func = (int*(*)(int *)) (intptr_t) gen_code->func;
 	result = func(&i);
 	if (result != (&i + 1)) printf("result was %p, not %p\n", result,
 		&i + 1);

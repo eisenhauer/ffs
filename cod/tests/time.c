@@ -55,14 +55,14 @@ main(int argc, char**argv)
 	    if (argc <= 1) {
 		printf("Need argument to \"-w\"\n");
 	    } else {
-		write_file = strdup(argv[2]);
+		write_file = _strdup(argv[2]);
 	    }
 	    argc--; argv++;
 	} else if (strcmp(argv[1], "-r") == 0) {
 	    if (argc <= 1) {
 		printf("Need argument to \"-r\"\n");
 	    } else {
-		read_file = strdup(argv[2]);
+		read_file = _strdup(argv[2]);
 	    }
 	    argc--; argv++;
 	} else if (strcmp(argv[1], "-o") == 0) {
@@ -76,7 +76,7 @@ main(int argc, char**argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 
@@ -116,7 +116,7 @@ main(int argc, char**argv)
 	cod_parse_for_context(extern_string, context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 1);
@@ -143,7 +143,7 @@ main(int argc, char**argv)
 	GEN_PARSE_CONTEXT(context);
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == (!2));
@@ -175,7 +175,7 @@ main(int argc, char**argv)
 #endif
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param1_decl int)) (long) gen_code->func;
+	func = (long(*)(EC_param1_decl int)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
         assert(func(EC_param1 15) == 87);
 	cod_exec_context_free(ec);
@@ -200,7 +200,7 @@ main(int argc, char**argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	FMField struct_fields[] = {
@@ -239,7 +239,7 @@ main(int argc, char**argv)
 	}
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param1_decl test_struct_p)) (long) gen_code->func;
+	func = (long(*)(EC_param1_decl test_struct_p)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 
 	str.i = 15;
@@ -260,7 +260,7 @@ main(int argc, char**argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	static char code[] = "{\
@@ -321,7 +321,7 @@ main(int argc, char**argv)
 
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (double (*)(EC_param1_decl double*))(long) gen_code->func;
+	func = (double (*)(EC_param1_decl double*))(intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param1 param);
 	if (result != 18126.00) {
@@ -343,8 +343,8 @@ main(int argc, char**argv)
 int *dummy(int*p);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
-	    {"dummy", (void*)(long)dummy},
+	    {"printf", (void*)(intptr_t)printf},
+	    {"dummy", (void*)(intptr_t)dummy},
 	    {(void*)0, (void*)0}
 	};
 	typedef struct test {
@@ -401,7 +401,7 @@ int *dummy(int*p);";
 
 	gen_code = cod_code_gen(code, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (int * (*)(EC_param1_decl test_struct*))(long) gen_code->func;
+	func = (int * (*)(EC_param1_decl test_struct*))(intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param1 param);
 	if (result != (int*)&strct.levels) {
