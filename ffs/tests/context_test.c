@@ -8,6 +8,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SYS_UIO_H
+#include <uio.h>
+#endif
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
