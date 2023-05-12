@@ -12,8 +12,9 @@
 #include <sys/stat.h>
 
 #ifdef _MSC_VER
-#define read(x,y,x) _read(x,y,z)
-#define open(x,y,x) _open(x,y,z)
+#define read(x,y,z) _read(x,y,z)
+#define open(x,y,z) _open(x,y,z)
+#include <io.h>
 #endif
 
 #define MAGIC 0x4356ffaa	/* random magic */

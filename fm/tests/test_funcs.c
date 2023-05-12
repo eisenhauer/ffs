@@ -1047,9 +1047,9 @@ init_written_data()
 
     k = 0;
     for (i = 1; i < 20; i += 5) {
-	rec6_array[k].string = malloc(10);
-	memset(rec6_array[k].string, 0, 10);
-	sprintf(rec6_array[k].string, "variant%d", i);
+	rec6_array[k].string = malloc(20);
+	memset(rec6_array[k].string, 0, 20);
+	snprintf(rec6_array[k].string, 20, "variant%d", i);
 	rec6_array[k].icount = 2 * i;
 	rec6_array[k].var_int_array = malloc(sizeof(((sixth_rec_ptr) 0)->var_int_array[0]) * rec6_array[k].icount);
 	rec6_array[k].var_double_array = malloc(sizeof(double) * rec6_array[k].icount);
@@ -1060,9 +1060,9 @@ init_written_data()
 	    rec6_array[k].var_string_array[j].integer_field = 345 * j;
 	    rec6_array[k].var_string_array[j].short_field = j;
 	    rec6_array[k].var_string_array[j].long_field = 785 * j;
-	    rec6_array[k].var_string_array[j].string = malloc(15);
-	    memset(rec6_array[k].var_string_array[j].string, 0, 15);
-	    sprintf(rec6_array[k].var_string_array[j].string,
+	    rec6_array[k].var_string_array[j].string = malloc(25);
+	    memset(rec6_array[k].var_string_array[j].string, 0, 25);
+	    snprintf(rec6_array[k].var_string_array[j].string, 25,
 		    "substring%d", j);
 	    rec6_array[k].var_string_array[j].double_field = 3.1415 * j;
 	    rec6_array[k].var_string_array[j].char_field = 'a' + 2 * j;
