@@ -14,20 +14,25 @@
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#include <sys/uio.h>
+
 #include <string.h>
 #include <assert.h>
-#include <arpa/inet.h>
 #include "ffs.h"
 
 #include "test_funcs.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#if defined(_MSC_VER)
+#include "winsock.h"   // ntohl
+#endif
 
 extern void dump_FMFormat(FMFormat ioformat);
 
-static void test_receive(char *buffer, int buf_size, int finished,
+static void test_receive(char *buffer, size_t buf_size, int finished,
 			       int test_level);
-static void test_all_receive(char *buffer, int buf_size, int finished);
-static void write_buffer(FMFormat format, char *buf, int size);
+static void test_all_receive(char *buffer, size_t buf_size, int finished);
+static void write_buffer(FMFormat format, char *buf, size_t size);
 static void read_test_only();
 
 static int write_output = 0;
@@ -64,7 +69,6 @@ main(int argc, char **argv)
     ninth_rec var_var;
     string_array_rec str_array;
     int i, j;
-//    struct node nodes[10];
     FMFormat sixth_rec_ioformat, ninth_rec_ioformat, string_array_ioformat;
     FMFormat derive_ioformat, multi_array_ioformat, add_action_ioformat;
 
@@ -642,7 +646,7 @@ main(int argc, char **argv)
 #endif
 
 static char *
-get_buffer(int *size_p)
+get_buffer(size_t *size_p)
 {
     static int file_fd = 0;
     static char *buffer = NULL;
@@ -668,6 +672,7 @@ get_buffer(int *size_p)
 	}
     }
     if(read(file_fd, &indicator, 4) != 4) exit(1);
+
     indicator = ntohl(indicator);
     if ((indicator >> 24) == 0x2) {
 	/* got a format coming in */
@@ -719,7 +724,7 @@ static void
 read_test_only()
 {
     char *input;
-    int size;
+    size_t size;
     while ((input = get_buffer(&size)) != NULL) {
 	test_all_receive(input, size, 0);
     }
@@ -769,26 +774,26 @@ set_targets(FFSContext context)
 	node_ioformat = FFSset_fixed_target(context, node_format_list);
 }
 
-int base_size_func(FFSContext context, char *src, int rec_len,
-		   int native_struct_size)
+size_t base_size_func(FFSContext context, char *src, size_t rec_len,
+		   size_t native_struct_size)
 {
     return native_struct_size;
 }
 
-int total_size_func(FFSContext context, char *src, int rec_len, 
-		    int native_struct_size)
+size_t total_size_func(FFSContext context, char *src, size_t rec_len, 
+		    size_t native_struct_size)
 {
     return FFS_est_decode_length(context, src, rec_len);
 }
 
 static int 
-decode_in_place(FFSContext context, char *src, int src_len, void *dest)
+decode_in_place(FFSContext context, char *src, size_t src_len, void *dest)
 {
     if (FFSdecode_in_place_possible(FFSTypeHandle_from_encode(context, src))) {
 	int ret, header_len;
 	char *real_dest;
 	ret = FFSdecode_in_place(context, src, (void**)&real_dest);
-	header_len = real_dest - src;
+	header_len = (int)(intptr_t)(real_dest - src);
 	memcpy(dest, real_dest, src_len - header_len);
 	return ret;
     } else {
@@ -797,22 +802,22 @@ decode_in_place(FFSContext context, char *src, int src_len, void *dest)
 }
 
 static int
-decode_IOcontext_wrapper(FFSContext context, char *src, int src_len, void *dest)
+decode_IOcontext_wrapper(FFSContext context, char *src, size_t src_len, void *dest)
 {
     return FFSdecode(context, src, dest);
 }
 
 static int
-decode_to_buffer_IOcontext_wrapper(FFSContext context, char *src, int src_len,
+decode_to_buffer_IOcontext_wrapper(FFSContext context, char *src, size_t src_len,
 				   void *dest)
 {
     return FFSdecode_to_buffer(context, src, dest);
 }
 
-typedef int (*size_func_t)(FFSContext context, char *src, int buf_size, 
-				   int nativ_struct);
+typedef size_t (*size_func_t)(FFSContext context, char *src, size_t buf_size, 
+				   size_t nativ_struct);
 
-typedef int (*decode_func_t)(FFSContext context, char *src, int src_len, 
+typedef int (*decode_func_t)(FFSContext context, char *src, size_t src_len, 
 				   void *dest);
 
 size_func_t size_funcs[] = {base_size_func, total_size_func, total_size_func};
@@ -824,7 +829,7 @@ decode_func_t decode_funcs[] = {decode_IOcontext_wrapper,
 #define NUM_TESTS 3
 
 static void
-test_all_receive(char *buffer, int buf_size, int finished)
+test_all_receive(char *buffer, size_t buf_size, int finished)
 {
     int test_type = 0;
     char *tmp_buffer = malloc(buf_size);
@@ -836,7 +841,7 @@ test_all_receive(char *buffer, int buf_size, int finished)
 }
 	
 static void*
-get_mem(int size)
+get_mem(size_t size)
 {
     char *buffer;
     unsigned int beef = 0xdeadbeef;
@@ -847,7 +852,7 @@ get_mem(int size)
 }
 
 static void
-check_mem(int size, char *buffer)
+check_mem(size_t size, char *buffer)
 {
     unsigned int beef = 0xdeadbeef;
     if (memcmp(buffer+size, &beef, 4) != 0) {
@@ -857,7 +862,7 @@ check_mem(int size, char *buffer)
 
     
 static void
-test_receive(char *buffer, int buf_size, int finished, int test_level)
+test_receive(char *buffer, size_t buf_size, int finished, int test_level)
 {
     static FFSContext c = NULL;
 /*    static int comment_count[NUM_TESTS] = {0,0,0};*/
@@ -927,7 +932,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    }		*/
 	} else if (((test_only == NULL) || (strcmp(test_only, "second_rec") == 0)) &&
 		   (buffer_format == second_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(second_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(second_rec));
 	    second_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -940,7 +945,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "third_rec") == 0)) &&
 		   (buffer_format == third_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(third_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(third_rec));
 	    third_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -953,7 +958,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "fourth_rec") == 0)) &&
 		   (buffer_format == fourth_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(fourth_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(fourth_rec));
 	    fourth_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -967,7 +972,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    fourth_rec_count[test_level]++;
 	} else if (((test_only == NULL) || (strcmp(test_only, "fifth_rec") == 0)) &&
 		   (buffer_format == fifth_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(fifth_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(fifth_rec));
 	    fifth_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -981,7 +986,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    fifth_rec_count[test_level]++;
 	} else if (((test_only == NULL) || (strcmp(test_only, "sixth_rec") == 0)) &&
 		   (buffer_format == sixth_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(sixth_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(sixth_rec));
 	    sixth_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -994,7 +999,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "nested_rec") == 0)) &&
 		   (buffer_format == nested_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(nested_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(nested_rec));
 	    nested_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -1007,7 +1012,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "later_rec") == 0)) &&
 		   (buffer_format == later_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(later_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(later_rec));
 	    later_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -1020,7 +1025,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "ninth_rec") == 0)) &&
 		   (buffer_format == ninth_rec_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, sizeof(ninth_rec));
+	    size_t size = size_func(rcv_context, buffer, buf_size, sizeof(ninth_rec));
 	    ninth_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
 	    if (!decode_func(rcv_context, buffer, buf_size, read_data))
@@ -1033,7 +1038,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "string_array") == 0)) &&
 		   (buffer_format == string_array_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, 
+	    size_t size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(string_array_rec));
 	    string_array_rec *sread_data = get_mem(size);
 	    memset(sread_data, 0, size);
@@ -1048,7 +1053,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(sread_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "derive") == 0)) &&
 		   (buffer_format == derive_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, 
+	    size_t size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(DeriveMsg));
 	    DeriveMsgPtr read_data = get_mem(size);
 	    memset(read_data, 0, size);
@@ -1062,7 +1067,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "multi_array") == 0)) &&
 		   (buffer_format == multi_array_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, 
+	    size_t size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(multi_array));
 	    multi_array_rec *read_data = get_mem(size);
 	    memset(read_data, 0, size);
@@ -1076,7 +1081,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "triangle_param") == 0)) &&
 		   (buffer_format == triangle_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, 
+	    size_t size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(multi_array));
 	    triangle_param *read_data = get_mem(size);
 	    memset(read_data, 0, size);
@@ -1090,7 +1095,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "add_action") == 0)) &&
 		   (buffer_format == add_action_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, 
+	    size_t size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(add_rec));
 	    add_rec_ptr read_data = get_mem(size);
 	    memset(read_data, 0, size);
@@ -1104,7 +1109,7 @@ test_receive(char *buffer, int buf_size, int finished, int test_level)
 	    free(read_data);
 	} else if (((test_only == NULL) || (strcmp(test_only, "node") == 0)) &&
 		   (buffer_format == node_ioformat)) {
-	    int size = size_func(rcv_context, buffer, buf_size, 
+	    size_t size = size_func(rcv_context, buffer, buf_size, 
 				 sizeof(add_rec));
 	    node_ptr read_data = get_mem(size);
 	    struct visit_table v;
@@ -1175,7 +1180,7 @@ static FMFormat seen_formats[100];
 static int seen_count = 0;
 
 static void
-write_buffer(FMFormat format, char *buf, int size)
+write_buffer(FMFormat format, char *buf, size_t size)
 {
     static int file_fd = 0;
     int i;
@@ -1196,7 +1201,7 @@ write_buffer(FMFormat format, char *buf, int size)
 	    int indicator;
 	    int format_len;
 	} format_header;
-	struct iovec vec[4];
+	struct FFSEncodeVec vec[4];
 	char *server_id;
 	int id_len;
 	char *server_rep;
@@ -1224,10 +1229,17 @@ write_buffer(FMFormat format, char *buf, int size)
 	vec[2].iov_base = server_rep;
 	vec[3].iov_len = 0;
 	vec[3].iov_base = NULL;
+#ifndef _MSC_VER
 	if (writev(file_fd, vec, 3) == -1) {
 	    printf("Writev failed\n");
 	    exit(1);
 	}
+#else
+	write(file_fd, vec[0].iov_base, (int)vec[0].iov_len);
+	write(file_fd, vec[1].iov_base, (int)vec[1].iov_len);
+	write(file_fd, vec[2].iov_base, (int)vec[2].iov_len);
+#endif
+
 	seen_formats[seen_count++] = format;
     }
 
@@ -1238,5 +1250,5 @@ write_buffer(FMFormat format, char *buf, int size)
     indicator = htonl((size & 0xffffff) | 0x3 << 24);
 
     if (write(file_fd, &indicator, 4) != 4) {printf("Write 4 failed\n");exit(1);}
-    if (write(file_fd, buf, size) != size) {printf("Write size failed\n");exit(1);}
+    if (write(file_fd, buf, (unsigned int)size) != size) {printf("Write size failed\n");exit(1);}
 }
