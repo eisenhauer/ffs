@@ -52,7 +52,7 @@ main(int argc, char **argv)
 	unsigned char id[] = {02, 00, 00, 37, 103, 189, 231, 165, 33, 254, 42, 32};
 	printf("Doing get test\n");
 	first_rec_ioformat = FMformat_from_ID(context, (char *) &id[0]);
-	printf("format is %lx\n", (long)first_rec_ioformat);
+	printf("format is %p\n", first_rec_ioformat);
 	return 0;
     }
     if (XML_test) {
@@ -83,7 +83,7 @@ main(int argc, char **argv)
 	str_list[0].opt_info = NULL;
 	str_list[1].format_name = NULL;
 	first_rec_ioformat = register_data_format(context, str_list);
-	printf("format is %lx\n", (long)first_rec_ioformat);
+	printf("format is %p\n", first_rec_ioformat);
 	if (first_rec_ioformat != NULL) {
 	    int id_len, i;
 	    char *id =get_server_ID_FMformat(first_rec_ioformat, &id_len);
@@ -125,7 +125,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("first format is %lx\n", (long)first_rec_ioformat);
+	    printf("first format is %p\n", first_rec_ioformat);
 	    sleep(10);
 
 
@@ -138,7 +138,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("second format is %lx\n", (long)first_rec_ioformat);
+	    printf("second format is %p\n", first_rec_ioformat);
 	    sleep(20);
 
 
@@ -151,7 +151,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("third format is %lx\n", (long)first_rec_ioformat);
+	    printf("third format is %p\n", first_rec_ioformat);
 	    sleep(30);
 
 
@@ -164,7 +164,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("fourth format is %lx\n", (long)first_rec_ioformat);
+	    printf("fourth format is %p\n", first_rec_ioformat);
 	    sleep(40);
 
 	    if (format_server_restarted(static_context)) {
@@ -176,7 +176,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("embedded format is %lx\n", (long)first_rec_ioformat);
+	    printf("embedded format is %p\n", first_rec_ioformat);
 	    sleep(50);
 
 
@@ -193,7 +193,7 @@ main(int argc, char **argv)
 	    str_list[1].opt_info = NULL;
 	    str_list[2].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("fifth format is %lx\n", (long)first_rec_ioformat);
+	    printf("fifth format is %p\n", first_rec_ioformat);
 	    sleep(60);
 
 
@@ -206,7 +206,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("later format is %lx\n", (long)first_rec_ioformat);
+	    printf("later format is %p\n", first_rec_ioformat);
 	    sleep(70);
 
 
@@ -219,7 +219,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("later2 format is %lx\n", (long)first_rec_ioformat);
+	    printf("later2 format is %p\n", first_rec_ioformat);
 	    sleep(80);
 
 
@@ -236,7 +236,7 @@ main(int argc, char **argv)
 	    str_list[1].opt_info = NULL;
 	    str_list[2].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("nested format is %lx\n", (long)first_rec_ioformat);
+	    printf("nested format is %p\n", first_rec_ioformat);
 	    sleep(90);
 
 
@@ -253,7 +253,7 @@ main(int argc, char **argv)
 	    str_list[1].opt_info = NULL;
 	    str_list[2].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("sixth format is %lx\n", (long)first_rec_ioformat);
+	    printf("sixth format is %p\n", first_rec_ioformat);
 	    sleep(100);
 
 
@@ -261,7 +261,7 @@ main(int argc, char **argv)
 		printf("Format server was restarted\n");
 	    }
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("eventvec format is %lx\n", (long)first_rec_ioformat);
+	    printf("eventvec format is %p\n", first_rec_ioformat);
 	    sleep(110);
 
 
@@ -278,7 +278,7 @@ main(int argc, char **argv)
 	    str_list[1].opt_info = NULL;
 	    str_list[2].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("ninth format is %lx\n", (long)first_rec_ioformat);
+	    printf("ninth format is %p\n", first_rec_ioformat);
 	    sleep(120);
 
 
@@ -291,7 +291,7 @@ main(int argc, char **argv)
 	    str_list[0].opt_info = NULL;
 	    str_list[1].format_name = NULL;
 	    first_rec_ioformat = register_data_format(context, str_list);
-	    printf("string array format is %lx\n", (long)first_rec_ioformat);
+	    printf("string array format is %p\n", first_rec_ioformat);
 	    sleep(130);
 
 	    free_FMcontext(context);
