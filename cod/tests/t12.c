@@ -1,6 +1,7 @@
 #include "config.h"
 #include "cod.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_MALLOC_H

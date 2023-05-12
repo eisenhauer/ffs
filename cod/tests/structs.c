@@ -8,6 +8,7 @@
 #include "data_funcs.h"
 #include "cod.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 

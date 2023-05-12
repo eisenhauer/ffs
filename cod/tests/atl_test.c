@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #ifndef HAVE_ATL_H
 int
 main()
