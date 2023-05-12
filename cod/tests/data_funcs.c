@@ -9,8 +9,11 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <io.h>
-#include <stdio.h>
+
+#ifdef _MSC_VER
+#define read(x,y,x) _read(x,y,z)
+#define open(x,y,x) _open(x,y,z)
+#endif
 
 #define MAGIC 0x4356ffaa	/* random magic */
 #define assert(EX) ((EX) ? (void)0 : (fprintf(stderr, "\"%s\" failed, file %s, line %d\n", #EX, __FILE__, __LINE__), exit(1)))
@@ -108,8 +111,8 @@ char *read_buffer(FMContext c, char *read_file, int test_num)
     char *buf;
     if (f == 0) {
 	int in_magic = 0;
-	f = _open(read_file, O_RDONLY, 0777);
-	if(_read(f, &in_magic, 4) != 4) exit(1);
+	f = open(read_file, O_RDONLY, 0777);
+	if(read(f, &in_magic, 4) != 4) exit(1);
 	if (in_magic != MAGIC) {
 	    byte_swap((char*)&in_magic, 4);
 	    swap++;

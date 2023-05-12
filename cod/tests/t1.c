@@ -56,14 +56,14 @@ main(int argc, char**argv)
 	    if (argc <= 1) {
 		printf("Need argument to \"-w\"\n");
 	    } else {
-		write_file = _strdup(argv[2]);
+		write_file = strdup(argv[2]);
 	    }
 	    argc--; argv++;
 	} else if (strcmp(argv[1], "-r") == 0) {
 	    if (argc <= 1) {
 		printf("Need argument to \"-r\"\n");
 	    } else {
-		read_file = _strdup(argv[2]);
+		read_file = strdup(argv[2]);
 	    }
 	    argc--; argv++;
 	} else if (strcmp(argv[1], "-o") == 0) {
