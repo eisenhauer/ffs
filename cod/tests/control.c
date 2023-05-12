@@ -2,6 +2,7 @@
 #include "data_funcs.h"
 #include "cod.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -50,7 +51,7 @@ main(int argc, char**argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -79,7 +80,7 @@ main(int argc, char**argv)
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 17);
@@ -93,7 +94,7 @@ main(int argc, char**argv)
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -120,7 +121,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 20);
@@ -134,7 +135,7 @@ top:\n\
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -158,7 +159,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 11);
@@ -172,7 +173,7 @@ top:\n\
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -202,7 +203,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 420);
@@ -216,7 +217,7 @@ top:\n\
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -246,7 +247,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 420);
@@ -260,7 +261,7 @@ top:\n\
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -290,7 +291,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 420);
@@ -307,9 +308,9 @@ top:\n\
 
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
-	    {"EVdiscard", (void*)(long)discard},
-	    {"EVcount", (void*)(long)count},
+	    {"printf", (void*)(intptr_t)printf},
+	    {"EVdiscard", (void*)(intptr_t)discard},
+	    {"EVcount", (void*)(intptr_t)count},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -334,7 +335,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 5 + 7 + 9);
@@ -348,7 +349,7 @@ top:\n\
 	static char extern_string[] = "int printf(string format, ...);";
 	static cod_extern_entry externs[] = 
 	{
-	    {"printf", (void*)(long)printf},
+	    {"printf", (void*)(intptr_t)printf},
 	    {(void*)0, (void*)0}
 	};
 	char code_string[] = "\
@@ -372,7 +373,7 @@ top:\n\
 
 	gen_code = cod_code_gen(code_string, context);
 	ec = cod_create_exec_context(gen_code);
-	func = (long(*)(EC_param0_decl)) (long) gen_code->func;
+	func = (long(*)(EC_param0_decl)) (intptr_t) gen_code->func;
 	if (verbose) cod_dump(gen_code);
 	result = func(EC_param0);
 	assert(result == 42);

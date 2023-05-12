@@ -1,10 +1,20 @@
 #include "config.h"
 #include "fm.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#ifdef _MSC_VER
+#define read(x,y,x) _read(x,y,z)
+#define open(x,y,x) _open(x,y,z)
+#endif
 
 #define MAGIC 0x4356ffaa	/* random magic */
 #define assert(EX) ((EX) ? (void)0 : (fprintf(stderr, "\"%s\" failed, file %s, line %d\n", #EX, __FILE__, __LINE__), exit(1)))
@@ -101,7 +111,7 @@ char *read_buffer(FMContext c, char *read_file, int test_num)
     static int data_test_num = -1;
     char *buf;
     if (f == 0) {
-	int in_magic;
+	int in_magic = 0;
 	f = open(read_file, O_RDONLY, 0777);
 	if(read(f, &in_magic, 4) != 4) exit(1);
 	if (in_magic != MAGIC) {
