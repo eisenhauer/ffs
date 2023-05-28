@@ -13,7 +13,9 @@
 #endif
 #include <sys/types.h>
 #include <ctype.h>
-extern char *getenv(const char *name);
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 #ifdef DO_DCG
 #include "dill.h"

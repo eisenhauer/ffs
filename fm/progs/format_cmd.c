@@ -31,7 +31,7 @@ serverAtomicWrite(void* fd, void *buffer, int length)
 {
      char *junk_result_str;
      int junk_errno;
-     return os_server_write_func(fd, buffer, length, &junk_errno,
+     return ffs_server_write_func(fd, buffer, length, &junk_errno,
 				&junk_result_str);
 }
 

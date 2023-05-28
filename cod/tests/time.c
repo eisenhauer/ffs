@@ -84,22 +84,29 @@ main(int argc, char**argv)
 	char code_string[] = "\n\
 {\n\
     timeval t1, t2;\n			\
-    int delay = 10000;\n\
+    int delay = 5000;\n\
     long accum = 0;\n\
     long usec_duration;\n\
+    long sec_diff = 0;\n\
+    long usec_diff = 0;\n\
     gettimeofday(&t1);\n\
 \n\
     if (t1.tv_sec < 1423159919) { /* in the past */ \n\
        return 0;\n\
     }\n\
     while(delay > 0) {  /* just so there's a duration */\n	\
+    printf(\"slow loop %g\\n\", (double)delay * (double) accum);\n\
 	delay--;\n\
         accum++;\n\
     }\n\
     gettimeofday(&t2);\n\
-    usec_duration = (t2.tv_sec - t1.tv_sec) * 1000000 + t2.tv_usec - t1.tv_usec;\n\
+    sec_diff = t2.tv_sec - t1.tv_sec;\n\
+    usec_diff = t2.tv_usec - t1.tv_usec;\n\
+    printf(\"sec diff = %ld\\n\", sec_diff);\n\
+    printf(\"usec diff = %ld\\n\", usec_diff);\n\
+    usec_duration = sec_diff * 1000000 + usec_diff;\n\
 \n\
-    if ((usec_duration < 1) || (usec_duration > 1000000)) {\n\
+    if ((usec_duration < 1) || (usec_duration > 10000000)) {\n\
        printf(\"duration is %d usecs, unreasonable\\n\", usec_duration);\n    \
        return 0; /* seems unreasonable */\n\
     }\n\

@@ -9,7 +9,7 @@
 #include <unistd.h>
 #endif
 #ifdef HAVE_SYS_UIO_H
-#include <uio.h>
+#include <sys/uio.h>
 #endif
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
@@ -1233,7 +1233,7 @@ write_buffer(FMFormat format, char *buf, size_t size)
 	vec[3].iov_len = 0;
 	vec[3].iov_base = NULL;
 #ifndef _MSC_VER
-	if (writev(file_fd, vec, 3) == -1) {
+	if (writev(file_fd, (const struct iovec *) vec, 3) == -1) {
 	    printf("Writev failed\n");
 	    exit(1);
 	}

@@ -50,6 +50,7 @@
 
 #include "fm.h"
 #include "fm_internal.h"
+#include "io_interface.h"
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -248,7 +249,7 @@ LogAtomicRead(format_server fs, void *fd, void *buffer, long length)
 {
     char *junk_result_str = NULL;
     int junk_errno;
-    int ret = os_server_read_func(fd, buffer, length, &junk_errno,
+    int ret = ffs_server_read_func(fd, buffer, length, &junk_errno,
 				  &junk_result_str);
 
     if (getenv("BAD_CLIENT") && (drand48() < 0.0001)) sleep(600);
@@ -361,7 +362,7 @@ format_server_poll_and_handle(format_server fs)
 			    FSClient_force_close(fs->ports[i]);
 			} else if (i != (long) fs->conn_sock_inet) {
 			    FD_CLR((unsigned long) i, &fs->fdset);
-			    os_close_func((void *) (long) i);
+			    ffs_close_func((void *) (long) i);
 			}
 			found_one++;
 		    }
@@ -470,18 +471,18 @@ dump_formats_to_file(format_server fs)
 	void *id = ioformat->server_ID.value;
 	char *junk_result_str;
 	int junk_errno;
-	if (os_server_write_func((void *) fd, &id_len, sizeof(id_len),
+	if (ffs_server_write_func((void *) fd, &id_len, sizeof(id_len),
 				 &junk_errno, &junk_result_str)
 	    != sizeof(id_len)) {
 	    fprintf(stderr, "error writing dump id len\n");
 	    return;
 	}
-	if (os_server_write_func((void *) fd, id, id_len, &junk_errno,
+	if (ffs_server_write_func((void *) fd, id, id_len, &junk_errno,
 				 &junk_result_str) != id_len) {
 	    fprintf(stderr, "error writing dump id \n");
 	    return;
 	}
-	if (os_server_write_func((void *) fd, rep, rep_len, &junk_errno,
+	if (ffs_server_write_func((void *) fd, rep, rep_len, &junk_errno,
 				 &junk_result_str) != rep_len) {
 	    fprintf(stderr, "error writing dump format rep\n");
 	    return;
@@ -639,7 +640,7 @@ register_format_to_master(format_server fs, IOFormatRep ioformat)
 	format_rep rep = ioformat->server_format_rep;
 
 	tmp.len = ntohs(ioformat->server_ID.length);
-	ret = os_server_write_func(server_fd, &tmp, sizeof(tmp),
+	ret = ffs_server_write_func(server_fd, &tmp, sizeof(tmp),
 				   &errno, &errstr);
 	if (ret != sizeof(tmp)) {
 	    close((int)(long)server_fd);
@@ -647,7 +648,7 @@ register_format_to_master(format_server fs, IOFormatRep ioformat)
 	    LOG(fs, "Write failed1\n");
 	    return;
 	}
-	ret = os_server_write_func(server_fd, 
+	ret = ffs_server_write_func(server_fd, 
 				   ioformat->server_ID.value,
 				   ioformat->server_ID.length,
 				   &errno, &errstr);
@@ -663,14 +664,14 @@ register_format_to_master(format_server fs, IOFormatRep ioformat)
 	    print_server_ID( (unsigned char *) ioformat->server_ID.value);
 	    printf("Writing %d bytes of format rep\n", ntohs(rep->format_rep_length));
 	}
-	ret = os_server_write_func(server_fd, &rep->format_rep_length, 2, &errno, &errstr);
+	ret = ffs_server_write_func(server_fd, &rep->format_rep_length, 2, &errno, &errstr);
 	if (ret != 2)  {
 	    close((int)(long)server_fd);
 	    fs->proxy_context_to_master->server_fd = (void*)-1;
 	    LOG(fs, "Write failed3\n");
 	    return;
 	}
-	ret = os_server_write_func(server_fd, (char*) rep,
+	ret = ffs_server_write_func(server_fd, (char*) rep,
 				   ntohs(rep->format_rep_length),
 				   &errno, &errstr);
 	if (ret != ntohs(rep->format_rep_length)) {
@@ -715,13 +716,13 @@ get_format_from_master(format_server fs, IOFormatRep ioformat)
 
     server_fd = fs->proxy_context_to_master->server_fd;
     id_size = get[1] = ioformat->server_ID.length;
-    if ((ret = os_server_write_func(server_fd, &get[0], 2, &errno, &errstr)) != 2) {
+    if ((ret = ffs_server_write_func(server_fd, &get[0], 2, &errno, &errstr)) != 2) {
 	close((int)(long)server_fd);
 	fs->proxy_context_to_master->server_fd = (void*)-1;
 	LOG(fs, "Write failed2.1, ret is %d\n", ret);
 	return NULL;
     }
-    if (os_server_write_func(server_fd, ioformat->server_ID.value, id_size, &errno, &errstr) != id_size) {
+    if (ffs_server_write_func(server_fd, ioformat->server_ID.value, id_size, &errno, &errstr) != id_size) {
 	close((int)(long)server_fd);
 	fs->proxy_context_to_master->server_fd = (void*)-1;
 	LOG(fs, "Write failed3\n");
@@ -934,7 +935,7 @@ FSClient_close(FSClient fsc)
     LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
     pthread_mutex_unlock(&fs->lock);
     /* moved close outside of the mutex because sometimes it blocks */
-    os_close_func((void *) (long) fd);
+    ffs_close_func((void *) (long) fd);
     if (fs->fork_threads) pthread_exit(NULL);
 }
 
@@ -952,7 +953,7 @@ FSClient_force_close(FSClient fsc)
 	shutdown(fd, SHUT_RDWR);
 //	pthread_kill(fsc->handler_thread, 13);
 	pthread_join(fsc->handler_thread, NULL);
-	os_close_func((void *) (long) fd);
+	ffs_close_func((void *) (long) fd);
 	fs->portCount--;
 //	fsc->fd = 0;
     }
@@ -1004,7 +1005,7 @@ put_serverAtomicInt(void *fd, FILE_INT *file_int_ptr, FMContext fmc)
     int tmp_value = *file_int_ptr;
     int junk_errno;
     char *junk_result_str;
-    if (os_server_write_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
+    if (ffs_server_write_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
 	printf("SERVER WRITE FAILED, ERRNO = %d\n", junk_errno);
 	return 0;
     }
@@ -1021,7 +1022,7 @@ get_serverAtomicInt(void *fd, FILE_INT *file_int_ptr, int byte_reversal)
     int tmp_value;
     int junk_errno;
     char *junk_result_str;
-    if (os_server_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
+    if (ffs_server_read_func(fd, &tmp_value, 4, &junk_errno, &junk_result_str) != 4) {
 	printf("SERVER READ FAILED, ERRNO = %d\n", junk_errno);
 
 	return 0;
@@ -1225,12 +1226,12 @@ format_server_handle_data(format_server fs, FSClient fsc)
 		    ret[0] = 'P';
 		    } */
 		ret[1] = ioformat->server_ID.length;
-		if (os_server_write_func(fd, &ret[0], 2, NULL, NULL) != 2) {
+		if (ffs_server_write_func(fd, &ret[0], 2, NULL, NULL) != 2) {
 		    LOG(fs, "Close on atomic write fail");
 		    FSClient_close(fsc);
 		    return;
 		}
-		if (os_server_write_func(fd, ioformat->server_ID.value,
+		if (ffs_server_write_func(fd, ioformat->server_ID.value,
 				  ioformat->server_ID.length, NULL,
 			     NULL) != ioformat->server_ID.length) {
 		    LOG(fs, "Close on atomic write fail 2");
@@ -1376,7 +1377,7 @@ format_server_handle_data(format_server fs, FSClient fsc)
 	    fsc->formats_fetched++;
     LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->lock);
-	    ret = os_server_write_func(fd, &tmp, sizeof(tmp),
+	    ret = ffs_server_write_func(fd, &tmp, sizeof(tmp),
 				       &errno, &errstr);
 	    if (ret != sizeof(tmp)) {
 		LOG(fs, "Close on atomic read fail g3");
@@ -1386,7 +1387,7 @@ format_server_handle_data(format_server fs, FSClient fsc)
 	    if ((ioformat != NULL) &&
 		(ioformat->server_format_rep != NULL)) {
 		format_rep rep = ioformat->server_format_rep;
-		ret = os_server_write_func(fd,
+		ret = ffs_server_write_func(fd,
 					   (char *) rep + sizeof(rep->format_rep_length),
 					   ntohs(rep->format_rep_length) - sizeof(rep->format_rep_length),
 					   &errno, &errstr);
@@ -1424,13 +1425,13 @@ format_server_handle_data(format_server fs, FSClient fsc)
 	    tmp = htonl(out_count);
     LOG(fs, "Doing Mutex unLock at Line %d ", __LINE__);
 	    pthread_mutex_unlock(&fs->lock);
-	    os_server_write_func(fd, &tmp, 4, &junk_errno,
+	    ffs_server_write_func(fd, &tmp, 4, &junk_errno,
 				 &junk_str);
 	    for (i = 0; i < out_count; i++) {
 		tmp = htonl(out_list[i].length);
-		os_server_write_func(fd, &tmp, 4,
+		ffs_server_write_func(fd, &tmp, 4,
 				     &junk_errno, &junk_str);
-		os_server_write_func(fd, out_list[i].value,
+		ffs_server_write_func(fd, out_list[i].value,
 				     out_list[i].length,
 				     &junk_errno, &junk_str);
 	    }
@@ -1446,17 +1447,17 @@ format_server_handle_data(format_server fs, FSClient fsc)
 	    int tmp;
 
 	    tmp = htonl(out_count);
-	    os_server_write_func(fd, &tmp, 4, &junk_errno,
+	    ffs_server_write_func(fd, &tmp, 4, &junk_errno,
 				 &junk_str);
 	    for (i = 0; i < out_count; i++) {
 		char *time_str;
-		os_server_write_func(fd, &hostlist[i].ip_addr, 4,
+		ffs_server_write_func(fd, &hostlist[i].ip_addr, 4,
 				     &junk_errno, &junk_str);
 		time_str = (char *) ctime(&hostlist[i].intro_time);
 		tmp = htonl(strlen(time_str) + 1);
-		os_server_write_func(fd, &tmp, 4, &junk_errno,
+		ffs_server_write_func(fd, &tmp, 4, &junk_errno,
 				     &junk_str);
-		os_server_write_func(fd, time_str, strlen(time_str) + 1,
+		ffs_server_write_func(fd, time_str, strlen(time_str) + 1,
 				     &junk_errno, &junk_str);
 	    }
 	}
@@ -1531,7 +1532,7 @@ format_server_handle_data(format_server fs, FSClient fsc)
 		    printf("ping from client\n");
 		}
 		/* send it back */
-		os_server_write_func(fd, &next_action, 1, &junk_errno,
+		ffs_server_write_func(fd, &next_action, 1, &junk_errno,
 				     &junk_str);
 		break;
 	    case 'P':
@@ -1539,7 +1540,7 @@ format_server_handle_data(format_server fs, FSClient fsc)
 		    printf("ping/request for ID from client\n");
 		}
 		/* send it back */
-		os_server_write_func(fd, &fs->format_server_identifier, 4, &junk_errno,
+		ffs_server_write_func(fd, &fs->format_server_identifier, 4, &junk_errno,
 				     &junk_str);
 		break;
 	    }
@@ -1709,7 +1710,7 @@ format_server_create()
     if (fs == NULL)
 	return NULL;
 
-/*    if (os_sockets_init_func != NULL) os_sockets_init_func();*/
+/*    if (ffs_sockets_init_func != NULL) ffs_sockets_init_func();*/
 
     my_pid = (int) getpid();
     
@@ -2471,18 +2472,18 @@ send_stats(FSClient fsc)
     }
     free(start);
     tmp = htonl(id_len);
-    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+    ffs_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
 			 &junk_str);
-    os_server_write_func(fsc->fd, server_ID, id_len,
+    ffs_server_write_func(fsc->fd, server_ID, id_len,
 			 &junk_errno, &junk_str);
     tmp = htonl(rep_len);
-    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+    ffs_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
 			 &junk_str);
-    os_server_write_func(fsc->fd, server_rep, rep_len,
+    ffs_server_write_func(fsc->fd, server_rep, rep_len,
 			 &junk_errno, &junk_str);
     tmp = htonl(stats_block_len);
-    os_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
+    ffs_server_write_func(fsc->fd, &tmp, 4, &junk_errno,
 			 &junk_str);
-    os_server_write_func(fsc->fd, stats_block, stats_block_len,
+    ffs_server_write_func(fsc->fd, stats_block, stats_block_len,
 			 &junk_errno, &junk_str);
 }

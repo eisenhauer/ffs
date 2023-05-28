@@ -99,8 +99,8 @@ IO_field_type_eq(const char *str1, const char *str2)
 	char *colon2 = strchr(tmp_str2, ':');
 	char *lparen1 = strchr(str1, '[');
 	char *lparen2 = strchr(str2, '[');
-	int count1 = 0;
-	int count2 = 0;
+	intptr_t count1 = 0;
+	intptr_t count2 = 0;
 
 	if (colon1 != NULL) {
 	    count1 = colon1 - tmp_str1;
@@ -431,10 +431,10 @@ FMformat_compat_cmp2(FMFormat format, FMFormat *formatList,
 }
 
 extern void *
-FFScreate_compat_info(FMFormat prior_format, char *xform_code, int *len_p)
+FFScreate_compat_info(FMFormat prior_format, char *xform_code, size_t *len_p)
 {
     char *block;
-    int block_len = strlen(xform_code) + prior_format->server_ID.length +1;
+    size_t block_len = strlen(xform_code) + prior_format->server_ID.length +1;
     block = malloc(block_len);
 
     memcpy(block, prior_format->server_ID.value,

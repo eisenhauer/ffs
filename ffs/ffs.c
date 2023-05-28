@@ -4,19 +4,19 @@
 #include "assert.h"
 #include "ffs.h"
 #include "cod.h"
-#include "fm_internal.h"
-#include "ffs_internal.h"
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "fm_internal.h"
+#include "ffs_internal.h"
 #include "ffs_marshal.h"
 
 static void *
 quick_get_pointer(FMFieldPtr iofield, void *data);
-static unsigned long
+static size_t
 quick_get_ulong(FMFieldPtr iofield, void *data);
 void
-quick_put_ulong(FMFieldPtr iofield, unsigned long value, void *data);
+quick_put_ulong(FMFieldPtr iofield, size_t value, void *data);
 
 static ssize_t add_to_tmp_buffer(FFSBuffer buf, size_t size);
 static int64_t
@@ -41,8 +41,8 @@ typedef struct encode_state {
     int addr_list_is_stack;
     int addr_list_cnt;
     addr_list_entry *addr_list;
-    int malloc_addr_size;
-    int saved_offset_difference;
+    ssize_t malloc_addr_size;
+    ssize_t saved_offset_difference;
     void *orig_data;
 }*estate;
 
@@ -227,7 +227,7 @@ FFSencode_internal(FFSBuffer b, FMFormat fmformat, void *data, size_t *buf_size,
     struct encode_state state;
     init_encode_state(&state);
     size_t base_offset = 0;
-    int header_size;
+    size_t header_size;
 
     state.iovec_is_stack = 1;
     state.iovec = stack_iov_array;
@@ -336,7 +336,7 @@ fixup_output_vector(FFSBuffer b, estate s)
 }
 
 static void
-add_to_addr_list(estate s, void *addr, int offset)
+add_to_addr_list(estate s, void *addr, size_t offset)
 {
     if (s->addr_list_is_stack) {
 	if (s->addr_list_cnt == STACK_ARRAY_SIZE) {
@@ -361,11 +361,11 @@ add_to_addr_list(estate s, void *addr, int offset)
     s->addr_list_cnt++;
 }
 
-static int
+static ssize_t
 search_addr_list(estate s, void *addr)
 {
     int i;
-    size_t previous_offset = (size_t) -1;
+    ssize_t previous_offset = (ssize_t) -1;
     for (i=0; i < s->addr_list_cnt; i++) {
 	if (s->addr_list[i].addr == addr) {
 	    previous_offset = s->addr_list[i].offset;
@@ -390,8 +390,8 @@ FFSencode_vector(FFSBuffer b, FMFormat fmformat, void *data)
     addr_list_entry stack_addr_list[STACK_ARRAY_SIZE];
     struct encode_state state;
     init_encode_state(&state);
-    int base_offset = 0;
-    int header_size;
+    ssize_t base_offset = 0;
+    ssize_t header_size;
 
     state.iovec_is_stack = 1;
     state.iovec = stack_iov_array;
@@ -473,7 +473,7 @@ handle_subfields(FFSBuffer buf, FMFormat f, estate s, size_t data_offset)
     if (!f->variant) return 1;
 
     for (i = 0; i < f->field_count; i++) {
-	int subfield_offset = data_offset + f->field_list[i].field_offset;
+	size_t subfield_offset = data_offset + f->field_list[i].field_offset;
 	int ret;
 	if (field_is_flat(f, &f->var_list[i].type_desc)) continue;
 	ret = handle_subfield(buf, f, s, subfield_offset, data_offset, 
@@ -484,7 +484,7 @@ handle_subfields(FFSBuffer buf, FMFormat f, estate s, size_t data_offset)
 }
 
 static void
-set_dynamic_array_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t, int new_value)
+set_dynamic_array_size(FMFormat f, FFSBuffer buf, size_t parent_offset, FMTypeDesc *t, int new_value)
 {
     struct _FMgetFieldStruct src_spec;
     int field = t->control_field_index;
@@ -501,7 +501,7 @@ set_dynamic_array_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc 
 
 
 static size_t
-determine_size(FMFormat f, FFSBuffer buf, int parent_offset, FMTypeDesc *t)
+determine_size(FMFormat f, FFSBuffer buf, size_t parent_offset, FMTypeDesc *t)
 {
     switch (t->type) {
     case FMType_pointer:
@@ -565,8 +565,8 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, size_t data_offset, size_t 
 	}
 
 	if (f->recursive) {
-	    size_t previous_offset = search_addr_list(s, ptr_value);
-	    if (previous_offset != (size_t)-1) {
+	    ssize_t previous_offset = search_addr_list(s, ptr_value);
+	    if (previous_offset != (ssize_t)-1) {
 		quick_put_ulong(&src_spec, previous_offset,
 				(char*)buf->tmp_buffer + data_offset);
 		return 1;
@@ -602,15 +602,15 @@ handle_subfield(FFSBuffer buf, FMFormat f, estate s, size_t data_offset, size_t 
 	    cod_exec_context ec = marshal_info->ec;
 	    struct subsample_marshal_data smd;
 	    new_offset = allocate_tmp_space(s, buf, size, 8, &tmp_data_loc);
-	    smd.element_count = element_count;
+	    smd.element_count = (int)element_count;
 	    smd.element_size = element_size;
 	    smd.src_ptr = ptr_value;
 	    smd.dst_ptr = (char*)buf->tmp_buffer + new_offset;
 	    smd.marshalled_count = 0;
 #ifdef DO_DCG
-	    cod_assoc_client_data(ec,  0x534d4450, (long)&smd);
+	    cod_assoc_client_data(ec,  0x534d4450, (intptr_t)&smd);
 #endif
-	    marshal_info->subsample_array_func(ec, s->orig_data, element_count);
+	    marshal_info->subsample_array_func(ec, s->orig_data, (int)element_count);
 	    /* fixup size */
 	    set_dynamic_array_size(f, buf, parent_offset, t->next, 
 				   smd.marshalled_count);
@@ -715,7 +715,7 @@ extern FFSEncodeVector
 copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 {
     int i = 0;
-    int vec_offset = (long) vec - (long)buf->tmp_buffer;
+    intptr_t vec_offset = (intptr_t) vec - (intptr_t)buf->tmp_buffer;
     /* 
      * vec and some of the buffers may be in the memory managed by the
      * FFSBuffer.  The goal here to is put *everything* into the FFSBuffer.
@@ -724,10 +724,10 @@ copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
     while (vec[vec_count].iov_base != NULL) {
       vec_count++;
     }
-    assert(((unsigned long)vec >= (unsigned long)buf->tmp_buffer) && 
-	   ((unsigned long)vec < (unsigned long)buf->tmp_buffer + buf->tmp_buffer_size));
+    assert(((uintptr_t)vec >= (uintptr_t)buf->tmp_buffer) && 
+	   ((uintptr_t)vec < (uintptr_t)buf->tmp_buffer + buf->tmp_buffer_size));
     {
-        size_t already_in[vec_count];
+	size_t* already_in = malloc(sizeof(already_in[0]) * vec_count);
 	while (vec[i].iov_base != NULL) {
 	    if (((char*)vec[i].iov_base >= (char*)buf->tmp_buffer) &&
 		((char*)vec[i].iov_base < (char*)buf->tmp_buffer + buf->tmp_buffer_size)) {
@@ -744,9 +744,9 @@ copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 	}
 
 	i = 0;
-	while (((FFSEncodeVector)((long)buf->tmp_buffer + vec_offset))[i].iov_base !=
+	while (((FFSEncodeVector)((intptr_t)buf->tmp_buffer + vec_offset))[i].iov_base !=
 	       NULL) {
-	    FFSEncodeVector v = (void*)((long) buf->tmp_buffer + vec_offset);
+	    FFSEncodeVector v = (void*)((intptr_t) buf->tmp_buffer + vec_offset);
 	    if (already_in[i] == 0) {
 	        /* if this is an external buffer, copy it */
 	        ssize_t offset = add_to_tmp_buffer(buf, v[i].iov_len);
@@ -758,17 +758,18 @@ copy_all_to_FFSBuffer(FFSBuffer buf, FFSEncodeVector vec)
 	    }
 	    i++;
 	}
+	free(already_in);
     }
     /* reallocation done now */
-    vec = (void*)((long)buf->tmp_buffer + vec_offset);
+    vec = (void*)((intptr_t)buf->tmp_buffer + vec_offset);
     i = 0;
     while (vec[i].iov_base != NULL) {
-	if (((long)vec[i].iov_base > 0) &&
-	    ((long)vec[i].iov_base <= buf->tmp_buffer_size)) {
+	if (((intptr_t)vec[i].iov_base > 0) &&
+	    ((uintptr_t)vec[i].iov_base <= (uintptr_t)buf->tmp_buffer_size)) {
 	    /* 
 	     * remap pointers into temp so that they're addresses
 	     */ 
-	    vec[i].iov_base = (void*)((long)vec[i].iov_base + (char *)buf->tmp_buffer - 1);
+	    vec[i].iov_base = (void*)((intptr_t)vec[i].iov_base + (char *)buf->tmp_buffer - 1);
 	}
 	i++;
     }
@@ -974,7 +975,7 @@ FFSset_simple_target(FFSContext c, char *format_name, FMFieldList field_list, si
     FMStructDescRec struct_list[2];
     struct_list[0].format_name = format_name;
     struct_list[0].field_list = field_list;
-    struct_list[0].struct_size = struct_size;
+    struct_list[0].struct_size = (int) struct_size;
     struct_list[0].opt_info = NULL;
     struct_list[1].format_name = NULL;
     struct_list[1].field_list = NULL;
@@ -1095,7 +1096,7 @@ FFSdecode_in_place_possible(FFSTypeHandle format)
     }
 }
 
-#define expand_size_to_align(size) ((((size) & 0x7) == 0) ? (size) : (((size) + 8) & (int) -8))
+#define expand_size_to_align(size) ((((size) & 0x7) == 0) ? (size) : (((size) + 8) & (size_t) -8))
 
 static int
 set_conversion_params(FFSTypeHandle ioformat, int64_t input_record_len, IOConversionPtr conv, conversion_action_ptr params)
@@ -1115,7 +1116,7 @@ set_conversion_params(FFSTypeHandle ioformat, int64_t input_record_len, IOConver
     ssize_t final_string_offset;
     void *final_string_address;
 
-    final_base_size = expand_size_to_align(ioformat->body->record_length + conv->base_size_delta);
+    final_base_size = (size_t) expand_size_to_align((size_t)(ioformat->body->record_length + conv->base_size_delta));
     src_base_size = expand_size_to_align(ioformat->body->record_length);
     possible_converted_variant_size =
 	final_variant_size_for_record(input_record_len, conv);
@@ -1181,8 +1182,8 @@ set_conversion_params(FFSTypeHandle ioformat, int64_t input_record_len, IOConver
     } else {
 	final_string_offset = 0;
 	final_string_address =
-	    params->final_base + expand_size_to_align(ioformat->body->record_length +
-							  conv->base_size_delta);
+	    params->final_base + (size_t)expand_size_to_align((size_t)(ioformat->body->record_length +
+								       conv->base_size_delta));
     }
 
     /* set variant src values */
@@ -1241,28 +1242,28 @@ final_variant_size_for_record(int64_t input_record_len, IOConversionPtr conv)
 		  * conv->max_var_expansion);
 }
 
-extern int
+extern size_t
 FFS_decode_length_format(FFSContext context, FFSTypeHandle ioformat, 
-			 long record_length)
+			 size_t record_length)
 {
     IOConversionPtr conv;
     int64_t variant_part, final_base_size, src_base_size;
 
     if (ioformat == NULL)
-	return -1;
+	return (size_t)-1;
     conv = ioformat->conversion;
     if (!ioformat->conversion)
 	return record_length;
     variant_part = final_variant_size_for_record(record_length,
 						 ioformat->conversion);
-    final_base_size = expand_size_to_align(ioformat->body->record_length +
-					   conv->base_size_delta);
+    final_base_size = expand_size_to_align((int64_t)(ioformat->body->record_length +
+						     conv->base_size_delta));
     src_base_size = expand_size_to_align(ioformat->body->record_length);
     return variant_part + Max(final_base_size, src_base_size);
 }
 
-extern long
-FFS_est_decode_length(FFSContext context, char *src, ssize_t record_length)
+extern size_t
+FFS_est_decode_length(FFSContext context, char *src, size_t record_length)
 {
     FFSTypeHandle ioformat = FFSTypeHandle_from_encode(context, src);
     return FFS_decode_length_format(context, ioformat, record_length);
@@ -1384,8 +1385,8 @@ check_conversion(FFSTypeHandle ioformat)
 	    FFS_determine_conversion(ioformat->context, ioformat);
 	}
 	if (ioformat->status == none_available) {
-	    fprintf(stderr, "FFS Warning:  Attempting to decode when no conversion has been set.  \n  Record is of type \"%s\", ioformat 0x%lx.\n  No data returned.\n",
-		    ioformat->body->format_name, (long) ioformat);
+	    fprintf(stderr, "FFS Warning:  Attempting to decode when no conversion has been set.  \n  Record is of type \"%s\", ioformat 0x%p.\n  No data returned.\n",
+		    ioformat->body->format_name, ioformat);
 	    ioformat->status = none_available;
 	    return 0;
 	}
@@ -1492,7 +1493,7 @@ create_fixed_FFSBuffer(char *buffer, size_t size)
 {
     FFSBuffer buf = malloc(sizeof(struct _FFSBuffer));
     buf->tmp_buffer = buffer;
-    buf->tmp_buffer_size = -size;
+    buf->tmp_buffer_size = -(ssize_t)size;
     buf->tmp_buffer_in_use_size = 0;
     return buf;
 }
@@ -1535,18 +1536,18 @@ static
 ssize_t
 add_to_tmp_buffer(FFSBuffer buf, size_t size)
 {
-    long old_size = buf->tmp_buffer_in_use_size;
+    ssize_t old_size = buf->tmp_buffer_in_use_size;
     size += old_size;
 
     if (buf->tmp_buffer_size < 0) {
 	/* fixed size buffer */
-	if (size > (-buf->tmp_buffer_size)) return -1;
+	if (size > (size_t)(-buf->tmp_buffer_size)) return -1;
     } else {
 	if (buf->tmp_buffer_size == 0) {
 	    int64_t tmp_size = Max(size, TMP_BUFFER_INIT_SIZE);
 	    buf->tmp_buffer = malloc(tmp_size);
 	}
-	if (size > buf->tmp_buffer_size) {
+	if (size > (size_t)buf->tmp_buffer_size) {
 	    buf->tmp_buffer = realloc(buf->tmp_buffer, size);
 	    buf->tmp_buffer_size = size;
 	}
@@ -1576,11 +1577,12 @@ set_bigendian () {
   words_bigendian = (u.c[sizeof (long) - 1] == 1);
   return words_bigendian;
 }
-
+#ifndef WORDS_BIGENDIAN
 #define WORDS_BIGENDIAN ((words_bigendian == -1) ? set_bigendian() : words_bigendian)
 #endif
+#endif
 
-static unsigned long
+static size_t
 quick_get_ulong(FMFieldPtr iofield, void *data)
 {
     data = (void *) ((char *) data + iofield->offset);
@@ -1643,14 +1645,14 @@ quick_get_pointer(FMFieldPtr iofield, void *data)
 	break;
     }
     case 8:
-#if SIZEOF_LONG == 8
+#if SIZEOF_SIZE_T == 8
 	memcpy(&u.p, data, 8);
 #else
 	{
 	  int tmp;
 	  /* must be fetching 4 bytes of the 8 available */
 	  if (WORDS_BIGENDIAN)
-	    memcpy(&tmp, data + 4, 4);
+	    memcpy(&tmp, ((char*)data) + 4, 4);
 	  else
 	    memcpy(&tmp, data, 4);
 	  u.tmp = (unsigned long) tmp;
@@ -1662,7 +1664,7 @@ quick_get_pointer(FMFieldPtr iofield, void *data)
 }
 
 void
-quick_put_ulong(FMFieldPtr iofield, unsigned long value, void *data)
+quick_put_ulong(FMFieldPtr iofield, size_t value, void *data)
 {
     data = (void *) ((char *) data + iofield->offset);
     /* only used when field type is an integer and aligned by its size */
@@ -1679,7 +1681,7 @@ quick_put_ulong(FMFieldPtr iofield, unsigned long value, void *data)
 	break;
 	}
     case 8:{
-	unsigned long tmp = value;
+	size_t tmp = value;
 	memcpy(data, &tmp, 8);
 	break;
 	}
