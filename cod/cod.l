@@ -327,7 +327,7 @@ static char *create_string_from_yytext()
 
 static void check_strbuf()
 {
-    int cur_len = string_buf_ptr - string_buffer;
+    intptr_t cur_len = string_buf_ptr - string_buffer;
     if ((cur_len + 1) == buffer_len) {
 	buffer_len += 20;
 	string_buffer = realloc(string_buffer, buffer_len + 1);

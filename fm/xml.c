@@ -53,7 +53,7 @@ generic_field_to_XML(FMFormat format, int field,
 static int
 is_tag(char *tag, char *xml_stream)
 {
-    int len = strlen(tag);
+    int len = (int) strlen(tag);
     if (strncmp(xml_stream, tag, len) != 0) return 0;
     if (isalnum((int)xml_stream[len])) return 0;  /* not end of stream tag */
     if (xml_stream[len] == '_') return 0;
@@ -92,11 +92,11 @@ expand_dstring(ffs_dstring ds, int min)
 static void
 dcatstr(ffs_dstring ds, char *str)
 {
-    int len = strlen(str);
+    int len = (int) strlen(str);
     if (ds->length + len + 1 > ds->max_alloc) {
 	expand_dstring(ds, len + 1);
     }
-    strcat(&ds->string[ds->length], str);
+    strncat(&ds->string[ds->length], str, ds->max_alloc);
     ds->length += len;
 }
 
@@ -226,9 +226,9 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
 	    case integer_type:
 	    {
 		char tmp[64];
-		long l;
+		ssize_t l;
 		l = get_FMlong(field_ptr, base);
-		sprintf(tmp, "%ld", l);
+		snprintf(tmp, sizeof(tmp), "%zd", l);
 		dcatstr(ds, tmp);
 		break;
 	    }
@@ -236,15 +236,15 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
 	    case enumeration_type:
 	    {
 		char tmp[64];
-		unsigned long l;
+		size_t l;
 		l = get_FMulong(field_ptr, base);
-		sprintf(tmp, "%lu", l);
+		snprintf(&tmp[0], sizeof(tmp), "%zu", l);
 		dcatstr(ds, tmp);
 		break;
 	    }
 	    case boolean_type:
 	    {
-		unsigned long l;
+		size_t l;
 		l = get_FMulong(field_ptr, base);
 		if (l) 
 		    dcatstr(ds, "true");
@@ -257,7 +257,7 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
 		char tmp[64];
 		double d;
 		d = get_FMdouble(field_ptr, base);
-		sprintf(tmp, "%g", d);
+		snprintf(tmp, sizeof(tmp), "%g", d);
 		dcatstr(ds, tmp);
 		break;
 	    }
@@ -279,7 +279,7 @@ internal_record_to_XML_string(FMFormat format, void *data, void *string_base, ff
 	    case unknown_type:
 	    {
 		int field = info[i].field_num;
-		int offset = field_ptr->offset;
+		size_t offset = field_ptr->offset;
 		FMFormat sub = format->field_subformats[field];
 		if (sub != NULL) {
 		    internal_record_to_XML_string(sub, (char*)base+offset,
@@ -347,7 +347,7 @@ get_field_num(int* field_num_ptr, FMFormat format, char *left, char *right)
 }
 
 extern void *
-get_optinfo_FMFormat(FMFormat format, int info_type, int *len_p)
+get_optinfo_FMFormat(FMFormat format, int info_type, size_t *len_p)
 {
     int i = 0;
     if (format->opt_info == NULL) return NULL;
@@ -366,27 +366,27 @@ extern FMfloat_format fm_my_float_format;
 static xml_output_info
 build_XML_output_info(FMFormat format)
 {
-    int i = 0, last_mark;
+    ssize_t i = 0, last_mark;
     char *XML_opt_data = NULL;
-    int XML_data_len = 0;
+    size_t XML_data_len = 0;
     xml_output_info info = NULL;
-    int info_count = 0;
+    size_t info_count = 0;
 
     XML_opt_data = get_optinfo_FMFormat(format, 0x584D4C20, &XML_data_len);
 
     if (XML_opt_data == NULL) return NULL;
     last_mark = 0;
     i = -1;
-    while (++i < XML_data_len) {
+    while (++i < (intptr_t) XML_data_len) {
 	if (XML_opt_data[i] != '<') {
 	    continue;
 	}
 	if (is_tag("/FFS:array", &XML_opt_data[i+1])) {
 	    /* array terminatfmn */
-	    int post_len = i - last_mark + 1;
+	    ssize_t post_len = i - last_mark + 1;
 	    info[info_count].element_poststring = malloc(post_len);
-	    strncpy(info[info_count].element_poststring,
-		    &XML_opt_data[last_mark], post_len -1);
+	    strncpy(info[info_count].element_poststring, 
+		    &XML_opt_data[last_mark], post_len - 1);
 	    info[info_count].element_poststring[post_len -1] = 0;
 	    info_count++;
 	    i += 13;
@@ -394,7 +394,7 @@ build_XML_output_info(FMFormat format)
 	    continue;
 	}
 	if (is_tag("FFS:data", &XML_opt_data[i+1])) {
-	    int pre_len = i - last_mark;
+	    size_t pre_len = i - last_mark;
 	    FMdata_type data_type;
 	    int field_num;
 	    long junk;
@@ -439,7 +439,7 @@ build_XML_output_info(FMFormat format)
 	}
 	if (is_tag("FFS:array", &XML_opt_data[i+1])) {
 	    /* array terminatfmn */
-	    int pre_len = i - last_mark;
+	    size_t pre_len = i - last_mark;
 	    char *right_end = strchr(&XML_opt_data[i+10], '>');
 	    char *prestring = malloc(pre_len + 1);
 	    
@@ -459,7 +459,7 @@ build_XML_output_info(FMFormat format)
 	}
 	if (is_tag("FFS:array_data_mark", &XML_opt_data[i+1])) {
 	    /* array terminatfmn */
-	    int pre_len = i - last_mark;
+	    size_t pre_len = i - last_mark;
 	    int field_num;
 	    char *right_end = strchr(&XML_opt_data[i+9], '>');
 	    char *prestring = malloc(pre_len + 1);
@@ -494,7 +494,7 @@ build_XML_output_info(FMFormat format)
 	}
     }
     if (info_count != 0) {
-	int post_len = XML_data_len - last_mark;
+	size_t post_len = XML_data_len - last_mark;
 	char *poststring = malloc(post_len + 1);
 	strncpy(poststring, &XML_opt_data[last_mark], post_len);
 	poststring[post_len] = 0;
@@ -518,7 +518,7 @@ build_XML_output_info(FMFormat format)
 static int
 get_int_attr(int *int_ptr, char *name, char *start, char *end)
 {
-    int name_len = strlen(name);
+    int name_len = (int)strlen(name);
     start -= 1;
     while(++start < (end - name_len)) {
 	if (*start == *name) {
@@ -545,7 +545,7 @@ get_int_attr(int *int_ptr, char *name, char *start, char *end)
 static int
 get_str_attr(char **str_ptr, char *name, char *start, char *end)
 {
-    int name_len = strlen(name);
+    int name_len = (int)strlen(name);
     start -= 1;
     while(++start < (end - name_len)) {
 	if (*start == *name) {
@@ -629,72 +629,72 @@ add_single_value_as_XML(const char *field_type, int field_size, int field_offset
     str[0] = 0;
     if (descr.data_type == integer_type) {
 	if (field_size <= sizeof(long)) {
-	    long tmp = get_FMlong(&descr, data);
-	    sprintf(str, "%ld", tmp);
+	    size_t tmp = get_FMlong(&descr, data);
+	    snprintf(str, sizeof(str), "%zd", tmp);
 	} else if (field_size == 2 * sizeof(long) && field_size == 8) {
 	    unsigned long low_long;
 	    long high_long;
 	    get_FMlong8(&descr, data, &low_long, &high_long);
 	    if (high_long == 0) {
-		sprintf(str, "%ld ", low_long);
+		snprintf(str, sizeof(str), "%ld ", low_long);
 	    } else {
-		sprintf(str, "0x%lx%08lx ", high_long, low_long);
+		snprintf(str, sizeof(str), "0x%lx%08lx ", high_long, low_long);
 	    }
 	} else if (field_size > sizeof(long)) {
-	    sprintf(str, "<scalar type=\"long\" />");
+	    snprintf(str, sizeof(str), "<scalar type=\"long\" />");
 	} else {
-	    sprintf(str, "<scalar type=\"int\" size=\"%d\" />", field_size);
+	    snprintf(str, sizeof(str), "<scalar type=\"int\" size=\"%d\" />", field_size);
 	}
     } else if (descr.data_type == unsigned_type) {
 	if (field_size <= sizeof(unsigned long)) {
-	    unsigned long tmp = get_FMulong(&descr, data);
-	    sprintf(str, "%lu ", tmp);
+	    size_t tmp = get_FMulong(&descr, data);
+	    snprintf(str, sizeof(str), "%zu ", tmp);
 	} else if (field_size == 2 * sizeof(long) && field_size == 8) {
 	    unsigned long low_long, high_long;
 	    get_FMulong8(&descr, data, &low_long, &high_long);
 	    if (high_long == 0) {
-		sprintf(str, "%lu ", low_long);
+		snprintf(str, sizeof(str), "%lu ", low_long);
 	    } else {
-		sprintf(str, "0x%lx%08lx ", high_long, low_long);
+		snprintf(str, sizeof(str), "0x%lx%08lx ", high_long, low_long);
 	    }
 	} else if (field_size > sizeof(long)) {
-	    sprintf(str, "<scalar type=\"unsignedLong\" />");
+	    snprintf(str, sizeof(str), "<scalar type=\"unsignedLong\" />");
 	} else {
-	    sprintf(str, "<scalar type=\"unsignedInt\" size=\"%d\" />", field_size);
+	    snprintf(str, sizeof(str), "<scalar type=\"unsignedInt\" size=\"%d\" />", field_size);
 	}
     } else if (descr.data_type == enumeration_type) {
-	sprintf(str, "%u ", *(int *) ((char *) data + field_offset));
+	snprintf(str, sizeof(str), "%u ", *(int *) ((char *) data + field_offset));
     } else if (descr.data_type == boolean_type) {
 	if (*(int *) ((char *) data + field_offset) == 0) {
-	    strcpy(str, "false ");
+	    strncpy(str, "false ", sizeof(str));
 	} else {
-	    strcpy(str, "true ");
+	    strncpy(str, "true ", sizeof(str));
 	}
     } else if (descr.data_type == float_type) {
 	if (field_size == sizeof(float)) {
 	    float tmp = get_FMfloat(&descr, data);
-	    sprintf(str, "%g ", tmp);
+	    snprintf(str, sizeof(str), "%g ", tmp);
 	} else if (field_size == sizeof(double)) {
 	    double tmp = get_FMdouble(&descr, data);
-	    sprintf(str, "%g ", tmp);
+	    snprintf(str, sizeof(str), "%g ", tmp);
 #if SIZEOF_LONG_DOUBLE != 0 && SIZEOF_LONG_DOUBLE != SIZEOF_DOUBLE
 	} else if (field_size == sizeof(long double)) {
 	    long double tmp;
 	    memcpy(&tmp, (float *) ((char *) data + field_offset),
 		   sizeof(double));
-	    sprintf(str, "%Lg ", tmp);
+	    snprintf(str, sizeof(str), "%Lg ", tmp);
 #endif
 	} else {
 	    if (field_size < sizeof(float)) {
-		sprintf(str, "<scalar type=\"small-float\" />");
+		snprintf(str, sizeof(str), "<scalar type=\"small-float\" />");
 	    } else if (field_size > sizeof(double)) {
-		sprintf(str, "<scalar type=\"big-float\" />");
+		snprintf(str, sizeof(str), "<scalar type=\"big-float\" />");
 	    } else {
-		sprintf(str, "<scalar type=\"float\" size=\"%u\" />", field_size);
+		snprintf(str, sizeof(str), "<scalar type=\"float\" size=\"%u\" />", field_size);
 	    }
 	}
     } else if (descr.data_type == char_type) {
-	sprintf(str, "%c ", *(char *) ((char *) data + field_offset));
+	snprintf(str, sizeof(str), "%c ", *(char *) ((char *) data + field_offset));
     } else if (descr.data_type == string_type) {
 	char *tmp_str = (char *) get_FMaddr(&descr, data, string_base, encode);
 	if (tmp_str != 0) {
@@ -775,7 +775,7 @@ generic_field_to_XML(FMFormat format, int field, void *data, void *string_base,
 	int offset = fmfield->field_offset;
 	dcatstr(ds, "\n");
 	*left_paren = 0;
-	strcpy(sub_type, field_type);
+	strncpy(sub_type, field_type, sizeof(sub_type));
 	*left_paren = '[';
 	dimension = strtol(left_paren + 1, NULL, 10);
 
@@ -787,7 +787,7 @@ generic_field_to_XML(FMFormat format, int field, void *data, void *string_base,
 		return;
 	    } else {
 		FMgetFieldStruct descr;  /* OK */
-		long tmp_offset;
+		size_t tmp_offset;
 
 		dimension = FMget_array_element_count(format, iovar, data, encode);
 
@@ -823,7 +823,7 @@ generic_field_to_XML(FMFormat format, int field, void *data, void *string_base,
 	int sub_field_size, offset = fmfield->field_offset;
 	dcatstr(ds, "\n");
 	*left_paren = 0;
-	strcpy(sub_type, field_type);
+	strncpy(sub_type, field_type, sizeof(sub_type));
 	dimension1 = strtol(left_paren + 1, &temp_ptr, 10);
 	dimension2 = strtol(temp_ptr + 2, &temp_ptr, 10);
 
