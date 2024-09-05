@@ -172,11 +172,9 @@ endif()
 
 find_package(Perl)
 
-set (PERL_FOUND false)
-
 if (PERL_FOUND) 
   add_custom_command(
-    OUTPUT "cod_node.c" 
+    OUTPUT "cod_node.c" structs.h
     COMMAND
       ${PERL_EXECUTABLE} 
         ${CMAKE_CURRENT_SOURCE_DIR}/cod/struct.pl
