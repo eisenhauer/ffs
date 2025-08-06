@@ -30,10 +30,7 @@ jobs:
         buildtype: [ release ]
         os: [ alma10, ubuntu2204, ubuntu2404 ]
         compiler: [ clang, gcc ]
-        exclude:
         include:
-        - os: alma8
-          container: alma:8
         - os: alma10
           container: alma:10
         - os: ubuntu2404
