@@ -32,7 +32,7 @@ jobs:
         compiler: [ clang, gcc ]
         include:
         - os: alma10
-          container: alma:10
+          container: almalinux:10
         - os: ubuntu2404
           container: ubuntu:24.04
         - os: ubuntu2204
