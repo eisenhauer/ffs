@@ -31,8 +31,6 @@ jobs:
         os: [ alma10, ubuntu2204, ubuntu2404 ]
         compiler: [ clang, gcc ]
         exclude:
-          - { os: alma8, compiler: nvhpc }
-          - { os: ubuntu2204, compiler: nvhpc }
         include:
         - os: alma8
           container: alma:8
