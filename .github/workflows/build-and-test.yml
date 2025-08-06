@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         buildtype: [ release ]
-        os: [ alma8, alma10, ubuntu2204, ubuntu2404 ]
+        os: [ alma10, ubuntu2204, ubuntu2404 ]
         compiler: [ clang, gcc ]
         exclude:
           - { os: alma8, compiler: nvhpc }
@@ -42,12 +42,6 @@ jobs:
           container: ubuntu:24.04
         - os: ubuntu2204
           container: ubuntu:22.04
-        - os: centos7
-          compiler: nvhpc
-          container: nvcr.io/nvidia/nvhpc:21.2-devel-cuda11.2-centos7
-        - os: ubuntu2404
-          compiler: nvhpc
-          container: nvidia/cuda:12.9.1-devel-ubuntu24.04
 
     steps:
     - uses: actions/checkout@v2
