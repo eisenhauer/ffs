@@ -56,8 +56,7 @@ nt_file_read_func(void *conn, void *buffer, int length, int *errno_p, char **res
 }
 
 static int
-nt_socket_read_func(void *conn, void *buffer, int length, int *errno_p)
-char **result_p;
+nt_socket_read_func(void *conn, void *buffer, int length, int *errno_p, char **result_p)
 {
     int left = length;
     int iget;
