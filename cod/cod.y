@@ -3186,6 +3186,7 @@ type_list_to_string(cod_parse_context context, sm_list type_list, int *size)
     if (cg_type != DILL_ERR) {
 	type_found++;
     }
+    (void)type_found;
     switch(cg_type) {
     case DILL_C: 
 	*size = sizeof(char);
@@ -3229,7 +3230,6 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
 
     sm_list tmp = l;
     sm_list last_type = NULL;
-    int field_count = 0;
     decl->node.struct_type_decl.id = name;
     
      while(tmp != NULL) {
@@ -3289,7 +3289,6 @@ cod_build_parsed_type_node(cod_parse_context c, char *name, sm_list l)
 	new_elem->node->node.field.cg_type = DILL_ERR;
 	new_elem->node->node.field.type_spec = typ;
 	cod_rfree(node);
-	field_count++;
 	last_type = tmp;
 	tmp = tmp->next;
 	free(last_type);
@@ -5074,6 +5073,7 @@ static int semanticize_decl(cod_parse_context context, sm_ref decl,
 	if ((ctype != NULL) && ((ctype->node_type == cod_array_type_decl) || (ctype->node_type == cod_struct_type_decl))) {
 	    is_block_type = 1;
 	}
+	(void)is_block_type;
 	if (decl->node.declaration.init_value != NULL) {
 	    int ret;
 	    ret = semanticize_expr(context, decl->node.declaration.init_value, 
