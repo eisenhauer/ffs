@@ -252,7 +252,7 @@ nt_socket_readv_func(void *conn, struct iovec *iov, int icount, int *errno_p, ch
 
     int i = 0;
     for (; i < icount; i++) {
-	if (nt_socket_read_func(conn, (void*)iov[i].iov_base, iov[i].iov_len,
+	if (nt_socket_read_func(conn, (void*)iov[i].iov_base, (int)iov[i].iov_len,
 				errno_p, result_p) != iov[i].iov_len) {
 	    return i;
 	}
@@ -267,7 +267,7 @@ null_file_readv_func(void *conn, struct iovec *iov, int icount, int *errno_p, ch
 
     int i = 0;
     for (; i < icount; i++) {
-	if (nt_file_read_func(conn, (void*)iov[i].iov_base, iov[i].iov_len, errno_p,
+	if (nt_file_read_func(conn, (void*)iov[i].iov_base, (int)iov[i].iov_len, errno_p,
 			      result_p) != iov[i].iov_len) {
 	    return i;
 	}
@@ -281,7 +281,7 @@ null_file_writev_func(void* conn, struct iovec* iov, int icount, int* errno_p, c
 
     int i = 0;
     for (; i < icount; i++) {
-	if (nt_file_write_func(conn, (void*)iov[i].iov_base, iov[i].iov_len, errno_p,
+	if (nt_file_write_func(conn, (void*)iov[i].iov_base, (int)iov[i].iov_len, errno_p,
 	    result_p) != iov[i].iov_len) {
 	    return i;
 	}
