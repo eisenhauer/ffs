@@ -246,7 +246,7 @@ nt_file_lseek_func (void *file, size_t pos, int origin)
 }
 
 
-static int
+static size_t
 nt_socket_readv_func(void *conn, struct iovec *iov, int icount, int *errno_p, char **result_p)
 {
 
