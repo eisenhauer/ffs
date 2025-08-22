@@ -3,11 +3,18 @@ set (PROGS t7)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-ADD_CUSTOM_COMMAND(
-   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/general.c
-   COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/general.ops
-   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/general.ops
-)
+if (PERL_FOUND)
+  ADD_CUSTOM_COMMAND(
+     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/general.c
+     COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/general.pl
+     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/general.pl
+  )
+else()
+    add_custom_command(OUTPUT general.c
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                       ${PROJECT_SOURCE_DIR}/pregen-source/cod/tests/general.c general.c
+                   COMMENT "Copying pregen general.c to build area")
+endif()
 
 foreach (TEST ${TESTS} )
     ADD_EXECUTABLE(${TEST} ${TEST}.c data_funcs.c)
@@ -15,7 +22,10 @@ foreach (TEST ${TESTS} )
     TARGET_LINK_LIBRARIES(${TEST} ${ATL_LIBRARIES} )
     ADD_TEST(NAME ${TEST} COMMAND ${TEST})
 endforeach()
-SET_SOURCE_FILES_PROPERTIES(general.c PROPERTIES COMPILE_FLAGS -O0)
+
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+   SET_SOURCE_FILES_PROPERTIES(general.c PROPERTIES COMPILE_FLAGS -O0)
+endif()
 
 set_tests_properties (t2
   PROPERTIES PASS_REGULAR_EXPRESSION "Expect -> .values are is 5, 3.14159, hello!.

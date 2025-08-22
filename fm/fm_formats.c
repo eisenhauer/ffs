@@ -72,7 +72,7 @@ static int field_type_eq(const char *str1, const char *str2);
  */
 int (*establish_server_connection_ptr)(FMContext fmc, action_t action);
 
-FMfloat_format fm_my_float_format = Format_Unknown;
+FMfloat_format fm_my_float_format = FFS_FLOAT_FORMAT;
 /* 
  * fm_reverse_float_formats identifies for each format what, 
  * if any, format is its byte-swapped reverse.
@@ -83,93 +83,18 @@ FMfloat_format fm_reverse_float_formats[] = {
     Format_IEEE_754_bigendian, /* bigendian complements littleendian */
     Format_Unknown /* no exact opposite for mixed-endian (ARM) */
 };
-
-static unsigned char IEEE_754_4_bigendian[] = 
-  {0x3c, 0x00, 0x00, 0x00};
-static unsigned char IEEE_754_4_littleendian[] = 
-  {0x00, 0x00, 0x00, 0x3c};
-static unsigned char IEEE_754_8_bigendian[] = 
-  {0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-static unsigned char IEEE_754_8_littleendian[] = 
-  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f};
-static unsigned char IEEE_754_8_mixedendian[] = 
-  {0x00, 0x00, 0x80, 0x3f, 0x00, 0x00, 0x00, 0x00};
-static unsigned char IEEE_754_16_bigendian[] = 
-  {0x3f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-static unsigned char IEEE_754_16_littleendian[] = 
-  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x3f};
-static unsigned char IEEE_754_16_mixedendian[] = 
-  {0x00, 0x00, 0xf8, 0x3f, 0x00, 0x00, 0x00, 0x00, 
-   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
 static char *float_format_str[] = {
     "Unknown float format",
     "IEEE 754 float (bigendian)", 
     "IEEE 754 float (littleendian)",
     "IEEE 754 float (mixedendian)"};
 
-static FMfloat_format
-infer_float_format(char *float_magic, int object_len)
-{
-    switch (object_len) {
-    case 4:
-	if (memcmp(float_magic, &IEEE_754_4_bigendian[0], 4) == 0) {
-	    return Format_IEEE_754_bigendian;
-	} else if (memcmp(float_magic, &IEEE_754_4_littleendian[0], 4) == 0) {
-	    return Format_IEEE_754_littleendian;
-	}
-	break;
-    case 8:
-	if (memcmp(float_magic, &IEEE_754_8_bigendian[0], 8) == 0) {
-	    return Format_IEEE_754_bigendian;
-	} else if (memcmp(float_magic, &IEEE_754_8_littleendian[0], 8) == 0) {
-	    return Format_IEEE_754_littleendian;
-	} else if (memcmp(float_magic, &IEEE_754_8_mixedendian[0], 8) == 0) {
-	    return Format_IEEE_754_mixedendian;
-	}
-	break;
-    case 16:
-	if (memcmp(float_magic, &IEEE_754_16_bigendian[0], 16) == 0) {
-	    return Format_IEEE_754_bigendian;
-	} else if (memcmp(float_magic, &IEEE_754_16_littleendian[0], 16) ==0){
-	    return Format_IEEE_754_littleendian;
-	} else if (memcmp(float_magic, &IEEE_754_16_mixedendian[0], 16) == 0){
-	    return Format_IEEE_754_mixedendian;
-	}
-	break;
-    }
-    return Format_Unknown;
-}
-
-static void
-init_float_formats()
-{
-    static int done = 0;
-    if (!done) {
-	double d = MAGIC_FLOAT;
-	fm_my_float_format = infer_float_format((char*)&d, sizeof(d));
-	switch (fm_my_float_format) {
-	case Format_IEEE_754_bigendian:
-	case Format_IEEE_754_littleendian:
-	case Format_IEEE_754_mixedendian:
-	    break;
-	case Format_Unknown:
-	    fprintf(stderr, "Warning, unknown local floating point format\n");
-	    break;
-	}
-	done++;
-    }
-}
-	
 
 extern
 FMContext
 new_FMContext()
 {
     FMContext c;
-    init_float_formats();
     c = (FMContext) malloc((size_t) sizeof(FMContextStruct));
     memset(c, 0, sizeof(FMContextStruct));
     c->ref_count = 1;
@@ -181,6 +106,7 @@ new_FMContext()
     c->native_column_major_arrays = 0;
     c->native_pointer_size = sizeof(char*);
     c->errno_val = 0;
+    c->ignore_default_values = 0;
     c->result = NULL;
     
     c->self_server = 0;
@@ -191,6 +117,11 @@ new_FMContext()
     c->master_context = NULL;
 
     return (c);
+}
+
+extern void set_ignore_default_values_FMcontext(FMContext c)
+{
+    c->ignore_default_values = 1;
 }
 
 extern
@@ -1593,7 +1524,11 @@ validate_and_copy_field_list(FMFieldList field_list, FMFormat fmformat)
 					 field_list[field].field_offset +
 					    field_size);
 	new_field_list[field].field_name = strdup(field_list[field].field_name);
-	field_name_strip_default((char *)new_field_list[field].field_name);
+	if  (fmformat->context->ignore_default_values) {
+	    new_field_list[field].field_name = new_field_list[field].field_name;
+	} else {
+	    field_name_strip_default((char *)new_field_list[field].field_name);
+	}
 	new_field_list[field].field_type = strdup(field_list[field].field_type);
 	new_field_list[field].field_size = field_list[field].field_size;
 	if (simple_string) {
@@ -1946,20 +1881,12 @@ register_data_format(FMContext context, FMStructDescList struct_list)
 
 INT4 FFS_self_server_IP_addr = 0;
 
-#include "siphash.h"
-
-static void hashlittle2( 
-  const void *data,       /* the data to hash */
-  size_t      length,    /* length of the data */
+extern void hashlittle2( 
+  const void *key,       /* the key to hash */
+  size_t      length,    /* length of the key */
   INT4   *pc,        /* IN: primary initval, OUT: primary hash */
-  INT4   *pb)
-{
-    static const uint64_t skey[2] = {0xECB8FF2F434B2FBB, 0xB4E298A99A71F723 };
-    INT4 output[2];
-    siphash(data, length, &skey, (uint8_t*) &output[0], sizeof(output));
-    *pc = output[0];
-    *pb = output[1];
-}
+  INT4   *pb)        /* IN: secondary initval, OUT: secondary hash */;
+
 
 extern void
 generate_format3_server_ID(server_ID_type *server_ID,
@@ -1990,7 +1917,7 @@ generate_format3_server_ID(server_ID_type *server_ID,
     ((version_3_format_ID *) server_ID->value)->rep_len = 
 	htons((short)(server_format_rep_length >> 2));   // Mod length by 4
     ((version_3_format_ID *) server_ID->value)->top_byte_rep_len = (unsigned char)
-	htons((short)(server_format_rep_length >> 18));  // Essentially, we capture the top 26 bytes of the server length
+	0xff & (server_format_rep_length >> 18);
     ((version_3_format_ID *) server_ID->value)->hash1 = htonl(hash1);
     ((version_3_format_ID *) server_ID->value)->hash2 = htonl(hash2);
 }
@@ -3168,7 +3095,7 @@ extern int
 unix_timeout_read_func(void *conn, void *buffer, int length, 
 		       int *errno_p, char **result_p);
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #define srand48(x) srand((int)(x))
 #define drand48() ((double)rand()/RAND_MAX)
 #define sleep(sec)  Sleep(1000 * sec)
@@ -3179,20 +3106,20 @@ serverAtomicRead(void *fd, void *buffer, int length)
 {
     char *junk_result_str = NULL;
     int junk_errno;
-    int ret = ffs_server_read_func(fd, buffer, length, &junk_errno,
+    size_t ret = ffs_server_read_func(fd, buffer, length, &junk_errno,
 				  &junk_result_str);
 
     if (getenv("BAD_CLIENT") && (drand48() < 0.0001)) sleep(600);
     if (ret != length) {
 	if (get_format_server_verbose()) {
-	    printf("server read error, return is %d, length %d, errno %d\n",
+	    printf("server read error, return is %zu, length %d, errno %d\n",
 		   ret, length, junk_errno);
 	    if (junk_result_str != NULL) {
 		printf("result_string is %s\n", junk_result_str);
 	    }
 	}
     }
-    return ret;
+    return (int)ret;
 }
 
 extern int
@@ -3201,8 +3128,8 @@ serverAtomicWrite(void *fd, void *buffer, int length)
     char *junk_result_str;
     int junk_errno;
     if (getenv("BAD_CLIENT") && (drand48() < 0.001)) sleep(600);
-    return ffs_server_write_func(fd, buffer, length, &junk_errno,
-				&junk_result_str);
+    return (int) ffs_server_write_func(fd, buffer, length, &junk_errno,
+				       &junk_result_str);
 }
 
 
@@ -3250,8 +3177,8 @@ server_register_format(FMContext fmc, FMFormat format)
 	struct {
 	    char reg[2];
 	    unsigned short len;
-	    } tmp = {{'f', 2}, 0 };	/* format reg, version 2 */
-	int ret;
+	} tmp = {{'f', 2}, 0 };	/* format reg, version 2 */
+	size_t ret;
 	int errno;
 	char *errstr;
 	char ret_info[2];
@@ -3961,11 +3888,12 @@ stringify_server_ID(unsigned char *ID, char *buffer, int len)
 	    break;
 	}
     case 2:{
-	version_2_format_ID *id2 = (version_2_format_ID*)ID;
+	version_3_format_ID *id3 = (version_3_format_ID*)ID;
 	if (len < 3+3+6+10+6+50) /* approx size */ return;
-	snprintf(buffer, len, "<ID ver=%d, unused %d, rep_len %d, hash1 %x, hash2 %x>\n",
-	       id2->version, id2->unused, ntohs(id2->rep_len) << 2,
-	       ntohl(id2->hash1), ntohl(id2->hash2));
+	int rep_len = get_rep_len_format_ID(ID);
+	snprintf(buffer, len, "<ID ver=%d, rep_len %d, hash1 %x, hash2 %x>\n",
+	       id3->version, rep_len,
+	       ntohl(id3->hash1), ntohl(id3->hash2));
 	    break;
 	}
     default:
@@ -4029,11 +3957,10 @@ get_rep_len_format_ID(void *format_ID)
 {
     switch (version_of_format_ID(format_ID)) {
     case 2:{
-	    version_2_format_ID *id2 = (version_2_format_ID *) format_ID;
-	    short tmp;
-	    memcpy(&tmp, &id2->rep_len, 2);
-		tmp = ntohs(tmp);
-	    return tmp << 2;
+	    version_3_format_ID *id3 = (version_3_format_ID *) format_ID;
+	    int rep_len = htons(id3->rep_len);
+	    rep_len += (id3->top_byte_rep_len << 16);
+	    return rep_len << 2;
 	}
     case 0:
     case 1:
