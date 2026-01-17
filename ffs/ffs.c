@@ -1582,7 +1582,7 @@ add_to_tmp_buffer(FFSBuffer buf, size_t size)
     return old_size;
 }
 
-#if SIZEOF_LONG != 8
+#if SIZEOF_SIZE_T != 8
 #ifndef WORDS_BIGENDIAN
 
 static int words_bigendian = -1;
@@ -1616,13 +1616,13 @@ quick_get_ulong(FMFieldPtr iofield, void *data)
     case 4:
 	return (unsigned long) (*((unsigned int *) data));
     case 8:
-#if SIZEOF_LONG == 8
-	if ((((long) data) & 0x0f) == 0) {
+#if SIZEOF_SIZE_T == 8
+	if ((((size_t) data) & 0x0f) == 0) {
 	    /* properly aligned */
-	    return (unsigned long) (*((unsigned long *) data));
+	    return (size_t) (*((size_t *) data));
 	} else {
 	    union {
-		unsigned long tmp;
+		size_t tmp;
 		int tmpi[2];
 	    } u;
 	    u.tmpi[0] = ((int *) data)[0];
@@ -1646,23 +1646,24 @@ quick_get_pointer(FMFieldPtr iofield, void *data)
 {
     union {
 	void *p;
-	unsigned long tmp;
+	size_t tmp;
 	int tmpi[2];
     } u;
+    u.tmp = 0;  /* Initialize to avoid garbage in upper bytes on LLP64 */
     data = (void *) ((char *) data + iofield->offset);
     /* only used when field type is an integer and aligned by its size */
     switch (iofield->size) {
     case 1:
-	u.tmp = (unsigned long) (*((unsigned char *) data));
+	u.tmp = (size_t) (*((unsigned char *) data));
 	break;
     case 2:
-	u.tmp = (unsigned long) (*((unsigned short *) data));
+	u.tmp = (size_t) (*((unsigned short *) data));
 	break;
     case 4:
     {
 	unsigned int tmpi;
 	memcpy(&tmpi, data, 4);
-	u.tmp = (unsigned long) tmpi;
+	u.tmp = (size_t) tmpi;
 	break;
     }
     case 8:
