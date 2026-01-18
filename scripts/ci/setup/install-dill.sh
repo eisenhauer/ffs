@@ -11,8 +11,11 @@ cmake \
   ../source
 cmake --build . -j4 --config $1
 cmake --install . --config $1
-if [ -f ${PWD}/../install/bin/dill.dll ] && [ -d /c/Windows/system32 ]; then
-   # there's got to be a better way, but haven't found it
-   cp ${PWD}/../install/bin/dill.dll /c/Windows/system32
+
+# Add DLL directory to PATH for runtime discovery (Windows only)
+if [ -d "${PWD}/../install/bin" ] && [ -n "${GITHUB_PATH:-}" ]; then
+    # Convert to Windows-style path and add to GitHub Actions PATH
+    DILL_BIN_DIR=$(cd "${PWD}/../install/bin" && pwd)
+    echo "${DILL_BIN_DIR}" >> "${GITHUB_PATH}"
 fi
 
