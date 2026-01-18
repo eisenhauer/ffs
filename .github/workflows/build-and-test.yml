@@ -101,6 +101,15 @@ jobs:
           . source/scripts/ci/setup/windows.sh
           source/scripts/ci/setup/install-atl.sh ${{ matrix.buildtype }}
           source/scripts/ci/setup/install-dill.sh ${{ matrix.buildtype }}
+    - name: Add DLL paths (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
+      run: |
+          # Add dependency DLL directories to PATH using native Windows paths
+          $atlBin = Join-Path $env:GITHUB_WORKSPACE "atl/install/bin"
+          $dillBin = Join-Path $env:GITHUB_WORKSPACE "dill/install/bin"
+          if (Test-Path $atlBin) { echo $atlBin >> $env:GITHUB_PATH }
+          if (Test-Path $dillBin) { echo $dillBin >> $env:GITHUB_PATH }
     - name: Setup
       if: ${{ runner.os == 'macOS' }}
       run: |
