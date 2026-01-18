@@ -14,8 +14,8 @@ cmake --install . --config $1
 
 # Add DLL directory to PATH for runtime discovery (Windows only)
 if [ -d "${PWD}/../install/bin" ] && [ -n "${GITHUB_PATH:-}" ]; then
-    # Convert to Windows-style path and add to GitHub Actions PATH
-    DILL_BIN_DIR=$(cd "${PWD}/../install/bin" && pwd)
+    # Convert to Windows-native path format for DLL loading
+    DILL_BIN_DIR=$(cd "${PWD}/../install/bin" && pwd -W 2>/dev/null || cygpath -w "$(pwd)")
     echo "${DILL_BIN_DIR}" >> "${GITHUB_PATH}"
 fi
 
