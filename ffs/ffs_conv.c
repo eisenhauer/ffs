@@ -770,7 +770,7 @@ ffs_internal_convert_field(FMFieldPtr src_spec, void *src, FMdata_type dest_type
 		*dest_field = (unsigned int)tmp;
 	    } else if (dest_size == sizeof(size_t)) {
 		size_t* dest_field = (size_t*)dest;
-		*dest_field = tmp;
+		*dest_field = (size_t) tmp;
 #if SIZEOF_LONG_LONG != 0
 	    } else if (dest_size == sizeof(long long)) {
 		unsigned long long *dest_field = (unsigned long long *) dest;
@@ -1094,7 +1094,7 @@ FFSconvert_record(IOConversionPtr conv, void *src, void *dest, void *final_strin
 				(((intptr_t) src_string_base) % 4));
 	    printf("record of type \"%s\", contents :\n", 
 		   conv->ioformat->body->format_name);
-	    if (limit * sizeof(int) > conv->ioformat->body->record_length)
+	    if (limit * sizeof(int) > (size_t)conv->ioformat->body->record_length)
 		limit = conv->ioformat->body->record_length / sizeof(int);
 	    for (i = 0; i < limit; i += 4) {
 		printf("%p: %8x %8x %8x %8x\n", ((char *) src) + (i * 4),
@@ -1161,12 +1161,12 @@ transpose_array(size_t *dimens, char *src, char *dest, int source_column_major,
 
     if (dimen_count <= 1) return;
     index = malloc(sizeof(index[0]) * dimen_count);
-    for(i = 0; i< dimen_count; i++) {
+    for(i = 0; i< (size_t) dimen_count; i++) {
 	index[i] = 0;
     }
     cur_index = 0;
     jump = 1;
-    for (i = 0; i < dimen_count-1; i++) {
+    for (i = 0; i < (size_t) dimen_count-1; i++) {
 	jump = (jump * dimens[i]);
     }
     while(index[0] < dimens[0]) {
@@ -1192,7 +1192,7 @@ transpose_array(size_t *dimens, char *src, char *dest, int source_column_major,
 		dest_field = ((char*)dest) + dest_size * col_index_base;
 		tmp_spec.offset = tmp_spec.size * row_index_base;
 	    }
-	    for(i=0; i < dimens[cur_index]; i++) {
+	    for(i=0; i < (size_t) dimens[cur_index]; i++) {
 		if (dest_type != unknown_type) {
 		    /* simple (native) field or variant array */
 		    if (dest_type != string_type) {
@@ -1251,7 +1251,7 @@ get_offset_for_addr(char *src_field_addr, ConvStatus conv_status,
     tmp_src_field.offset = 0;
 
     tmp_int = get_big_int(&tmp_src_field, src_field_addr);
-    return tmp_int;
+    return (size_t) tmp_int;
 }
     
 static void
@@ -1530,7 +1530,7 @@ internal_convert_record(IOConversionPtr conv, ConvStatus conv_status, void *src,
 		tmp_src_spec.offset = f->field_list[field].field_offset;
 		tmp_src_spec.data_type = integer_type;
 		tmp_src_spec.byte_swap = conv->ioformat->body->byte_reversal;
-		elements = get_big_int(&tmp_src_spec, src);
+		elements = (size_t) get_big_int(&tmp_src_spec, src);
 		if (control_value == NULL) {
 		    int j;
 		    control_value = (size_t *) malloc(sizeof(control_value[0]) * f->field_count);
