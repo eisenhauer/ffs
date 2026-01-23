@@ -136,7 +136,7 @@ sub arith_insn {
 		$result_if = "if ((expected_result == 0) || (expected_result == ($c_type1) 0x$type_max{$t1}) || (expected_result == ($c_type1) 0x$type_max2{$t1})) continue;\n	$result_if";
 	    }
 	    if (($t1 eq "ul") && (($t2 eq "d") || ($t2 eq "f"))) {
-		$result_if = "if (source1_ul > ((ssize_t)11<<52)) continue;\n 	$result_if";
+		$result_if = "if (source1_ul > ((int64_t)11<<52)) continue;\n 	$result_if";
 	    }
 	    if (($t1 eq "uc") && ($c_op eq "/")) {
 		$range_decl .= "\n	    unsigned int expect_int;";
