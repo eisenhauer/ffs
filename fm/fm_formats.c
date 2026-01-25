@@ -2929,6 +2929,12 @@ free_FMcontext(FMContext c)
     free(c);
 }
 
+extern void
+ffs_free(void *ptr)
+{
+    free(ptr);
+}
+
 #define DUMP
 #ifdef DUMP
 static void
