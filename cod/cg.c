@@ -21,6 +21,7 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#include <inttypes.h>
 #endif
 #ifdef HAVE_DILL_H
 #include "dill.h"
@@ -2790,7 +2791,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 	    }
 	    dill_seti(s, lvar, l);	/* op_i_setc */
 	} else {   /* integer_constant */
-	    long i;
+	    intptr_t i;
 	    char *val = expr->node.constant.const_val;
 	    int typ = type_of_int_const_string(val);
 	    lvar = dill_getreg(s, typ);
@@ -2798,7 +2799,7 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 		/* hex or octal */
 		if (val[1] == 'x') {
 		    /* hex */
-		    if (sscanf(val+2, "%lx", &i) != 1) 
+		    if (sscanf(val+2, "%" SCNxPTR, &i) != 1)
 			printf("hex sscanf failed, %s\n", val);
 		} else if (val[1] == 'b') {
 		    /* binary */
@@ -2812,11 +2813,11 @@ cg_expr(dill_stream s, sm_ref expr, int need_assignable, cod_code descr)
 			j++;
 		    }
 		} else {
-		    if (sscanf(val, "%lo", &i) != 1) 
+		    if (sscanf(val, "%" SCNoPTR, &i) != 1)
 			printf("octal sscanf failed %s\n", val);
 		}
 	    } else {
-		if (sscanf(val, "%ld", &i) != 1) 
+		if (sscanf(val, "%" SCNdPTR, &i) != 1)
 		    printf("decimal sscanf failed %s\n", val);
 	    }
 	    switch (typ) {
