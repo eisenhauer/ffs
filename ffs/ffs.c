@@ -1393,6 +1393,16 @@ FFSinternal_decode(FFSTypeHandle ioformat, char *src, void *dest, int to_buffer)
 	FFSconvert_record(conv, params.src_address, params.dest_address,
 			 params.final_string_address,
 			 params.src_string_address);
+	/* Unpoison memory written by JIT-generated conversion code.
+	 * MSan cannot track writes through JIT code, so we mark the
+	 * destination buffers as initialized. */
+	FFS_UNPOISON(params.dest_address,
+		     ioformat->body->record_length + conv->base_size_delta);
+	if (ioformat->body->variant) {
+	    int64_t variant_size = final_variant_size_for_record(input_record_len, conv);
+	    FFS_UNPOISON(params.final_string_address, (size_t)variant_size);
+	    (void)variant_size;  /* suppress unused warning when FFS_UNPOISON is no-op */
+	}
     }
     return 1;
 }

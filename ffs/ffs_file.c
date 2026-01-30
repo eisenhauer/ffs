@@ -1,4 +1,3 @@
-
 #include "config.h"
 
 #include "assert.h"
@@ -996,7 +995,7 @@ FFSread_format(FFSFile ffsfile)
     
     id = malloc((size_t)ffsfile->next_fid_len);
     rep = malloc((size_t)ffsfile->next_data_len);
-    if (ffsfile->read_func(ffsfile->file_id, id, 
+    if (ffsfile->read_func(ffsfile->file_id, id,
 			   ffsfile->next_fid_len, NULL, NULL)
 	!= ffsfile->next_fid_len) {
 	printf("Read failed, errno %d\n", errno);
@@ -1008,6 +1007,9 @@ FFSread_format(FFSFile ffsfile)
 	printf("Read failed, errno %d\n", errno);
 	return NULL;
     }
+    /* Mark file data as initialized - msan can't track file I/O */
+    FFS_UNPOISON(id, (size_t)ffsfile->next_fid_len);
+    FFS_UNPOISON(rep, (size_t)ffsfile->next_data_len);
     ffsfile->read_ahead = FALSE;
     format = load_external_format_FMcontext(ffsfile->c->fmc, id, 
 					    ffsfile->next_fid_len, rep);
@@ -1081,6 +1083,7 @@ FFSread_index(FFSFile ffsfile)
 	printf("Read failed, errno %d\n", errno);
 	return NULL;
     }
+    FFS_UNPOISON(index_data, (size_t)ffsfile->next_data_len);
     ffsfile->read_ahead = FALSE;
     index_item = parse_index_block(index_data);
     ffsfile->read_index = index_item;
@@ -1201,6 +1204,7 @@ FFSread_comment(FFSFile ffsfile)
 	printf("Read failed, errno %d\n", errno);
 	return NULL;
     }
+    FFS_UNPOISON(ffsfile->tmp_buffer->tmp_buffer, (size_t)ffsfile->next_data_len);
     ffsfile->read_ahead = FALSE;
     return ffsfile->tmp_buffer->tmp_buffer;
 }
@@ -1375,6 +1379,7 @@ convert_last_index_block(FFSFile ffsfile)
 	printf("Read failed, errno %d\n", errno);
 	return;
     }
+    FFS_UNPOISON(index_data, (size_t)ffsfile->next_data_len);
     ffsfile->cur_index->write_info.data_index_start =  htonl(*((int*)(index_data+8)));;
     ffsfile->data_count = read_index->last_data_count + 1;
     if (ffs_file_lseek_func(ffsfile->file_id, 0, SEEK_END) == -1)
